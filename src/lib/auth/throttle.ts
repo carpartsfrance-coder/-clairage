@@ -1,0 +1,129 @@
+import 'server-only'
+import { headers } from 'next/headers'
+import { prisma } from '../db'
+
+/**
+ * Limitation des tentatives.
+ *
+ * Deux clés par action, et c'est volontaire :
+ *   - par **adresse IP**, pour freiner quelqu'un qui balaie beaucoup de comptes ;
+ *   - par **identifiant visé** (e-mail, référence de commande), pour freiner
+ *     quelqu'un qui change d'IP mais s'acharne sur une seule cible.
+ *
+ * L'une sans l'autre se contourne : la première en passant par un relais, la
+ * seconde en changeant de cible à chaque essai.
+ *
+ * Le compteur vit en base parce que Render peut servir plusieurs instances :
+ * un compteur en mémoire se contournerait en retombant sur une autre.
+ */
+
+export type ThrottleRule = {
+  /** Nombre d'essais tolérés dans la fenêtre. */
+  max: number
+  /** Durée de la fenêtre, en secondes. */
+  windowSeconds: number
+  /** Durée du blocage une fois le plafond atteint, en secondes. */
+  blockSeconds: number
+}
+
+export const RULES = {
+  login: { max: 10, windowSeconds: 15 * 60, blockSeconds: 15 * 60 },
+  register: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
+  passwordReset: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
+  orderLookup: { max: 10, windowSeconds: 15 * 60, blockSeconds: 30 * 60 },
+} as const satisfies Record<string, ThrottleRule>
+
+export type ThrottleAction = keyof typeof RULES
+
+/** Adresse de l'appelant, telle que la voit le proxy de Render. */
+export async function callerIp(): Promise<string> {
+  const requestHeaders = await headers()
+  const forwarded = requestHeaders.get('x-forwarded-for')
+  // Le premier élément est l'adresse d'origine ; les suivants sont les relais.
+  const first = forwarded?.split(',')[0]?.trim()
+  return first || requestHeaders.get('x-real-ip') || 'inconnue'
+}
+
+export type ThrottleResult = { allowed: true } | { allowed: false; retryAfterSeconds: number }
+
+async function hit(key: string, rule: ThrottleRule): Promise<ThrottleResult> {
+  const now = new Date()
+
+  try {
+    const existing = await prisma.rateLimit.findUnique({ where: { key } })
+
+    if (existing?.blockedUntil && existing.blockedUntil > now) {
+      return {
+        allowed: false,
+        retryAfterSeconds: Math.ceil((existing.blockedUntil.getTime() - now.getTime()) / 1000),
+      }
+    }
+
+    const windowExpired =
+      !existing || now.getTime() - existing.windowStart.getTime() > rule.windowSeconds * 1000
+
+    if (windowExpired) {
+      await prisma.rateLimit.upsert({
+        where: { key },
+        update: { count: 1, windowStart: now, blockedUntil: null },
+        create: { key, count: 1, windowStart: now },
+      })
+      return { allowed: true }
+    }
+
+    const count = existing.count + 1
+    if (count > rule.max) {
+      const blockedUntil = new Date(now.getTime() + rule.blockSeconds * 1000)
+      await prisma.rateLimit.update({ where: { key }, data: { count, blockedUntil } })
+      return { allowed: false, retryAfterSeconds: rule.blockSeconds }
+    }
+
+    await prisma.rateLimit.update({ where: { key }, data: { count } })
+    return { allowed: true }
+  } catch (error) {
+    // Une panne du compteur ne doit pas fermer la boutique : on laisse passer
+    // et on le signale. Le choix inverse transformerait un incident de base en
+    // interdiction de se connecter pour tout le monde.
+    console.error('[throttle] compteur indisponible', error)
+    return { allowed: true }
+  }
+}
+
+/**
+ * Enregistre une tentative et dit si elle est autorisée.
+ * `target` est l'e-mail ou la référence visée ; il est normalisé pour que
+ * « Alice@… » et « alice@… » comptent ensemble.
+ */
+export async function throttle(
+  action: ThrottleAction,
+  target?: string | null,
+): Promise<ThrottleResult> {
+  const rule = RULES[action]
+  const ip = await callerIp()
+
+  const results = await Promise.all([
+    hit(`${action}:ip:${ip}`, rule),
+    target ? hit(`${action}:cible:${target.trim().toLowerCase()}`, rule) : Promise.resolve({ allowed: true } as ThrottleResult),
+  ])
+
+  const blocked = results.find((result): result is Exclude<ThrottleResult, { allowed: true }> => !result.allowed)
+  return blocked ?? { allowed: true }
+}
+
+/** Remet les compteurs à zéro après un succès (connexion réussie). */
+export async function clearThrottle(action: ThrottleAction, target?: string | null): Promise<void> {
+  const ip = await callerIp()
+  const keys = [`${action}:ip:${ip}`]
+  if (target) keys.push(`${action}:cible:${target.trim().toLowerCase()}`)
+  try {
+    await prisma.rateLimit.deleteMany({ where: { key: { in: keys } } })
+  } catch (error) {
+    console.error('[throttle] remise à zéro impossible', error)
+  }
+}
+
+/** Message affiché au client, sans révéler la règle exacte. */
+export function throttleMessage(retryAfterSeconds: number): string {
+  const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60))
+  return `Trop de tentatives. Réessayez dans ${minutes} minute${minutes > 1 ? 's' : ''}.`
+}

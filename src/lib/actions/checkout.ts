@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { CART_COOKIE, VEHICLE_COOKIE } from '../session'
 import { placeOrder } from '../orders'
+import { getCurrentUser } from '../auth/session'
 import { siteConfig } from '../identity'
 
 /**
@@ -102,8 +103,13 @@ export async function submitOrder(
   const protocol = requestHeaders.get('x-forwarded-proto') ?? 'http'
   const origin = host ? `${protocol}://${host}` : siteConfig.url
 
+  // Une commande passée en étant connecté appartient au compte : elle doit
+  // apparaître dans l'espace client sans rattachement manuel.
+  const user = await getCurrentUser()
+
   const result = await placeOrder({
     cartToken,
+    userId: user?.id ?? null,
     email: data.email,
     phone: data.phone ?? null,
     shippingAddress: data.shipping,

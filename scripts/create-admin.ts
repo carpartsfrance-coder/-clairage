@@ -5,51 +5,57 @@
  * défaut n'existe dans le dépôt : un identifiant public serait une porte
  * d'entrée connue de tous dès la mise en ligne.
  *
- * Le mot de passe est saisi ici, masqué, et seul son condensé scrypt est
- * conservé. On utilise scrypt du module `node:crypto` plutôt qu'une dépendance
- * : il est conçu pour le hachage de mots de passe, il est dans la bibliothèque
- * standard, et il n'ajoute rien à installer sur Render.
+ * Le mot de passe est saisi ici, masqué, et seul son condensé est conservé.
+ * Le hachage vient de `src/lib/auth/password.ts`, le même que pour les clients
+ * — dupliquer l'implémentation ici produirait un format différent, et un
+ * administrateur créé par ce script ne pourrait plus se connecter.
  *
  *   npx tsx scripts/create-admin.ts            → rôle ADMIN
  *   npx tsx scripts/create-admin.ts SUPPORT    → un autre rôle
  */
 import { PrismaClient, type StaffRole } from '@prisma/client'
-import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { createInterface } from 'node:readline'
-import { promisify } from 'node:util'
-
-const scryptAsync = promisify(scrypt) as (
-  password: string,
-  salt: Buffer,
-  keylen: number,
-) => Promise<Buffer>
+import { PASSWORD_MIN_LENGTH, hashPassword, passwordProblem } from '../src/lib/auth/password'
 
 const prisma = new PrismaClient()
 
 const ROLES: StaffRole[] = ['ADMIN', 'CATALOG_MANAGER', 'FULFILLMENT', 'SUPPORT', 'READ_ONLY']
 
-/** Format stocké : scrypt$<sel hex>$<condensé hex>. */
-export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16)
-  const derived = await scryptAsync(password, salt, 64)
-  return `scrypt$${salt.toString('hex')}$${derived.toString('hex')}`
+/**
+ * Lecture des réponses.
+ *
+ * Deux modes, parce qu'ils n'ont pas les mêmes contraintes :
+ *
+ * - **Terminal** : readline, avec l'écho neutralisé pour le mot de passe, afin
+ *   qu'il ne reste ni à l'écran ni dans l'historique.
+ * - **Entrée redirigée** (script, CI, conteneur sans TTY) : on lit tout le flux
+ *   d'un coup et on sert les réponses dans l'ordre. readline ferme l'interface
+ *   dès la fin du flux, ce qui fait échouer les questions suivantes avec
+ *   ERR_USE_AFTER_CLOSE ; et il n'y a de toute façon pas d'écran à protéger.
+ */
+const interactive = process.stdin.isTTY === true
+
+let piped: string[] = []
+let pipedIndex = 0
+
+async function readAllInput(): Promise<string[]> {
+  const chunks: Buffer[] = []
+  for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk))
+  return Buffer.concat(chunks).toString('utf8').split(/\r?\n/)
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [scheme, saltHex, hashHex] = stored.split('$')
-  if (scheme !== 'scrypt' || !saltHex || !hashHex) return false
-  const derived = await scryptAsync(password, Buffer.from(saltHex, 'hex'), 64)
-  const expected = Buffer.from(hashHex, 'hex')
-  // Comparaison à temps constant : une comparaison naïve fuite le préfixe commun.
-  return derived.length === expected.length && timingSafeEqual(derived, expected)
-}
+const rl = interactive
+  ? createInterface({ input: process.stdin, output: process.stdout, terminal: true })
+  : null
 
 function ask(question: string, masked = false): Promise<string> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true })
+  if (!rl) {
+    process.stdout.write(question + '\n')
+    return Promise.resolve((piped[pipedIndex++] ?? '').trim())
+  }
+
   return new Promise((resolve) => {
     if (masked) {
-      // On neutralise l'écho : le mot de passe ne doit pas rester à l'écran ni
-      // dans l'historique du terminal.
       const output = process.stdout as NodeJS.WriteStream & { muted?: boolean }
       output.muted = false
       const originalWrite = output.write.bind(output)
@@ -59,20 +65,18 @@ function ask(question: string, masked = false): Promise<string> {
         output.muted = false
         output.write = originalWrite
         process.stdout.write('\n')
-        rl.close()
         resolve(answer)
       })
       output.muted = true
     } else {
-      rl.question(question, (answer) => {
-        rl.close()
-        resolve(answer.trim())
-      })
+      rl.question(question, (answer) => resolve(answer.trim()))
     }
   })
 }
 
 async function main() {
+  if (!interactive) piped = await readAllInput()
+
   const requested = (process.argv[2] ?? 'ADMIN').toUpperCase() as StaffRole
   if (!ROLES.includes(requested)) {
     console.error(`Rôle inconnu. Valeurs acceptées : ${ROLES.join(', ')}`)
@@ -94,9 +98,12 @@ async function main() {
     return
   }
 
-  const password = await ask('Mot de passe (12 caractères minimum) : ', true)
-  if (password.length < 12) {
-    console.error('Mot de passe trop court.')
+  const password = await ask(`Mot de passe (${PASSWORD_MIN_LENGTH} caractères minimum) : `, true)
+  // Mêmes règles que pour un client : un compte d'administration n'a aucune
+  // raison d'avoir un mot de passe plus faible, au contraire.
+  const problem = passwordProblem(password, email)
+  if (problem) {
+    console.error(problem)
     process.exitCode = 1
     return
   }
@@ -132,4 +139,7 @@ main()
     console.error(error)
     process.exitCode = 1
   })
-  .finally(() => prisma.$disconnect())
+  .finally(() => {
+    rl?.close()
+    return prisma.$disconnect()
+  })

@@ -680,6 +680,10 @@ model User {
   staffRole     StaffRole?
   active        Boolean   @default(true)
   lastLoginAt   DateTime?
+  /// Essais de connexion infructueux consécutifs. Remis à zéro au succès.
+  failedLogins  Int       @default(0)
+  /// Verrouillage temporaire après trop d'essais. Null = compte ouvert.
+  lockedUntil   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -1197,6 +1201,23 @@ model AuditLog {
 
   @@index([entity, entityId, createdAt])
   @@index([actorId, createdAt])
+}
+
+/// Compteur d'essais par action et par origine, pour freiner les abus.
+///
+/// En base plutôt qu'en mémoire : Render peut faire tourner plusieurs
+/// instances, et un compteur en mémoire se contournerait en retombant sur une
+/// autre instance. La fenêtre glisse : `windowStart` est réinitialisé quand
+/// elle est dépassée.
+model RateLimit {
+  /// Clé composite, par exemple « login:ip:203.0.113.4 » ou « login:email:… ».
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+  /// Bloqué jusqu'à cette date quand le plafond est atteint.
+  blockedUntil DateTime?
+
+  @@index([windowStart])
 }
 
 /// File de travaux de fond, servie par un cron Render : pas de service Redis.

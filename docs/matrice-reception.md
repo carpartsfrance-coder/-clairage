@@ -1,14 +1,14 @@
 # Matrice de réception
 
-État au 18 octobre 2026, après les étapes 1 à 6 : analyse, architecture, design
+État au 18 octobre 2026, après les étapes 1 à 7 : analyse, architecture, design
 system, header final, accueil, catalogue, parcours véhicule, fiche produit,
-panier, tunnel de commande et paiement.
+panier, tunnel de commande, paiement et espace client.
 
-**La boutique n'est pas prête pour une ouverture commerciale.** L'espace client
-et le back-office ne sont pas écrits, aucune facture n'est émise, et aucun
-paiement réel n'a jamais été encaissé : le tunnel a été vérifié avec le pilote
-de simulation, pas avec Stripe. Ce document dit où en est chaque fonction, sans
-arrondi.
+**La boutique n'est pas prête pour une ouverture commerciale.** Le back-office
+n'existe pas, aucune facture n'est émise, les adresses e-mail ne sont pas
+vérifiées, et aucun paiement réel n'a jamais été encaissé : le tunnel a été
+vérifié avec le pilote de simulation, pas avec Stripe. Ce document dit où en
+est chaque fonction, sans arrondi.
 
 ## Légende
 
@@ -107,8 +107,22 @@ arrondi.
 | Fonction | État | Détail |
 | --- | --- | --- |
 | Modèle utilisateur, sessions, adresses, véhicules | ✅ | — |
-| Inscription, connexion, récupération | ⬜ | Modèle prêt (`Session`, `PasswordReset`), écrans non écrits |
-| Commandes, documents, suivi | ⬜ | — |
+| Inscription | ✅ | Mot de passe scrypt, 12 caractères minimum, refus des mots devinables et de ceux reprenant l'adresse |
+| Connexion | ✅ | Message identique pour un mot de passe faux et une adresse inconnue ; hachage à vide sur adresse inconnue pour que le temps de réponse ne trahisse rien |
+| Verrouillage après essais | ✅ | 10 essais puis blocage 15 minutes, plus une limitation par IP **et** par adresse visée, comptée en base |
+| Récupération d'accès | ✅ | Message neutre quelle que soit l'adresse ; aucun jeton ni e-mail généré pour une adresse inconnue (vérifié) ; lien valable 1 h, à usage unique, toutes les sessions révoquées |
+| Sessions | ✅ | Jeton aléatoire en cookie `httpOnly`/`SameSite=Lax`, **seul le condensé SHA-256 est en base** ; expiration et révocation filtrées en base |
+| Changement de mot de passe | ✅ | Exige le mot de passe actuel, révoque les autres appareils |
+| Profil | 🔸 | Prénom, nom, téléphone modifiables. **L'adresse e-mail n'est pas modifiable** et la page le dit |
+| Adresses | ✅ | Création, modification, suppression, une seule adresse par défaut |
+| Véhicules enregistrés | ✅ | Enregistrement du véhicule de la session, réutilisation en un clic, suppression |
+| Historique et détail des commandes | ✅ | Filtre `userId` dans la requête. Vérifié : 404 sur la commande d'un autre, 200 sur la sienne |
+| Rattachement d'une commande invité | ✅ | Exige la référence **et** l'adresse — s'inscrire avec l'adresse d'un autre ne suffit pas, puisque les adresses ne sont pas vérifiées |
+| Suivi d'une commande invitée | ✅ | Référence + adresse, limité en fréquence, message d'échec identique que la commande existe ou non |
+| Vérification de l'adresse e-mail | ⬜ | **Non implémentée.** C'est la raison pour laquelle le rattachement d'une commande exige la référence |
+| Suivi des expéditions | 🔸 | Affiché quand une expédition existe ; lien transporteur seulement si l'URL est renseignée. Aucune expédition n'a encore été créée |
+| Téléchargement des documents | ⬜ | La fiche commande liste les documents mais n'offre aucun bouton : la génération n'existe pas, un bouton mort serait pire |
+| Demande d'annulation, de retour ou d'assistance | ⬜ | Modèle SAV en place (`SupportTicket`), aucun écran |
 | Modèle SAV et retours | ✅ | Tickets, messages, notes internes séparées des messages visibles |
 | Écrans SAV | ⬜ | — |
 
@@ -117,7 +131,7 @@ arrondi.
 | Fonction | État | Détail |
 | --- | --- | --- |
 | Rôles et permissions | 🔸 | Cinq rôles modélisés ; aucun écran ne les applique encore |
-| Création du premier administrateur | ✅ | `npm run admin:create`, scrypt, mot de passe sans écho, tracé dans `AuditLog`. Aucun compte par défaut dans le dépôt |
+| Création du premier administrateur | ✅ | `npm run admin:create`, même module de hachage que les clients, mot de passe sans écho en terminal et lecture non interactive sinon, tracé dans `AuditLog`. Aucun compte par défaut dans le dépôt |
 | Tableau de bord, clients, catalogue, commandes, SAV, promotions, contenus, paramètres | ⬜ | — |
 | Imports catalogue et compatibilités | 🔸 | Modélisés avec correspondance de colonnes, prévisualisation, rapport par ligne et reprise par curseur. Moteur non écrit |
 | Journal des actions | ✅ | `AuditLog` en place, alimenté par la création de compte |
@@ -153,7 +167,7 @@ arrondi.
 
 ## Vérifications effectuées
 
-### Automatisées — `npm test` (58 tests, base PostgreSQL dédiée)
+### Automatisées — `npm test` (73 tests, base PostgreSQL dédiée)
 
 | Fichier | Ce qui est couvert |
 | --- | --- |
@@ -161,6 +175,7 @@ arrondi.
 | `tests/reservation.test.ts` (13) | Réservation sur vraie base : vendable abaissé sans toucher au détenu, refus au-delà du stock, **2 commandes simultanées sur la dernière pièce → 1 seule passe**, **12 commandes sur 5 unités → exactement 5**, kit développé en composants, échec total si un composant manque, cycle réserver → payer → décompter, libération rejouée sans passer sous zéro, 20 numéros de commande concurrents tous distincts |
 | `tests/orders.test.ts` (11) | Confirmation et décompte, **3 rejeux séquentiels sans effet**, **3 webhooks simultanés → un seul décompte** (vérifié : le test échoue si l'on retire le verrou), refus d'un « payé » après un échec, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
 | `tests/order-access.test.ts` (9) | Jeton d'accès : bon jeton accepté, jeton absent, faux jeton de même longueur, préfixe correct, commande sans jeton, propriétaire connecté ; lecture du paramètre, paramètre répété, valeur vide |
+| `tests/auth.test.ts` (15) | Hachage : bon et mauvais mot de passe, jamais de clair stocké, sel aléatoire, paramètres portés par le condensé, condensé corrompu refusé sans lever ; règles de robustesse (longueur, phrase sans caractère spécial acceptée, mots devinables, reprise de l'e-mail, longueur démesurée) ; sessions : seul le condensé du jeton est stocké, valide/expirée/révoquée distinguées ; jetons de réinitialisation à usage unique, expirants, jamais stockés en clair |
 | `tests/webhook.test.ts` (10) | Refus sans signature, avec un autre secret, sur corps modifié, sur horodatage rejoué, sans secret configuré ; acceptation et normalisation d'une signature valide ; session non encaissée non retenue ; expiration normalisée ; type inconnu ignoré ; mode test déduit de la clé |
 
 ### À la main, dans le navigateur
@@ -187,9 +202,29 @@ arrondi.
     de conditionnement, compteurs de catégories cohérents avec les listes.
 11. Fiche produit à 375 px : titre avant la galerie, barre d'achat fixe reflétant
     la sélection, aucun défilement horizontal.
+12. **Espace client, parcours complet** : inscription → tableau de bord →
+    enregistrement du véhicule de la session → rattachement de la commande
+    invité `CMD-2026-00004` (mauvaise référence refusée, bonne acceptée) →
+    déconnexion → connexion.
+13. **Contrôle d'accès** : les cinq routes `/compte/*` redirigent en 307 quand on
+    n'est pas connecté ; la fiche d'une commande qui n'appartient pas au client
+    répond 404, la sienne 200.
+14. **Non-énumération** : le message de connexion est identique mot pour mot
+    pour un mot de passe faux et une adresse inconnue ; la récupération d'accès
+    affiche le même message dans les deux cas, et **aucun jeton ni e-mail n'est
+    créé pour une adresse inconnue** (vérifié en base).
+15. **Réinitialisation** : lien reçu dans `EmailLog`, page du jeton répondant 200
+    qu'il soit valide ou non (elle ne le teste pas, pour ne pas servir d'oracle),
+    puis après usage : 0 session ouverte, 0 jeton réutilisable.
+16. **Création d'administrateur** : `npm run admin:create` exécuté, condensé
+    relu et vérifié par le module partagé.
 
 ## Ce qui n'a pas été vérifié
 
+- **La vérification des adresses e-mail**, qui n'existe pas : on peut s'inscrire
+  avec l'adresse de quelqu'un d'autre. C'est pour cela que le rattachement d'une
+  commande exige la référence, mais il faudra la mettre en place avant
+  l'ouverture.
 - **Un paiement réel, même en mode test Stripe** : aucune clé n'est configurée,
   le pilote Stripe n'a donc jamais parlé à Stripe. C'est le point le plus
   important de cette liste.

@@ -11,11 +11,37 @@ npm run admin:create SUPPORT    # un autre rôle
 ```
 
 L'adresse et le mot de passe sont demandés dans le terminal, le mot de passe
-sans écho. Seul un condensé scrypt est stocké (`scrypt$<sel>$<condensé>`), et la
-création est inscrite dans `AuditLog`.
+sans écho. Seul un condensé scrypt est stocké, et la création est inscrite dans
+`AuditLog`. Quand l'entrée est redirigée (script, CI, conteneur sans terminal),
+les réponses sont lues ligne à ligne — il n'y a alors pas d'écran à protéger.
 
 Sur Render, exécuter la commande depuis **Shell** (offres payantes) ou en local
 en pointant `DATABASE_URL` sur la base de production.
+
+### Mots de passe
+
+Le hachage est scrypt (`src/lib/auth/password.ts`), partagé par les clients et
+l'équipe — dupliquer l'implémentation produirait deux formats incompatibles, et
+un compte créé d'un côté ne pourrait plus se connecter de l'autre.
+
+Le coût est réglé à N = 2^15 (~32 Mo, ~150 ms par vérification), **en dessous du
+N = 2^17 recommandé par l'OWASP**. C'est un arbitrage assumé : à 2^17, chaque
+calcul réclamerait 128 Mo, et quatre connexions simultanées satureraient une
+instance de 512 Mo. La variable `AUTH_SCRYPT_LOG_N` permet de durcir sans
+toucher au code dès que l'instance a la mémoire ; les comptes existants restent
+valides, chaque condensé portant ses propres paramètres.
+
+La défense contre la force brute **en ligne** n'est pas le coût du hachage mais
+la limitation de fréquence : 10 essais par quart d'heure, comptés par adresse IP
+et par adresse e-mail visée, plus un verrouillage du compte après 10 échecs.
+
+### Ce qui n'est pas encore en place
+
+- **Les adresses e-mail ne sont pas vérifiées.** On peut s'inscrire avec
+  l'adresse de quelqu'un d'autre. C'est pour cela que rattacher une commande
+  invité à un compte exige la référence de commande en plus de l'adresse. À
+  mettre en place avant l'ouverture.
+- Pas de second facteur, ni pour les clients ni pour l'équipe.
 
 ## Rôles
 
