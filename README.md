@@ -110,6 +110,12 @@ src/
     email.ts           envoi transactionnel, pilote `log` par défaut
 scripts/
   run-jobs.ts          dépilage de JobQueue
+  admin/               droits, garde d'accès, indicateurs du tableau de bord
+  auth/                mots de passe, sessions, limitation des tentatives
+scripts/
+  run-jobs.ts          dépilage de JobQueue
+  create-admin.ts      création d'un compte de l'équipe
+tests/                 100 tests, base PostgreSQL dédiée (npm run test:db:setup)
 docs/                  Render, administration, matrice de réception
 design-references/     les trois maquettes fournies
 ```

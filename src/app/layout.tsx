@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { headers } from 'next/headers'
 import { Inter, Montserrat } from 'next/font/google'
 import './globals.css'
 import { Header } from '@/components/layout/Header'
@@ -45,18 +46,30 @@ export const viewport: Viewport = {
   themeColor: '#212428',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Le back-office a sa propre mise en page : poser l'en-tête et le pied de
+  // page de la boutique par-dessus un outil de travail encombre l'écran et
+  // ajoute une vingtaine de liens inutiles à la navigation au clavier.
+  const pathname = (await headers()).get('x-pathname') ?? ''
+  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/')
+
   return (
     <html lang={identity.locale.lang} className={`${inter.variable} ${montserrat.variable}`}>
       <body className="flex min-h-dvh flex-col">
-        <a href="#contenu" className="skip-link">
-          Aller au contenu
-        </a>
-        <Header />
-        <main id="contenu" className="flex-1">
-          {children}
-        </main>
-        <Footer />
+        {isAdmin ? (
+          children
+        ) : (
+          <>
+            <a href="#contenu" className="skip-link">
+              Aller au contenu
+            </a>
+            <Header />
+            <main id="contenu" className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </>
+        )}
       </body>
     </html>
   )

@@ -57,9 +57,29 @@ Le rôle est porté par `User.staffRole`. Un `staffRole` nul désigne un client 
 la séparation client / équipe tient à ce seul champ, et aucun client ne peut
 atteindre le back-office.
 
-> **État.** Les rôles sont modélisés et le compte se crée ; les écrans
-> d'administration qu'ils gouvernent ne sont pas encore écrits. Voir la matrice
-> de réception.
+Le rôle décide de ce que la personne voit **et** de ce qu'elle peut faire. La
+table unique est dans `src/lib/admin/permissions.ts`, et elle est couverte par
+des tests : une permission ajoutée sans être retirée des rôles qui ne doivent
+pas l'avoir fait échouer la suite.
+
+Deux séparations comptent plus que les autres, et elles sont testées :
+
+- **Préparer n'est pas rembourser.** Le rôle `FULFILLMENT` expédie, suit et
+  annote. Il ne voit ni le formulaire de remboursement ni celui d'annulation,
+  et les actions correspondantes le refusent.
+- **Le SAV décide d'un retour, l'administration rend l'argent.** `SUPPORT`
+  traite les demandes et annote les clients ; il ne rembourse pas.
+
+Le contrôle est fait au rendu côté serveur par `requireStaff(permission)`, et
+**refait dans chaque action**. Une action de serveur est un point d'entrée
+public : elle est atteignable sans jamais avoir vu la page qui l'affiche.
+
+Toute tentative d'accès hors droits est inscrite dans `AuditLog`.
+
+> **État.** Le back-office est opérationnel sur les commandes et la préparation.
+> Le catalogue, les véhicules, le SAV, les promotions et les paramètres sont
+> **consultables mais non modifiables** depuis l'écran. Voir la matrice de
+> réception.
 
 ## Exploitation courante
 

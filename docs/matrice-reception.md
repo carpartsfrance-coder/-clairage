@@ -1,14 +1,17 @@
 # Matrice de réception
 
-État au 18 octobre 2026, après les étapes 1 à 7 : analyse, architecture, design
+État au 18 octobre 2026, après les étapes 1 à 8 : analyse, architecture, design
 system, header final, accueil, catalogue, parcours véhicule, fiche produit,
-panier, tunnel de commande, paiement et espace client.
+panier, tunnel de commande, paiement, espace client et back-office.
 
 **La boutique n'est pas prête pour une ouverture commerciale.** Le back-office
-n'existe pas, aucune facture n'est émise, les adresses e-mail ne sont pas
-vérifiées, et aucun paiement réel n'a jamais été encaissé : le tunnel a été
-vérifié avec le pilote de simulation, pas avec Stripe. Ce document dit où en
-est chaque fonction, sans arrondi.
+existe mais reste **en lecture seule sur le catalogue, les véhicules et le
+SAV** : on peut tout consulter, on ne peut créer ni modifier un produit, une
+compatibilité ou une demande depuis l'écran. Aucune facture n'est émise, les
+adresses e-mail ne sont pas vérifiées, les codes promotionnels ne sont pas
+appliqués au panier, et aucun paiement réel n'a jamais été encaissé : le tunnel
+a été vérifié avec le pilote de simulation, pas avec Stripe. Ce document dit où
+en est chaque fonction, sans arrondi.
 
 ## Légende
 
@@ -131,13 +134,59 @@ est chaque fonction, sans arrondi.
 
 ## Back-office
 
+### Accès et droits
+
 | Fonction | État | Détail |
 | --- | --- | --- |
-| Rôles et permissions | 🔸 | Cinq rôles modélisés ; aucun écran ne les applique encore |
-| Création du premier administrateur | ✅ | `npm run admin:create`, même module de hachage que les clients, mot de passe sans écho en terminal et lecture non interactive sinon, tracé dans `AuditLog`. Aucun compte par défaut dans le dépôt |
-| Tableau de bord, clients, catalogue, commandes, SAV, promotions, contenus, paramètres | ⬜ | — |
-| Imports catalogue et compatibilités | 🔸 | Modélisés avec correspondance de colonnes, prévisualisation, rapport par ligne et reprise par curseur. Moteur non écrit |
-| Journal des actions | ✅ | `AuditLog` en place, alimenté par la création de compte |
+| Cinq rôles distincts | ✅ | ADMIN, CATALOG_MANAGER, FULFILLMENT, SUPPORT, READ_ONLY. Table unique dans `src/lib/admin/permissions.ts` |
+| Contrôle d'accès | ✅ | `requireStaff(permission)` au début de chaque page **et** de chaque action : une action de serveur est un point d'entrée public, masquer le bouton ne suffirait pas |
+| Navigation filtrée par rôle | ✅ | Vérifié : un préparateur ne voit ni SAV, ni Promotions, ni Paramètres |
+| Refus tracé et expliqué | ✅ | `/admin/promotions` en préparateur renvoie sur le tableau de bord avec un message, et l'essai est inscrit dans `AuditLog` |
+| Séparation préparer / rembourser | ✅ | Vérifié à l'écran : le préparateur voit le formulaire d'expédition et les notes, pas ceux de remboursement ni d'annulation |
+| Journal des actions | ✅ | `AuditLog` avec acteur, action, entité, état avant/après et adresse IP |
+| Création des comptes | ✅ | `npm run admin:create <RÔLE>`. Aucun compte par défaut dans le dépôt |
+| Gestion de l'équipe depuis l'écran | ⬜ | La liste est consultable (ADMIN seulement) ; créer ou changer un rôle se fait en ligne de commande |
+
+### Tableau de bord
+
+| Fonction | État | Détail |
+| --- | --- | --- |
+| Indicateurs | ✅ | CA, panier moyen, commandes payées, remboursements, à préparer, paiements en attente, SAV ouverts, stocks faibles, ruptures |
+| **Indicateurs définis** | ✅ | Chaque chiffre affiche sa définition : TTC, port inclus, remboursements déduits, période sur la date de confirmation du paiement. Exigence explicite du cahier des charges |
+| Période ajustable | ✅ | 7 / 30 / 90 / 365 jours |
+| Commandes en attente d'expédition | ✅ | Les plus anciennes d'abord, âge en jours signalé au-delà de 3 |
+| Stocks faibles | ✅ | Les kits sont exclus du calcul : ils n'ont pas de stock propre |
+
+### Commandes et préparation
+
+| Fonction | État | Détail |
+| --- | --- | --- |
+| Recherche et filtres | ✅ | Référence, e-mail, référence d'article ; statut, paiement, préparation, période |
+| Fiche commande complète | ✅ | Articles avec composition des kits, totaux, reste remboursable, paiements, expéditions, véhicule, adresses, historique complet notes internes comprises |
+| Identifiant de transaction masqué | ✅ | Tronqué à l'écran : il identifie la transaction chez le prestataire |
+| Expédition | ✅ | Transporteur, numéro, URL de suivi, e-mail au client optionnel. Exercé de bout en bout |
+| Annulation | ✅ | Motif obligatoire, **remise en stock décochée par défaut** |
+| Remboursement | 🔸 | Enregistré dans la commande avec motif, montant borné au reste remboursable, remise en stock explicite. **N'est PAS exécuté chez le prestataire** — l'écran le dit |
+| Notes internes | ✅ | Jamais rendues dans l'espace client (filtre sur `actorKind`) |
+| Notifications au client | ✅ | Expédition, annulation, remboursement. Simulées tant qu'aucun prestataire e-mail n'est configuré |
+| Liste de préparation | ✅ | Liste agrégée à prélever, **kits décomposés en composants**, puis détail par commande |
+| Exports comptables | ⬜ | Aucun. L'écran le dit au lieu d'offrir un bouton mort |
+
+### Catalogue, véhicules, clients, SAV
+
+| Fonction | État | Détail |
+| --- | --- | --- |
+| Liste du catalogue | ✅ | Recherche, statut, stock faible / rupture, prix, variantes, visuels. Les produits de démonstration portent un badge « démo » |
+| Fiche produit (lecture) | ✅ | Variantes, TVA, stocks, composition des kits, compatibilités avec source et date, visuels avec leur nature, caractéristiques. Les visuels sans texte alternatif sont signalés |
+| Création / modification du catalogue | ⬜ | **Aucune écriture.** Le catalogue se peuple par le script d'amorçage. L'écran le dit |
+| Véhicules | 🔸 | Marques, modèles, générations et nombre de configurations consultables ; les générations sans configuration sont signalées. **Aucune saisie** |
+| Compatibilités | 🔸 | Visibles depuis la fiche produit. **Aucune saisie ni modification en série** |
+| Clients | ✅ | Recherche, fiche avec coordonnées, adresses, commandes, véhicules, demandes SAV et notes internes |
+| Ajout de note client | ⬜ | Les notes existantes s'affichent ; l'ajout n'est pas implémenté, et l'écran le dit |
+| SAV | 🔸 | File et dossier consultables, échanges affichés, notes internes distinguées. **Lecture seule** : ni réponse, ni changement de statut |
+| Promotions | 🔸 | Liste consultable. **Les codes ne sont pas appliqués au panier** — l'écran l'affiche en avertissement |
+| Paramètres | 🔸 | Réglages, équipe (ADMIN seulement) et journal des actions consultables. **Aucune modification** |
+| Imports | ⬜ | Modélisés (reprise, rapport par ligne), moteur non écrit |
 
 ## Infrastructure Render
 
@@ -170,7 +219,7 @@ est chaque fonction, sans arrondi.
 
 ## Vérifications effectuées
 
-### Automatisées — `npm test` (81 tests, base PostgreSQL dédiée)
+### Automatisées — `npm test` (100 tests, base PostgreSQL dédiée)
 
 | Fichier | Ce qui est couvert |
 | --- | --- |
@@ -178,6 +227,7 @@ est chaque fonction, sans arrondi.
 | `tests/reservation.test.ts` (13) | Réservation sur vraie base : vendable abaissé sans toucher au détenu, refus au-delà du stock, **2 commandes simultanées sur la dernière pièce → 1 seule passe**, **12 commandes sur 5 unités → exactement 5**, kit développé en composants, échec total si un composant manque, cycle réserver → payer → décompter, libération rejouée sans passer sous zéro, 20 numéros de commande concurrents tous distincts |
 | `tests/orders.test.ts` (11) | Confirmation et décompte, **3 rejeux séquentiels sans effet**, **3 webhooks simultanés → un seul décompte** (vérifié : le test échoue si l'on retire le verrou), refus d'un « payé » après un échec, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
 | `tests/order-access.test.ts` (9) | Jeton d'accès : bon jeton accepté, jeton absent, faux jeton de même longueur, préfixe correct, commande sans jeton, propriétaire connecté ; lecture du paramètre, paramètre répété, valeur vide |
+| `tests/permissions.test.ts` (19) | Table des droits : tous les rôles couverts, aucune permission non déclarée, rien sans rôle ; ADMIN a tout ; READ_ONLY n'écrit nulle part ; **le préparateur ne peut ni rembourser ni annuler** ; le SAV ne peut pas rembourser ; le gestionnaire catalogue ne touche ni à l'argent ni à la préparation ; remboursement, annulation, paramètres et gestion de l'équipe réservés à ADMIN |
 | `tests/email.test.ts` (3) | Les variables publiques sont journalisées, **les variables sensibles ne le sont jamais** (le lien de réinitialisation ne doit pas atterrir dans `EmailLog`), envoi marqué simulé sans prestataire |
 | `tests/auth.test.ts` (20) | Hachage : bon et mauvais mot de passe, jamais de clair stocké, sel aléatoire, paramètres portés par le condensé, condensé corrompu refusé sans lever ; règles de robustesse (longueur, phrase sans caractère spécial acceptée, mots devinables, reprise de l'e-mail, longueur démesurée) ; sessions : seul le condensé du jeton est stocké, valide/expirée/révoquée distinguées ; jetons de réinitialisation à usage unique, expirants, jamais stockés en clair ; redirection après connexion : chemin interne accepté, URL absolue, relative au protocole et antislash rejetés |
 | `tests/webhook.test.ts` (10) | Refus sans signature, avec un autre secret, sur corps modifié, sur horodatage rejoué, sans secret configuré ; acceptation et normalisation d'une signature valide ; session non encaissée non retenue ; expiration normalisée ; type inconnu ignoré ; mode test déduit de la clé |
@@ -222,6 +272,22 @@ est chaque fonction, sans arrondi.
     puis après usage : 0 session ouverte, 0 jeton réutilisable.
 16. **Création d'administrateur** : `npm run admin:create` exécuté, condensé
     relu et vérifié par le module partagé.
+17. **Back-office, accès** : `/admin` redirige vers la connexion sans session.
+    Connecté en ADMIN : les neuf sections sont accessibles. Connecté en
+    préparateur : la navigation n'affiche que six entrées, et `/admin/promotions`
+    renvoie sur le tableau de bord avec un message d'explication.
+18. **Back-office, séparation des rôles** : sur la même fiche de commande, le
+    préparateur voit le formulaire d'expédition et les notes, mais ni
+    remboursement ni annulation.
+19. **Back-office, expédition réelle** : `CMD-2026-00003` expédiée par Colissimo
+    avec numéro et URL de suivi → commande passée en SHIPPED/FULFILLED,
+    expédition créée, `AuditLog` renseigné (`order.ship par prepa@lumera.test`),
+    e-mail tracé — **et l'URL de suivi absente du journal**, puisqu'elle passe
+    par `secrets`.
+20. **Journal des refus** : les deux tentatives d'accès hors droits
+    apparaissent dans `AuditLog` en `access.denied`.
+21. **Mise en page** : l'en-tête et le pied de page de la boutique ne sont plus
+    rendus sous `/admin` (vérifié dans le DOM, pas seulement à l'œil).
 
 ## Ce qui n'a pas été vérifié
 
