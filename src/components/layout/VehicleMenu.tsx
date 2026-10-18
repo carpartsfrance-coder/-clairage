@@ -19,7 +19,13 @@ export function VehicleMenu({
   variant = 'menu',
 }: {
   vehicle: SelectedVehicle | null
-  variant?: 'menu' | 'bar'
+  /**
+   * `menu` : ligne principale du header.
+   * `bar`  : bandeau mobile, le libellé du véhicule est porté par le bouton.
+   * `action` : bouton seul, quand le libellé est déjà affiché à côté
+   *            (VehicleBar) — sinon il apparaîtrait deux fois.
+   */
+  variant?: 'menu' | 'bar' | 'action'
 }) {
   const [open, setOpen] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -75,7 +81,19 @@ export function VehicleMenu({
 
   return (
     <>
-      {variant === 'menu' ? (
+      {variant === 'action' ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className="flex min-h-11 items-center gap-1.5 rounded-sm px-1 text-sm font-semibold text-brand hover:text-brand-dark"
+        >
+          <IconPencil className="size-4 shrink-0" />
+          {vehicle ? 'Modifier' : 'Choisir'}
+        </button>
+      ) : variant === 'menu' ? (
         <button
           ref={triggerRef}
           type="button"
