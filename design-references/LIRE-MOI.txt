@@ -1,0 +1,16 @@
+RÉFÉRENCES DESIGN LUMERA POUR CLAUDE CODE
+
+01-accueil.png : composition de la page d’accueil.
+02-fiche-produit.png : composition de la fiche produit.
+03-header-final.png : DERNIÈRE VERSION DU HEADER. Elle remplace les headers présents sur les deux autres maquettes. Utiliser ce header sur toutes les pages.
+
+UTILISATION
+1. Décompresser ce ZIP dans le dossier du projet, sous design-references/.
+2. Donner le prompt de développement à Claude Code et demander la lecture des trois images.
+3. Demander une intégration fidèle aux références, avec adaptation responsive.
+
+Ces fichiers sont des maquettes visuelles générées, pas des captures d’un site de vente validé. La marque, les photos, les prix, les stocks, les compatibilités et les conditions commerciales sont illustratifs. Ne pas reprendre une affirmation de compatibilité ou de performance comme une donnée vérifiée.
+
+Référence interactive : https://lumera-led-maquette.killian13220.chatgpt.site/
+Fiche produit : https://lumera-led-maquette.killian13220.chatgpt.site/product.html
+Les liens peuvent demander une connexion. Les trois PNG restent les références accessibles directement à Claude Code.

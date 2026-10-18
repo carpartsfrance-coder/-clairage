@@ -1,0 +1,184 @@
+# ============================================================================
+# LUMERA — plan d'infrastructure Render
+#
+# Trois ressources, pas davantage :
+#   1. lumera-db   : PostgreSQL géré (catalogue, véhicules, commandes, SAV)
+#   2. lumera-web  : l'application (site public + back-office + API + webhooks)
+#   3. lumera-jobs : un cron qui dépile la table JobQueue (imports, e-mails,
+#                    relances). Pas de Redis, pas de service worker séparé :
+#                    la file vit dans PostgreSQL, ce qui évite un quatrième
+#                    service à payer et à surveiller.
+#
+# Les médias (photos produits, guides, factures, pièces jointes SAV) ne sont
+# PAS stockés sur le disque de l'instance : il est éphémère et chaque déploiement
+# le remet à zéro. Ils vont dans un stockage objet S3-compatible — voir les
+# variables MEDIA_* ci-dessous et docs/render.md.
+#
+# Déploiement : connecter ce dépôt à Render, « New + › Blueprint », pointer sur
+# render.yaml. Les variables marquées `sync: false` sont à renseigner à la main
+# dans le tableau de bord, elles ne transitent jamais par le dépôt.
+# ============================================================================
+
+databases:
+  - name: lumera-db
+    databaseName: lumera
+    user: lumera
+    # Offre à ajuster avant l'ouverture : « free » expire au bout de 30 jours.
+    plan: basic-256mb
+    region: frankfurt
+    ipAllowList: [] # accès réseau interne Render uniquement
+
+services:
+  # --------------------------------------------------------------------------
+  # Application web
+  # --------------------------------------------------------------------------
+  - type: web
+    name: lumera-web
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    # `prisma migrate deploy` applique les migrations déjà écrites et versionnées.
+    # Il n'en génère aucune : une migration non committée ne partira jamais en
+    # production par accident.
+    buildCommand: npm ci && npx prisma migrate deploy && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: '22'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lumera-db
+          property: connectionString
+
+      # --- Identité publique -------------------------------------------------
+      # À remplacer par le domaine définitif dès qu'il est rattaché.
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      # « on » tant que des données de démonstration sont en base : le site
+      # affiche alors le bandeau de préproduction et reste en noindex.
+      - key: NEXT_PUBLIC_DEMO_MODE
+        value: 'on'
+
+      # --- Sessions ----------------------------------------------------------
+      - key: SESSION_SECRET
+        generateValue: true
+
+      # --- Stockage des médias (S3-compatible) -------------------------------
+      # Cloudflare R2, Backblaze B2 ou AWS S3 — voir docs/render.md.
+      - key: MEDIA_DRIVER
+        value: s3
+      - key: MEDIA_ENDPOINT
+        sync: false
+      - key: MEDIA_REGION
+        sync: false
+      - key: MEDIA_BUCKET
+        sync: false
+      - key: MEDIA_ACCESS_KEY_ID
+        sync: false
+      - key: MEDIA_SECRET_ACCESS_KEY
+        sync: false
+      # Domaine public du bucket, utilisé par next/image.
+      - key: MEDIA_PUBLIC_HOST
+        sync: false
+
+      # --- Paiement ----------------------------------------------------------
+      # On démarre en mode test ; le passage en production est une décision
+      # explicite, pas un effet de bord du déploiement.
+      - key: PAYMENT_PROVIDER
+        value: stripe
+      - key: PAYMENT_TEST_MODE
+        value: 'true'
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
+
+      # --- E-mails transactionnels -------------------------------------------
+      # `log` = aucun envoi réel, chaque message est tracé dans EmailLog et
+      # marqué « simulé ». Basculer sur un prestataire quand le domaine est
+      # authentifié (SPF, DKIM, DMARC).
+      - key: EMAIL_DRIVER
+        value: log
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_API_KEY
+        sync: false
+
+      # --- Travaux de fond ---------------------------------------------------
+      # Partagé avec le cron : protège /api/jobs/run contre un appel public.
+      - key: JOB_RUNNER_TOKEN
+        generateValue: true
+
+  # --------------------------------------------------------------------------
+  # Dépilage de la file de travaux
+  # --------------------------------------------------------------------------
+  - type: cron
+    name: lumera-jobs
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    # Toutes les 10 minutes : suffisant pour les imports et les relances,
+    # sans facturer une instance qui tourne en permanence.
+    schedule: '*/10 * * * *'
+    buildCommand: npm ci && npx prisma generate
+    startCommand: npx tsx scripts/run-jobs.ts
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lumera-db
+          property: connectionString
+      - key: EMAIL_DRIVER
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: EMAIL_DRIVER
+      - key: EMAIL_FROM
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: EMAIL_FROM
+      - key: EMAIL_API_KEY
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: EMAIL_API_KEY
+      - key: MEDIA_DRIVER
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: MEDIA_DRIVER
+      - key: MEDIA_BUCKET
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: MEDIA_BUCKET
+      - key: MEDIA_ENDPOINT
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: MEDIA_ENDPOINT
+      - key: MEDIA_REGION
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: MEDIA_REGION
+      - key: MEDIA_ACCESS_KEY_ID
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: MEDIA_ACCESS_KEY_ID
+      - key: MEDIA_SECRET_ACCESS_KEY
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: MEDIA_SECRET_ACCESS_KEY

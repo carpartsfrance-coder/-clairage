@@ -1,0 +1,1233 @@
+// ============================================================================
+// LUMERA — modèle de données
+//
+// Cinq domaines séparés, dans cet ordre :
+//   1. Présentation / contenus éditoriaux
+//   2. Catalogue et données commerciales
+//   3. Véhicules et compatibilités
+//   4. Commandes, paiements et livraison
+//   5. Administration, droits d'accès et traçabilité
+//
+// Règle structurante : une donnée manquante ne vaut jamais confirmation.
+// C'est pourquoi FitmentStatus et RoadApprovalStatus ont tous les deux une
+// valeur UNKNOWN explicite, et qu'aucune requête ne doit traiter l'absence de
+// ligne Fitment comme une compatibilité.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// 1. CONTENUS ÉDITORIAUX ET PARAMÈTRES
+// ---------------------------------------------------------------------------
+
+/// Paramètres clé/valeur administrables (identité, taxes, seuils, consentements).
+/// Tout ce qui est « configurable » par le brief passe ici plutôt que dans le code.
+model Setting {
+  key       String   @id
+  value     Json
+  group     String   @default("general")
+  label     String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@index([group])
+}
+
+model Page {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  title           String
+  excerpt         String?
+  body            String // markdown
+  metaTitle       String?
+  metaDescription String?
+  noindex         Boolean   @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([publishedAt])
+}
+
+model FaqItem {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  scope     String   @default("general") // general | product | category | vehicle
+  scopeRef  String? // slug de catégorie ou id produit
+  position  Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([scope, scopeRef, position])
+}
+
+model Guide {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  title           String
+  summary         String?
+  body            String
+  difficulty      Difficulty @default(UNKNOWN)
+  durationMinutes Int?
+  metaTitle       String?
+  metaDescription String?
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  products ProductGuide[]
+}
+
+model MenuEntry {
+  id       String      @id @default(cuid())
+  menu     String // header-main | header-top | footer-col1 ...
+  label    String
+  href     String
+  position Int         @default(0)
+  highlight Boolean    @default(false)
+  parentId String?
+  parent   MenuEntry?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children MenuEntry[] @relation("MenuTree")
+
+  @@index([menu, position])
+}
+
+/// Bloc de contenu de la page d'accueil (titres, visuels, accroches).
+model HomeBlock {
+  id        String   @id @default(cuid())
+  key       String   @unique // hero | comparatif | moto | ...
+  position  Int      @default(0)
+  enabled   Boolean  @default(true)
+  payload   Json
+  updatedAt DateTime @updatedAt
+
+  @@index([position])
+}
+
+// ---------------------------------------------------------------------------
+// 2. CATALOGUE ET DONNÉES COMMERCIALES
+// ---------------------------------------------------------------------------
+
+model Category {
+  id              String     @id @default(cuid())
+  slug            String     @unique
+  name            String
+  shortName       String?
+  description     String?
+  metaTitle       String?
+  metaDescription String?
+  position        Int        @default(0)
+  published       Boolean    @default(true)
+  /// Famille fonctionnelle, sert aux filtres et aux emplacements lumineux.
+  family          PartFamily @default(OTHER)
+  heroMediaId     String?
+  heroMedia       Media?     @relation("CategoryHero", fields: [heroMediaId], references: [id])
+  parentId        String?
+  parent          Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children        Category[] @relation("CategoryTree")
+  products        ProductCategory[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([parentId, position])
+  @@index([family])
+}
+
+enum PartFamily {
+  HEADLIGHT // phares LED
+  INTERIOR // éclairage intérieur
+  PLATE // éclairage de plaque
+  REVERSE // feux de recul
+  SIDELIGHT // veilleuses
+  TURN_SIGNAL // clignotants et répétiteurs
+  XENON // ampoules xénon
+  MOTORCYCLE // éclairage moto
+  ACCESSORY // adaptateurs, décodeurs, accessoires
+  OTHER
+}
+
+model Product {
+  id              String        @id @default(cuid())
+  slug            String        @unique
+  name            String
+  /// Bénéfice court affiché sous le titre de la fiche.
+  tagline         String?
+  description     String?
+  /// Rédactionnel long, markdown.
+  body            String?
+  brand           String?
+  status          ProductStatus @default(DRAFT)
+  kind            ProductKind   @default(SIMPLE)
+  vehicleType     VehicleType   @default(CAR)
+  difficulty      Difficulty    @default(UNKNOWN)
+  /// Température de couleur annoncée (Kelvin), nulle si non applicable.
+  colorTemperature Int?
+  /// Culot (H7, D1S, W5W, BA15S...). Indexé pour la recherche par culot.
+  bulbBase        String?
+  metaTitle       String?
+  metaDescription String?
+  /// Mis en avant sur la page d'accueil. C'est un choix éditorial explicite,
+  /// pas une déduction depuis les ventes — rien ici ne prétend mesurer un succès.
+  featured        Boolean       @default(false)
+  /// Marque les contenus de démonstration : un filtre les retire en un passage.
+  isDemo          Boolean       @default(false)
+  publishedAt     DateTime?
+  archivedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  variants        ProductVariant[]
+  categories      ProductCategory[]
+  media           ProductMedia[]
+  specs           ProductSpec[]
+  guides          ProductGuide[]
+  faqItems        ProductFaq[]
+  reviews         Review[]
+  relatedFrom     ProductRelation[] @relation("RelationSource")
+  relatedTo       ProductRelation[] @relation("RelationTarget")
+
+  @@index([status, publishedAt])
+  @@index([featured, status])
+  @@index([bulbBase])
+  @@index([vehicleType])
+  @@index([isDemo])
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProductKind {
+  SIMPLE
+  /// Produit composé : son stock et son prix dépendent de ses composants.
+  KIT
+}
+
+enum VehicleType {
+  CAR
+  MOTORCYCLE
+  BOTH
+}
+
+enum Difficulty {
+  UNKNOWN
+  EASY
+  MEDIUM
+  HARD
+}
+
+model ProductCategory {
+  productId  String
+  categoryId String
+  position   Int      @default(0)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId, position])
+}
+
+/// Variante achetable. Le stock vit ICI, jamais sur Product : un kit n'a pas de
+/// stock propre, sa disponibilité se calcule à partir de ses composants.
+model ProductVariant {
+  id            String      @id @default(cuid())
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku           String      @unique
+  name          String
+  /// Conditionnement annoncé au client.
+  packaging     Packaging   @default(UNIT)
+  /// Prix TTC en centimes. Le HT est dérivé via le taux de TVA.
+  priceCents    Int
+  compareAtCents Int?
+  vatRateId     String?
+  vatRate       VatRate?    @relation(fields: [vatRateId], references: [id])
+  /// Stock physique détenu pour CETTE référence.
+  stockOnHand   Int         @default(0)
+  /// Stock réservé par des paniers/commandes non encore expédiés.
+  stockReserved Int         @default(0)
+  lowStockThreshold Int     @default(0)
+  /// Autorise la vente à découvert (sur commande).
+  backorder     Boolean     @default(false)
+  weightGrams   Int?
+  position      Int         @default(0)
+  active        Boolean     @default(true)
+  isDemo        Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  components    KitComponent[] @relation("KitParent")
+  partOfKits    KitComponent[] @relation("KitChild")
+  fitments      Fitment[]
+  cartLines     CartLine[]
+  orderLines    OrderLine[]
+  stockMoves    StockMovement[]
+  accessoryFor  FitmentAccessory[]
+
+  @@index([productId, position])
+  @@index([sku])
+}
+
+enum Packaging {
+  UNIT
+  PAIR
+  PACK
+  KIT
+}
+
+/// Composition d'un kit : quantité de chaque composant.
+/// Un kit ajouté au panier doit contenir exactement ces lignes.
+model KitComponent {
+  id         String         @id @default(cuid())
+  kitId      String
+  kit        ProductVariant @relation("KitParent", fields: [kitId], references: [id], onDelete: Cascade)
+  componentId String
+  component  ProductVariant @relation("KitChild", fields: [componentId], references: [id], onDelete: Restrict)
+  quantity   Int            @default(1)
+  /// Composant indispensable au fonctionnement, par opposition à un complément.
+  required   Boolean        @default(true)
+  position   Int            @default(0)
+
+  @@unique([kitId, componentId])
+  @@index([componentId])
+}
+
+/// Produits liés : complément facultatif, accessoire recommandé, alternative.
+model ProductRelation {
+  id        String       @id @default(cuid())
+  sourceId  String
+  source    Product      @relation("RelationSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId  String
+  target    Product      @relation("RelationTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  type      RelationType
+  position  Int          @default(0)
+
+  @@unique([sourceId, targetId, type])
+}
+
+enum RelationType {
+  OPTIONAL_ADDON
+  ALTERNATIVE
+  UPSELL
+}
+
+model ProductSpec {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label     String
+  value     String
+  group     String? @default("general")
+  position  Int     @default(0)
+
+  @@index([productId, position])
+}
+
+model ProductGuide {
+  productId String
+  guideId   String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  guide     Guide   @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@id([productId, guideId])
+}
+
+model ProductFaq {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String
+  position  Int     @default(0)
+
+  @@index([productId, position])
+}
+
+/// Avis client. Aucun avis n'est créé par le code : la table reste vide tant
+/// qu'aucun avis réel n'a été collecté et modéré.
+model Review {
+  id          String       @id @default(cuid())
+  productId   String
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderId     String?
+  authorName  String
+  rating      Int
+  title       String?
+  body        String
+  status      ReviewStatus @default(PENDING)
+  /// Vrai si l'avis est rattaché à une commande payée.
+  verifiedPurchase Boolean @default(false)
+  createdAt   DateTime     @default(now())
+  publishedAt DateTime?
+
+  @@index([productId, status])
+}
+
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
+}
+
+// --- Médias ---------------------------------------------------------------
+
+/// Fichier stocké durablement (stockage objet S3-compatible), jamais sur le
+/// disque éphémère du serveur Render.
+model Media {
+  id          String      @id @default(cuid())
+  storageKey  String      @unique
+  url         String
+  mimeType    String
+  width       Int?
+  height      Int?
+  sizeBytes   Int?
+  /// Texte alternatif, obligatoire côté admin pour les visuels de contenu.
+  alt         String?
+  /// Distingue une photo réelle d'une illustration ou d'un rendu simulé.
+  nature      MediaNature @default(UNSPECIFIED)
+  caption     String?
+  isDemo      Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  createdBy   String?
+
+  products        ProductMedia[]
+  categoryHeroes  Category[]     @relation("CategoryHero")
+
+  @@index([nature])
+}
+
+enum MediaNature {
+  UNSPECIFIED
+  /// Photographie du produit réel.
+  PRODUCT_PHOTO
+  /// Illustration ou rendu simulé — doit être signalé au client.
+  ILLUSTRATION
+  /// Photo d'un essai réellement effectué.
+  TEST_PHOTO
+  DIAGRAM
+}
+
+model ProductMedia {
+  id        String       @id @default(cuid())
+  productId String
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media        @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  role      MediaRole    @default(PRODUCT)
+  position  Int          @default(0)
+
+  @@unique([productId, mediaId, role])
+  @@index([productId, position])
+}
+
+enum MediaRole {
+  PRODUCT
+  RESULT // le rendu
+  KIT_CONTENT // le contenu du kit
+  INSTALL // le montage
+}
+
+// --- Fiscalité et promotions ----------------------------------------------
+
+model VatRate {
+  id        String  @id @default(cuid())
+  code      String  @unique
+  label     String
+  /// Taux en points de base : 2000 = 20,00 %.
+  rateBp    Int
+  country   String  @default("FR")
+  isDefault Boolean @default(false)
+
+  variants ProductVariant[]
+}
+
+model Promotion {
+  id               String        @id @default(cuid())
+  code             String        @unique
+  label            String
+  type             PromotionType
+  /// Montant en centimes si FIXED, points de base si PERCENT.
+  value            Int
+  startsAt         DateTime?
+  endsAt           DateTime?
+  minOrderCents    Int?
+  /// Limite globale d'utilisation, nulle si illimitée.
+  maxRedemptions   Int?
+  /// Limite par client.
+  maxPerCustomer   Int?
+  redemptions      Int           @default(0)
+  /// Cumul avec d'autres codes.
+  stackable        Boolean       @default(false)
+  /// Offre la livraison si les conditions sont remplies.
+  freeShipping     Boolean       @default(false)
+  active           Boolean       @default(true)
+  eligibleCategoryIds String[]   @default([])
+  eligibleProductIds  String[]   @default([])
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  orders Order[]
+
+  @@index([active, startsAt, endsAt])
+}
+
+enum PromotionType {
+  PERCENT
+  FIXED
+  FREE_SHIPPING
+}
+
+// ---------------------------------------------------------------------------
+// 3. VÉHICULES ET COMPATIBILITÉS
+// ---------------------------------------------------------------------------
+
+model VehicleMake {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  type        VehicleType   @default(CAR)
+  logoMediaId String?
+  position    Int           @default(0)
+  active      Boolean       @default(true)
+
+  models VehicleModel[]
+
+  @@index([type, position])
+}
+
+model VehicleModel {
+  id       String      @id @default(cuid())
+  makeId   String
+  make     VehicleMake @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  slug     String
+  name     String
+  active   Boolean     @default(true)
+
+  generations VehicleGeneration[]
+
+  @@unique([makeId, slug])
+}
+
+/// Génération / phase : c'est le niveau qui porte la période de production.
+model VehicleGeneration {
+  id        String       @id @default(cuid())
+  modelId   String
+  model     VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  slug      String
+  name      String // "Golf VII", "Golf VII phase 2"
+  phase     String? // "Phase 1", "Restylage"
+  yearFrom  Int
+  /// Nul si la génération est toujours produite.
+  yearTo    Int?
+  active    Boolean      @default(true)
+
+  trims          VehicleTrim[]
+  configurations VehicleConfiguration[]
+
+  @@unique([modelId, slug])
+  @@index([yearFrom, yearTo])
+}
+
+/// Version / finition, lorsqu'elle change l'équipement lumineux.
+model VehicleTrim {
+  id           String            @id @default(cuid())
+  generationId String
+  generation   VehicleGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  slug         String
+  name         String
+
+  configurations VehicleConfiguration[]
+
+  @@unique([generationId, slug])
+}
+
+/// Équipement lumineux d'origine : halogène, xénon d'origine, LED d'origine...
+/// Détermine seul si un kit est posable — jamais le culot à lui tout seul.
+model LightingEquipment {
+  id          String  @id @default(cuid())
+  code        String  @unique // HALOGEN | XENON_OEM | LED_OEM | ...
+  label       String
+  description String?
+  position    Int     @default(0)
+
+  configurations VehicleConfiguration[]
+}
+
+/// Emplacement lumineux sur le véhicule (feux de croisement, plaque, recul...).
+model LightPosition {
+  id         String     @id @default(cuid())
+  code       String     @unique
+  label      String
+  family     PartFamily
+  /// Nombre d'ampoules par véhicule à cet emplacement (2 pour une paire).
+  defaultQty Int        @default(2)
+  position   Int        @default(0)
+
+  fitments Fitment[]
+}
+
+/// Le triplet réellement identifiant d'un véhicule côté compatibilité :
+/// génération + version + équipement d'origine.
+model VehicleConfiguration {
+  id           String             @id @default(cuid())
+  generationId String
+  generation   VehicleGeneration  @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  trimId       String?
+  trim         VehicleTrim?       @relation(fields: [trimId], references: [id])
+  equipmentId  String
+  equipment    LightingEquipment  @relation(fields: [equipmentId], references: [id])
+  /// Référence du bloc optique quand elle discrimine (ex. "Valeo 89010552").
+  headlampRef  String?
+  label        String?
+  active       Boolean            @default(true)
+
+  fitments      Fitment[]
+  savedVehicles SavedVehicle[]
+  carts         Cart[]
+  orders        Order[]
+
+  @@unique([generationId, trimId, equipmentId, headlampRef])
+  @@index([equipmentId])
+}
+
+/// Compatibilité d'une variante pour un emplacement donné sur une configuration.
+/// L'absence de ligne ne vaut PAS compatibilité : elle vaut UNKNOWN côté lecture.
+model Fitment {
+  id              String               @id @default(cuid())
+  configurationId String
+  configuration   VehicleConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  positionId      String
+  position        LightPosition        @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  variantId       String
+  variant         ProductVariant       @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  status          FitmentStatus        @default(UNKNOWN)
+  /// Quantité de cette variante nécessaire pour équiper l'emplacement.
+  quantity        Int                  @default(1)
+  /// Restrictions de montage en texte libre (démontage de pare-chocs, cache...).
+  restrictions    String?
+  /// Homologation routière : indépendante de la compatibilité de montage.
+  roadApproval    RoadApprovalStatus   @default(UNKNOWN)
+  approvalMarket  String               @default("FR")
+  approvalNote    String?
+  /// Provenance de l'information et date de la dernière vérification.
+  source          String?
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  accessories FitmentAccessory[]
+
+  @@unique([configurationId, positionId, variantId])
+  @@index([variantId, status])
+  @@index([configurationId, positionId])
+}
+
+enum FitmentStatus {
+  /// Compatibilité vérifiée et datée.
+  CONFIRMED
+  /// Informations insuffisantes — jamais présenté comme compatible.
+  UNKNOWN
+  INCOMPATIBLE
+}
+
+enum RoadApprovalStatus {
+  APPROVED
+  NOT_APPROVED
+  UNKNOWN
+}
+
+/// Accessoire rendu nécessaire par un montage précis (adaptateur, décodeur).
+model FitmentAccessory {
+  id        String         @id @default(cuid())
+  fitmentId String
+  fitment   Fitment        @relation(fields: [fitmentId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity  Int            @default(1)
+  /// Indispensable (true) ou complément facultatif (false).
+  required  Boolean        @default(true)
+  note      String?
+
+  @@unique([fitmentId, variantId])
+}
+
+// ---------------------------------------------------------------------------
+// 4. CLIENTS, COMMANDES, PAIEMENTS, LIVRAISON
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerifiedAt DateTime?
+  passwordHash  String?
+  firstName     String?
+  lastName      String?
+  phone         String?
+  /// Rôle null = client. Les rôles staff ouvrent le back-office.
+  staffRole     StaffRole?
+  active        Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  addresses      Address[]
+  savedVehicles  SavedVehicle[]
+  orders         Order[]
+  carts          Cart[]
+  sessions       Session[]
+  tickets        SupportTicket[]
+  notes          CustomerNote[]
+  auditLogs      AuditLog[]
+  passwordResets PasswordReset[]
+
+  @@index([staffRole])
+}
+
+enum StaffRole {
+  ADMIN
+  CATALOG_MANAGER
+  FULFILLMENT
+  SUPPORT
+  READ_ONLY
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Address {
+  id         String      @id @default(cuid())
+  userId     String?
+  user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String?
+  firstName  String
+  lastName   String
+  company    String?
+  line1      String
+  line2      String?
+  postalCode String
+  city       String
+  country    String      @default("FR")
+  phone      String?
+  isDefaultShipping Boolean @default(false)
+  isDefaultBilling  Boolean @default(false)
+  createdAt  DateTime    @default(now())
+
+  @@index([userId])
+}
+
+model SavedVehicle {
+  id              String               @id @default(cuid())
+  userId          String
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  configurationId String
+  configuration   VehicleConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  nickname        String?
+  plate           String?
+  isPrimary       Boolean              @default(false)
+  createdAt       DateTime             @default(now())
+
+  @@unique([userId, configurationId])
+}
+
+model Cart {
+  id              String                @id @default(cuid())
+  token           String                @unique
+  userId          String?
+  user            User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  configurationId String?
+  configuration   VehicleConfiguration? @relation(fields: [configurationId], references: [id], onDelete: SetNull)
+  promotionCode   String?
+  currency        String                @default("EUR")
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  expiresAt       DateTime?
+
+  lines CartLine[]
+
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model CartLine {
+  id         String         @id @default(cuid())
+  cartId     String
+  cart       Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId  String
+  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity   Int            @default(1)
+  /// Ligne ajoutée parce qu'un fitment la rend nécessaire (accessoire).
+  requiredBy String?
+  /// Configuration véhicule au moment de l'ajout, pour détecter les conflits
+  /// quand le client change de véhicule en cours de navigation.
+  addedForConfigurationId String?
+  createdAt  DateTime       @default(now())
+
+  @@unique([cartId, variantId])
+}
+
+model Order {
+  id              String                @id @default(cuid())
+  reference       String                @unique
+  userId          String?
+  user            User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Jeton de suivi pour les commandes invitées.
+  guestToken      String?               @unique
+  email           String
+  phone           String?
+  configurationId String?
+  configuration   VehicleConfiguration? @relation(fields: [configurationId], references: [id], onDelete: SetNull)
+
+  status          OrderStatus           @default(PENDING)
+  paymentStatus   PaymentStatus         @default(PENDING)
+  fulfillmentStatus FulfillmentStatus   @default(UNFULFILLED)
+
+  currency        String                @default("EUR")
+  subtotalCents   Int
+  discountCents   Int                   @default(0)
+  shippingCents   Int                   @default(0)
+  taxCents        Int                   @default(0)
+  totalCents      Int
+
+  promotionId     String?
+  promotion       Promotion?            @relation(fields: [promotionId], references: [id])
+  promotionCode   String?
+
+  shippingAddress Json
+  billingAddress  Json
+  shippingMethodCode String?
+  shippingMethodLabel String?
+
+  /// Consentements recueillis à la commande, horodatés.
+  consents        Json?
+  customerNote    String?
+
+  placedAt        DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  lines       OrderLine[]
+  payments    Payment[]
+  refunds     Refund[]
+  shipments   Shipment[]
+  documents   Document[]
+  events      OrderEvent[]
+  tickets     SupportTicket[]
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  FAILED
+  EXPIRED
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  PARTIALLY_FULFILLED
+  FULFILLED
+  RETURNED
+}
+
+/// Ligne de commande : copie figée de ce qui a été acheté. Modifier un produit
+/// ou une compatibilité plus tard ne doit jamais réécrire l'historique.
+model OrderLine {
+  id          String         @id @default(cuid())
+  orderId     String
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  sku         String
+  productName String
+  variantName String
+  packaging   Packaging
+  quantity    Int
+  unitPriceCents Int
+  lineTotalCents Int
+  vatRateBp   Int
+  /// Composition du kit au moment de l'achat, et configuration véhicule visée.
+  snapshot    Json
+  /// Ligne composant d'un kit acheté.
+  parentLineId String?
+
+  @@index([orderId])
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      String
+  message   String?
+  payload   Json?
+  actorId   String?
+  actorKind String   @default("system") // system | staff | customer
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider      String // stripe | mollie
+  /// Identifiant côté prestataire, unique pour rendre les webhooks idempotents.
+  providerRef   String        @unique
+  /// Clé d'idempotence côté boutique, empêche les commandes en double.
+  idempotencyKey String?      @unique
+  status        PaymentStatus @default(PENDING)
+  amountCents   Int
+  currency      String        @default("EUR")
+  /// Vrai tant que le prestataire est en mode test.
+  isTestMode    Boolean       @default(true)
+  rawPayload    Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([orderId, status])
+}
+
+model Refund {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider    String
+  providerRef String?  @unique
+  amountCents Int
+  reason      String?
+  /// Remise en stock décidée explicitement, jamais déduite du remboursement.
+  restock     Boolean  @default(false)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+}
+
+model ShippingZone {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  label     String
+  countries String[] @default([])
+  position  Int      @default(0)
+
+  methods ShippingMethod[]
+}
+
+model ShippingMethod {
+  id             String       @id @default(cuid())
+  zoneId         String
+  zone           ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  code           String
+  label          String
+  carrier        String?
+  /// Tarif en centimes. Les délais et tarifs viennent d'ici, jamais du code.
+  priceCents     Int
+  /// Seuil TTC à partir duquel la livraison est offerte, null si aucun.
+  freeFromCents  Int?
+  minDays        Int?
+  maxDays        Int?
+  maxWeightGrams Int?
+  active         Boolean      @default(true)
+  position       Int          @default(0)
+
+  @@unique([zoneId, code])
+}
+
+model Shipment {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  carrier       String?
+  trackingNumber String?
+  trackingUrl   String?
+  shippedAt     DateTime?
+  deliveredAt   DateTime?
+  /// Lignes couvertes par cette expédition (expéditions multiples).
+  lines         Json
+  createdAt     DateTime  @default(now())
+
+  @@index([orderId])
+}
+
+/// Facture, avoir, bon de retour. Le PDF est un média durable.
+model Document {
+  id        String       @id @default(cuid())
+  orderId   String
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      DocumentType
+  /// Numérotation continue, format configurable.
+  number    String       @unique
+  mediaId   String?
+  totalCents Int?
+  issuedAt  DateTime     @default(now())
+
+  @@index([orderId, type])
+}
+
+enum DocumentType {
+  INVOICE
+  CREDIT_NOTE
+  RETURN_SLIP
+}
+
+model StockMovement {
+  id        String   @id @default(cuid())
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  /// Positif = entrée, négatif = sortie.
+  delta     Int
+  reason    String // order | refund | manual | import | return
+  reference String?
+  actorId   String?
+  createdAt DateTime @default(now())
+
+  @@index([variantId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// 5. SAV, ADMINISTRATION ET TRAÇABILITÉ
+// ---------------------------------------------------------------------------
+
+model SupportTicket {
+  id          String        @id @default(cuid())
+  reference   String        @unique
+  orderId     String?
+  order       Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email       String
+  type        TicketType
+  reason      String
+  description String?
+  status      TicketStatus  @default(OPEN)
+  resolution  TicketResolution?
+  /// Lignes de commande concernées.
+  lines       Json?
+  assignedTo  String?
+  closedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  messages TicketMessage[]
+
+  @@index([status, createdAt])
+}
+
+enum TicketType {
+  RETURN
+  WARRANTY
+  CANCELLATION
+  QUESTION
+}
+
+enum TicketStatus {
+  OPEN
+  WAITING_CUSTOMER
+  WAITING_RETURN
+  RECEIVED
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum TicketResolution {
+  EXCHANGE
+  REPLACEMENT
+  REFUND
+  REJECTED
+  NO_ACTION
+}
+
+model TicketMessage {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  /// Un message interne n'est jamais rendu au client.
+  internal  Boolean       @default(false)
+  authorKind String       @default("staff") // staff | customer | system
+  authorId  String?
+  body      String
+  mediaIds  String[]      @default([])
+  createdAt DateTime      @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+/// Note interne sur un client, séparée des messages visibles.
+model CustomerNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  authorId  String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+/// Import catalogue ou compatibilités. Reprise possible, pas d'écrasement muet.
+model ImportJob {
+  id            String       @id @default(cuid())
+  kind          ImportKind
+  filename      String
+  mediaId       String?
+  /// Correspondance colonne source -> champ cible, validée avant écriture.
+  columnMapping Json
+  /// create_only | update_only | upsert
+  writeMode     String       @default("upsert")
+  status        ImportStatus @default(DRAFT)
+  totalRows     Int          @default(0)
+  processedRows Int          @default(0)
+  createdRows   Int          @default(0)
+  updatedRows   Int          @default(0)
+  skippedRows   Int          @default(0)
+  errorRows     Int          @default(0)
+  /// Index de la dernière ligne traitée, pour reprendre après interruption.
+  cursor        Int          @default(0)
+  summary       Json?
+  createdBy     String?
+  createdAt     DateTime     @default(now())
+  startedAt     DateTime?
+  finishedAt    DateTime?
+
+  rows ImportRow[]
+
+  @@index([status, createdAt])
+}
+
+enum ImportKind {
+  PRODUCTS
+  VARIANTS
+  FITMENTS
+  VEHICLES
+  STOCK
+}
+
+enum ImportStatus {
+  DRAFT
+  VALIDATING
+  PREVIEW
+  RUNNING
+  PAUSED
+  DONE
+  FAILED
+}
+
+model ImportRow {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  rowNumber Int
+  raw       Json
+  /// ok | created | updated | skipped | error | duplicate
+  outcome   String   @default("pending")
+  message   String?
+  targetId  String?
+
+  @@unique([jobId, rowNumber])
+  @@index([jobId, outcome])
+}
+
+/// Journal des actions d'administration sensibles.
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+/// File de travaux de fond, servie par un cron Render : pas de service Redis.
+model JobQueue {
+  id          String   @id @default(cuid())
+  kind        String
+  payload     Json
+  status      String   @default("queued") // queued | running | done | failed
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+  runAfter    DateTime @default(now())
+  lastError   String?
+  lockedAt    DateTime?
+  lockedBy    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, runAfter])
+}
+
+/// Trace des e-mails transactionnels, y compris les envois simulés.
+model EmailLog {
+  id         String   @id @default(cuid())
+  template   String
+  toEmail    String
+  subject    String
+  /// Vrai quand aucun envoi réel n'a eu lieu (prestataire non configuré).
+  simulated  Boolean  @default(false)
+  provider   String?
+  providerRef String?
+  status     String   @default("queued")
+  error      String?
+  payload    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([toEmail, createdAt])
+  @@index([template, createdAt])
+}
