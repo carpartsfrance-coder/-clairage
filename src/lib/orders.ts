@@ -155,7 +155,10 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
 
   let orderId = ''
   let reference = ''
-  const guestToken = input.userId ? null : randomBytes(24).toString('base64url')
+  // Émis pour TOUTE commande, pas seulement les commandes invité : tant qu'il
+  // n'y a pas d'authentification, c'est la seule preuve qu'on a le droit de
+  // consulter cette commande. Il voyage dans les URL de retour du prestataire.
+  const accessToken = randomBytes(24).toString('base64url')
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -172,7 +175,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
           ...(input.configurationId
             ? { configuration: { connect: { id: input.configurationId } } }
             : {}),
-          guestToken,
+          guestToken: accessToken,
           cartToken: cart.token,
           email: input.email,
           phone: input.phone ?? null,
@@ -293,8 +296,9 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
         quantity: line.quantity,
       })),
       shippingCents: totals.shippingCents,
-      successUrl: `${input.origin}/commande/${orderId}/confirmation`,
-      cancelUrl: `${input.origin}/commande/${orderId}/paiement?abandon=1`,
+      accessToken,
+      successUrl: `${input.origin}/commande/${orderId}/confirmation?t=${accessToken}`,
+      cancelUrl: `${input.origin}/commande/${orderId}/paiement?abandon=1&t=${accessToken}`,
       // Une clé par commande : recharger la page ne crée pas un second paiement.
       idempotencyKey: `order_${orderId}`,
     })
@@ -328,6 +332,18 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
 }
 
 /**
+ * Signale qu'un autre appel concurrent a déjà pris l'événement en charge.
+ * Sert uniquement à annuler la transaction : ce n'est pas une erreur côté
+ * appelant, c'est le fonctionnement normal d'un webhook rejoué.
+ */
+class AlreadyHandledError extends Error {
+  constructor() {
+    super('Paiement déjà traité par un autre appel.')
+    this.name = 'AlreadyHandledError'
+  }
+}
+
+/**
  * Applique l'issue d'un paiement.
  *
  * C'est le SEUL endroit où le statut d'une commande change en fonction d'un
@@ -349,7 +365,11 @@ export async function applyPaymentOutcome(
   })
 
   if (!payment) return { applied: false, orderId: null, reason: 'paiement inconnu' }
-  if (payment.status === 'PAID' || payment.order.paymentStatus === 'PAID') {
+
+  // Court-circuit de confort : évite une transaction pour un rejeu évident.
+  // Il ne suffit PAS à garantir l'unicité — c'est le verrou posé plus bas, dans
+  // la transaction, qui s'en charge.
+  if (payment.status !== 'PENDING') {
     return { applied: false, orderId: payment.orderId, reason: 'déjà traité' }
   }
 
@@ -368,60 +388,78 @@ export async function applyPaymentOutcome(
   }
 
   const lines = await orderReservationLines(payment.orderId)
+  const nextStatus = outcome === 'paid' ? 'PAID' : outcome === 'expired' ? 'EXPIRED' : 'FAILED'
 
-  await prisma.$transaction(async (tx) => {
-    if (outcome === 'paid') {
-      await commitReservation(tx, lines, payment.order.reference)
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: { status: 'PAID', rawPayload: (raw ?? {}) as Prisma.InputJsonValue },
+  try {
+    await prisma.$transaction(async (tx) => {
+      /**
+       * Verrou atomique.
+       *
+       * La lecture faite plus haut ne protège rien : entre elle et cette
+       * transaction, un second webhook rejoué — ou un double-clic sur le
+       * paiement simulé — peut passer exactement le même test. Les deux
+       * appelleraient alors `commitReservation`, et le stock serait décompté
+       * deux fois, `stockReserved` passant sous zéro.
+       *
+       * Ce `updateMany` conditionnel ne peut réussir que pour un seul appelant :
+       * PostgreSQL sérialise les deux écritures et le perdant voit `count: 0`.
+       * La condition `status: 'PENDING'` écarte aussi un « payé » qui arriverait
+       * après un échec — cas où le stock a déjà été rendu.
+       */
+      const claimed = await tx.payment.updateMany({
+        where: { id: payment.id, status: 'PENDING' },
+        data: { status: nextStatus, rawPayload: (raw ?? {}) as Prisma.InputJsonValue },
       })
-      await tx.order.update({
-        where: { id: payment.orderId },
-        data: { paymentStatus: 'PAID', status: 'CONFIRMED', placedAt: new Date() },
-      })
-      await tx.orderEvent.create({
-        data: {
-          orderId: payment.orderId,
-          type: 'payment.paid',
-          message: 'Paiement confirmé, stock décompté.',
-        },
-      })
-      // Le panier est vidé seulement ici : tant que le paiement n'a pas abouti,
-      // le client doit pouvoir revenir à son panier intact.
-      //
-      // On cible le panier d'origine par son jeton. Filtrer sur l'utilisateur
-      // viderait TOUS les paniers anonymes dès la première commande invité,
-      // puisque `userId` y est nul.
-      if (payment.order.cartToken) {
-        await tx.cart.deleteMany({ where: { token: payment.order.cartToken } })
+      if (claimed.count !== 1) throw new AlreadyHandledError()
+
+      if (outcome === 'paid') {
+        await commitReservation(tx, lines, payment.order.reference)
+        await tx.order.update({
+          where: { id: payment.orderId },
+          data: { paymentStatus: 'PAID', status: 'CONFIRMED', placedAt: new Date() },
+        })
+        await tx.orderEvent.create({
+          data: {
+            orderId: payment.orderId,
+            type: 'payment.paid',
+            message: 'Paiement confirmé, stock décompté.',
+          },
+        })
+        // Le panier n'est vidé qu'ici : tant que le paiement n'a pas abouti, le
+        // client doit pouvoir y revenir intact.
+        //
+        // On cible le panier d'origine par son jeton. Filtrer sur l'utilisateur
+        // viderait TOUS les paniers anonymes dès la première commande invité,
+        // puisque `userId` y est nul.
+        if (payment.order.cartToken) {
+          await tx.cart.deleteMany({ where: { token: payment.order.cartToken } })
+        }
+      } else {
+        await releaseReservation(tx, lines)
+        await tx.order.update({
+          where: { id: payment.orderId },
+          data: {
+            paymentStatus: outcome === 'expired' ? 'EXPIRED' : 'FAILED',
+            status: 'CANCELLED',
+            cancelledAt: new Date(),
+          },
+        })
+        await tx.orderEvent.create({
+          data: {
+            orderId: payment.orderId,
+            type: outcome === 'expired' ? 'payment.expired' : 'payment.failed',
+            message: 'Stock remis à disposition.',
+          },
+        })
       }
-    } else {
-      await releaseReservation(tx, lines)
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: outcome === 'expired' ? 'EXPIRED' : 'FAILED',
-          rawPayload: (raw ?? {}) as Prisma.InputJsonValue,
-        },
-      })
-      await tx.order.update({
-        where: { id: payment.orderId },
-        data: {
-          paymentStatus: outcome === 'expired' ? 'EXPIRED' : 'FAILED',
-          status: 'CANCELLED',
-          cancelledAt: new Date(),
-        },
-      })
-      await tx.orderEvent.create({
-        data: {
-          orderId: payment.orderId,
-          type: outcome === 'expired' ? 'payment.expired' : 'payment.failed',
-          message: 'Stock remis à disposition.',
-        },
-      })
+    })
+  } catch (error) {
+    if (error instanceof AlreadyHandledError) {
+      // Un autre appel a gagné la course : c'est le cas nominal d'un rejeu.
+      return { applied: false, orderId: payment.orderId, reason: 'déjà traité' }
     }
-  })
+    throw error
+  }
 
   if (outcome === 'paid') {
     // L'e-mail sort de la transaction : un prestataire e-mail indisponible ne

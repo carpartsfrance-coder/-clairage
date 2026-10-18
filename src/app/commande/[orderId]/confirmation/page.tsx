@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { accessTokenFrom, canViewOrder } from '@/lib/order-access'
 import { prisma } from '@/lib/db'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge } from '@/components/ui/Badge'
@@ -180,9 +181,22 @@ export async function generateMetadata({
 const h1Class = 'text-[1.75rem] leading-tight font-extrabold sm:text-[2.125rem]'
 const rowClass = 'flex items-baseline justify-between gap-4'
 
-export default async function Page({ params }: { params: Promise<{ orderId: string }> }) {
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orderId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { orderId } = await params
+  const sp = await searchParams
   const loaded = await loadOrder(orderId)
+
+  // Même contrôle que sur la page de paiement : l'identifiant seul ne donne
+  // pas accès aux données personnelles de la commande.
+  if (loaded !== 'unavailable' && loaded && !canViewOrder(loaded, accessTokenFrom(sp))) {
+    notFound()
+  }
 
   if (loaded === 'unavailable') {
     return (

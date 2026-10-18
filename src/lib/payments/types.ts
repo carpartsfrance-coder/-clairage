@@ -42,6 +42,8 @@ export type CreatePaymentInput = {
   currency: string
   lines: Array<{ label: string; unitPriceCents: number; quantity: number }>
   shippingCents: number
+  /** Jeton d'accès à la commande, propagé dans les URL de retour. */
+  accessToken: string
   /** URL de retour après paiement réussi ou abandonné. */
   successUrl: string
   cancelUrl: string

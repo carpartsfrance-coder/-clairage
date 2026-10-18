@@ -88,7 +88,8 @@ arrondi.
 | Paiement — pilote Stripe | 🔸 | Checkout Session hébergée, mode test déduit de la clé. **Écrit et typé, jamais exercé contre Stripe** faute de clé |
 | Paiement — pilote de simulation | ✅ | Exercé de bout en bout : accepté, refusé, expiré. Marqué `simulated` en base et à l'écran. Refusé en production |
 | Webhook vérifié | ✅ | Signature HMAC vérifiée sur le corps brut. Testé : sans signature, mauvais secret, corps modifié, horodatage rejoué → refus ; session non encaissée → non appliquée |
-| Webhook idempotent | ✅ | Testé : 3 rejeux du même événement, stock décompté une seule fois |
+| Webhook idempotent | ✅ | Verrou atomique (`UPDATE … WHERE status = 'PENDING'`) dans la transaction. Testé : 3 rejeux séquentiels **et 3 appels simultanés** → un seul décompte. Un « payé » arrivant après un échec est refusé |
+| Accès aux commandes | ✅ | Un jeton d'accès est émis à la création et voyage dans les URL de retour. Sans lui, les pages de paiement et de confirmation répondent 404 : l'identifiant seul ne donne plus accès à l'adresse, au téléphone ni au montant |
 | Contrôle du montant | ✅ | Un montant reçu ≠ montant attendu n'est pas appliqué et laisse une trace `OrderEvent` |
 | Tentatives répétées sans doublon | ✅ | Clé d'idempotence par commande côté Stripe ; page de paiement refusant de rejouer une commande déjà payée |
 | E-mail de confirmation | ⚙️ | Émis à la confirmation, tracé dans `EmailLog`. Simulé tant qu'aucun prestataire n'est configuré, et la page de confirmation le dit |
@@ -96,7 +97,10 @@ arrondi.
 | Remboursements | ⬜ | Modélisés (`Refund`, avec remise en stock explicite), aucun écran |
 | Factures et avoirs | ⬜ | Modélisés (`Document`), non générés |
 | Code promotionnel | ⬜ | Modélisé (`Promotion`), aucun champ affiché |
-| TVA | 🔵 + ⚙️ | Taux 20 % en base, à valider avec le comptable |
+| TVA | 🔵 + ⚙️ | Taux 20 % en base, à valider avec le comptable. **`Order.taxCents` ne contient que la TVA des articles** : les frais de port n'en portent pas. Arbitrage comptable à rendre avant l'ouverture ; le récapitulatif dit « dont TVA sur les articles » pour ne rien masquer |
+| Avertissement de stock avant paiement | ⬜ | Le tunnel lit `stockIssues` et `conflicts` mais ne les affiche pas : le client découvre une rupture au clic sur « Payer ». Rien n'est encaissé, mais la place de l'information est mauvaise |
+| États de paiement partiels | ⬜ | `AUTHORIZED`, `PARTIALLY_REFUNDED` et `REFUNDED` n'affichent qu'un badge sur la page de paiement, sans message ni action |
+| Reprise d'un paiement abandonné | ⬜ | Après un abandon, la commande reste en attente avec son stock réservé jusqu'à l'expiration (60 min). Pas de bouton « reprendre ce paiement » |
 
 ## Espace client et SAV
 
@@ -149,13 +153,14 @@ arrondi.
 
 ## Vérifications effectuées
 
-### Automatisées — `npm test` (47 tests, base PostgreSQL dédiée)
+### Automatisées — `npm test` (58 tests, base PostgreSQL dédiée)
 
 | Fichier | Ce qui est couvert |
 | --- | --- |
 | `tests/stock.test.ts` (15) | Disponibilité : stock réservé déduit, seuil d'alerte, vente à découvert ; kit divisé par la quantité du composant, composant limitant, composant facultatif ignoré, kit sans composant obligatoire ; accroche de livraison et franchise de port |
 | `tests/reservation.test.ts` (13) | Réservation sur vraie base : vendable abaissé sans toucher au détenu, refus au-delà du stock, **2 commandes simultanées sur la dernière pièce → 1 seule passe**, **12 commandes sur 5 unités → exactement 5**, kit développé en composants, échec total si un composant manque, cycle réserver → payer → décompter, libération rejouée sans passer sous zéro, 20 numéros de commande concurrents tous distincts |
-| `tests/orders.test.ts` (9) | Confirmation et décompte, **3 rejeux sans effet**, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
+| `tests/orders.test.ts` (11) | Confirmation et décompte, **3 rejeux séquentiels sans effet**, **3 webhooks simultanés → un seul décompte** (vérifié : le test échoue si l'on retire le verrou), refus d'un « payé » après un échec, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
+| `tests/order-access.test.ts` (9) | Jeton d'accès : bon jeton accepté, jeton absent, faux jeton de même longueur, préfixe correct, commande sans jeton, propriétaire connecté ; lecture du paramètre, paramètre répété, valeur vide |
 | `tests/webhook.test.ts` (10) | Refus sans signature, avec un autre secret, sur corps modifié, sur horodatage rejoué, sans secret configuré ; acceptation et normalisation d'une signature valide ; session non encaissée non retenue ; expiration normalisée ; type inconnu ignoré ; mode test déduit de la clé |
 
 ### À la main, dans le navigateur
@@ -175,6 +180,9 @@ arrondi.
    commande, panier supprimé, e-mail tracé comme simulé.
 9. **Garde du rejeu** : la page de paiement d'une commande déjà payée n'affiche
    aucun bouton d'issue et renvoie vers la confirmation.
+9bis. **Contrôle d'accès** : la confirmation répond 404 sans jeton, 404 avec un
+   mauvais jeton, 200 avec le bon. Seconde commande passée de bout en bout
+   (`CMD-2026-00004`) pour vérifier que le jeton traverse tout le parcours.
 10. Recherche sans résultat, facettes multi-sélection, prix respectant le filtre
     de conditionnement, compteurs de catégories cohérents avec les listes.
 11. Fiche produit à 375 px : titre avant la galerie, barre d'achat fixe reflétant

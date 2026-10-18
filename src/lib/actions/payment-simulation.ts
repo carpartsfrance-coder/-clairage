@@ -37,7 +37,12 @@ export async function simulatePaymentOutcome(formData: FormData) {
 
   const payment = await prisma.payment.findUnique({
     where: { providerRef: parsed.data.providerRef },
-    select: { orderId: true, amountCents: true, provider: true },
+    select: {
+      orderId: true,
+      amountCents: true,
+      provider: true,
+      order: { select: { guestToken: true } },
+    },
   })
   if (!payment) throw new Error('Paiement introuvable.')
   if (payment.provider !== 'simulation') {
@@ -51,9 +56,12 @@ export async function simulatePaymentOutcome(formData: FormData) {
     { simulated: true, triggeredBy: 'page de simulation' },
   )
 
+  // Le jeton suit la redirection : sans lui, le client se verrait refuser
+  // l'accès à sa propre commande.
+  const token = payment.order.guestToken ? `?t=${payment.order.guestToken}` : ''
   redirect(
     parsed.data.outcome === 'paid'
-      ? `/commande/${payment.orderId}/confirmation`
-      : `/commande/${payment.orderId}/paiement?echec=${parsed.data.outcome}`,
+      ? `/commande/${payment.orderId}/confirmation${token}`
+      : `/commande/${payment.orderId}/paiement${token ? `${token}&` : '?'}echec=${parsed.data.outcome}`,
   )
 }

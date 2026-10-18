@@ -32,7 +32,7 @@ export class SimulationDriver implements PaymentDriver {
       provider: this.name,
       providerRef,
       // Page interne qui propose les trois issues : accepté, refusé, abandonné.
-      redirectUrl: `/commande/${input.orderId}/paiement?ref=${providerRef}`,
+      redirectUrl: `/commande/${input.orderId}/paiement?ref=${providerRef}&t=${input.accessToken}`,
       isTestMode: true,
       simulated: true,
     }

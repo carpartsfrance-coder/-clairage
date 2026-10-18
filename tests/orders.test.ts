@@ -134,6 +134,51 @@ describe('applyPaymentOutcome', () => {
     expect(await prisma.stockMovement.count()).toBe(movementsAfterFirst)
   })
 
+  /**
+   * Le rejeu séquentiel ne suffit pas à prouver l'idempotence : c'est le rejeu
+   * SIMULTANÉ qui casse, parce que les deux appels lisent le statut avant que
+   * l'un ou l'autre ne l'écrive. Sans verrou, le stock serait décompté deux
+   * fois et `stockReserved` passerait sous zéro.
+   */
+  it('ne décompte qu’une fois sous deux webhooks simultanés', async () => {
+    const { order, variant, payment, quantity } = await makePendingOrder()
+
+    const results = await Promise.allSettled([
+      applyPaymentOutcome(payment.providerRef, 'paid', order.totalCents),
+      applyPaymentOutcome(payment.providerRef, 'paid', order.totalCents),
+      applyPaymentOutcome(payment.providerRef, 'paid', order.totalCents),
+    ])
+
+    const applied = results.filter(
+      (r) => r.status === 'fulfilled' && r.value.applied,
+    )
+    expect(applied).toHaveLength(1)
+
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockOnHand).toBe(10 - quantity)
+    expect(stock.stockReserved).toBe(0)
+    expect(await prisma.stockMovement.count()).toBe(1)
+  })
+
+  it('refuse un « payé » qui arrive après un échec', async () => {
+    const { order, variant, payment } = await makePendingOrder()
+
+    // Le paiement échoue : le stock est rendu.
+    await applyPaymentOutcome(payment.providerRef, 'failed')
+    const afterFailure = await prisma.productVariant.findUniqueOrThrow({
+      where: { id: variant.id },
+    })
+
+    // Un « payé » en retard ne doit pas décompter un stock déjà libéré.
+    const late = await applyPaymentOutcome(payment.providerRef, 'paid', order.totalCents)
+    expect(late.applied).toBe(false)
+
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockOnHand).toBe(afterFailure.stockOnHand)
+    expect(stock.stockReserved).toBe(afterFailure.stockReserved)
+    expect(await prisma.stockMovement.count()).toBe(0)
+  })
+
   it('libère le stock quand le paiement échoue', async () => {
     const { variant, payment, quantity } = await makePendingOrder()
 
