@@ -15,7 +15,26 @@ export default defineConfig({
     // Prisma partagé de src/lib/db.ts vise donc la base de test, et jamais
     // celle de développement. Sans cela, un test de commande écrirait dans les
     // données réelles.
-    env: { DATABASE_URL: TEST_DATABASE_URL, NODE_ENV: 'test' },
+    env: {
+      DATABASE_URL: TEST_DATABASE_URL,
+      NODE_ENV: 'test',
+      /*
+        Les variables de paiement sont NEUTRALISÉES.
+
+        Vitest charge le `.env` du poste : sans ces lignes, une clé Mollie ou
+        Stripe laissée en développement changerait le pilote choisi pendant les
+        tests, et la suite ne dirait plus la même chose d'une machine à l'autre.
+        Le cas s'est produit : des tests d'expiration passaient au vert ici et au
+        rouge ailleurs, pour cette seule raison.
+
+        Les tests qui ont besoin d'un prestataire le posent eux-mêmes, et le
+        retirent après.
+      */
+      MOLLIE_API_KEY: '',
+      STRIPE_SECRET_KEY: '',
+      STRIPE_WEBHOOK_SECRET: '',
+      PAYMENT_PROVIDER: '',
+    },
   },
   resolve: {
     alias: {

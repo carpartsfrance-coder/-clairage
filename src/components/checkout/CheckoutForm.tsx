@@ -208,8 +208,15 @@ export function CheckoutForm({
         </h2>
 
         <form action={formAction} className="flex flex-col gap-8">
+          {/*
+            Pas de titre en dur dans ce bandeau. Il a longtemps affirmé « Votre
+            commande n'a pas été enregistrée », y compris quand le message juste
+            en dessous disait le contraire — deux phrases contradictoires au
+            même endroit. C'est l'action qui sait ce qui s'est passé : on
+            affiche son message, et lui seul.
+          */}
           {state.error ? (
-            <Alert tone="danger" live="assertive" title="Votre commande n'a pas été enregistrée.">
+            <Alert tone="danger" live="assertive">
               {state.error}
             </Alert>
           ) : null}

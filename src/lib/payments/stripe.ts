@@ -1,5 +1,6 @@
 import 'server-only'
 import Stripe from 'stripe'
+import { WebhookRefusedError } from './errors'
 import type {
   CreatePaymentInput,
   PaymentDriver,
@@ -83,19 +84,30 @@ export class StripeDriver implements PaymentDriver {
     }
   }
 
-  async parseWebhook(rawBody: string, signature: string | null): Promise<PaymentEvent | null> {
+  async parseWebhook(rawBody: string, headers: Headers): Promise<PaymentEvent | null> {
+    const signature = headers.get('stripe-signature')
+
     if (!this.webhookSecret) {
       // Sans secret, on ne peut pas distinguer Stripe d'un inconnu : on refuse.
-      throw new Error('STRIPE_WEBHOOK_SECRET absent : webhook refusé.')
+      throw new WebhookRefusedError('STRIPE_WEBHOOK_SECRET absent : webhook refusé.')
     }
-    if (!signature) throw new Error('Signature absente.')
+    if (!signature) throw new WebhookRefusedError('Signature absente.')
 
     // constructEvent lève si la signature ou l'horodatage ne correspondent pas.
-    const event = await this.client.webhooks.constructEventAsync(
-      rawBody,
-      signature,
-      this.webhookSecret,
-    )
+    // L'erreur est retypée en refus : elle doit valoir 400 et aucune relance,
+    // contrairement à une panne de notre côté.
+    let event
+    try {
+      event = await this.client.webhooks.constructEventAsync(
+        rawBody,
+        signature,
+        this.webhookSecret,
+      )
+    } catch (error) {
+      throw new WebhookRefusedError(
+        error instanceof Error ? error.message : 'Signature invalide.',
+      )
+    }
 
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -130,5 +142,54 @@ export class StripeDriver implements PaymentDriver {
       default:
         return null
     }
+  }
+
+  /**
+   * Relit l'état d'une session de paiement.
+   *
+   * Elle existe pour la même raison que chez Mollie : le rattrapage des
+   * webhooks perdus, et la décision de rendre ou non le stock d'une commande
+   * restée en attente. Sans elle, Stripe tombait dans la catégorie « pilote
+   * qu'on ne sait pas interroger », et ses commandes étaient libérées au bout
+   * d'une heure sans que personne ait vérifié qu'elles n'avaient pas été
+   * payées entre-temps.
+   *
+   * Comme chez Mollie, seul un état définitif donne une issue : une session
+   * `open` est encore payable, et une session dont le paiement est `unpaid`
+   * peut encore aboutir.
+   *
+   * ⚠ Ce chemin n'a pas été exercé contre Stripe : aucune clé n'est configurée
+   * sur ce projet. Sa logique est couverte par les tests, son comportement
+   * réseau ne l'est pas.
+   */
+  async fetchOutcome(providerRef: string): Promise<PaymentEvent | null> {
+    const session = await this.client.checkout.sessions.retrieve(providerRef)
+
+    if (session.status === 'expired') {
+      return {
+        providerRef: session.id,
+        outcome: 'expired',
+        amountCents: null,
+        currency: session.currency ?? null,
+        amountKnown: true,
+        raw: session,
+      }
+    }
+
+    // `complete` ne vaut pas encaissé : un virement ou un prélèvement peuvent
+    // rester en attente. Seul `paid` autorise l'expédition.
+    if (session.status === 'complete' && session.payment_status === 'paid') {
+      return {
+        providerRef: session.id,
+        outcome: 'paid',
+        amountCents: session.amount_total ?? null,
+        currency: session.currency ?? null,
+        amountKnown: session.amount_total !== null && session.amount_total !== undefined,
+        raw: session,
+      }
+    }
+
+    // `open`, ou `complete` avec un paiement encore impayé : rien n'est joué.
+    return null
   }
 }

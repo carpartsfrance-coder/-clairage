@@ -27,6 +27,14 @@ function signedHeader(payload: string, secret = SECRET, timestamp = Math.floor(D
   return `t=${timestamp},v1=${signature}`
 }
 
+/**
+ * Le pilote reçoit désormais les en-têtes en bloc et y cherche lui-même ce dont
+ * il a besoin : Stripe sa signature, Mollie rien du tout.
+ */
+function headersWith(signature: string | null): Headers {
+  return new Headers(signature === null ? {} : { 'stripe-signature': signature })
+}
+
 const sessionPayload = (overrides: Record<string, unknown> = {}) =>
   JSON.stringify({
     id: 'evt_1',
@@ -44,14 +52,14 @@ const sessionPayload = (overrides: Record<string, unknown> = {}) =>
 describe('StripeDriver.parseWebhook', () => {
   it('refuse un appel sans signature', async () => {
     const driver = new StripeDriver(KEY, SECRET)
-    await expect(driver.parseWebhook(sessionPayload(), null)).rejects.toThrow()
+    await expect(driver.parseWebhook(sessionPayload(), headersWith(null))).rejects.toThrow()
   })
 
   it('refuse une signature fabriquée avec un autre secret', async () => {
     const driver = new StripeDriver(KEY, SECRET)
     const payload = sessionPayload()
     const forged = signedHeader(payload, 'whsec_un_autre_secret')
-    await expect(driver.parseWebhook(payload, forged)).rejects.toThrow()
+    await expect(driver.parseWebhook(payload, headersWith(forged))).rejects.toThrow()
   })
 
   it('refuse un corps modifié après signature', async () => {
@@ -60,13 +68,13 @@ describe('StripeDriver.parseWebhook', () => {
     const header = signedHeader(original)
     // Un attaquant qui gonflerait le montant après coup.
     const tampered = original.replace('"amount_total":9990', '"amount_total":1')
-    await expect(driver.parseWebhook(tampered, header)).rejects.toThrow()
+    await expect(driver.parseWebhook(tampered, headersWith(header))).rejects.toThrow()
   })
 
   it('refuse quand aucun secret de webhook n’est configuré', async () => {
     const driver = new StripeDriver(KEY, null)
     const payload = sessionPayload()
-    await expect(driver.parseWebhook(payload, signedHeader(payload))).rejects.toThrow(
+    await expect(driver.parseWebhook(payload, headersWith(signedHeader(payload)))).rejects.toThrow(
       /STRIPE_WEBHOOK_SECRET/,
     )
   })
@@ -76,14 +84,14 @@ describe('StripeDriver.parseWebhook', () => {
     const payload = sessionPayload()
     // Signature parfaitement valide, mais vieille d'une heure.
     const stale = signedHeader(payload, SECRET, Math.floor(Date.now() / 1000) - 3600)
-    await expect(driver.parseWebhook(payload, stale)).rejects.toThrow(/timestamp/i)
+    await expect(driver.parseWebhook(payload, headersWith(stale))).rejects.toThrow(/timestamp/i)
   })
 
   it('accepte une signature valide et normalise l’événement', async () => {
     const driver = new StripeDriver(KEY, SECRET)
     const payload = sessionPayload()
 
-    const event = await driver.parseWebhook(payload, signedHeader(payload))
+    const event = await driver.parseWebhook(payload, headersWith(signedHeader(payload)))
 
     expect(event).not.toBeNull()
     expect(event!.providerRef).toBe('cs_test_123')
@@ -97,7 +105,7 @@ describe('StripeDriver.parseWebhook', () => {
     // C'est le cas qui ferait expédier une commande avant d'avoir l'argent.
     const payload = sessionPayload({ payment_status: 'unpaid' })
 
-    const event = await driver.parseWebhook(payload, signedHeader(payload))
+    const event = await driver.parseWebhook(payload, headersWith(signedHeader(payload)))
 
     expect(event).toBeNull()
   })
@@ -110,7 +118,7 @@ describe('StripeDriver.parseWebhook', () => {
       data: { object: { id: 'cs_test_456' } },
     })
 
-    const event = await driver.parseWebhook(payload, signedHeader(payload))
+    const event = await driver.parseWebhook(payload, headersWith(signedHeader(payload)))
 
     expect(event?.outcome).toBe('expired')
     expect(event?.providerRef).toBe('cs_test_456')
@@ -124,7 +132,7 @@ describe('StripeDriver.parseWebhook', () => {
       data: { object: { id: 'sub_1' } },
     })
 
-    expect(await driver.parseWebhook(payload, signedHeader(payload))).toBeNull()
+    expect(await driver.parseWebhook(payload, headersWith(signedHeader(payload)))).toBeNull()
   })
 
   it('déduit le mode test de la clé, pas d’une variable séparée', () => {

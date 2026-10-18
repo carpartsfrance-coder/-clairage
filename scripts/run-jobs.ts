@@ -69,14 +69,26 @@ async function claimBatch() {
 }
 
 async function main() {
-  // Travaux récurrents : ils ne sont pas mis en file par l'application, c'est
-  // le passage du cron qui les déclenche.
+  /*
+    Travaux récurrents : ils ne sont pas mis en file par l'application, c'est le
+    passage du cron qui les déclenche.
+
+    `expireStaleOrders` ne se contente pas d'expirer : pour chaque commande
+    restée en attente, elle INTERROGE le prestataire avant de conclure, et
+    applique l'issue s'il en donne une. C'est donc aussi le filet de rattrapage
+    des webhooks perdus — et il en faut un : Mollie cesse de rappeler au bout
+    de dix tentatives sur vingt-six heures, et il est impossible de redéclencher
+    un appel soi-même. Sans ce passage régulier, un encaissement dont le webhook
+    a échoué resterait orphelin.
+  */
   try {
     const { expireStaleOrders } = await import('../src/lib/orders')
-    const released = await expireStaleOrders(60)
-    if (released > 0) console.log(`[jobs] ${released} commande(s) expirée(s), stock libéré`)
+    const resolved = await expireStaleOrders(60)
+    if (resolved > 0) {
+      console.log(`[jobs] ${resolved} commande(s) en attente tranchée(s) (payée, refusée ou expirée)`)
+    }
   } catch (error) {
-    console.error('[jobs] expiration des commandes impossible', error)
+    console.error('[jobs] rattrapage des commandes en attente impossible', error)
   }
 
   const ids = await claimBatch()

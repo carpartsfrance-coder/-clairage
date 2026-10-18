@@ -43,6 +43,12 @@ async function lireCommande(orderId: string) {
       include: {
         lines: { where: { parentLineId: null }, orderBy: { id: 'asc' } },
         payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+        // Sert à ne pas affirmer « aucun montant n'a été encaissé » quand le
+        // dossier contient justement la trace du contraire.
+        events: {
+          where: { type: { in: ['payment.paid_after_release', 'payment.amount_mismatch'] } },
+          take: 1,
+        },
       },
     })
   } catch (error) {
@@ -86,8 +92,21 @@ export default async function Page({
   if (!canViewOrder(order, accessTokenFrom(sp), (await getCurrentUser())?.id ?? null)) notFound()
 
   const abandon = premier(sp.abandon) === '1'
+  // Réutilisé dans le lien de vérification : sans lui, le client se verrait
+  // refuser l'accès à sa propre commande au retour.
+  const jeton = accessTokenFrom(sp)
 
   const dernierPaiement = order.payments[0] ?? null
+  /*
+    Un encaissement a-t-il été signalé malgré l'annulation ?
+
+    Deux traces le disent : `payment.paid_after_release` (le prestataire a
+    annoncé un paiement sur une commande déjà libérée) et
+    `payment.amount_mismatch` (il a annoncé un montant qui ne correspond pas).
+    Dans ces cas, écrire « aucun montant n'a été encaissé » serait faux, et
+    c'est précisément le client qui a besoin de le savoir.
+  */
+  const encaissementSignale = order.events.length > 0
   const estPayee = order.paymentStatus === 'PAID'
   const estAnnulee = order.status === 'CANCELLED'
   const enAttente = order.paymentStatus === 'PENDING' && !estAnnulee
@@ -165,29 +184,55 @@ export default async function Page({
                       echec === 'failed' ? 'Le paiement a été refusé.' : 'Le paiement a expiré.'
                     }
                   >
-                    <p>
-                      Aucun montant n&apos;a été encaissé. Les articles de cette commande ont été
-                      remis à disposition : pour commander à nouveau, repartez de votre panier.
-                    </p>
+                    {encaissementSignale ? (
+                      <p>
+                        Les articles de cette commande ont été remis à disposition. En revanche,
+                        notre prestataire a signalé un mouvement sur ce paiement : nous le
+                        vérifions et revenons vers vous. Ne payez pas une seconde fois sans nous
+                        avoir contactés.
+                      </p>
+                    ) : (
+                      <p>
+                        Aucun montant n&apos;a été encaissé. Les articles de cette commande ont été
+                        remis à disposition : pour commander à nouveau, repartez de votre panier.
+                      </p>
+                    )}
                   </Alert>
                 ) : null}
 
                 {estAnnulee && !echec ? (
                   <Alert tone="danger" title="Cette commande a été annulée.">
-                    <p>
-                      Le paiement a été refusé, abandonné ou a expiré. Aucun montant n&apos;a été
-                      encaissé et les articles ont été remis à disposition. Cette commande ne peut
-                      plus être réglée.
-                    </p>
+                    {encaissementSignale ? (
+                      <p>
+                        Cette commande ne peut plus être réglée et ses articles ont été remis à
+                        disposition. Notre prestataire a toutefois signalé un mouvement sur ce
+                        paiement : nous le vérifions et revenons vers vous.
+                      </p>
+                    ) : (
+                      <p>
+                        Le paiement a été refusé, abandonné ou a expiré. Aucun montant n&apos;a été
+                        encaissé et les articles ont été remis à disposition. Cette commande ne
+                        peut plus être réglée.
+                      </p>
+                    )}
                   </Alert>
                 ) : null}
 
                 {abandon && enAttente ? (
-                  <Alert tone="warn" title="Paiement non terminé.">
+                  <Alert tone="warn" title="Paiement non confirmé.">
+                    {/*
+                      On n'affirme plus « rien n'a été débité ». Ce bandeau
+                      s'affiche dès que la commande est encore en attente au
+                      retour du prestataire — ce qui arrive aussi quand le
+                      client VIENT de payer par un moyen lent (virement,
+                      paiement fractionné) : les fonds sont alors en route, et
+                      l'affirmation serait fausse au pire moment.
+                    */}
                     <p>
-                      Vous êtes revenu sans finaliser le règlement : rien n&apos;a été débité. La
-                      commande reste en attente de paiement et les articles lui sont réservés un
-                      moment, le temps que vous décidiez.
+                      Le règlement de cette commande ne nous est pas encore confirmé. Si vous venez
+                      de payer par un moyen qui demande un délai — virement, paiement en plusieurs
+                      fois — c&apos;est normal : la confirmation peut prendre un moment. Les
+                      articles vous restent réservés en attendant.
                     </p>
                   </Alert>
                 ) : null}
@@ -208,8 +253,25 @@ export default async function Page({
                         saisie ni conservée sur ce site. Si cette page ne s&apos;est pas affichée ou
                         si vous l&apos;avez fermée, revenez au panier et reprenez la commande.
                       </p>
+                      <p className="mt-2">
+                        Si vous venez de régler et que cette page affiche encore «&nbsp;en
+                        attente&nbsp;», le prestataire ne nous a pas encore prévenus. Cela prend
+                        généralement quelques secondes.
+                      </p>
                     </Alert>
-                    <div>
+                    <div className="flex flex-wrap gap-3">
+                      {/*
+                        Va interroger le prestataire et revient ici, ou sur la
+                        confirmation si le paiement est passé entre-temps. C'est
+                        la même route que celle qu'emprunte le retour du
+                        prestataire : elle n'affirme rien, elle demande.
+                      */}
+                      <ButtonLink
+                        href={`/api/paiement/retour?order=${orderId}${jeton ? `&t=${encodeURIComponent(jeton)}` : ''}`}
+                        size="lg"
+                      >
+                        Vérifier l&apos;état du paiement
+                      </ButtonLink>
                       <ButtonLink href="/panier" variant="secondary" size="lg">
                         Revenir au panier
                       </ButtonLink>
@@ -309,7 +371,18 @@ export default async function Page({
               </div>
             </dl>
 
-            {dernierPaiement?.isTestMode ? (
+            {/*
+              Une simulation n'est PAS « un prestataire en mode test ».
+              `isTestMode` vaut vrai dans les deux cas, et s'en contenter
+              laissait croire à un prestataire là où il n'y en a aucun — la
+              confusion exacte que le reste du code s'applique à éviter.
+            */}
+            {dernierPaiement?.provider === 'simulation' ? (
+              <p className="mt-3 text-xs text-muted">
+                Paiement <strong className="font-semibold">simulé</strong> : aucun prestataire
+                n&apos;est configuré sur cet environnement, et aucun encaissement n&apos;a lieu.
+              </p>
+            ) : dernierPaiement?.isTestMode ? (
               <p className="mt-3 text-xs text-muted">
                 Prestataire de paiement en mode test : aucun montant réel n&apos;est encaissé.
               </p>

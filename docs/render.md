@@ -101,10 +101,94 @@ aussi transmises au cron, qui peut avoir à écrire un média.
 
 ## 4. Paiement
 
-### Mise en route, en mode test
+Deux prestataires sont pris en charge : **Mollie** et **Stripe**. On renseigne la
+clé de celui qu'on utilise, et d'un seul. Si les deux clés sont présentes,
+l'application refuse de choisir et réclame `PAYMENT_PROVIDER` : choisir en
+silence, ce serait risquer d'encaisser chez l'un pendant qu'on surveille l'autre.
 
-1. Créer un compte Stripe et rester en **mode test** (l'interrupteur est en haut
-   du tableau de bord).
+Dans les deux cas, **le mode test se déduit de la clé elle-même**, jamais d'une
+variable séparée qu'on pourrait oublier de basculer. Et une clé dont le préfixe
+n'est ni celui du test ni celui de la production est **refusée** plutôt
+qu'interprétée — ne pas savoir si une clé encaisse réellement est exactement le
+cas où il ne faut pas deviner.
+
+L'état du branchement se lit en ligne, sans fouiller les variables :
+**Administration › Paramètres › État de l'installation**, et `GET /api/health`
+pour la version courte.
+
+### Mollie, en mode test
+
+1. Créer un compte sur [mollie.com](https://www.mollie.com). Le mode test est
+   disponible **avant** toute validation du compte : inutile d'attendre.
+2. Développeurs › Clés d'API : copier la clé **`test_…`** dans `MOLLIE_API_KEY`.
+3. Vérifier qu'au moins un moyen de paiement est actif sur le profil. Sans cela
+   Mollie crée bien le paiement mais ne renvoie aucune page de règlement, et
+   l'application refuse avec un message qui le dit.
+4. Redéployer, puis passer une commande.
+
+Il n'y a **rien à déclarer côté Mollie pour le webhook** : l'URL est transmise à
+chaque paiement par l'application, construite sur `NEXT_PUBLIC_SITE_URL`.
+
+> ⚠ `NEXT_PUBLIC_SITE_URL` doit être l'URL publique **exacte**. Une redirection
+> 301 ou 302 — `http` vers `https`, `www` vers l'apex, une barre oblique finale —
+> transforme le POST de Mollie en GET et **perd la notification**. Mollie
+> n'accepte que 307 ou 308 ; le plus simple est de donner d'emblée l'URL finale.
+
+Seul l'euro est accepté en mode test. Pour forcer un refus de carte, créer la
+commande avec un montant « magique » puis choisir « failed » sur l'écran de
+test — le motif renvoyé par Mollie dépend du montant :
+
+| Montant | Motif renvoyé |
+| --- | --- |
+| 1001,00 € | numéro de carte invalide |
+| 1006,00 € | refusée par l'émetteur |
+| 1007,00 € | solde insuffisant |
+| 1011,00 € | carte refusée |
+
+(La liste complète va de 1001 à 1011 : CVV, nom du porteur, carte expirée, type
+de carte, carte inactive, fraude probable, authentification échouée.)
+
+### Pourquoi le webhook Mollie n'a pas de secret
+
+Mollie **ne signe pas** ses webhooks. Il POSTe un seul paramètre de formulaire,
+`id=tr_…`, et rien d'autre : ni le statut, ni une signature. C'est délibéré de
+sa part, et sûr, à une condition — que le serveur aille **relire le paiement par
+l'API**. C'est ce que fait le pilote.
+
+Un faux appel ne peut donc rien affirmer : au mieux, il nous fait relire la
+vérité. La documentation de Mollie le formule ainsi : *« fake calls to your
+webhook will never result in orders being processed without being actually
+paid »*. Il n'y a donc aucun `MOLLIE_WEBHOOK_SECRET` à chercher : il n'existe pas.
+
+Deux conséquences dans le code :
+
+- la route `/api/paiement/webhook` répond **200 même pour un identifiant
+  inconnu** — c'est ce que demande Mollie, et un 404 dirait à un tiers lesquels
+  existent chez nous ;
+- elle répond **400** quand un appel est jugé non authentique (cas Stripe) et
+  **500** sur une panne passagère, pour que l'appel soit **relancé**. Mollie
+  réessaie dix fois sur vingt-six heures puis **abandonne définitivement**, sans
+  possibilité de redéclencher soi-même : gâcher une tentative avec un 400 mal
+  placé coûte cher.
+
+Mollie coupe l'appel au bout de **15 secondes** et compte le dépassement comme un
+échec. Les appels du pilote vers Mollie sont donc bornés à 10 secondes.
+
+### Mollie en développement : pas de webhook, et c'est prévu
+
+Mollie refuse une URL de webhook non publique (*« you cannot use localhost »*).
+L'application le détecte et **omet le champ** au lieu de faire échouer la
+création du paiement. Le tunnel reste vérifiable de bout en bout, parce que le
+rapprochement se fait alors au **retour du client** : la page de règlement de
+Mollie renvoie sur `/api/paiement/retour`, qui interroge l'API et oriente vers
+la confirmation ou vers la page de paiement.
+
+Pour recevoir de vrais webhooks en local, exposer le site (ngrok ou équivalent)
+et reporter l'URL publique du tunnel dans `NEXT_PUBLIC_SITE_URL`.
+
+### Stripe, en mode test
+
+1. Créer un compte Stripe et rester en **mode test**.
 2. Développeurs › Clés d'API : copier la clé secrète `sk_test_…` dans
    `STRIPE_SECRET_KEY`.
 3. Développeurs › Webhooks › Ajouter un point de terminaison :
@@ -113,14 +197,13 @@ aussi transmises au cron, qui peut avoir à écrire un média.
      `checkout.session.async_payment_succeeded`,
      `checkout.session.async_payment_failed`, `checkout.session.expired`
    - Copier le secret de signature `whsec_…` dans `STRIPE_WEBHOOK_SECRET`.
-4. Redéployer, puis passer une commande avec la carte de test `4242 4242 4242 4242`
-   (date future, CVC quelconque).
+4. Redéployer, puis passer une commande avec la carte de test
+   `4242 4242 4242 4242` (date future, CVC quelconque).
 
-Le mode test n'est pas déduit d'une variable mais de la clé elle-même
-(`sk_test_` → test). Impossible de croire qu'on est en test alors que la clé est
-celle de production.
+Contrairement à Mollie, Stripe **signe** le corps de ses webhooks : sans
+`STRIPE_WEBHOOK_SECRET`, la route refuse tous les appels Stripe, et c'est voulu.
 
-### Ce qui se passe sans clé
+### Ce qui se passe sans aucune clé
 
 En développement, et seulement là, un pilote de **simulation** prend le relais.
 Il n'imite que l'encaissement : la commande, la réservation de stock, les
@@ -128,20 +211,55 @@ mouvements de stock, les statuts et les e-mails passent par exactement le même
 code qu'un paiement réel. Chaque `Payment` ainsi créé porte
 `provider = 'simulation'`, et les écrans le disent.
 
-En production, l'absence de `STRIPE_SECRET_KEY` fait **échouer** l'ouverture du
-paiement au lieu de basculer en simulation. Une boutique qui confirme des
-commandes jamais payées est un problème plus grave qu'un tunnel en erreur.
+Attention à ne pas confondre avec le mode test d'un vrai prestataire : une clé
+`test_` de Mollie **n'est pas** une simulation. Mollie répond réellement, appelle
+réellement le webhook, et le tunnel se comporte comme en production. Seul
+l'argent ne bouge pas.
 
-### Webhook
+En production, l'absence de clé fait **échouer** l'ouverture du paiement au lieu
+de basculer en simulation. Une boutique qui confirme des commandes jamais payées
+est un problème plus grave qu'un tunnel en erreur.
 
-Le corps est vérifié contre `STRIPE_WEBHOOK_SECRET` avant toute lecture. Sans
-secret configuré, la route répond 400 : un webhook non signé permettrait à
-n'importe qui de marquer une commande payée.
+### Les statuts de Mollie, et celui qui piège
 
-Le traitement est idempotent — les prestataires rejouent leurs événements, c'est
-normal. Un événement déjà appliqué est ignoré, le stock n'est jamais décompté
-deux fois. Un montant reçu différent du montant attendu n'est pas appliqué : il
-est tracé dans `OrderEvent` pour que le back-office le voie.
+Mollie a sept statuts, dont **quatre seulement sont définitifs** : `paid`,
+`canceled`, `expired`, `failed`. Le pilote n'applique une issue que sur ceux-là.
+Les trois autres ne déclenchent rien, et chacun pour une raison précise :
+
+| Statut | Pourquoi rien n'est appliqué |
+| --- | --- |
+| `open` | Le paiement est encore réglable. Et une tentative abandonnée **y ramène** le paiement : le client est invité à réessayer. Le lire comme un refus annulerait la commande de quelqu'un en train de payer. |
+| `pending` | Attente de confirmation bancaire. Peut durer deux à trois jours ouvrés. |
+| `authorized` | Les fonds sont **réservés, pas encaissés**. Sans capture, l'autorisation expire — sept jours sur Visa — et le paiement finit `expired`. Expédier là-dessus, c'est livrer gratuitement. |
+
+Le pilote ne demande pas de capture manuelle : Mollie capture de lui-même, et
+c'est le passage à `paid` qui est attendu.
+
+> `canceled` s'écrit avec **un seul « l »**. Un test sur `cancelled` ne
+> correspondrait jamais, et le paiement tomberait dans le cas par défaut sans
+> erreur ni trace. C'est couvert par un test.
+
+### Moyens de paiement : ce qui n'est pas encore transmis
+
+Le pilote n'envoie ni `lines` (lignes de commande) ni `billingAddress`. Ces
+champs sont facultatifs pour la carte, iDEAL, Bancontact et PayPal, mais
+**obligatoires** pour les paiements fractionnés et différés. Tant qu'ils ne sont
+pas transmis, **ne pas activer** ces moyens sur le profil Mollie : la création du
+paiement échouerait.
+
+| Moyen | Exige `lines` | Exige `billingAddress` |
+| --- | --- | --- |
+| Klarna, in3, Riverty, Billie, Billink | oui | oui |
+| Voucher | oui | non |
+| Alma | non | oui |
+
+L'adresse exigée par ces moyens est complète (prénom, nom, rue, code postal,
+ville, pays, e-mail — plus la raison sociale pour Billie). La boutique collecte
+déjà tout cela ; c'est le pilote qui ne le transmet pas encore.
+
+Le pilote n'envoie pas non plus `method` : restreindre à un seul moyen a un
+effet de bord documenté — si le client renonce sur la page de ce moyen, Mollie
+**n'envoie aucun webhook**. Le choix du moyen reste donc celui du profil Mollie.
 
 ### Cohérence des stocks
 
@@ -165,8 +283,49 @@ Un kit n'a pas de stock : ce sont ses composants qui sont réservés, à hauteur
 la quantité commandée multipliée par leur quantité dans le kit. Si un seul
 composant manque, toute la réservation échoue.
 
-Les commandes restées impayées sont libérées par le cron au bout de 60 minutes
-(`order.paymentWindowMinutes`), ce qui rend le stock disponible.
+### Libération des commandes impayées : pourquoi 60 minutes ne suffit pas
+
+Le cron libère les commandes restées impayées, mais **il demande d'abord au
+prestataire**. C'est une précaution que le branchement de Mollie a rendue
+nécessaire, et le scénario qu'elle évite est précis.
+
+Un paiement Mollie reste réglable bien plus longtemps qu'une heure : quinze
+minutes pour iDEAL, trente pour la carte, quarante-cinq pour TWINT, une heure
+pour Bancontact, deux heures pour les vouchers, six pour PayPal, **quarante-huit
+pour Klarna et in3**, et **douze jours pour un virement bancaire**. Libérer le
+stock au bout de soixante minutes, puis voir le client payer, c'est encaisser
+pour une commande annulée dont les articles ont été vendus à quelqu'un d'autre.
+La documentation de Mollie est explicite : *« It is not a good idea to predict
+payment expiry »*.
+
+À chaque passage, pour chaque commande en attente au-delà du délai :
+
+1. le prestataire est interrogé ;
+2. s'il donne une issue définitive, elle est appliquée par le chemin normal —
+   même verrou, même contrôle de montant, même idempotence que le webhook ;
+3. s'il répond « toujours ouvert », **rien n'est touché** ;
+4. s'il est injoignable, **rien n'est touché** non plus : on ne conclut pas d'un
+   silence ;
+5. au bout de **14 jours**, la commande est libérée quoi qu'il arrive, et le
+   dossier le dit. Sans cette borne, un prestataire durablement injoignable
+   garderait du stock réservé indéfiniment.
+
+Ce passage est aussi le **filet de rattrapage des webhooks perdus**, et il en
+faut un : Mollie cesse de rappeler au bout de dix tentatives sur vingt-six
+heures, et il est impossible de redéclencher un appel soi-même. C'est pourquoi le
+service cron reçoit lui aussi `MOLLIE_API_KEY` : sans elle, il ne pourrait rien
+demander et se contenterait d'expirer des commandes peut-être payées.
+
+Si malgré tout un encaissement arrive sur une commande déjà libérée,
+`OrderEvent` reçoit une ligne `payment.paid_after_release` qui le dit en clair,
+pour que le SAV rembourse ou réapprovisionne. Un tel cas ne doit pas se réduire
+à une ligne de journal.
+
+### Remboursements
+
+Le bouton de remboursement du back-office **écrit un remboursement en base et
+rien de plus** : il n'appelle ni Mollie ni Stripe. L'écran le dit. Le
+remboursement effectif se fait depuis le tableau de bord du prestataire.
 
 ## 5. Travaux de fond
 

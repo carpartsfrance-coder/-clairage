@@ -95,15 +95,35 @@ services:
         sync: false
 
       # --- Paiement ----------------------------------------------------------
-      # Le mode test se déduit de la clé (sk_test_… / sk_live_…) : passer en
-      # production est une décision explicite, pas un effet de bord du
-      # déploiement. Une clé absente fait échouer l'ouverture du paiement en
-      # production — le paiement simulé y est refusé.
+      # Deux prestataires possibles ; ne renseigner que la clé de celui qui est
+      # utilisé. Si les deux sont présentes, l'application refuse de choisir et
+      # réclame PAYMENT_PROVIDER — choisir en silence, ce serait risquer
+      # d'encaisser chez l'un pendant qu'on surveille l'autre.
+      #
+      # Le mode test se déduit de la clé (test_… / live_… chez Mollie,
+      # sk_test_… / sk_live_… chez Stripe) : passer en production est une
+      # décision explicite, pas un effet de bord du déploiement. Aucune clé fait
+      # échouer l'ouverture du paiement en production — le paiement simulé y est
+      # refusé.
+      #
+      # Mollie ne signe pas ses webhooks : il POSTe l'identifiant du paiement et
+      # c'est la relecture par l'API, avec la clé ci-dessous, qui fait foi. Il
+      # n'y a donc pas de secret de webhook Mollie à définir. En revanche
+      # NEXT_PUBLIC_SITE_URL doit être l'URL publique EXACTE : Mollie construit
+      # l'URL de webhook dessus, et une redirection 301 ou 302 (http→https,
+      # www→apex, barre oblique finale) transformerait son POST en GET et
+      # perdrait la notification.
+      - key: MOLLIE_API_KEY
+        sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
-      # Secret de signature du webhook. Sans lui, /api/paiement/webhook refuse
-      # tous les appels.
+      # Secret de signature du webhook Stripe. Sans lui, /api/paiement/webhook
+      # refuse tous les appels Stripe.
       - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # À renseigner UNIQUEMENT si les deux clés ci-dessus le sont.
+      # Valeurs acceptées : mollie, stripe.
+      - key: PAYMENT_PROVIDER
         sync: false
 
       # --- E-mails transactionnels -------------------------------------------
@@ -202,6 +222,27 @@ services:
           type: web
           name: lumera-web
           envVarKey: MEDIA_PUBLIC_HOST
+      # Indispensable : à chaque passage, le cron interroge le prestataire au
+      # sujet des commandes restées en attente, et applique l'issue. C'est le
+      # filet de rattrapage des webhooks perdus — Mollie cesse de rappeler au
+      # bout de 26 heures et ne permet pas de redéclencher un appel. Sans ces
+      # clés, le cron ne peut rien demander et se contenterait d'expirer des
+      # commandes peut-être payées.
+      - key: MOLLIE_API_KEY
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: MOLLIE_API_KEY
+      - key: STRIPE_SECRET_KEY
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: STRIPE_SECRET_KEY
+      - key: PAYMENT_PROVIDER
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: PAYMENT_PROVIDER
       - key: JOB_RUNNER_TOKEN
         fromService:
           type: web

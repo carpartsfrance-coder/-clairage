@@ -2,7 +2,8 @@ import 'server-only'
 import { prisma } from './db'
 import { identity, siteConfig } from './identity'
 import { emailIsSimulated } from './email'
-import { paymentIsSimulated } from './payments'
+import { resolveProviderChoice } from './payments'
+import { publicWebhookUrl } from './payments/mollie'
 import { storageStatus } from './storage'
 
 /**
@@ -80,45 +81,117 @@ function checkSiteUrl(): ReadinessCheck {
 }
 
 function checkPayment(): ReadinessCheck {
-  const key = process.env.STRIPE_SECRET_KEY?.trim() ?? ''
-  const webhook = process.env.STRIPE_WEBHOOK_SECRET?.trim() ?? ''
+  const choice = resolveProviderChoice()
 
-  if (!key) {
+  /*
+    En production, une clé de TEST est bloquante, pas un simple avertissement.
+
+    C'est exactement la situation que `config.ts` refuse pour la simulation :
+    des commandes prises, confirmées, préparées — et pas un euro encaissé. Que
+    l'absence d'encaissement vienne d'une absence de prestataire ou d'une clé de
+    test ne change rien pour le marchand. Hors production, l'avertissement
+    suffit : c'est le mode normal de travail.
+  */
+  const enProduction = process.env.NODE_ENV === 'production'
+  const etatCleDeTest: CheckState = enProduction ? 'blocking' : 'warn'
+
+  if (choice.kind === 'unusable') {
     return {
       key: 'payment',
       label: 'Paiement',
       state: 'blocking',
-      detail: paymentIsSimulated()
-        ? 'Aucune clé Stripe : le paiement est SIMULÉ. Aucun encaissement n’a lieu.'
-        : 'Aucune clé Stripe configurée.',
-      action:
-        'Renseigner STRIPE_SECRET_KEY. En production, l’ouverture du paiement échoue sans clé : ' +
-        'la simulation y est refusée, pour qu’aucune commande ne soit confirmée sans encaissement.',
+      detail: choice.problem,
+      action: 'Voir docs/render.md, section « Paiement ».',
     }
   }
 
-  const live = key.startsWith('sk_live_')
+  if (choice.kind === 'simulation') {
+    return {
+      key: 'payment',
+      label: 'Paiement',
+      state: 'blocking',
+      detail: 'Aucune clé de prestataire : le paiement est SIMULÉ. Aucun encaissement n’a lieu.',
+      action:
+        'Renseigner MOLLIE_API_KEY (ou STRIPE_SECRET_KEY). En production, l’ouverture du paiement ' +
+        'échoue sans clé : la simulation y est refusée, pour qu’aucune commande ne soit confirmée ' +
+        'sans encaissement.',
+    }
+  }
+
+  if (choice.kind === 'stripe') {
+    if (!choice.webhookSecret) {
+      return {
+        key: 'payment',
+        label: 'Paiement',
+        state: 'blocking',
+        detail: `Clé Stripe ${choice.isTestMode ? 'de test' : 'de production'} présente, mais aucun secret de webhook.`,
+        action:
+          'Déclarer le point de terminaison /api/paiement/webhook dans Stripe et reporter son ' +
+          'secret de signature. Sans lui la route refuse tous les appels : un paiement réussi ne ' +
+          'serait jamais confirmé côté boutique.',
+      }
+    }
+    if (choice.isTestMode) {
+      return {
+        key: 'payment',
+        label: 'Paiement',
+        state: etatCleDeTest,
+        detail: enProduction
+          ? 'Stripe en mode TEST alors que le site tourne en PRODUCTION : les cartes réelles sont ' +
+            'refusées et AUCUN montant n’est encaissé.'
+          : 'Stripe en mode TEST (clé sk_test_…). Les cartes réelles sont refusées.',
+        action:
+          'Remplacer par la clé de production (sk_live_…), puis refaire un essai de bout en bout.',
+      }
+    }
+    return {
+      key: 'payment',
+      label: 'Paiement',
+      state: 'ok',
+      detail: 'Stripe en mode production, webhook signé.',
+    }
+  }
+
+  /*
+    Mollie.
+
+    Il n'y a pas de secret de webhook à vérifier : le webhook de Mollie n'est
+    pas signé, et c'est la relecture par l'API qui fait foi. En revanche il y a
+    quelque chose de plus important à contrôler — que Mollie puisse NOUS
+    joindre. Mollie refuse une URL de webhook non publique, et sans webhook un
+    paiement réglé pendant que le client a fermé l'onglet n'est jamais
+    rapproché : la commande reste en attente et le stock finit par être rendu,
+    alors que l'argent a bien été pris.
+  */
+  const webhook = publicWebhookUrl(siteConfig.url)
 
   if (!webhook) {
     return {
       key: 'payment',
       label: 'Paiement',
-      state: 'blocking',
-      detail: `Clé Stripe ${live ? 'de production' : 'de test'} présente, mais aucun secret de webhook.`,
+      state: process.env.NODE_ENV === 'production' ? 'blocking' : 'warn',
+      detail:
+        `Mollie en mode ${choice.isTestMode ? 'TEST' : 'PRODUCTION'}, mais l’adresse publique ` +
+        `(« ${siteConfig.url} ») n’est pas joignable depuis l’extérieur : aucun webhook ne sera demandé.`,
       action:
-        'Déclarer le point de terminaison /api/paiement/webhook dans Stripe et reporter son secret ' +
-        'de signature. Sans lui la route refuse tous les appels : un paiement réussi ne serait ' +
-        'jamais confirmé côté boutique.',
+        'En développement c’est normal : le paiement est rapproché au retour du client. ' +
+        'Pour recevoir les notifications, exposez le site (ngrok ou équivalent) et reportez ' +
+        'l’URL publique dans NEXT_PUBLIC_SITE_URL.',
     }
   }
 
-  if (!live) {
+  if (choice.isTestMode) {
     return {
       key: 'payment',
       label: 'Paiement',
-      state: 'warn',
-      detail: 'Stripe en mode TEST (clé sk_test_…). Les cartes réelles sont refusées.',
-      action: 'Remplacer par la clé de production le jour de l’ouverture, et refaire un essai de bout en bout.',
+      state: etatCleDeTest,
+      detail: enProduction
+        ? 'Mollie en mode TEST alors que le site tourne en PRODUCTION : aucun montant n’est ' +
+          'encaissé, alors que les commandes sont confirmées.'
+        : `Mollie en mode TEST (clé test_…), webhook attendu sur ${webhook}. Aucun montant réel n’est encaissé.`,
+      action:
+        'Remplacer par la clé live_… le jour de l’ouverture, et refaire un essai de bout en bout : ' +
+        'les moyens de paiement disponibles ne sont pas les mêmes en test et en production.',
     }
   }
 
@@ -126,7 +199,13 @@ function checkPayment(): ReadinessCheck {
     key: 'payment',
     label: 'Paiement',
     state: 'ok',
-    detail: 'Stripe en mode production, webhook signé.',
+    // « sera demandée », pas « fonctionne » : ce contrôle vérifie la forme de
+    // l'adresse, pas que Mollie l'atteigne. Une redirection http→https ou
+    // www→apex suffit à perdre les notifications, et cela ne se voit qu'en
+    // passant une vraie commande.
+    detail:
+      `Mollie en mode production. Notification demandée sur ${webhook} — adresse de forme ` +
+      'publique, non éprouvée : seule une commande réelle le montre.',
   }
 }
 

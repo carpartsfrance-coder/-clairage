@@ -9,7 +9,9 @@ messages transactionnels, configuration Render et passe de vérification.
 l'empêchent, et le back-office les affiche lui-même (Administration ›
 Paramètres › *État de l'installation*, également exposé par `/api/health`) :
 
-1. **le paiement est simulé** — aucune clé Stripe, donc aucun encaissement ;
+1. **le paiement est simulé** — aucune clé de prestataire renseignée, donc
+   aucun encaissement. Mollie est branché et prêt : il suffit de coller une clé
+   `test_…` (ou `live_…`) dans `MOLLIE_API_KEY` ;
 2. **aucun e-mail ne part réellement** — pilote `log`, tout est journalisé ;
 3. **l'identité légale n'est pas renseignée** — mentions obligatoires absentes ;
 4. **les données de démonstration sont encore en base** — 6 produits, 13 médias.
@@ -110,6 +112,25 @@ appliqués au panier. Ce document dit où en est chaque fonction, sans arrondi.
 | Avertissement de stock avant paiement | ⬜ | Le tunnel lit `stockIssues` et `conflicts` mais ne les affiche pas : le client découvre une rupture au clic sur « Payer ». Rien n'est encaissé, mais la place de l'information est mauvaise |
 | États de paiement partiels | ⬜ | `AUTHORIZED`, `PARTIALLY_REFUNDED` et `REFUNDED` n'affichent qu'un badge sur la page de paiement, sans message ni action |
 | Reprise d'un paiement abandonné | ⬜ | Après un abandon, la commande reste en attente avec son stock réservé jusqu'à l'expiration (60 min). Pas de bouton « reprendre ce paiement » |
+
+### Paiement
+
+| Fonction | État | Détail |
+| --- | --- | --- |
+| Pilote **Mollie** | 🔸 | Écrit et testé (40 tests). Création du paiement, retour du client, webhook, relecture. **Jamais exercé avec une vraie clé** : voir plus bas |
+| Pilote **Stripe** | 🔸 | Checkout hébergé, webhook signé, relecture ajoutée. Jamais exercé non plus |
+| Pilote de **simulation** | ✅ | Vérifié de bout en bout. N'est jamais choisi en production |
+| Choix du prestataire | ✅ | Déduit des clés présentes. Deux clés sans `PAYMENT_PROVIDER` → **refus** plutôt qu'un choix silencieux. Préfixe inconnu → refus |
+| Mode test | ✅ | Déduit de la clé (`test_` / `live_`, `sk_test_` / `sk_live_`). Une clé de test **en production** est bloquante, pas un avertissement |
+| Webhook | ✅ | Agnostique du prestataire. Stripe : signature vérifiée. Mollie : relecture par l'API, puisqu'il ne signe pas. Limité par adresse, corps de réponse constant |
+| Retour du client | ✅ | `/api/paiement/retour` : interroge le prestataire, puis oriente. Jeton d'accès exigé comme sur les pages de commande |
+| Rattrapage des webhooks perdus | ✅ | Le cron interroge le prestataire pour chaque commande en attente. Nécessaire : Mollie abandonne ses relances après 26 h et ne permet pas de les redéclencher |
+| Libération du stock | ✅ | **Ne libère plus sur un délai seul.** Liste blanche de motifs ; tout le reste retient le stock ; borne dure à 14 jours |
+| Contrôles avant de confirmer | ✅ | Montant, **devise**, et refus d'un encaissement au montant illisible. Chaque refus laisse une trace dans le dossier |
+| Une seule commande par panier | ✅ | Une resoumission renvoie vers le paiement déjà ouvert au lieu de réserver le stock une seconde fois |
+| Remboursement chez le prestataire | ⬜ | Le back-office enregistre un remboursement en base et le dit : il n'appelle ni Mollie ni Stripe |
+| Capture manuelle (`authorized`) | ⬜ | Non implémentée. Le pilote n'applique une issue que sur `paid` : une autorisation seule ne confirme jamais une commande |
+| `lines` et `billingAddress` Mollie | ⬜ | Non transmis. Klarna, in3, Billie, Billink, Riverty et les vouchers ne doivent donc pas être activés sur le profil |
 
 ## Espace client et SAV
 
@@ -265,17 +286,19 @@ appliqués au panier. Ce document dit où en est chaque fonction, sans arrondi.
 
 ## Vérifications effectuées
 
-### Automatisées — `npm test` (171 tests, base PostgreSQL dédiée)
+### Automatisées — `npm test` (223 tests, base PostgreSQL dédiée)
 
 | Fichier | Ce qui est couvert |
 | --- | --- |
 | `tests/stock.test.ts` (15) | Disponibilité : stock réservé déduit, seuil d'alerte, vente à découvert ; kit divisé par la quantité du composant, composant limitant, composant facultatif ignoré, kit sans composant obligatoire ; accroche de livraison et franchise de port |
 | `tests/reservation.test.ts` (13) | Réservation sur vraie base : vendable abaissé sans toucher au détenu, refus au-delà du stock, **2 commandes simultanées sur la dernière pièce → 1 seule passe**, **12 commandes sur 5 unités → exactement 5**, kit développé en composants, échec total si un composant manque, cycle réserver → payer → décompter, libération rejouée sans passer sous zéro, 20 numéros de commande concurrents tous distincts |
-| `tests/orders.test.ts` (11) | Confirmation et décompte, **3 rejeux séquentiels sans effet**, **3 webhooks simultanés → un seul décompte** (vérifié : le test échoue si l'on retire le verrou), refus d'un « payé » après un échec, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
+| `tests/orders.test.ts` (23) | Confirmation et décompte, **3 rejeux séquentiels sans effet**, **3 webhooks simultanés → un seul décompte** (vérifié : le test échoue si l'on retire le verrou), refus d'un « payé » après un échec, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
+| `tests/orders.test.ts`, suite | **Ajoutés avec Mollie** : un paiement encore `open` ou `pending` chez le prestataire **ne libère pas** le stock ; un prestataire injoignable non plus ; un `paid` relu confirme la commande et décompte le stock ; un `failed` relu l'annule ; au-delà de 14 jours le stock part quand même, et le dossier dit pourquoi ; un encaissement arrivé **après** la libération laisse une alerte dans le dossier ; un `paid` au montant illisible ou dans une autre devise est **refusé** ; un paiement ouvert chez un autre prestataire ne libère rien ; une resoumission du formulaire ne crée pas une seconde commande |
 | `tests/order-access.test.ts` (9) | Jeton d'accès : bon jeton accepté, jeton absent, faux jeton de même longueur, préfixe correct, commande sans jeton, propriétaire connecté ; lecture du paramètre, paramètre répété, valeur vide |
 | `tests/csv.test.ts` (25) | Délimiteur deviné (point-virgule, virgule, tabulation), délimiteur protégé par des guillemets, BOM retiré, saut de ligne et guillemet doublé dans un champ, fins de ligne Windows, lignes vides comptées ; nombres français et anglais, **« vide » distingué de « zéro »**, prix en centimes sans erreur de virgule flottante |
 | `tests/imports.test.ts` (19) | Correspondance automatique sur intitulés accentués, aucun champ associé deux fois ; produits créés en brouillon et prix « 69,90 » lu 6990 ; erreurs par ligne sans arrêter l'import ; **doublon signalé, première ligne conservée** ; détail du changement lors d'une mise à jour ; mode création seule ; **reprise : 120 lignes, un lot puis reprise jusqu'au bout** ; compatibilité sans statut → « à vérifier », date posée seulement si confirmée ; véhicule ou référence inconnus refusés ; mouvement de stock tracé ; stock d'un kit refusé ; correspondance corrigée à la main. **Ajoutés à l'étape 11** : deux lots concurrents → un seul écrit (verrou vérifié : 2 lignes écrites une fois, pas deux), verrou relâché en fin de lot, correspondance modifiée → chiffrage et verdicts effacés, refus de modifier la correspondance d'un import terminé, plafond de 20 000 lignes refusé avant toute écriture |
 | `tests/storage.test.ts` (16) | Formats reconnus **sur les octets d'entête** ; un PNG annoncé JPEG est reconnu PNG ; **un script renommé `.png` est refusé** ; fichier vide, fichier trop lourd (avec la taille dans le message), fichier trop court ; pilote `local` accepté hors production et **refusé en production** ; variables `MEDIA_*` manquantes nommées une à une, valeur blanche tenue pour absente ; pilote S3 jamais choisi implicitement ; écriture, URL servable, **deux dépôts du même fichier ne partagent jamais une clé** ; suppression, et suppression rejouée sans erreur |
+| `tests/mollie.test.ts` (40) | Montants : deux décimales, pas de dérive flottante, aller-retour fidèle sur 2 000 valeurs, **`null` plutôt qu'une approximation** sur une forme illisible. Statuts : les quatre définitifs appliqués, `open`/`pending`/`authorized` **sans effet**, `authorized` jamais tenu pour payé, `cancelled` (deux « l ») non reconnu. Webhook : relecture par l'API, aucun appel pour un corps non exploitable, aucune signature exigée. Relecture : montant capturé retenu, 404 ignoré, 503 levé. Choix du prestataire : préfixe inconnu refusé, deux clés sans arbitrage refusées, **simulation refusée en production** |
 | `tests/email-templates.test.ts` (9) | Les dix modèles rendus, sujet + HTML + texte, **aucune variable non remplacée**, HTML des valeurs échappé, montants en euros, **aucun délai garanti**, pas de bouton de suivi sans URL, message de bienvenue identique dans les deux cas |
 | `tests/permissions.test.ts` (21) | Table des droits : tous les rôles couverts, aucune permission non déclarée, rien sans rôle ; ADMIN a tout ; READ_ONLY n'écrit nulle part ; **le préparateur ne peut ni rembourser ni annuler** ; le SAV ne peut pas rembourser ; le gestionnaire catalogue ne touche ni à l'argent ni à la préparation ; remboursement, annulation, paramètres et gestion de l'équipe réservés à ADMIN |
 | `tests/email.test.ts` (3) | Les variables publiques sont journalisées, **les variables sensibles ne le sont jamais** (le lien de réinitialisation ne doit pas atterrir dans `EmailLog`), envoi marqué simulé sans prestataire |
@@ -385,6 +408,25 @@ appliqués au panier. Ce document dit où en est chaque fonction, sans arrondi.
 31. **Sauvegarde** : `scripts/backup.sh` exécuté sans argument (aide affichée).
     `npm run build` et `tsc --noEmit` sans erreur, `npm test` à 171 tests verts.
 
+32. **Chemin réseau réel vers Mollie.** Une clé volontairement invalide a été
+    envoyée à `api.mollie.com` : la requête part, Mollie répond, et le pilote
+    remonte SON message (« 400 Invalid Authorization header ») au lieu d'un code
+    nu. En-têtes, URL, sérialisation du corps et lecture des erreurs sont donc
+    vérifiés **contre l'API réelle**. Aucun compte Mollie n'a été créé et rien
+    n'a été écrit chez eux.
+33. **Clé mal recopiée, tunnel complet.** Avec cette clé invalide, une commande
+    a été passée depuis le navigateur. Résultat en base : commande
+    `CMD-2026-00007` en `CANCELLED/FAILED`, **stock rendu**, et un événement
+    `order.payment_unavailable` qui cite le message de Mollie. L'écran affiche
+    « Le paiement n'a pas pu être ouvert. Rien n'a été débité et votre panier
+    est intact. »
+34. **État de l'installation avec Mollie.** Le contrôle « Paiement » passe de
+    « bloquant » à « à surveiller » et nomme la limite réelle : mode test, et
+    adresse publique non joignable depuis l'extérieur, donc aucun webhook
+    demandé. `/api/health` le reflète.
+35. **La bannière de simulation disparaît** dès qu'une clé est présente : le
+    tunnel ne prétend plus simuler ce qu'il ne simule pas.
+
 ---
 
 ## Écarts trouvés à l'étape 11, et corrigés
@@ -418,17 +460,61 @@ n'aurait jamais été atteint.
 
 ---
 
+## Écarts trouvés en branchant Mollie, et corrigés
+
+Le branchement d'un vrai prestataire a mis au jour des défauts que le paiement
+simulé masquait — parce qu'il n'a ni latence, ni état intermédiaire, ni argent.
+Une revue adversariale a confirmé les constats ci-dessous en relisant le code.
+
+| # | Écart | Correction |
+| --- | --- | --- |
+| 1 | **Le stock était libéré au bout de 60 minutes sans rien demander.** Un paiement Mollie reste réglable bien plus longtemps : 48 h pour Klarna, **12 jours pour un virement**. Le client payait, et ses articles avaient été vendus à quelqu'un d'autre | Le cron **interroge le prestataire** avant de conclure. Liste blanche de motifs qui autorisent la libération ; tout le reste retient le stock ; borne dure à 14 jours, et le dossier dit que c'est faute de réponse |
+| 2 | Les motifs de cette décision étaient des **phrases comparées littéralement**. Reformuler un message aurait suffi à faire repartir à la vente le stock d'une commande payée, sans que rien ne le signale | Motifs typés (`ReconcileReason`). TypeScript a immédiatement signalé une comparaison devenue fausse pendant la correction |
+| 3 | **Deux soumissions du formulaire = deux commandes payables** pour le même panier, chacune réservant le stock. La clé d'idempotence du prestataire n'y pouvait rien : elle dérive de l'identifiant de commande, neuf à chaque fois | Une commande en attente sur le même panier renvoie vers **son** paiement au lieu d'en ouvrir un second |
+| 4 | **Un paiement impossible à ouvrir laissait la commande en attente**, stock réservé, en affirmant au client que rien n'avait été enregistré. Chaque nouvelle tentative immobilisait un peu plus de stock : une clé mal recopiée aurait suffi à vider le catalogue | La commande est annulée, le stock rendu, et le message dit la vérité. Le motif de l'échec est consigné dans le dossier |
+| 5 | Le même écran affichait **« Votre commande n'a pas été enregistrée »** au-dessus de « La commande a été enregistrée mais… » | Le titre en dur a été retiré : seul le message de l'action s'affiche |
+| 6 | **La devise n'était vérifiée nulle part** : le contrôle comparait des entiers nus. 2 080 d'une autre devise valident une commande de 20,80 € | La devise voyage avec l'événement et doit correspondre |
+| 7 | **Un encaissement au montant illisible confirmait la commande** : un montant nul signifiait « rien à contrôler » | Un `paid` sans montant exploitable est refusé, tracé, et laissé rattrapable |
+| 8 | **Une clé de test en production n'était qu'un avertissement** : l'écran laissait croire que la boutique pouvait ouvrir alors qu'elle aurait pris des commandes sans encaisser | Bloquant en production, avertissement ailleurs |
+| 9 | **Le corps de réponse du webhook était un oracle.** Le fichier affirmait en commentaire qu'un 404 renseignerait un tiers sur nos identifiants — et le corps le faisait quand même (`handled`, `reason`) | Réponse constante dans tous les cas compris. Le détail reste dans les journaux |
+| 10 | **Aucun plafond sur le webhook**, dont l'URL est devinable et l'appel non signé : un tiers pouvait nous faire interroger l'API du prestataire en boucle | Limitation par adresse, large pour ne pas gêner les relances légitimes, et 429 (que le prestataire traite comme une relance) |
+| 11 | **L'envoi d'e-mail retenait la réponse du webhook**, que Mollie coupe à 15 secondes en comptant le dépassement comme un échec | Attente bornée à 3 secondes ; l'envoi se poursuit ensuite en arrière-plan |
+| 12 | **Une erreur sur une commande interrompait toute la passe** d'expiration, laissant les suivantes réservées | Chaque commande est traitée dans son propre `try` |
+| 13 | **Stripe n'était pas interrogeable** : ses commandes étaient libérées sans vérification, et trois commentaires affirmaient que seule la simulation était dans ce cas | `fetchOutcome` ajouté pour Stripe (logique testée, réseau non exercé) |
+| 14 | **L'URL de retour venait d'une variable d'environnement**, pas de l'origine réellement servie : mal réglée, elle renvoyait le client sur un autre site | Le retour suit l'origine de la requête ; seule l'URL de webhook vient de la configuration, puisqu'elle doit être publique |
+| 15 | La page affirmait **« aucun montant n'a été encaissé »** sur une commande annulée, y compris quand le dossier contenait la trace d'un encaissement | La phrase n'est affichée que si aucune trace ne la contredit |
+| 16 | **« Rien n'a été débité »** s'affichait au retour d'un paiement encore en cours — virement, paiement fractionné — où les fonds sont en route | Reformulé : le règlement « n'est pas encore confirmé » |
+| 17 | **Une simulation était présentée comme « un prestataire en mode test »** : `isTestMode` vaut vrai dans les deux cas | Les deux cas sont distingués à l'écran |
+| 18 | **Les tests dépendaient du `.env` du poste** : une clé laissée en développement changeait le pilote et donc les résultats. Le cas s'est produit pendant cette session | Les variables de paiement sont neutralisées dans la configuration de test |
+| 19 | Un test nommé « tombe sur la simulation hors production, **et seulement là** » ne testait jamais la production : la garde aurait pu être retirée sans qu'il bronche | Test de production ajouté, nom corrigé |
+
+---
+
 ## Ce qui n'a pas été vérifié
 
 Par ordre d'importance pour une ouverture.
 
-- **Un paiement réel, même en mode test Stripe.** Aucune clé n'est configurée :
-  le pilote Stripe n'a jamais parlé à Stripe. Tout ce qui est écrit ci-dessus au
-  sujet du tunnel a été vérifié **avec le pilote de simulation**. C'est le point
-  le plus important de cette liste.
-- **Le webhook de bout en bout depuis Stripe.** Seule la vérification de
-  signature est testée, hors réseau : signature absente, mauvais secret, corps
-  modifié, horodatage rejoué.
+- **Un paiement réel, même en mode test.** Aucune clé n'est configurée sur ce
+  projet. Le pilote Mollie a bien parlé à `api.mollie.com` — avec une clé
+  volontairement invalide, pour éprouver le chemin réseau et le traitement des
+  erreurs — mais **aucun paiement n'a jamais été créé, présenté, ni réglé**.
+  Tout ce qui est écrit sur le tunnel a été vérifié avec le pilote de
+  simulation. C'est le point le plus important de cette liste.
+
+  Concrètement, il reste à faire une fois une clé `test_` en main :
+  présenter l'écran de paiement, régler, revenir, et vérifier que la commande
+  passe en « payée » ; forcer un refus (montant 1006,00 € puis « failed » sur
+  l'écran de test) ; forcer une expiration ; et contrôler qu'un montant à deux
+  décimales est bien accepté tel que nous l'écrivons — la documentation de
+  Mollie ne l'impose nulle part, c'est une déduction de ses exemples.
+- **Le webhook de bout en bout, chez l'un ou l'autre.** Chez Stripe, seule la
+  vérification de signature est testée, hors réseau. Chez Mollie, la relecture
+  est testée avec un `fetch` injecté : aucun webhook réel n'a été reçu, et il
+  ne peut pas l'être en développement puisque Mollie refuse une URL non
+  publique. Le vérifier demande un tunnel (ngrok) ou un déploiement.
+- **La relecture Stripe** (`fetchOutcome`), ajoutée pour que ses commandes ne
+  soient plus libérées sans vérification : sa logique est écrite, son
+  comportement réseau n'a jamais été exercé.
 - **Un envoi d'e-mail réel.** Les dix modèles sont rendus et testés, mais aucun
   message n'a quitté la machine. L'authentification du domaine (SPF, DKIM,
   DMARC) reste entièrement à faire.

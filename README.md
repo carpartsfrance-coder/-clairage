@@ -12,8 +12,8 @@ ce qui reste à vérifier et ce qui manque.
 **La boutique ne peut pas encore ouvrir**, et l'application le dit elle-même :
 *Administration › Paramètres › État de l'installation* liste les points
 bloquants, et `GET /api/health` en renvoie la version courte. Aujourd'hui :
-paiement simulé, aucun envoi d'e-mail réel, identité légale non renseignée,
-données de démonstration encore en base.
+paiement simulé (Mollie est branché et attend une clé), aucun envoi d'e-mail
+réel, identité légale non renseignée, données de démonstration encore en base.
 
 ---
 
@@ -123,6 +123,7 @@ src/
     queries/           lectures par page
     email.ts           envoi transactionnel, pilote `log` par défaut
     storage/           médias : pilote local (développement) ou S3 (production)
+    payments/          Mollie, Stripe, simulation — même contrat pour les trois
     admin/             droits, garde d'accès, indicateurs du tableau de bord
     imports/           lecture CSV, formats, validation, écriture par lots
     email/             gabarit et modèles de messages

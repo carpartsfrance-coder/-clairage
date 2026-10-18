@@ -31,6 +31,22 @@ export const RULES = {
   register: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
   passwordReset: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
   orderLookup: { max: 10, windowSeconds: 15 * 60, blockSeconds: 30 * 60 },
+  /*
+    Webhook de paiement.
+
+    L'URL est publique et devinable, et le webhook de Mollie n'est pas signé :
+    n'importe qui peut POSTer `id=tr_…` et nous faire interroger l'API du
+    prestataire. Il n'en obtient rien — la réponse ne dit pas si le paiement
+    existe — mais répété, cela consomme notre quota chez le prestataire et nos
+    instances.
+
+    Le plafond est large à dessein : un vrai prestataire rappelle jusqu'à dix
+    fois par paiement, et une boutique active en reçoit beaucoup. Il s'agit
+    d'arrêter un balayage, pas de gêner un trafic normal. Le blocage est court
+    pour la même raison : une limitation trop zélée ferait perdre de vrais
+    webhooks, et Mollie abandonne au bout de 26 heures.
+  */
+  paymentWebhook: { max: 240, windowSeconds: 60, blockSeconds: 60 },
 } as const satisfies Record<string, ThrottleRule>
 
 export type ThrottleAction = keyof typeof RULES

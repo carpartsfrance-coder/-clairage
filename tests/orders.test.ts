@@ -1,6 +1,6 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PrismaClient } from '@prisma/client'
-import { applyPaymentOutcome, expireStaleOrders } from '../src/lib/orders'
+import { applyPaymentOutcome, expireStaleOrders, placeOrder } from '../src/lib/orders'
 
 /**
  * Le chemin de l'argent.
@@ -270,5 +270,334 @@ describe('expireStaleOrders', () => {
     expect(after.paymentStatus).toBe('PENDING')
     const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
     expect(stock.stockReserved).toBe(2)
+  })
+})
+
+
+/* -------------------------------------------------------------------------- */
+/* Expiration : ce que le branchement d'un vrai prestataire a changé           */
+/* -------------------------------------------------------------------------- */
+
+describe('expireStaleOrders face à un prestataire réel', () => {
+  /**
+   * Le scénario que ces tests protègent, et qui coûte de l'argent :
+   *
+   * un paiement Mollie reste réglable bien plus longtemps qu'une heure — douze
+   * jours pour un virement bancaire. Libérer le stock au bout de soixante
+   * minutes, puis voir le client payer, c'est encaisser pour une commande
+   * annulée dont les articles ont été vendus à quelqu'un d'autre.
+   *
+   * `expireStaleOrders` doit donc DEMANDER avant de conclure.
+   */
+
+  const MOLLIE_KEY = 'test_000000000000000000000000000000'
+
+  /** Commande ancienne, payée par Mollie, et réponse imposée à l'API. */
+  async function vieilleCommandeMollie(reponse: {
+    status?: number
+    body?: unknown
+    throws?: boolean
+  }) {
+    const { order, variant, payment } = await makePendingOrder()
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { provider: 'mollie', providerRef: 'tr_WDqYK6vllg' },
+    })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { createdAt: new Date(Date.now() - 120 * 60_000) },
+    })
+
+    process.env.MOLLIE_API_KEY = MOLLIE_KEY
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        if (reponse.throws) throw new Error('réseau injoignable')
+        return new Response(reponse.body === undefined ? '' : JSON.stringify(reponse.body), {
+          status: reponse.status ?? 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }),
+    )
+
+    return { order, variant, payment }
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    delete process.env.MOLLIE_API_KEY
+  })
+
+  it('NE LIBÈRE PAS le stock quand le paiement est encore ouvert chez Mollie', async () => {
+    const { order, variant } = await vieilleCommandeMollie({
+      body: { id: 'tr_WDqYK6vllg', status: 'open', amount: { currency: 'EUR', value: '20.00' } },
+    })
+
+    expect(await expireStaleOrders(60)).toBe(0)
+
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+    expect(after.paymentStatus).toBe('PENDING')
+    expect(after.status).toBe('PENDING')
+
+    // Le point qui compte : les articles restent à cette commande.
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockReserved).toBe(2)
+  })
+
+  it('ne libère pas non plus un paiement en attente de confirmation bancaire', async () => {
+    // `pending` peut durer deux à trois jours ouvrés.
+    const { order } = await vieilleCommandeMollie({
+      body: { id: 'tr_WDqYK6vllg', status: 'pending', amount: { currency: 'EUR', value: '20.00' } },
+    })
+
+    expect(await expireStaleOrders(60)).toBe(0)
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe('PENDING')
+  })
+
+  it('ne conclut rien quand Mollie est injoignable', async () => {
+    // Un silence n'est pas un refus.
+    const { order, variant } = await vieilleCommandeMollie({ throws: true })
+
+    expect(await expireStaleOrders(60)).toBe(0)
+
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+    expect(after.status).toBe('PENDING')
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockReserved).toBe(2)
+  })
+
+  it('CONFIRME la commande quand Mollie dit qu’elle a été payée', async () => {
+    // Le rattrapage sert dans les deux sens : c'est le filet des webhooks
+    // perdus, et Mollie abandonne ses relances au bout de 26 heures.
+    const { order, variant } = await vieilleCommandeMollie({
+      body: {
+        id: 'tr_WDqYK6vllg',
+        status: 'paid',
+        amount: { currency: 'EUR', value: '20.00' },
+        amountCaptured: { currency: 'EUR', value: '20.00' },
+      },
+    })
+
+    expect(await expireStaleOrders(60)).toBe(1)
+
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+    expect(after.paymentStatus).toBe('PAID')
+    expect(after.status).toBe('CONFIRMED')
+
+    // Stock décompté, pas rendu.
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockOnHand).toBe(8)
+    expect(stock.stockReserved).toBe(0)
+  })
+
+  it('applique l’échec quand Mollie dit que le paiement a échoué', async () => {
+    const { order, variant } = await vieilleCommandeMollie({
+      body: { id: 'tr_WDqYK6vllg', status: 'failed', amount: { currency: 'EUR', value: '20.00' } },
+    })
+
+    expect(await expireStaleOrders(60)).toBe(1)
+
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+    expect(after.paymentStatus).toBe('FAILED')
+    expect(after.status).toBe('CANCELLED')
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockReserved).toBe(0)
+    expect(stock.stockOnHand).toBe(10)
+  })
+
+  it('libère quand même au bout de 14 jours, prestataire muet ou non', async () => {
+    // Sans cette borne, un prestataire durablement injoignable garderait du
+    // stock réservé indéfiniment.
+    const { order, variant } = await vieilleCommandeMollie({ throws: true })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { createdAt: new Date(Date.now() - 15 * 24 * 60 * 60_000) },
+    })
+
+    expect(await expireStaleOrders(60)).toBe(1)
+
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+    expect(after.status).toBe('CANCELLED')
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockReserved).toBe(0)
+
+    // Le dossier dit POURQUOI, et que le prestataire n'a pas répondu.
+    const events = await prisma.orderEvent.findMany({ where: { orderId: order.id } })
+    expect(events.some((e) => e.message?.includes('14 jours'))).toBe(true)
+  })
+
+  it('trace un encaissement arrivé APRÈS la libération du stock', async () => {
+    // Le filet : si malgré tout l'argent arrive sur une commande déjà annulée,
+    // cela ne doit pas se réduire à une ligne de journal.
+    const { order, payment, variant } = await makePendingOrder()
+    await prisma.payment.update({ where: { id: payment.id }, data: { status: 'EXPIRED' } })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { status: 'CANCELLED', paymentStatus: 'EXPIRED' },
+    })
+
+    const result = await applyPaymentOutcome(payment.providerRef, 'paid', order.totalCents)
+    expect(result.applied).toBe(false)
+
+    const events = await prisma.orderEvent.findMany({ where: { orderId: order.id } })
+    const alerte = events.find((e) => e.type === 'payment.paid_after_release')
+    expect(alerte).toBeDefined()
+    expect(alerte?.message).toMatch(/rembourser/)
+
+    // Et surtout : le stock n'est pas décompté une seconde fois.
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockOnHand).toBe(10)
+  })
+})
+
+describe('contrôles avant de confirmer un encaissement', () => {
+  /**
+   * Trois refus, trois raisons de ne pas confirmer une commande. Dans les trois
+   * cas le paiement reste PENDING : il est rattrapable au passage suivant du
+   * cron, quand le prestataire répondra peut-être mieux.
+   */
+
+  it('refuse un « payé » dont le montant est illisible', async () => {
+    const { order, payment, variant } = await makePendingOrder()
+
+    const result = await applyPaymentOutcome(payment.providerRef, 'paid', null, null, {
+      amountKnown: false,
+    })
+    expect(result.applied).toBe(false)
+
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+    expect(after.paymentStatus).toBe('PENDING')
+    expect(after.status).toBe('PENDING')
+
+    // Le stock n'est ni décompté ni rendu : on n'a rien conclu.
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockOnHand).toBe(10)
+    expect(stock.stockReserved).toBe(2)
+
+    const events = await prisma.orderEvent.findMany({ where: { orderId: order.id } })
+    expect(events.some((e) => e.type === 'payment.amount_unreadable')).toBe(true)
+  })
+
+  it('refuse un « payé » dans une autre devise', async () => {
+    // 2080 yens ne valent pas 20,80 €. Le montant seul ne suffit pas.
+    const { order, payment } = await makePendingOrder()
+
+    const result = await applyPaymentOutcome(
+      payment.providerRef,
+      'paid',
+      order.totalCents,
+      null,
+      { currency: 'USD', amountKnown: true },
+    )
+    expect(result.applied).toBe(false)
+
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+    expect(after.paymentStatus).toBe('PENDING')
+
+    const events = await prisma.orderEvent.findMany({ where: { orderId: order.id } })
+    const trace = events.find((e) => e.type === 'payment.currency_mismatch')
+    expect(trace?.message).toMatch(/USD/)
+  })
+
+  it('accepte la même devise écrite différemment', async () => {
+    const { order, payment } = await makePendingOrder()
+    const result = await applyPaymentOutcome(
+      payment.providerRef,
+      'paid',
+      order.totalCents,
+      null,
+      { currency: 'eur', amountKnown: true },
+    )
+    expect(result.applied).toBe(true)
+  })
+})
+
+describe('changement de prestataire', () => {
+  it('NE LIBÈRE PAS un paiement ouvert chez un autre prestataire', async () => {
+    /*
+      Scénario réel : la boutique passe de Stripe à Mollie, ou revient en
+      simulation sur un environnement de travail. Les paiements déjà ouverts
+      chez l'ancien prestataire restent payables, mais on ne peut plus les
+      interroger — on ne sait donc rien de leur sort, et on ne libère pas.
+    */
+    const { order, payment, variant } = await makePendingOrder()
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { provider: 'stripe', providerRef: 'cs_test_ancien' },
+    })
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { createdAt: new Date(Date.now() - 120 * 60_000) },
+    })
+
+    // Aucune clé configurée : le pilote courant est la simulation.
+    expect(await expireStaleOrders(60)).toBe(0)
+
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } })
+    expect(after.status).toBe('PENDING')
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockReserved).toBe(2)
+  })
+})
+
+describe('une seule commande en attente par panier', () => {
+  /**
+   * Revenir en arrière puis resoumettre le formulaire — ou deux onglets — ne
+   * doit pas créer une seconde commande. Sinon les mêmes articles sont réservés
+   * deux fois et deux paiements sont ouverts chez le prestataire, tous deux
+   * payables.
+   *
+   * La clé d'idempotence envoyée au prestataire ne protège pas de ce cas : elle
+   * dérive de l'identifiant de commande, neuf à chaque soumission.
+   */
+  it('renvoie vers le paiement déjà ouvert au lieu d’en créer un second', async () => {
+    const { order, variant } = await makePendingOrder()
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { cartToken: 'panier-essai', guestToken: 'jeton-essai' },
+    })
+
+    // Le panier existe toujours : il n'est vidé qu'au paiement confirmé. C'est
+    // exactement l'état dans lequel se trouve un client qui resoumet.
+    await prisma.cart.create({
+      data: {
+        token: 'panier-essai',
+        lines: { create: [{ variantId: variant.id, quantity: 2 }] },
+      },
+    })
+
+    const avant = await prisma.order.count()
+
+    const adresse = {
+      firstName: 'Essai',
+      lastName: 'Doublon',
+      line1: '1 rue de l’Essai',
+      postalCode: '75001',
+      city: 'Paris',
+      country: 'FR',
+    }
+
+    const result = await placeOrder({
+      cartToken: 'panier-essai',
+      email: 'client@example.com',
+      shippingMethodCode: 'colissimo',
+      shippingAddress: adresse,
+      billingAddress: adresse,
+      consents: { cgv: true },
+      origin: 'http://localhost:3400',
+    })
+
+    // Aucune commande supplémentaire, aucune réservation supplémentaire.
+    expect(await prisma.order.count()).toBe(avant)
+    const stock = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant.id } })
+    expect(stock.stockReserved).toBe(2)
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.orderId).toBe(order.id)
+      // On renvoie le client là où son règlement est en cours.
+      expect(result.redirectUrl).toContain(`/commande/${order.id}/paiement`)
+      expect(result.redirectUrl).toContain('jeton-essai')
+    }
   })
 })
