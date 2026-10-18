@@ -18,7 +18,7 @@ export const demoCategories = [
     description: "Plafonnier, habitacle, coffre et boîte à gants." },
   { slug: 'plaque-recul', name: 'Plaque & recul', family: 'PLATE', hero: 'univers-plaque-recul.jpg', position: 3,
     description: "Éclairage de plaque, feux de recul et veilleuses." },
-  { slug: 'clignotants', name: 'Clignotants', family: 'TURN_SIGNAL', hero: 'univers-clignotants.jpg', position: 4,
+  { slug: 'clignotants', name: 'Clignotants', family: 'TURN_SIGNAL', hero: 'indicator.png', position: 4,
     description: "Clignotants avant, arrière et répétiteurs." },
   { slug: 'xenon', name: 'Xénon', family: 'XENON', hero: 'univers-xenon.jpg', position: 5,
     description: "Ampoules xénon de remplacement." },
