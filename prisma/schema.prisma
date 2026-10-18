@@ -827,6 +827,10 @@ model Order {
   promotion       Promotion?            @relation(fields: [promotionId], references: [id])
   promotionCode   String?
 
+  /// Panier d'origine. Sert à vider CE panier une fois le paiement confirmé,
+  /// et seulement celui-là.
+  cartToken       String?
+
   shippingAddress Json
   billingAddress  Json
   shippingMethodCode String?

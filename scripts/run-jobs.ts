@@ -24,6 +24,15 @@ const handlers: Record<string, (payload: unknown) => Promise<void>> = {
     const { sendEmail } = await import('../src/lib/email')
     await sendEmail(payload as Parameters<typeof sendEmail>[0])
   },
+  // Libère les commandes restées en attente de paiement. Sans ce passage, une
+  // réservation abandonnée garderait du stock indisponible indéfiniment.
+  'orders.expire': async (payload) => {
+    const { expireStaleOrders } = await import('../src/lib/orders')
+    const minutes = (payload as { minutes?: number } | null)?.minutes ?? 60
+    const released = await expireStaleOrders(minutes)
+    if (released > 0) console.log(`[jobs] ${released} commande(s) expirée(s), stock libéré`)
+  },
+
   // 'import.run' sera enregistré avec le moteur d'import (étape « Imports et
   // notifications »). Tant qu'il n'existe pas, mieux vaut ne pas déclarer le
   // type du tout : un gestionnaire qui échoue en boucle serait pire qu'un type
@@ -60,6 +69,16 @@ async function claimBatch() {
 }
 
 async function main() {
+  // Travaux récurrents : ils ne sont pas mis en file par l'application, c'est
+  // le passage du cron qui les déclenche.
+  try {
+    const { expireStaleOrders } = await import('../src/lib/orders')
+    const released = await expireStaleOrders(60)
+    if (released > 0) console.log(`[jobs] ${released} commande(s) expirée(s), stock libéré`)
+  } catch (error) {
+    console.error('[jobs] expiration des commandes impossible', error)
+  }
+
   const ids = await claimBatch()
   if (ids.length === 0) {
     console.log('[jobs] rien à traiter')

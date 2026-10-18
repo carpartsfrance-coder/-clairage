@@ -79,7 +79,76 @@ attache le service à une seule instance et empêche la montée en charge.
 
 Mettre `MEDIA_DRIVER=local` uniquement en développement.
 
-## 4. Travaux de fond
+## 4. Paiement
+
+### Mise en route, en mode test
+
+1. Créer un compte Stripe et rester en **mode test** (l'interrupteur est en haut
+   du tableau de bord).
+2. Développeurs › Clés d'API : copier la clé secrète `sk_test_…` dans
+   `STRIPE_SECRET_KEY`.
+3. Développeurs › Webhooks › Ajouter un point de terminaison :
+   - URL : `https://<domaine>/api/paiement/webhook`
+   - Événements : `checkout.session.completed`,
+     `checkout.session.async_payment_succeeded`,
+     `checkout.session.async_payment_failed`, `checkout.session.expired`
+   - Copier le secret de signature `whsec_…` dans `STRIPE_WEBHOOK_SECRET`.
+4. Redéployer, puis passer une commande avec la carte de test `4242 4242 4242 4242`
+   (date future, CVC quelconque).
+
+Le mode test n'est pas déduit d'une variable mais de la clé elle-même
+(`sk_test_` → test). Impossible de croire qu'on est en test alors que la clé est
+celle de production.
+
+### Ce qui se passe sans clé
+
+En développement, et seulement là, un pilote de **simulation** prend le relais.
+Il n'imite que l'encaissement : la commande, la réservation de stock, les
+mouvements de stock, les statuts et les e-mails passent par exactement le même
+code qu'un paiement réel. Chaque `Payment` ainsi créé porte
+`provider = 'simulation'`, et les écrans le disent.
+
+En production, l'absence de `STRIPE_SECRET_KEY` fait **échouer** l'ouverture du
+paiement au lieu de basculer en simulation. Une boutique qui confirme des
+commandes jamais payées est un problème plus grave qu'un tunnel en erreur.
+
+### Webhook
+
+Le corps est vérifié contre `STRIPE_WEBHOOK_SECRET` avant toute lecture. Sans
+secret configuré, la route répond 400 : un webhook non signé permettrait à
+n'importe qui de marquer une commande payée.
+
+Le traitement est idempotent — les prestataires rejouent leurs événements, c'est
+normal. Un événement déjà appliqué est ignoré, le stock n'est jamais décompté
+deux fois. Un montant reçu différent du montant attendu n'est pas appliqué : il
+est tracé dans `OrderEvent` pour que le back-office le voie.
+
+### Cohérence des stocks
+
+Trois temps, chacun atomique :
+
+| Moment | `stockOnHand` | `stockReserved` | Vendable |
+| --- | --- | --- | --- |
+| Commande créée | inchangé | **+ n** | **− n** |
+| Paiement confirmé | **− n** | **− n** | inchangé |
+| Échec / abandon / expiration | inchangé | **− n** | **+ n** |
+
+La réservation s'appuie sur une condition évaluée par PostgreSQL au moment de
+l'écriture (`UPDATE … WHERE "stockOnHand" - "stockReserved" >= n`), pas par Node
+avant. Deux commandes simultanées sur la dernière pièce ne peuvent donc pas
+passer toutes les deux : la seconde voit zéro ligne modifiée et sa transaction
+est annulée en entier. C'est vérifié par les tests
+(`tests/reservation.test.ts`), dont une rafale de douze commandes concurrentes
+sur cinq unités.
+
+Un kit n'a pas de stock : ce sont ses composants qui sont réservés, à hauteur de
+la quantité commandée multipliée par leur quantité dans le kit. Si un seul
+composant manque, toute la réservation échoue.
+
+Les commandes restées impayées sont libérées par le cron au bout de 60 minutes
+(`order.paymentWindowMinutes`), ce qui rend le stock disponible.
+
+## 5. Travaux de fond
 
 `lumera-jobs` exécute `scripts/run-jobs.ts` toutes les dix minutes : il prend un
 lot dans `JobQueue`, traite chaque entrée, et se termine. Les garde-fous sont
@@ -90,7 +159,7 @@ Augmenter la fréquence n'a d'intérêt que si les envois d'e-mails deviennent
 sensibles au délai. Les imports volumineux, eux, se reprennent d'un tour à
 l'autre grâce au curseur de `ImportJob`.
 
-## 5. Sauvegarde et restauration
+## 6. Sauvegarde et restauration
 
 ### Ce que couvre Render
 
@@ -134,7 +203,7 @@ migrations, et l'application échouera sur les colonnes manquantes.
 Une restauration qui n'a jamais été essayée n'est pas une sauvegarde. À tester
 une fois sur une base jetable avant l'ouverture.
 
-## 6. Journaux et diagnostic
+## 7. Journaux et diagnostic
 
 - Render › service › **Logs** pour le flux en direct.
 - Les erreurs applicatives sont préfixées par leur domaine : `[accueil]`,
@@ -143,7 +212,7 @@ une fois sur une base jetable avant l'ouverture.
   (colonne `simulated`).
 - La table `AuditLog` trace les actions d'administration sensibles.
 
-## 7. Points à surveiller
+## 8. Points à surveiller
 
 - **Toutes les pages sont rendues à la demande.** Le header lit le cookie de
   session (véhicule, panier), ce qui rend le rendu dynamique. C'est voulu, mais

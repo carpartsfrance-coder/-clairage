@@ -1,12 +1,14 @@
 # Matrice de réception
 
-État au 18 octobre 2026, après les étapes 1 à 5 : analyse, architecture, design
-system, header final, accueil, catalogue, parcours véhicule et fiche produit.
+État au 18 octobre 2026, après les étapes 1 à 6 : analyse, architecture, design
+system, header final, accueil, catalogue, parcours véhicule, fiche produit,
+panier, tunnel de commande et paiement.
 
-**La boutique n'est pas prête pour une ouverture commerciale.** La commande, le
-paiement, l'espace client et le back-office ne sont pas écrits : on peut
-remplir un panier, pas le payer. Ce document dit où en est chaque fonction,
-sans arrondi.
+**La boutique n'est pas prête pour une ouverture commerciale.** L'espace client
+et le back-office ne sont pas écrits, aucune facture n'est émise, et aucun
+paiement réel n'a jamais été encaissé : le tunnel a été vérifié avec le pilote
+de simulation, pas avec Stripe. Ce document dit où en est chaque fonction, sans
+arrondi.
 
 ## Légende
 
@@ -74,14 +76,26 @@ sans arrondi.
 | Fonction | État | Détail |
 | --- | --- | --- |
 | Modèle panier / commande / paiement / livraison | ✅ | Y compris l'instantané d'achat (`OrderLine.snapshot`) qui fige ce qui a été acheté |
-| Panier | ✅ | Ajout, quantités, retrait, composition du kit dépliable, totaux et TVA calculés côté serveur, conflits véhicule signalés |
-| Ajout au panier d'un kit | ✅ | Une ligne pour le kit, sa composition affichée ; stock borné par le composant limitant |
-| Accessoires nécessaires | ✅ | Proposés décochés sur la fiche, ajoutés seulement si le client les coche, retirés avec l'article qui les exigeait |
-| Commande et paiement | ⬜ | Le bouton « Passer la commande » mène à une page qui dit que le tunnel n'est pas ouvert |
-| Code promotionnel | ⬜ | Modélisé (`Promotion`), aucun champ affiché |
-| Zones et méthodes de livraison | 🔵 + ⚙️ | Deux méthodes de démonstration en base ; les tarifs et délais réels sont à saisir |
-| Stripe | ⚙️ | Adaptateur et clés prévus, mode test par défaut. Aucune clé renseignée, aucun appel écrit |
+| Panier | ✅ | Ajout, quantités, retrait, composition du kit, totaux et TVA côté serveur, conflits véhicule signalés |
+| Ajout au panier d'un kit | ✅ | Une ligne pour le kit, stock borné par le composant limitant |
+| Accessoires nécessaires | ✅ | Proposés décochés, ajoutés seulement si le client les coche |
+| Tunnel de commande | ✅ | Coordonnées, adresses livraison et facturation, mode de livraison, consentements, récapitulatif. Commande invité avec jeton de suivi |
+| Totaux recalculés côté serveur | ✅ | Le formulaire ne transmet que des identifiants et un code de livraison |
+| Numérotation des commandes | ✅ | Séquence PostgreSQL : jamais deux fois le même numéro, même sous concurrence (testé) |
+| **Réservation de stock** | ✅ | Trois temps atomiques : réservé à la commande, décompté au paiement, rendu à l'échec. Condition évaluée par PostgreSQL à l'écriture |
+| **Achats simultanés** | ✅ | Testé : 2 commandes sur la dernière pièce → 1 seule passe ; 12 commandes sur 5 unités → exactement 5 passent |
+| Libération des commandes impayées | ✅ | `expireStaleOrders` au bout de 60 minutes, déclenché à chaque passage du cron (testé) |
+| Paiement — pilote Stripe | 🔸 | Checkout Session hébergée, mode test déduit de la clé. **Écrit et typé, jamais exercé contre Stripe** faute de clé |
+| Paiement — pilote de simulation | ✅ | Exercé de bout en bout : accepté, refusé, expiré. Marqué `simulated` en base et à l'écran. Refusé en production |
+| Webhook vérifié | ✅ | Signature HMAC vérifiée sur le corps brut. Testé : sans signature, mauvais secret, corps modifié, horodatage rejoué → refus ; session non encaissée → non appliquée |
+| Webhook idempotent | ✅ | Testé : 3 rejeux du même événement, stock décompté une seule fois |
+| Contrôle du montant | ✅ | Un montant reçu ≠ montant attendu n'est pas appliqué et laisse une trace `OrderEvent` |
+| Tentatives répétées sans doublon | ✅ | Clé d'idempotence par commande côté Stripe ; page de paiement refusant de rejouer une commande déjà payée |
+| E-mail de confirmation | ⚙️ | Émis à la confirmation, tracé dans `EmailLog`. Simulé tant qu'aucun prestataire n'est configuré, et la page de confirmation le dit |
+| Zones et méthodes de livraison | 🔵 + ⚙️ | Deux méthodes de démonstration ; tarifs et délais réels à saisir |
+| Remboursements | ⬜ | Modélisés (`Refund`, avec remise en stock explicite), aucun écran |
 | Factures et avoirs | ⬜ | Modélisés (`Document`), non générés |
+| Code promotionnel | ⬜ | Modélisé (`Promotion`), aucun champ affiché |
 | TVA | 🔵 + ⚙️ | Taux 20 % en base, à valider avec le comptable |
 
 ## Espace client et SAV
@@ -135,47 +149,44 @@ sans arrondi.
 
 ## Vérifications effectuées
 
-Faites dans cette session, sur le serveur de développement et la base
-PostgreSQL locale :
+### Automatisées — `npm test` (47 tests, base PostgreSQL dédiée)
 
-1. `prisma validate`, `prisma migrate dev` — schéma valide, migrations appliquées.
-2. `npm run seed -- --demo` — 6 produits, 6 compatibilités, 7 catégories.
-3. `tsc --noEmit` — aucune erreur sur l'ensemble du dépôt.
-4. `npm run build` — build de production réussi.
-5. `npx vitest run` — 15 tests sur le calcul de disponibilité d'un kit et sur
-   l'accroche de livraison (division par la quantité du composant, composant
-   limitant, composant facultatif ignoré, stock réservé, franchise de port).
-6. `GET /api/health` → `{"status":"ok","database":"up"}`.
-7. Accueil à 1280 px et 375 px — comparée aux trois maquettes, bloc par bloc.
-8. Menu mobile — modale, piège de focus, Échap, retour du focus, défilement rétabli.
-9. Les 11 routes du catalogue et du parcours véhicule répondent en 200.
-10. **Parcours véhicule complet dans le navigateur** : Volkswagen → Golf → 2015 →
-    l'étape d'équipement se déclenche d'elle-même (deux équipements documentés)
-    → « Phares halogènes » → résultats groupés par emplacement, avec date de
-    vérification et source.
-11. **Fiche produit avec véhicule halogène** : encadré vert « La configuration
-    pour votre Golf VII », conditionnement recommandé, composition du kit,
-    « Livraison offerte · estimation 2 à 3 jours ouvrés ».
-12. **Fiche produit avec véhicule xénon** : incompatibilité affichée avec son
-    motif, achat bloqué, aucune recommandation, lien vers ce qui convient.
-13. **Fiche produit sans véhicule** : aucune compatibilité affirmée, aucun
-    conditionnement recommandé, invitation à renseigner le véhicule.
-14. **Ajout au panier** : kit ajouté en une ligne à 99,90 €, compteur du header
-    à 1, composition dépliable, TVA 16,65 € calculée côté serveur.
-15. **Changement de véhicule avec le panier rempli** : le panier signale
-    l'article devenu incompatible, explique pourquoi, et ne retire rien.
-16. **Recherche sans résultat** (`?q=zzzz`) : alternatives réelles proposées
-    (culots et catégories présents au catalogue).
-17. **Facettes et filtres** : cocher un culot laisse les autres cochables
-    (sélection multiple réellement possible), le prix affiché respecte le
-    conditionnement filtré, les compteurs de `/c` correspondent à ce que la
-    page de catégorie liste.
-18. Fiche produit à 375 px : titre avant la galerie, barre d'achat fixe qui
-    reflète le conditionnement choisi et son verdict de compatibilité,
-    `scrollWidth === clientWidth`.
+| Fichier | Ce qui est couvert |
+| --- | --- |
+| `tests/stock.test.ts` (15) | Disponibilité : stock réservé déduit, seuil d'alerte, vente à découvert ; kit divisé par la quantité du composant, composant limitant, composant facultatif ignoré, kit sans composant obligatoire ; accroche de livraison et franchise de port |
+| `tests/reservation.test.ts` (13) | Réservation sur vraie base : vendable abaissé sans toucher au détenu, refus au-delà du stock, **2 commandes simultanées sur la dernière pièce → 1 seule passe**, **12 commandes sur 5 unités → exactement 5**, kit développé en composants, échec total si un composant manque, cycle réserver → payer → décompter, libération rejouée sans passer sous zéro, 20 numéros de commande concurrents tous distincts |
+| `tests/orders.test.ts` (9) | Confirmation et décompte, **3 rejeux sans effet**, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
+| `tests/webhook.test.ts` (10) | Refus sans signature, avec un autre secret, sur corps modifié, sur horodatage rejoué, sans secret configuré ; acceptation et normalisation d'une signature valide ; session non encaissée non retenue ; expiration normalisée ; type inconnu ignoré ; mode test déduit de la clé |
+
+### À la main, dans le navigateur
+
+1. `npm run build` — build de production réussi ; `tsc --noEmit` sans erreur.
+2. `GET /api/health` → `{"status":"ok","database":"up"}`.
+3. Accueil à 1280 px et 375 px, comparée aux trois maquettes, bloc par bloc.
+4. Menu mobile — modale, piège de focus, Échap, retour du focus.
+5. Parcours véhicule complet : Volkswagen → Golf → 2015 → étape d'équipement
+   déclenchée d'elle-même → halogènes → résultats par emplacement, datés et sourcés.
+6. Fiche produit avec véhicule compatible, incompatible, et sans véhicule.
+7. Ajout au panier, conflit signalé au changement de véhicule.
+8. **Commande complète** : formulaire rempli → commande `CMD-2026-00003` créée,
+   stock réservé (1 paire d'ampoules, 2 adaptateurs, 2 décodeurs ; `stockOnHand`
+   inchangé) → paiement simulé accepté → commande CONFIRMED/PAID, `stockOnHand`
+   décompté, `stockReserved` à zéro, trois `StockMovement` à la référence de la
+   commande, panier supprimé, e-mail tracé comme simulé.
+9. **Garde du rejeu** : la page de paiement d'une commande déjà payée n'affiche
+   aucun bouton d'issue et renvoie vers la confirmation.
+10. Recherche sans résultat, facettes multi-sélection, prix respectant le filtre
+    de conditionnement, compteurs de catégories cohérents avec les listes.
+11. Fiche produit à 375 px : titre avant la galerie, barre d'achat fixe reflétant
+    la sélection, aucun défilement horizontal.
 
 ## Ce qui n'a pas été vérifié
 
+- **Un paiement réel, même en mode test Stripe** : aucune clé n'est configurée,
+  le pilote Stripe n'a donc jamais parlé à Stripe. C'est le point le plus
+  important de cette liste.
+- Le webhook de bout en bout depuis Stripe (seule la vérification de signature
+  est testée, hors réseau).
 - Le déploiement Render lui-même : rien n'a été déployé.
 - La restauration d'une sauvegarde.
 - Le pilote de stockage S3 (non écrit).

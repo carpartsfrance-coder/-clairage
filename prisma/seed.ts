@@ -75,6 +75,8 @@ async function seedReferenceData() {
     ['shop.freeShippingThresholdCents', 'general', 8000, 'Seuil de livraison offerte (centimes TTC)'],
     ['shop.returnWindowDays', 'general', 14, 'Délai de rétractation (jours)'],
     ['shop.currency', 'general', 'EUR', 'Devise'],
+    ['order.prefix', 'general', 'CMD', 'Préfixe de numérotation des commandes'],
+    ['order.paymentWindowMinutes', 'general', 60, "Délai avant libération du stock d'une commande impayée"],
     ['invoice.prefix', 'billing', 'FA', 'Préfixe de numérotation des factures'],
     ['invoice.creditPrefix', 'billing', 'AV', "Préfixe de numérotation des avoirs"],
     ['payments.provider', 'payments', 'stripe', 'Prestataire de paiement actif'],

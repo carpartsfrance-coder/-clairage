@@ -87,17 +87,15 @@ services:
         sync: false
 
       # --- Paiement ----------------------------------------------------------
-      # On démarre en mode test ; le passage en production est une décision
-      # explicite, pas un effet de bord du déploiement.
-      - key: PAYMENT_PROVIDER
-        value: stripe
-      - key: PAYMENT_TEST_MODE
-        value: 'true'
+      # Le mode test se déduit de la clé (sk_test_… / sk_live_…) : passer en
+      # production est une décision explicite, pas un effet de bord du
+      # déploiement. Une clé absente fait échouer l'ouverture du paiement en
+      # production — le paiement simulé y est refusé.
       - key: STRIPE_SECRET_KEY
         sync: false
+      # Secret de signature du webhook. Sans lui, /api/paiement/webhook refuse
+      # tous les appels.
       - key: STRIPE_WEBHOOK_SECRET
-        sync: false
-      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
         sync: false
 
       # --- E-mails transactionnels -------------------------------------------

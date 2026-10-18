@@ -1,0 +1,13 @@
+-- Numérotation des commandes.
+--
+-- Une séquence PostgreSQL plutôt qu'un COUNT(*) + 1 : deux commandes passées
+-- dans la même seconde obtiendraient le même numéro avec un comptage, et la
+-- contrainte d'unicité ferait échouer la seconde — au pire moment, celui du
+-- paiement. nextval() est atomique et ne rejoue jamais un numéro, même si la
+-- transaction qui l'a consommé est annulée.
+--
+-- Les trous dans la numérotation sont donc possibles et assumés : c'est le
+-- comportement normal d'une séquence. La numérotation des FACTURES, elle, doit
+-- être continue pour l'administration fiscale ; elle sera construite à part,
+-- au moment de l'émission du document, pas à la création de la commande.
+CREATE SEQUENCE IF NOT EXISTS order_reference_seq START WITH 1 INCREMENT BY 1;
