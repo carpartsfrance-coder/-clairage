@@ -3,6 +3,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 /**
  * Expose le chemin de la requête aux composants serveur.
  *
+ * Ce fichier s'appelle `proxy.ts` et non `middleware.ts` : depuis Next 16, le
+ * « middleware » a été renommé « proxy ». Le comportement est identique, seuls
+ * le nom du fichier et celui de la fonction exportée changent.
+ *
  * Next ne donne pas le chemin aux mises en page : une mise en page imbriquée ne
  * peut donc pas savoir qu'elle rend une page du back-office. On le lui dit par
  * un en-tête, ce qui permet à la mise en page racine de ne pas poser l'en-tête
@@ -12,7 +16,7 @@ import { NextResponse, type NextRequest } from 'next/server'
  * ce qui obligerait à déplacer toutes les routes publiques. Pour un seul
  * en-tête à poser, le coût ne le vaut pas.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const headers = new Headers(request.headers)
   headers.set('x-pathname', request.nextUrl.pathname)
   return NextResponse.next({ request: { headers } })
