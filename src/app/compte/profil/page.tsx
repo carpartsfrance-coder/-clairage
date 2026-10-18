@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db'
 import { AccountNav } from '@/components/account/AccountNav'
 import { PasswordForm, ProfileForm } from '@/components/account/ProfileForms'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
-import { Card } from '@/components/ui/Surface'
+import { Alert, Card } from '@/components/ui/Surface'
 import { identity } from '@/lib/identity'
 
 /**
@@ -47,13 +47,9 @@ export default async function ProfilPage() {
   const user = await requireUser()
   const profile = await loadProfile(user.id)
 
-  // Base indisponible : on retombe sur ce que porte déjà la session plutôt que
-  // d'afficher des champs vides qui écraseraient les valeurs enregistrées.
-  const defaults = {
-    firstName: profile?.firstName ?? user.firstName,
-    lastName: profile?.lastName ?? user.lastName,
-    phone: profile?.phone ?? null,
-  }
+  // Base indisponible : le formulaire n'est pas rendu. La session ne porte pas
+  // le téléphone, donc un formulaire de repli afficherait un champ vide dont
+  // l'envoi effacerait le numéro enregistré.
   const email = profile?.email ?? user.email
 
   return (
@@ -105,7 +101,20 @@ export default async function ProfilPage() {
               </div>
 
               <div className="mt-5">
-                <ProfileForm defaults={defaults} />
+                {profile ? (
+                  <ProfileForm
+                    defaults={{
+                      firstName: profile.firstName,
+                      lastName: profile.lastName,
+                      phone: profile.phone,
+                    }}
+                  />
+                ) : (
+                  <Alert tone="warn" title="Informations indisponibles">
+                    Vos informations ne peuvent pas être lues pour le moment. Rechargez la page
+                    dans un instant.
+                  </Alert>
+                )}
               </div>
             </Card>
           </section>

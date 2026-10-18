@@ -71,7 +71,7 @@ export function ProfileForm({
         name="phone"
         type="tel"
         label="Téléphone"
-        hint="Facultatif — utile si le transporteur doit vous joindre"
+        hint="Facultatif — le transporteur utilise le numéro de l'adresse de livraison"
         defaultValue={defaults.phone ?? ''}
         autoComplete="tel"
         inputMode="tel"

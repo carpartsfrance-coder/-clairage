@@ -54,6 +54,14 @@ const fulfillmentCopy: Record<string, { label: string; tone: BadgeTone }> = {
  */
 const capturedPaymentStatuses = new Set(['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'])
 
+/**
+ * Statuts de paiement qui annoncent un encaissement à venir. Sur une commande
+ * annulée, cette annonce est fausse : rien ne sera plus débité. Le tableau de
+ * bord affiche déjà « Annulée » à partir de `status` — cette liste ne doit pas
+ * dire le contraire de la page d'à côté.
+ */
+const pendingPaymentStatuses = new Set(['PENDING', 'AUTHORIZED'])
+
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 
 export default async function Page() {
@@ -88,11 +96,18 @@ export default async function Page() {
           ) : (
             <ul className="flex flex-col gap-3">
               {orders.map((order) => {
-                const payment = paymentCopy[order.paymentStatus]
-                // Pas de badge de préparation tant qu'aucun montant n'a été pris.
-                const fulfillment = capturedPaymentStatuses.has(order.paymentStatus)
-                  ? fulfillmentCopy[order.fulfillmentStatus]
-                  : undefined
+                const cancelled = order.status === 'CANCELLED'
+                // Sur une commande annulée, on n'annonce pas un paiement à venir…
+                const payment =
+                  cancelled && pendingPaymentStatuses.has(order.paymentStatus)
+                    ? undefined
+                    : paymentCopy[order.paymentStatus]
+                // … ni une préparation, et pas davantage tant qu'aucun montant
+                // n'a été pris.
+                const fulfillment =
+                  !cancelled && capturedPaymentStatuses.has(order.paymentStatus)
+                    ? fulfillmentCopy[order.fulfillmentStatus]
+                    : undefined
 
                 return (
                   <Card as="li" key={order.id} interactive>
@@ -124,6 +139,7 @@ export default async function Page() {
                           </span>
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {cancelled ? <Badge tone="danger">Annulée</Badge> : null}
                           {payment ? <Badge tone={payment.tone}>{payment.label}</Badge> : null}
                           {fulfillment ? (
                             <Badge tone={fulfillment.tone}>{fulfillment.label}</Badge>

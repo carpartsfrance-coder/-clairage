@@ -120,6 +120,9 @@ est chaque fonction, sans arrondi.
 | Rattachement d'une commande invité | ✅ | Exige la référence **et** l'adresse — s'inscrire avec l'adresse d'un autre ne suffit pas, puisque les adresses ne sont pas vérifiées |
 | Suivi d'une commande invitée | ✅ | Référence + adresse, limité en fréquence, message d'échec identique que la commande existe ou non |
 | Vérification de l'adresse e-mail | ⬜ | **Non implémentée.** C'est la raison pour laquelle le rattachement d'une commande exige la référence |
+| Énumération de comptes à l'inscription | 🔸 | **Connue et assumée.** Connexion et récupération ne révèlent rien ; l'inscription, si : une adresse libre connecte et redirige, une adresse prise reste sur la page. La corriger suppose de ne plus connecter automatiquement et d'activer par e-mail — donc la vérification d'adresse d'abord |
+| Secrets hors des journaux | ✅ | Les variables sensibles (lien de réinitialisation) passent par un champ `secrets` jamais écrit dans `EmailLog`. Testé |
+| Redirection après connexion | ✅ | `?next=` résolu contre l'origine du site : `/\evil.com`, `//evil.com` et les URL absolues sont rejetés. Testé |
 | Suivi des expéditions | 🔸 | Affiché quand une expédition existe ; lien transporteur seulement si l'URL est renseignée. Aucune expédition n'a encore été créée |
 | Téléchargement des documents | ⬜ | La fiche commande liste les documents mais n'offre aucun bouton : la génération n'existe pas, un bouton mort serait pire |
 | Demande d'annulation, de retour ou d'assistance | ⬜ | Modèle SAV en place (`SupportTicket`), aucun écran |
@@ -167,7 +170,7 @@ est chaque fonction, sans arrondi.
 
 ## Vérifications effectuées
 
-### Automatisées — `npm test` (73 tests, base PostgreSQL dédiée)
+### Automatisées — `npm test` (81 tests, base PostgreSQL dédiée)
 
 | Fichier | Ce qui est couvert |
 | --- | --- |
@@ -175,7 +178,8 @@ est chaque fonction, sans arrondi.
 | `tests/reservation.test.ts` (13) | Réservation sur vraie base : vendable abaissé sans toucher au détenu, refus au-delà du stock, **2 commandes simultanées sur la dernière pièce → 1 seule passe**, **12 commandes sur 5 unités → exactement 5**, kit développé en composants, échec total si un composant manque, cycle réserver → payer → décompter, libération rejouée sans passer sous zéro, 20 numéros de commande concurrents tous distincts |
 | `tests/orders.test.ts` (11) | Confirmation et décompte, **3 rejeux séquentiels sans effet**, **3 webhooks simultanés → un seul décompte** (vérifié : le test échoue si l'on retire le verrou), refus d'un « payé » après un échec, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
 | `tests/order-access.test.ts` (9) | Jeton d'accès : bon jeton accepté, jeton absent, faux jeton de même longueur, préfixe correct, commande sans jeton, propriétaire connecté ; lecture du paramètre, paramètre répété, valeur vide |
-| `tests/auth.test.ts` (15) | Hachage : bon et mauvais mot de passe, jamais de clair stocké, sel aléatoire, paramètres portés par le condensé, condensé corrompu refusé sans lever ; règles de robustesse (longueur, phrase sans caractère spécial acceptée, mots devinables, reprise de l'e-mail, longueur démesurée) ; sessions : seul le condensé du jeton est stocké, valide/expirée/révoquée distinguées ; jetons de réinitialisation à usage unique, expirants, jamais stockés en clair |
+| `tests/email.test.ts` (3) | Les variables publiques sont journalisées, **les variables sensibles ne le sont jamais** (le lien de réinitialisation ne doit pas atterrir dans `EmailLog`), envoi marqué simulé sans prestataire |
+| `tests/auth.test.ts` (20) | Hachage : bon et mauvais mot de passe, jamais de clair stocké, sel aléatoire, paramètres portés par le condensé, condensé corrompu refusé sans lever ; règles de robustesse (longueur, phrase sans caractère spécial acceptée, mots devinables, reprise de l'e-mail, longueur démesurée) ; sessions : seul le condensé du jeton est stocké, valide/expirée/révoquée distinguées ; jetons de réinitialisation à usage unique, expirants, jamais stockés en clair ; redirection après connexion : chemin interne accepté, URL absolue, relative au protocole et antislash rejetés |
 | `tests/webhook.test.ts` (10) | Refus sans signature, avec un autre secret, sur corps modifié, sur horodatage rejoué, sans secret configuré ; acceptation et normalisation d'une signature valide ; session non encaissée non retenue ; expiration normalisée ; type inconnu ignoré ; mode test déduit de la clé |
 
 ### À la main, dans le navigateur

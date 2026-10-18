@@ -29,8 +29,23 @@ export type EmailMessage = {
   template: EmailTemplate
   to: string
   subject: string
-  /** Variables du modèle. Aucune donnée sensible ne doit y figurer. */
+  /**
+   * Variables du modèle. Elles sont JOURNALISÉES dans `EmailLog` : tout ce qui
+   * passe ici est lisible par quiconque a accès à la base ou au back-office.
+   */
   variables?: Record<string, unknown>
+  /**
+   * Variables sensibles : jeton de réinitialisation, lien de suivi, code à
+   * usage unique. Elles servent au rendu du message et ne sont JAMAIS écrites
+   * dans le journal.
+   *
+   * Ce champ existe parce que l'erreur inverse a été commise : le lien de
+   * réinitialisation est passé un temps par `variables`, ce qui déposait dans
+   * `EmailLog` un lien de prise de contrôle de compte, valable une heure, en
+   * clair. Deux champs distincts rendent la faute visible à l'écriture plutôt
+   * qu'après coup.
+   */
+  secrets?: Record<string, unknown>
   html?: string
   text?: string
 }
@@ -51,6 +66,11 @@ export function emailIsSimulated(): boolean {
   // Un pilote réel sans clé ni expéditeur ne peut pas envoyer : on le dit
   // plutôt que de laisser l'appel échouer silencieusement en production.
   return !process.env.EMAIL_API_KEY || !process.env.EMAIL_FROM
+}
+
+/** Variables disponibles au rendu : les publiques et les sensibles réunies. */
+export function renderVariables(message: EmailMessage): Record<string, unknown> {
+  return { ...(message.variables ?? {}), ...(message.secrets ?? {}) }
 }
 
 export async function sendEmail(message: EmailMessage): Promise<{ simulated: boolean }> {
@@ -137,6 +157,12 @@ async function dispatch(driver: Driver, message: EmailMessage): Promise<string |
   throw new Error(`Pilote e-mail non géré : ${driver}`)
 }
 
+/**
+ * Trace d'envoi.
+ *
+ * N'écrit que `message.variables`. `message.secrets` n'est jamais journalisé —
+ * c'est toute la raison d'être de la distinction entre les deux champs.
+ */
 async function trace(
   message: EmailMessage,
   meta: {

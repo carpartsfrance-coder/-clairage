@@ -211,3 +211,44 @@ describe('jetons de réinitialisation', () => {
     expect(rows[0].tokenHash).toBe(hashToken('secret-du-lien'))
   })
 })
+
+/* -------------------------------------------------------------------------- */
+
+import { buildSafeNext } from '../src/lib/auth/safe-next'
+
+/**
+ * Redirection après connexion.
+ *
+ * Le piège classique : `/\evil.com` passe un test naïf (commence par « / »,
+ * pas par « // ») mais les navigateurs normalisent l'antislash, et l'en-tête
+ * Location devient `//evil.com` — une redirection vers un domaine tiers, sur
+ * une page de connexion, donc un hameçonnage prêt à l'emploi.
+ */
+describe('redirection après connexion', () => {
+  const base = 'https://lumera.example'
+
+  it('accepte un chemin interne', () => {
+    expect(buildSafeNext('/compte/commandes', base)).toBe('/compte/commandes')
+    expect(buildSafeNext('/c/phares-led?tri=prix-croissant', base)).toBe(
+      '/c/phares-led?tri=prix-croissant',
+    )
+  })
+
+  it('refuse une URL absolue vers un autre domaine', () => {
+    expect(buildSafeNext('https://evil.example/piege', base)).toBe('/compte')
+  })
+
+  it('refuse une URL relative au protocole', () => {
+    expect(buildSafeNext('//evil.example', base)).toBe('/compte')
+  })
+
+  it("refuse l'antislash, que le navigateur normalise en slash", () => {
+    expect(buildSafeNext('/\\evil.example', base)).toBe('/compte')
+    expect(buildSafeNext('\\\\evil.example', base)).toBe('/compte')
+  })
+
+  it('refuse une valeur absente ou illisible', () => {
+    expect(buildSafeNext(undefined, base)).toBe('/compte')
+    expect(buildSafeNext('', base)).toBe('/compte')
+  })
+})

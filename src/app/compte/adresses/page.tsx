@@ -100,7 +100,14 @@ export default async function MesAdressesPage() {
                     */}
                     <div className="mt-4 flex flex-col items-start border-t border-line pt-2">
                       <details>
-                        <summary className={summaryClass}>Modifier</summary>
+                        {/*
+                          Le résumé désigne l'adresse comme le fait le bouton de
+                          suppression : sans cela, la page offre autant de
+                          commandes « Modifier » identiques que d'adresses.
+                        */}
+                        <summary className={summaryClass}>
+                          Modifier<span className="sr-only"> l’adresse {designation}</span>
+                        </summary>
                         <div className="mt-4 mb-2">
                           <AddressForm address={address} />
                         </div>

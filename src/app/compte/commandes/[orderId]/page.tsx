@@ -51,6 +51,13 @@ const fulfillmentCopy: Record<string, { label: string; tone: BadgeTone }> = {
 /** Même règle que la liste : un encaissement reste un encaissement. */
 const capturedPaymentStatuses = new Set(['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'])
 
+/**
+ * Statuts qui annoncent un encaissement à venir. Sur une commande annulée,
+ * l'annonce est fausse : rien ne sera plus débité, rien ne sera préparé et
+ * rien ne partira. Le `status` est la seule source de l'annulation.
+ */
+const pendingPaymentStatuses = new Set(['PENDING', 'AUTHORIZED'])
+
 const documentCopy: Record<string, string> = {
   INVOICE: 'Facture',
   CREDIT_NOTE: 'Avoir',
@@ -180,10 +187,15 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
   const order = await loadOrder(user.id, orderId)
   if (!order) notFound()
 
-  const payment = paymentCopy[order.paymentStatus]
-  const fulfillment = capturedPaymentStatuses.has(order.paymentStatus)
-    ? fulfillmentCopy[order.fulfillmentStatus]
-    : undefined
+  const cancelled = order.status === 'CANCELLED'
+  const payment =
+    cancelled && pendingPaymentStatuses.has(order.paymentStatus)
+      ? undefined
+      : paymentCopy[order.paymentStatus]
+  const fulfillment =
+    !cancelled && capturedPaymentStatuses.has(order.paymentStatus)
+      ? fulfillmentCopy[order.fulfillmentStatus]
+      : undefined
   const isTestPayment = order.payments.some(
     (entry) => entry.isTestMode || entry.provider === 'simulation',
   )
@@ -193,10 +205,13 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
   const parentLines = order.lines.filter((line) => line.parentLineId === null)
   const address = readAddress(order.shippingAddress)
 
-  // Un type inconnu affiche son message brut ; sans message, il n'y a rien à
-  // montrer, et on n'écrit surtout pas son code.
+  // Seuls les types connus sont affichés, et jamais `event.message` : ces
+  // messages sont écrits pour le back-office. « payment.amount_mismatch »
+  // porte par exemple un écart de montants en centimes, destiné à la
+  // réconciliation — un repli sur le message publierait cette trace interne
+  // dans l'historique du client.
   const events = order.events.flatMap((event) => {
-    const label = eventCopy[event.type] ?? event.message?.trim() ?? ''
+    const label = eventCopy[event.type]
     return label ? [{ id: event.id, label, createdAt: event.createdAt }] : []
   })
 
@@ -220,6 +235,7 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
       </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        {cancelled ? <Badge tone="danger">Annulée</Badge> : null}
         {payment ? <Badge tone={payment.tone}>{payment.label}</Badge> : null}
         {fulfillment ? <Badge tone={fulfillment.tone}>{fulfillment.label}</Badge> : null}
         {isTestPayment ? (
@@ -380,7 +396,11 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
 
             {order.shipments.length === 0 ? (
               <Card className="mt-4 p-5">
-                <p className="text-sm text-muted-strong">Pas encore expédiée.</p>
+                {/* « Pas encore » promet un envoi : sur une commande annulée,
+                    cette promesse n'existe plus. */}
+                <p className="text-sm text-muted-strong">
+                  {cancelled ? 'Aucune expédition : la commande a été annulée.' : 'Pas encore expédiée.'}
+                </p>
               </Card>
             ) : (
               <ul className="mt-4 flex flex-col gap-3">

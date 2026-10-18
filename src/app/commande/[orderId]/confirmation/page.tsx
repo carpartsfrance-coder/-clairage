@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { accessTokenFrom, canViewOrder } from '@/lib/order-access'
+import { getCurrentUser } from '@/lib/auth/session'
 import { prisma } from '@/lib/db'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge } from '@/components/ui/Badge'
@@ -194,7 +195,7 @@ export default async function Page({
 
   // Même contrôle que sur la page de paiement : l'identifiant seul ne donne
   // pas accès aux données personnelles de la commande.
-  if (loaded !== 'unavailable' && loaded && !canViewOrder(loaded, accessTokenFrom(sp))) {
+  if (loaded !== 'unavailable' && loaded && !canViewOrder(loaded, accessTokenFrom(sp), (await getCurrentUser())?.id ?? null)) {
     notFound()
   }
 

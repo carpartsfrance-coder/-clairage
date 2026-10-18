@@ -175,7 +175,7 @@ export function AddressForm({
         name="phone"
         type="tel"
         label="Téléphone"
-        hint="Facultatif — utilisé uniquement en cas de problème sur la livraison"
+        hint="Facultatif — pour être joint en cas de problème sur la livraison"
         autoComplete="tel"
         defaultValue={address?.phone ?? ''}
         maxLength={32}

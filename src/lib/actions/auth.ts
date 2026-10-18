@@ -15,15 +15,26 @@ import {
 import { callerIp, clearThrottle, throttle, throttleMessage } from '../auth/throttle'
 import { sendEmail } from '../email'
 import { identity, siteConfig } from '../identity'
+import { buildSafeNext } from '../auth/safe-next'
 
 /**
  * Authentification.
  *
  * Trois règles traversent ce fichier :
  *
- * 1. **Ne jamais révéler si une adresse existe.** Inscription, connexion et
- *    récupération renvoient le même message quel que soit le cas. Une
- *    différence de formulation suffirait à dresser la liste des clients.
+ * 1. **Ne jamais révéler si une adresse existe** — pour la connexion et la
+ *    récupération d'accès, qui renvoient le même message et le même temps de
+ *    réponse dans tous les cas.
+ *
+ *    L'inscription fait exception, et c'est un arbitrage assumé, pas un oubli :
+ *    une adresse libre crée le compte, ouvre la session et redirige vers
+ *    /compte, tandis qu'une adresse déjà prise reste sur la page avec un
+ *    message neutre. Les deux cas sont donc distinguables. Les rendre
+ *    identiques imposerait de ne plus connecter automatiquement à
+ *    l'inscription et d'attendre une activation par e-mail — ce qui suppose
+ *    d'abord la vérification des adresses, qui n'existe pas encore. Tant
+ *    qu'elle manque, l'inscription reste énumérable, et c'est écrit dans la
+ *    matrice de réception plutôt que passé sous silence.
  * 2. **Le temps de réponse ne doit pas trahir non plus.** Sur une adresse
  *    inconnue, on calcule tout de même un hachage : sans cela, un échec
  *    instantané distinguerait « compte inexistant » de « mauvais mot de passe ».
@@ -91,14 +102,14 @@ export async function register(_previous: AuthState, formData: FormData): Promis
     const existing = await prisma.user.findUnique({ where: { email } })
 
     if (existing) {
-      // L'adresse est déjà prise. On ne le dit pas : on envoie un e-mail à son
-      // propriétaire légitime, et on affiche le même message que pour une
-      // création réussie. Celui qui sonde n'apprend rien ; celui qui avait
-      // oublié son compte reçoit de quoi le retrouver.
+      // L'adresse est déjà prise. On ne le dit pas en toutes lettres, et on
+      // prévient son propriétaire légitime. Cela limite la casse sans la
+      // supprimer : voir la note sur l'énumération en tête de fichier.
       await sendEmail({
         template: 'compte.bienvenue',
         to: email,
         subject: `${identity.name} — vous avez déjà un compte`,
+        // Pas de jeton ici : c'est une invitation à demander une réinitialisation.
         variables: { resetUrl: `${siteConfig.url}/mot-de-passe-oublie` },
       }).catch((error) => console.error('[auth] e-mail compte existant', error))
 
@@ -141,10 +152,9 @@ const loginSchema = z.object({
   next: z.string().optional(),
 })
 
-/** N'accepte qu'un chemin interne : empêche la redirection vers un site tiers. */
+/** Voir src/lib/auth/safe-next.ts : la logique y est isolée pour être testée. */
 function safeNext(value: string | undefined): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/compte'
-  return value
+  return buildSafeNext(value, siteConfig.url)
 }
 
 const MAX_FAILED_LOGINS = 10
@@ -273,10 +283,10 @@ export async function requestPasswordReset(
       template: 'compte.reinitialisation',
       to: email,
       subject: `${identity.name} — réinitialiser votre mot de passe`,
-      variables: {
-        resetUrl: `${siteConfig.url}/mot-de-passe-oublie/${token}`,
-        expiresInMinutes: RESET_TTL_MINUTES,
-      },
+      variables: { expiresInMinutes: RESET_TTL_MINUTES },
+      // Le lien porte le jeton : il part dans `secrets`, jamais dans `variables`,
+      // pour ne pas se retrouver en clair dans EmailLog.
+      secrets: { resetUrl: `${siteConfig.url}/mot-de-passe-oublie/${token}` },
     })
   } catch (error) {
     console.error('[auth] demande de réinitialisation impossible', error)

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { accessTokenFrom, canViewOrder } from '@/lib/order-access'
+import { getCurrentUser } from '@/lib/auth/session'
 import { prisma } from '@/lib/db'
 import { formatPrice } from '@/lib/identity'
 import { paymentIsSimulated } from '@/lib/payments'
@@ -82,7 +83,7 @@ export default async function Page({
   // Sans ce contrôle, l'identifiant de commande suffirait à lire l'adresse,
   // l'e-mail et le montant du client. On renvoie une 404 plutôt qu'un 403 :
   // un refus explicite confirmerait que la commande existe.
-  if (!canViewOrder(order, accessTokenFrom(sp))) notFound()
+  if (!canViewOrder(order, accessTokenFrom(sp), (await getCurrentUser())?.id ?? null)) notFound()
 
   const abandon = premier(sp.abandon) === '1'
 
