@@ -13,27 +13,39 @@
    ========================================================================== */
 
 @theme {
+  /*
+    Valeurs reprises du code réel de la maquette v3
+    (`lumera-homepage-reference/reference-site/styles.css`, variables `:root`).
+
+    Le rouge y vaut #c82e28, et non le #ec2525 que portaient les anciens PNG.
+    Les deux sources se contredisaient ; le cahier des charges demandait
+    d'ailleurs « un rouge proche de #C82E28 ». Le code publié tranche, et c'est
+    lui qui fait foi pour cette intégration.
+  */
   /* --- Couleurs de marque ------------------------------------------------ */
-  --color-brand: #ec2525; /* variante cahier des charges : #c82e28 */
-  --color-brand-dark: #c81f1f;
-  --color-brand-darker: #a81a1a;
-  --color-brand-soft: #fdecec;
-  --color-brand-border: #f7c6c6;
+  --color-brand: #c82e28; /* --red de la référence */
+  --color-brand-dark: #ad241f; /* --red-dark */
+  --color-brand-darker: #8f1d19;
+  --color-brand-soft: #fbeceb;
+  --color-brand-border: #f0c9c7;
 
   /* --- Noir et anthracite ------------------------------------------------ */
-  --color-ink: #212428; /* bandeaux sombres, texte principal */
-  --color-ink-soft: #2b2f34;
-  --color-ink-line: #3a3f45;
+  --color-ink: #18191b; /* --ink : texte principal et bandeaux sombres */
+  --color-ink-soft: #23282c; /* fond du sélecteur de véhicule */
+  --color-ink-line: #42484c; /* filet sur fond sombre */
+  --color-ink-bar: #202326; /* bandeau utilitaire */
+  --color-ink-hero: #111820; /* fond du bandeau d'ouverture */
 
   /* --- Gris ------------------------------------------------------------- */
-  --color-slate-ink: #0f1114;
-  --color-muted: #6b7280;
-  --color-muted-strong: #4b5563;
-  --color-line: #e3e5e9; /* bordure fine par défaut */
-  --color-line-strong: #cfd3da;
+  --color-slate-ink: #18191b;
+  --color-muted: #707276; /* --muted */
+  --color-muted-strong: #55585b;
+  --color-line: #e5e5e2; /* --line */
+  --color-line-strong: #c7c9c0;
   --color-surface: #ffffff;
-  --color-surface-soft: #f9f9fa; /* bandeau de réassurance */
-  --color-surface-muted: #f0f1f3; /* champ de recherche */
+  --color-surface-soft: #f7f8f4; /* bandeau de réassurance */
+  --color-surface-paper: #f5f5f2; /* --paper */
+  --color-surface-muted: #f7f8f5; /* champ de recherche du header */
 
   /* --- Statuts ----------------------------------------------------------- */
   /*
@@ -45,9 +57,9 @@
     pour suggérer qu'une pièce est validée. En cas de doute, FitmentBadge est la
     seule source de vérité.
   */
-  --color-ok: #2b8f3e;
-  --color-ok-soft: #eef7f1;
-  --color-ok-border: #bfe0c9;
+  --color-ok: #28794d; /* --green */
+  --color-ok-soft: #f0f6f1; /* --green-bg */
+  --color-ok-border: #c3ddcb;
   --color-warn: #b45309;
   --color-warn-soft: #fef6e7;
   --color-warn-border: #f2dcb3;
@@ -57,8 +69,14 @@
   --color-info-soft: #eef2ff;
 
   /* --- Typographie ------------------------------------------------------- */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-wordmark: var(--font-wordmark-src), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /*
+    La référence compose en Arial/Helvetica — pas en Inter.
+    C'est elle qui donne aux titres leur dessin serré et aux petits corps leur
+    aspect. Garder Inter aurait changé toutes les largeurs de texte et donc
+    toutes les coupes de ligne de la maquette.
+  */
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-wordmark: Arial, Helvetica, sans-serif;
 
   --text-eyebrow: 0.75rem;
   --text-eyebrow--line-height: 1rem;
@@ -113,7 +131,11 @@
     background-color: var(--color-surface);
     color: var(--color-slate-ink);
     font-family: var(--font-sans);
-    font-feature-settings: 'cv05', 'ss01';
+    /* 14px/1.5, comme la référence : c'est la base dont découlent toutes ses
+       tailles en pixels. `font-feature-settings` visait Inter et n'a plus
+       d'objet sur Arial. */
+    font-size: 14px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -154,16 +176,21 @@
    Utilitaires de composition
    -------------------------------------------------------------------------- */
 
+/*
+  Équivalent de `.shell` dans la référence : max-width 1280px, 32px de marge
+  intérieure. Le projet descendait à 16px sur petit écran — on le garde, la
+  référence fait de même sous 800px (voir ses media queries).
+*/
 @utility container-page {
   width: 100%;
   margin-inline: auto;
   padding-inline: 1rem;
-  max-width: 1360px;
+  max-width: 1280px;
 
   @media (width >= 48rem) {
     padding-inline: 1.5rem;
   }
-  @media (width >= 80rem) {
+  @media (width >= 64rem) {
     padding-inline: 2rem;
   }
 }

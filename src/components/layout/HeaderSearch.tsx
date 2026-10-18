@@ -101,19 +101,19 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
           Rechercher une ampoule, une référence ou un culot
         </label>
 
+        {/*
+          `.header-search` de la référence : 45 px de haut, rayon 7 px, fond
+          #f7f8f5, filet #e1e5dc, et un bouton rouge de 33 px détaché de 5 px
+          du bord — et non un bloc collé sur toute la hauteur.
+        */}
         <div
           className={cn(
-            'flex w-full items-stretch overflow-hidden rounded-md border border-line bg-surface-muted',
-            'focus-within:border-line-strong',
-            compact ? 'h-12' : 'h-[60px]',
+            'flex w-full items-center rounded-[7px] border border-[#e1e5dc] bg-[#f7f8f5]',
+            'focus-within:border-[#a1ab97] focus-within:shadow-[0_0_0_3px_#97a58517]',
+            compact ? 'h-[42px]' : 'h-[45px]',
           )}
         >
-          <IconSearch
-            className={cn(
-              'ml-4 shrink-0 self-center text-slate-ink',
-              compact ? 'size-5' : 'size-6',
-            )}
-          />
+          <IconSearch className="ml-[15px] size-[18px] shrink-0 self-center text-[#89927e]" />
           <input
             id={inputId}
             type="search"
@@ -134,20 +134,14 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
             aria-controls={listId}
             aria-autocomplete="list"
             aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
-            className={cn(
-              'min-w-0 flex-1 bg-transparent px-3 text-slate-ink outline-none placeholder:text-muted',
-              compact ? 'text-sm' : 'text-[1.0625rem]',
-            )}
+            className="h-full min-w-0 flex-1 bg-transparent px-3 text-[12px] text-[#353e2d] outline-none placeholder:text-[#8a9282]" 
           />
           <button
             type="submit"
             aria-label="Lancer la recherche"
-            className={cn(
-              'flex shrink-0 items-center justify-center bg-brand text-white transition-colors hover:bg-brand-dark',
-              compact ? 'w-12' : 'w-[61px]',
-            )}
+            className="mr-[5px] grid h-[33px] min-w-[35px] shrink-0 place-items-center rounded-[5px] bg-brand text-white transition-colors hover:bg-brand-dark"
           >
-            <IconArrowRight className={compact ? 'size-5' : 'size-6'} />
+            <IconArrowRight className="size-[17px]" />
           </button>
         </div>
       </form>

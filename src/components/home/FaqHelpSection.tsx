@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { HomeFaqItem } from '@/lib/queries/home'
 import { ButtonLink } from '@/components/ui/Button'
-import { IconArrowRight, IconChevronDown, IconHeadset } from '@/components/ui/icons'
+import { IconHeadset } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 
 export type FaqHelpSectionProps = {
@@ -18,11 +18,23 @@ const FAQ_TITLE_ID = 'accueil-faq-titre'
 const HELP_TITLE_ID = 'accueil-aide-titre'
 
 /**
- * FAQ (repliable, sans JavaScript) puis bande d'assistance.
+ * FAQ puis bande d'assistance — `.home-faq` et `.assistance-banner` de la
+ * référence.
  *
- * Les questions sont des <details> natifs : ouverture, fermeture et pilotage
- * au clavier sont assurés par le navigateur, donc rien à réimplémenter ni à
- * hydrater.
+ * Valeurs reprises de `home.css` et `styles.css` : deux colonnes .8fr / 1.2fr
+ * avec 75 px d'écart, questions espacées de 16 px au-dessus et en dessous,
+ * intitulé à 11 px, réponse à 10 px, et le « + » de 17 px qui bascule à
+ * l'ouverture. Puis le panneau d'assistance arrondi sur fond #f4f5f0, pastille
+ * blanche de 52 px et bouton secondaire poussé à droite.
+ *
+ * Les questions restent des <details> natifs : ouverture, fermeture et
+ * pilotage au clavier sont assurés par le navigateur, donc rien à
+ * réimplémenter ni à hydrater.
+ *
+ * **Écart assumé** : le lien « Toutes les questions » n'existe pas dans la
+ * référence, dont la FAQ est un cul-de-sac. L'application a une page dédiée ;
+ * le lien est placé sous le titre, dans la colonne de gauche, qui est plus
+ * courte que la liste — il ne coûte donc aucune hauteur.
  */
 export function FaqHelpSection({ faq, help }: FaqHelpSectionProps) {
   const hasFaq = faq.length > 0
@@ -30,70 +42,100 @@ export function FaqHelpSection({ faq, help }: FaqHelpSectionProps) {
   return (
     <section
       aria-labelledby={hasFaq ? FAQ_TITLE_ID : HELP_TITLE_ID}
-      className="bg-white py-14"
+      /* .home-faq : pas de marge haute propre, 48 px en bas (33 en mobile). */
+      className="bg-white pb-[33px] lg:pb-12"
     >
       <div className="container-page">
+        {/* .home-faq : titre à gauche (.8fr), questions à droite (1.2fr),
+            75 px d'écart. Empilé sous 800 px. */}
         {hasFaq ? (
-          /* Une seule colonne étroite : une réponse se lit sur une ligne courte,
-             et deux colonnes feraient sauter la mise en page à chaque ouverture. */
-          <div className="max-w-3xl">
-            <h2
-              id={FAQ_TITLE_ID}
-              className="text-[1.75rem] leading-[1.15] font-extrabold text-slate-ink sm:text-[2.125rem]"
-            >
-              Questions fréquentes
-            </h2>
+          <div className="block gap-[75px] lg:grid lg:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="mb-2.5 text-[7px] font-bold tracking-[1.2px] text-brand uppercase lg:text-[8px] lg:tracking-[1.6px]">
+                Avant de passer au blanc
+              </p>
+              <h2
+                id={FAQ_TITLE_ID}
+                className="text-[26px] leading-[1.1] font-bold tracking-[-0.8px] text-slate-ink lg:text-[29px] lg:tracking-[-1px]"
+              >
+                Questions fréquentes
+              </h2>
 
-            <ul className="mt-6 border-t border-line">
+              <Link
+                href="/faq"
+                className="mt-2 inline-flex min-h-11 items-center gap-2 text-[10px] font-bold text-slate-ink hover:underline lg:mt-3.5 lg:min-h-0"
+              >
+                Toutes les questions
+                <span aria-hidden="true" className="text-[16px] leading-none">
+                  ↗
+                </span>
+              </Link>
+            </div>
+
+            {/* .faq-list : 16 px autour de chaque intitulé, filet dessous. */}
+            <ul className="mt-[23px] lg:mt-0">
               {faq.map((item, index) => (
-                <li key={`${index}-${item.question}`} className="border-b border-line">
+                /* Le retrait est porté par le <li> : `first:` vise le premier
+                   enfant de la liste, et chaque <details> est seul dans le sien. */
+                <li
+                  key={`${index}-${item.question}`}
+                  className="border-b border-line py-4 first:pt-0"
+                >
                   <details className="group">
-                    <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-semibold text-slate-ink [&::-webkit-details-marker]:hidden">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-2.5 text-[11px] font-semibold text-slate-ink [&::-webkit-details-marker]:hidden">
                       <span>{item.question}</span>
-                      <IconChevronDown className="size-5 shrink-0 text-muted transition-transform group-open:rotate-180" />
+                      {/* Le « + » de la référence, qui bascule en croix. */}
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-[17px] leading-[26px] font-normal text-[#8c8e85] transition-transform group-open:rotate-45"
+                      >
+                        +
+                      </span>
                     </summary>
-                    <p className="pb-4 text-sm leading-relaxed text-muted-strong">{item.answer}</p>
+                    <p className="mt-3 max-w-[580px] text-[10px] leading-[1.8] text-[#7b8074]">
+                      {item.answer}
+                    </p>
                   </details>
                 </li>
               ))}
             </ul>
-
-            <Link
-              href="/faq"
-              className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-slate-ink underline underline-offset-4 hover:text-brand"
-            >
-              Toutes les questions
-            </Link>
           </div>
         ) : null}
 
-        {/* Le filet de séparation n'a de sens qu'avec une FAQ au-dessus. */}
-        <div
+        {/* .assistance-banner : panneau arrondi #f4f5f0, 29 px de marge haute
+            et basse, pastille blanche de 52 px, bouton secondaire à droite. */}
+        <section
+          aria-labelledby={HELP_TITLE_ID}
           className={cn(
-            'flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-8',
-            hasFaq && 'mt-12 border-t border-line pt-10',
+            'rounded-lg bg-[#f4f5f0] px-[23px] py-[23px] md:flex md:items-center md:gap-[22px] lg:rounded-[10px] lg:px-8 lg:py-[29px]',
+            hasFaq && 'mt-[33px] lg:mt-12',
           )}
         >
-          <div className="flex items-start gap-4">
-            <IconHeadset className="size-9 shrink-0 text-slate-ink" />
-            <div>
-              <h2 id={HELP_TITLE_ID} className="text-[1.05rem] font-bold text-slate-ink">
-                {help.title}
-              </h2>
-              <p className="mt-1 text-sm text-muted-strong">{help.text}</p>
-            </div>
+          <span className="mb-4 grid size-10 shrink-0 place-items-center rounded-full bg-white md:mb-0 lg:size-[52px]">
+            <IconHeadset className="size-[21px] text-slate-ink lg:size-6" />
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <p className="mb-[7px] text-[7px] font-bold tracking-[1.2px] text-brand uppercase">
+              Le bon conseil, au bon moment
+            </p>
+            <h2
+              id={HELP_TITLE_ID}
+              className="text-[22px] leading-[1.25] font-bold tracking-[-0.5px] text-slate-ink lg:text-[21px] lg:leading-normal"
+            >
+              {help.title}
+            </h2>
+            <p className="mt-1.5 text-[10px] text-[#83867a]">{help.text}</p>
           </div>
 
           <ButtonLink
             href={help.ctaHref}
             variant="secondary"
-            block
-            className="shrink-0 md:w-auto"
-            iconRight={<IconArrowRight className="size-4" />}
+            className="mt-[18px] w-full shrink-0 gap-4 rounded-md px-[17px] text-[11px] whitespace-nowrap md:mt-0 md:ml-auto md:w-auto"
           >
             {help.ctaLabel}
           </ButtonLink>
-        </div>
+        </section>
       </div>
     </section>
   )

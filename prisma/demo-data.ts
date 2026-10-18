@@ -174,7 +174,7 @@ export const demoProducts: DemoProduct[] = [
     vehicleType: 'CAR',
     difficulty: 'EASY',
     kind: 'KIT',
-    image: 'fiche-kit-led-h7.jpg',
+    image: 'product.png',
     gallery: [
       { file: 'fiche-vignette-rendu.jpg', role: 'RESULT', caption: 'Illustration de rendu — simulation de teinte.' },
       { file: 'fiche-vignette-contenu.jpg', role: 'KIT_CONTENT', caption: 'Contenu du kit complet.' },
@@ -222,7 +222,7 @@ export const demoProducts: DemoProduct[] = [
     vehicleType: 'CAR',
     difficulty: 'EASY',
     kind: 'SIMPLE',
-    image: 'produit-pack-habitacle.jpg',
+    image: 'interior.png',
     specs: [
       ['Culots', 'W5W, C5W, T10'],
       ['Température de couleur', '6 000 K'],
@@ -268,7 +268,7 @@ export const demoProducts: DemoProduct[] = [
     vehicleType: 'CAR',
     difficulty: 'MEDIUM',
     kind: 'SIMPLE',
-    image: 'produit-xenon-d1s.jpg',
+    image: 'xenon.png',
     specs: [
       ['Culot', 'D1S'],
       ['Température de couleur', '6 000 K'],
@@ -407,8 +407,10 @@ export const demoHomeBlocks = {
   hero: {
     eyebrow: 'Éclairage auto & moto',
     title: 'Passez du jaune au blanc LED.',
+    // Coupes de ligne reprises de la référence (`<br>` dans son HTML) : elles
+    // font partie de la composition du bandeau.
     subtitle:
-      'Phares, intérieur, plaque… Le bon éclairage pour votre véhicule, avec les bons accessoires.',
+      'Phares, intérieur, plaque…\nLe bon éclairage pour votre véhicule,\navec les bons accessoires.',
     ctaLabel: 'Trouver mon éclairage',
     // Ancre, et non page séparée : le sélecteur est juste en dessous et visible
     // dès l'arrivée. Y envoyer directement évite un chargement de page pour
@@ -416,7 +418,7 @@ export const demoHomeBlocks = {
     // pour qui veut l'explication complète du parcours.
     ctaHref: '#choisir-mon-vehicule',
     bullets: ['Montage expliqué', 'Assistance au choix'],
-    image: 'hero-voiture.jpg',
+    image: 'home-hero.png',
     imageCaption: 'Illustration de rendu.',
   },
   vehicleBand: {
@@ -451,7 +453,7 @@ export const demoHomeBlocks = {
     subtitle: 'Un blanc pur pour moderniser le style de votre véhicule.',
     ctaLabel: 'Découvrir le kit LED H7',
     ctaHref: '/p/kit-led-h7-blanc-pur-6000k',
-    image: 'comparatif-phares-led.jpg',
+    image: 'car-night.png',
     caption: 'Simulation de rendu — illustration.',
     leftLabel: 'Jaune',
     rightLabel: 'Blanc LED',
@@ -462,21 +464,28 @@ export const demoHomeBlocks = {
   },
   method: {
     title: 'Le bon produit. Les bons conseils.',
+    eyebrow: 'Plus simple quand on est bien accompagné',
     steps: [
       {
         icon: 'gear',
         title: 'Un kit pour votre montage',
         text: 'Des produits compatibles avec votre véhicule, sélectionnés avec soin.',
+        linkLabel: 'Vérifier mon véhicule',
+        linkHref: '#choisir-mon-vehicule',
       },
       {
         icon: 'wrench',
         title: 'Une installation expliquée',
         text: 'Des guides et conseils clairs pour un montage en toute confiance.',
+        linkLabel: 'Voir les guides de montage',
+        linkHref: '/guides',
       },
       {
         icon: 'headset',
         title: 'Un humain à vos côtés',
         text: 'Notre équipe vous aide à choisir et vous accompagne après l’achat.',
+        linkLabel: 'Demander conseil',
+        linkHref: '/contact',
       },
     ],
   },
@@ -485,8 +494,9 @@ export const demoHomeBlocks = {
     subtitle: 'Des solutions d’éclairage haute performance pour votre moto.',
     ctaLabel: 'Trouver pour ma moto',
     ctaHref: '/c/moto',
-    image: 'bandeau-moto.jpg',
-    caption: 'Illustration de rendu.',
+    image: 'motorcycle.png',
+    caption: 'Visuel illustratif · gamme de démonstration',
+    eyebrow: 'Et sur deux roues ?',
   },
   help: {
     title: 'Le bon conseil, au bon moment.',

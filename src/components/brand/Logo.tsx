@@ -26,29 +26,38 @@ export function Logo({
   const wordColor = tone === 'dark' ? 'text-white' : 'text-slate-ink'
 
   const content = (
-    <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <LogoMark className="h-[26px] w-auto shrink-0" />
-      <span className="inline-flex flex-col leading-none">
+    /*
+      Composition reprise du code de référence (`.shop-brand`, `.brand`,
+      `.brand-mark`, `.brand-baseline`) :
+        — trois barres de 5 px de large, hautes de 15, 24 et 19 px, alignées
+          en bas, écartées de 4 px, inclinées de -19° ;
+        — le mot à 30 px, graisse 900, interlettrage -1.4 px ;
+        — la ligne de signature à 7 px, interlettrage 1.45 px, décalée de
+          38 px pour s'aligner sous la première lettre.
+      Le dessin était auparavant un SVG à trois barres de hauteur égale.
+    */
+    <span className={cn('inline-flex flex-col gap-[7px]', className)}>
+      <span
+        className={cn(
+          'inline-flex items-center text-[27px] leading-none font-black tracking-[-1.4px] whitespace-nowrap lg:text-[30px]',
+          wordColor,
+        )}
+      >
+        <LogoMark className="mr-3" />
+        {identity.name}
+        <span className="text-brand">{identity.wordmarkSuffix}</span>
+      </span>
+
+      {showBaseline ? (
         <span
           className={cn(
-            'font-wordmark text-[1.55rem] font-extrabold leading-none tracking-[-0.015em]',
-            wordColor,
+            'pl-[36px] text-[6px] leading-none tracking-[1.2px] uppercase lg:pl-[38px] lg:text-[7px] lg:tracking-[1.45px]',
+            tone === 'dark' ? 'text-white/55' : 'text-[#90958c]',
           )}
         >
-          {identity.name}
-          <span className="text-brand">{identity.wordmarkSuffix}</span>
+          {identity.baseline}
         </span>
-        {showBaseline ? (
-          <span
-            className={cn(
-              'font-wordmark mt-1 text-[0.5rem] font-semibold uppercase leading-none tracking-[0.17em]',
-              tone === 'dark' ? 'text-white/60' : 'text-muted',
-            )}
-          >
-            {identity.baseline}
-          </span>
-        ) : null}
-      </span>
+      ) : null}
     </span>
   )
 
@@ -61,15 +70,22 @@ export function Logo({
   )
 }
 
-/** Les trois barres seules — favicon, e-mails, chargeurs. */
+/**
+ * Les trois barres seules — `.brand-mark` de la référence.
+ *
+ * Elles sont dessinées en HTML plutôt qu'en SVG : l'inclinaison et les trois
+ * hauteurs se lisent directement, et les barres suivent la couleur de marque
+ * sans passer par un `fill`.
+ */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 54 28" className={className} aria-hidden="true" focusable="false">
-      <g fill="currentColor" className="text-brand">
-        <path d="M10.8 2h10.4L13.6 26H3.2z" />
-        <path d="M24.6 2H35l-7.6 24H17z" />
-        <path d="M38.4 2h10.4l-7.6 24H30.8z" />
-      </g>
-    </svg>
+    <span
+      aria-hidden="true"
+      className={cn('flex shrink-0 skew-x-[-19deg] items-end gap-[4px]', className)}
+    >
+      <i className="block h-[15px] w-[5px] bg-brand" />
+      <i className="block h-[24px] w-[5px] bg-brand" />
+      <i className="block h-[19px] w-[5px] bg-brand" />
+    </span>
   )
 }

@@ -44,44 +44,58 @@ function resolveIcon(key: string) {
 const headingId = 'reassurance-band-title'
 
 /**
- * Bandeau clair de trois arguments, posé sous le sélecteur de véhicule.
- * Colonnes séparées par un filet vertical sur grand écran, empilées et
- * séparées par un filet horizontal sur mobile.
+ * Bandeau de repères — `.home-reassurance` du code de référence.
+ *
+ * Une seule ligne de trois mentions courtes : icône de 20 px (17 en mobile),
+ * texte de 10 px couleur #666d62, 19 px de marge haute et basse (17 en
+ * mobile), fond #f7f8f4 et filet bas
+ * #e8eae1. Le projet affichait un titre ET une phrase par colonne, dans une
+ * grille à filets verticaux : deux fois la hauteur de la référence pour la
+ * même information.
+ *
+ * La mention appelée par l'astérisque est conservée. C'est elle qui empêche
+ * « Branchement sans modifier le câblage » d'être lu comme une garantie
+ * universelle, et la référence la porte aussi.
  */
 export function ReassuranceBand({ items }: ReassuranceBandProps) {
   if (items.length === 0) return null
 
   return (
-    <section aria-labelledby={headingId} className="border-y border-line bg-surface-soft">
-      <div className="container-page py-7">
+    <section
+      aria-labelledby={headingId}
+      className="border-b border-[#e8eae1] bg-[#f7f8f4]"
+    >
+      <div className="container-page py-[17px] lg:py-[19px]">
         <h2 id={headingId} className="sr-only">
           Points de repère
         </h2>
-        <ul className="grid grid-cols-1 md:grid-cols-3">
+
+        <ul className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:gap-5">
           {items.map((item, index) => {
             const Icon = resolveIcon(item.icon)
             return (
               <li
                 key={`${item.icon}-${index}`}
-                className={cn(
-                  'flex items-start gap-3.5 border-t border-line py-4 first:border-t-0 first:pt-0 last:pb-0',
-                  'md:border-t-0 md:py-0 md:pr-6 md:pl-6 md:first:pl-0 md:last:pr-0',
-                  index > 0 && 'md:border-l md:border-line',
-                )}
+                className="flex items-center gap-2.5 text-[9px] text-[#666d62] lg:text-[10px]"
               >
-                {Icon ? <Icon className="mt-0.5 size-9 shrink-0 text-slate-ink" /> : null}
-                <div className="min-w-0">
-                  <p className="text-[0.95rem] leading-snug font-bold text-slate-ink">
-                    {item.title}
-                    {item.footnote ? <span aria-hidden="true"> *</span> : null}
-                  </p>
-                  <p className="mt-0.5 text-sm text-muted-strong">{item.text}</p>
-                  {item.footnote ? <p className="mt-1 text-xs text-muted">{item.footnote}</p> : null}
-                </div>
+                {Icon ? (
+                  <Icon className="size-[17px] shrink-0 text-[#373e32] lg:size-5" strokeWidth={1.35} />
+                ) : null}
+                <span className="font-medium">
+                  {item.title}
+                  {item.footnote ? <span aria-hidden="true">*</span> : null}
+                </span>
               </li>
             )
           })}
         </ul>
+
+        {/*
+          La mention appelée par l'astérisque n'est pas ici : la référence la
+          résout en pied de page (`.footer-asterisk`), ce qui garde ce bandeau
+          sur une seule ligne. Elle reste donc lisible, au même endroit que
+          dans la source.
+        */}
       </div>
     </section>
   )

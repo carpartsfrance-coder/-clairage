@@ -139,15 +139,44 @@ export function VehicleSelector({
   const catalogueEmpty = !loading && makes.length === 0
   const inline = layout === 'inline'
 
+  /*
+    Habillage des champs dans le bandeau sombre, repris de `home.css` :
+      select  : 43 px de haut, fond #fafaf8, filet #4c5153, rayon 5 px,
+                texte 12 px couleur #23272a ;
+      label   : 7 px, gras, interlettrage 1.2 px, couleur #c2c8cb, capitales.
+    Hors bandeau, les champs gardent l'habillage standard du projet.
+  */
+  const champSombre = inline
+    ? 'h-[43px] rounded-[5px] border-[#4c5153] bg-[#fafaf8] px-[11px] text-[12px] text-[#23272a]'
+    : undefined
+  const labelSombre = inline
+    ? 'text-[7px] font-bold uppercase tracking-[1.2px] text-[#c2c8cb]'
+    : undefined
+
+
   return (
-    <form onSubmit={submit} className={cn('flex flex-col gap-3', className)}>
+    <form
+      onSubmit={submit}
+      /* En bandeau, les écarts viennent des marges de chaque bloc (comme dans
+         la référence) et non d'un `gap` global : les deux se cumuleraient. */
+      className={cn('flex flex-col', inline ? 'gap-0' : 'gap-3', className)}
+    >
       {/* Bascule voiture / moto */}
+      {/*
+        Bascule voiture / moto.
+
+        En bandeau d'accueil (`inline`), la référence n'emploie pas un
+        interrupteur en pilule mais deux onglets soulignés (`.finder-tabs`) :
+        10 px, gris #9fa6aa, et un filet de 2 px couleur #e76b5d sous l'onglet
+        actif. Ailleurs, la pilule du projet est conservée.
+      */}
       <div
         role="radiogroup"
         aria-label="Type de véhicule"
         className={cn(
-          'inline-flex w-fit rounded-sm p-1',
-          inline ? 'bg-white/10' : 'bg-surface-muted',
+          inline
+            ? 'mb-[13px] flex w-fit gap-5'
+            : 'inline-flex w-fit rounded-sm bg-surface-muted p-1',
         )}
       >
         {(
@@ -165,17 +194,20 @@ export function VehicleSelector({
               aria-checked={active}
               onClick={() => setType(value)}
               className={cn(
-                'flex min-h-9 items-center gap-2 rounded-xs px-4 text-sm font-semibold transition-colors',
-                active
-                  ? inline
-                    ? 'bg-white/90 text-slate-ink'
-                    : 'bg-white text-slate-ink shadow-soft'
-                  : inline
-                    ? 'text-white/70 hover:text-white'
+                'flex items-center transition-colors',
+                inline
+                  ? 'min-h-9 gap-1.5 border-b-2 pb-1.5 text-[10px] lg:min-h-0'
+                  : 'min-h-9 gap-2 rounded-xs px-4 text-sm font-semibold',
+                inline
+                  ? active
+                    ? 'border-[#e76b5d] text-white'
+                    : 'border-transparent text-[#9fa6aa] hover:text-white'
+                  : active
+                    ? 'bg-white text-slate-ink shadow-soft'
                     : 'text-muted-strong hover:text-slate-ink',
               )}
             >
-              <Icon className="size-5" />
+              <Icon className={inline ? 'size-[15px]' : 'size-5'} />
               {label}
             </button>
           )
@@ -189,17 +221,25 @@ export function VehicleSelector({
         </Alert>
       ) : (
         <div
+          /* .finder-section form : grid 1fr 1.2fr .75fr 1.1fr, gap 12, align end. */
           className={cn(
             inline
-              ? 'grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]'
+              /*
+                Mobile : deux colonnes, la marque sur toute la largeur et le
+                bouton en dessous — c'est la grille de la référence, et elle
+                économise une rangée par rapport à un empilement simple.
+              */
+              ? 'grid grid-cols-2 items-end gap-[11px] md:grid-cols-[1fr_1.2fr_0.75fr_1.1fr] md:gap-3 [&>*:first-child]:col-span-2 md:[&>*:first-child]:col-span-1 [&>*:last-child]:col-span-2 md:[&>*:last-child]:col-span-1'
               : 'grid gap-4 sm:grid-cols-3',
           )}
         >
           <SelectField
             id={`${baseId}-make`}
             label="Marque"
-            hideLabel={inline}
+            hideLabel={false}
             fieldSize="lg"
+            className={champSombre}
+            labelClassName={labelSombre}
             value={makeId}
             disabled={loading}
             onChange={(event) => {
@@ -219,8 +259,10 @@ export function VehicleSelector({
           <SelectField
             id={`${baseId}-model`}
             label="Modèle"
-            hideLabel={inline}
+            hideLabel={false}
             fieldSize="lg"
+            className={champSombre}
+            labelClassName={labelSombre}
             value={modelId}
             disabled={!makeId || models.length === 0}
             onChange={(event) => {
@@ -239,8 +281,10 @@ export function VehicleSelector({
           <SelectField
             id={`${baseId}-year`}
             label="Année"
-            hideLabel={inline}
+            hideLabel={false}
             fieldSize="lg"
+            className={champSombre}
+            labelClassName={labelSombre}
             value={year}
             disabled={!modelId || years.length === 0}
             onChange={(event) => setYear(event.target.value)}
@@ -258,7 +302,10 @@ export function VehicleSelector({
             size="lg"
             disabled={!modelId || !year || submitting}
             iconRight={<IconArrowRight className="size-5" />}
-            className={cn(inline ? 'md:w-auto' : 'sm:col-span-3')}
+            /* .finder-section .primary : 43 px, 11 px, rayon 7 px. */
+            className={cn(
+              inline ? 'h-[43px] min-h-[43px] rounded-[7px] text-[11px] md:w-auto' : 'sm:col-span-3',
+            )}
           >
             {submitting ? 'Recherche…' : currentConfigurationId ? 'Mettre à jour' : 'Voir mes éclairages'}
           </Button>

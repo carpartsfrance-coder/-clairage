@@ -29,6 +29,7 @@ function FieldShell({
   error,
   children,
   className,
+  labelClassName,
 }: {
   id: string
   label: string
@@ -37,10 +38,15 @@ function FieldShell({
   error?: string
   children: ReactNode
   className?: string
+  /** Remplace la mise en forme de l'intitulé (bandeau sombre, petites capitales…). */
+  labelClassName?: string
 }) {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={id} className={cn('text-sm font-semibold', hideLabel && 'sr-only')}>
+      <label
+        htmlFor={id}
+        className={cn(labelClassName ?? 'text-sm font-semibold', hideLabel && 'sr-only')}
+      >
         {label}
       </label>
       {children}
@@ -66,6 +72,7 @@ export type TextFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>
   error?: string
   fieldSize?: Size
   wrapperClassName?: string
+  labelClassName?: string
 }
 
 export function TextField({
@@ -77,6 +84,7 @@ export function TextField({
   fieldSize = 'md',
   className,
   wrapperClassName,
+  labelClassName,
   ...rest
 }: TextFieldProps) {
   return (
@@ -87,6 +95,7 @@ export function TextField({
       hint={hint}
       error={error}
       className={wrapperClassName}
+      labelClassName={labelClassName}
     >
       <input
         id={id}
@@ -114,6 +123,7 @@ export type SelectFieldProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, 'si
   /** Visuel optionnel affiché à gauche (logo de marque par exemple). */
   adornment?: ReactNode
   wrapperClassName?: string
+  labelClassName?: string
 }
 
 export function SelectField({
@@ -126,6 +136,7 @@ export function SelectField({
   adornment,
   className,
   wrapperClassName,
+  labelClassName,
   children,
   ...rest
 }: SelectFieldProps) {
@@ -137,6 +148,7 @@ export function SelectField({
       hint={hint}
       error={error}
       className={wrapperClassName}
+      labelClassName={labelClassName}
     >
       <div className="relative">
         {adornment ? (

@@ -43,13 +43,14 @@ export async function Header() {
           dans le panier. */}
       <div
         className={
-          'overflow-hidden bg-ink text-white transition-[height] duration-200 motion-reduce:transition-none ' +
-          'h-8 md:h-9 group-data-scrolled/header:h-0'
+          /* .utility-bar : 29 px (26 sous 800 px), fond #202326, texte 10 px. */
+          'overflow-hidden bg-[#202326] text-[#d4d9db] transition-[height] duration-200 motion-reduce:transition-none ' +
+          'h-[26px] md:h-[29px] group-data-scrolled/header:h-0'
         }
       >
-        <div className="container-page flex h-8 items-center justify-between gap-4 text-[0.8125rem] md:h-9">
+        <div className="container-page flex h-[26px] items-center justify-between gap-5 text-[9px] md:h-[29px] md:text-[10px]">
           <p className="flex min-w-0 items-center gap-2">
-            <IconTruck className="size-4 shrink-0 text-white/70" />
+            <IconTruck className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
             <span className="truncate">
               {commercialTerms.freeShippingThresholdCents
                 ? `Livraison offerte dès ${formatPrice(commercialTerms.freeShippingThresholdCents)}`
@@ -58,21 +59,26 @@ export async function Header() {
           </p>
 
           {siteConfig.demoBanner ? (
-            <p className="hidden text-white/55 lg:block">{siteConfig.demoBannerLabel}</p>
+            <p className="hidden text-[8px] tracking-[0.5px] text-[#8e999f] uppercase lg:block">
+              {siteConfig.demoBannerLabel}
+            </p>
           ) : null}
 
-          <nav aria-label="Informations pratiques" className="hidden items-center gap-4 md:flex">
+          <nav
+            aria-label="Informations pratiques"
+            className="hidden items-center gap-4 text-[9px] text-[#c3c9cc] md:flex lg:gap-6"
+          >
             {topNav.map((item, index) => (
               <span key={item.href} className="flex items-center gap-4">
                 {index > 0 ? <span aria-hidden className="text-white/25">|</span> : null}
                 <Link
                   href={item.href}
-                  className="flex items-center gap-2 rounded-xs text-white/85 transition-colors hover:text-white"
+                  className="flex items-center gap-[7px] rounded-xs transition-colors hover:text-white"
                 >
                   {item.icon === 'return' ? (
-                    <IconReturn className="size-4 shrink-0 text-white/70" />
+                    <IconReturn className="size-[14px] shrink-0" strokeWidth={1.4} />
                   ) : (
-                    <IconHeadset className="size-4 shrink-0 text-white/70" />
+                    <IconHeadset className="size-[14px] shrink-0" strokeWidth={1.4} />
                   )}
                   {item.label}
                 </Link>
@@ -83,20 +89,22 @@ export async function Header() {
       </div>
 
       {/* ---------------- Ligne principale ---------------- */}
-      <div className="border-b border-line">
+      <div className="border-b border-[#e7e9e5]">
         <div
           className={
+            /* .shop-header-main : 89 px et 36 px d'écart (43 au-delà de 1450 px). */
             'container-page flex items-center gap-3 transition-[height] duration-200 motion-reduce:transition-none ' +
-            'h-14 lg:h-[76px] lg:gap-6 group-data-scrolled/header:lg:h-[60px]'
+            'h-14 lg:h-[89px] lg:gap-9 group-data-scrolled/header:lg:h-[64px]'
           }
         >
           <MobileNav vehicle={vehicle} />
 
           {/* Le logotype se resserre au défilement, sans jamais devenir illisible. */}
-          <Logo className="shrink-0 transition-transform duration-200 motion-reduce:transition-none group-data-scrolled/header:lg:scale-90 group-data-scrolled/header:lg:origin-left" />
+          <Logo className="shrink-0 transition-transform duration-200 motion-reduce:transition-none group-data-scrolled/header:lg:origin-left group-data-scrolled/header:lg:scale-90" />
 
           {/* La grande recherche n'apparaît en ligne qu'à partir de lg. */}
-          <div className="ml-auto hidden max-w-[589px] flex-1 lg:ml-0 lg:block">
+          {/* .header-search : flex 1, plafonné à 550 px au-delà de 1450 px. */}
+          <div className="ml-auto hidden flex-1 lg:ml-0 lg:block xl:max-w-[550px]">
             <HeaderSearch />
           </div>
 
@@ -104,7 +112,8 @@ export async function Header() {
             <div className="hidden lg:block">
               <VehicleMenu vehicle={vehicle} />
             </div>
-            <span aria-hidden className="mx-4 hidden h-8 w-px bg-line lg:block" />
+            {/* .header-cart-link : filet à gauche, 24 px de retrait. */}
+            <span aria-hidden className="mx-5 hidden h-8 w-px bg-[#e1e6d9] lg:block" />
             <CartLink itemCount={cart.itemCount} />
           </div>
         </div>
@@ -123,7 +132,7 @@ export async function Header() {
           depuis le menu. */}
       <div
         className={
-          'overflow-hidden border-b border-line bg-surface-soft transition-[height] duration-200 motion-reduce:transition-none lg:hidden ' +
+          'overflow-hidden border-b border-line bg-[#f7f8f4] transition-[height] duration-200 motion-reduce:transition-none lg:hidden ' +
           'h-11 group-data-scrolled/header:h-0 group-data-scrolled/header:border-b-0'
         }
       >
@@ -133,21 +142,22 @@ export async function Header() {
       </div>
 
       {/* ---------------- Navigation ---------------- */}
-      <nav aria-label="Catégories" className="hidden border-b border-line lg:block">
+      <nav aria-label="Catégories" className="hidden border-t border-[#f0f1ec] lg:block">
         <div
           className={
+            /* .shop-category-inner : 46 px, items à 12 px, écart de 28 px. */
             'container-page flex items-center justify-between transition-[height] duration-200 motion-reduce:transition-none ' +
-            'h-12 group-data-scrolled/header:h-11'
+            'h-[46px] group-data-scrolled/header:h-10'
           }
         >
           <ul className="flex items-center">
             {mainNav.map((item, index) => (
               <li key={item.href} className="flex items-center">
-                {index > 0 ? <span aria-hidden className="h-4 w-px bg-line" /> : null}
+                {index > 0 ? <span aria-hidden className="h-4 w-px bg-[#e6eadd]" /> : null}
                 <Link
                   href={item.href}
-                  className={`px-5 text-[0.9375rem] font-semibold transition-colors first:pl-0 ${
-                    item.highlight ? 'text-brand hover:text-brand-dark' : 'hover:text-brand'
+                  className={`px-[14px] text-[12px] font-medium whitespace-nowrap transition-colors first:pl-0 ${
+                    item.highlight ? 'font-semibold text-brand' : 'hover:text-brand'
                   }`}
                 >
                   {item.label}
@@ -158,9 +168,10 @@ export async function Header() {
 
           <Link
             href="/guides"
-            className="flex shrink-0 items-center gap-2 text-[0.9375rem] font-semibold transition-colors hover:text-brand"
+            /* .header-nav-help : 10 px, couleur #7f8d73. */
+            className="flex shrink-0 items-center gap-2 text-[10px] whitespace-nowrap text-[#7f8d73] transition-colors hover:text-[#333e29]"
           >
-            <IconHeadset className="size-5 shrink-0" />
+            <IconHeadset className="size-4 shrink-0" strokeWidth={1.5} />
             Conseils &amp; montage
           </Link>
         </div>

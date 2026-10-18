@@ -13,21 +13,26 @@ export function CartLink({ itemCount }: { itemCount: number }) {
       : `Panier, ${itemCount} article${itemCount > 1 ? 's' : ''}`
 
   return (
+    /*
+      `.header-cart-link` de la référence : icône de 25 px, pastille rouge de
+      17 px cerclée de blanc, intitulé de 11 px en demi-gras — masqué sous
+      1100 px, comme dans la référence.
+    */
     <Link
       href="/panier"
       aria-label={label}
-      className="flex h-12 items-center gap-3 rounded-sm px-2 transition-colors hover:text-brand"
+      className="flex min-h-[38px] items-center gap-[9px] rounded-sm px-1 transition-colors hover:text-brand"
     >
-      <span className="relative shrink-0">
-        <IconCart className="size-7" />
+      <span className="relative flex shrink-0">
+        <IconCart className="size-[25px] text-[#333d2a]" strokeWidth={1.45} />
         <span
           aria-hidden
-          className="absolute -right-2 -top-1.5 flex size-[18px] items-center justify-center rounded-full bg-brand text-[0.6875rem] font-bold leading-none text-white"
+          className="absolute -top-[7px] -right-[5px] flex h-[17px] min-w-[17px] items-center justify-center rounded-full border-2 border-white bg-brand px-[3px] text-[8px] leading-none font-bold text-white"
         >
           {itemCount > 99 ? '99+' : itemCount}
         </span>
       </span>
-      <span className="hidden text-[0.9375rem] font-semibold lg:block">Panier</span>
+      <span className="hidden text-[11px] font-semibold text-[#3e4a33] xl:block">Panier</span>
     </Link>
   )
 }

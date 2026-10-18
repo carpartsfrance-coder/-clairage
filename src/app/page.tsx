@@ -47,6 +47,7 @@ export default async function HomePage() {
       <FeaturedProducts
         content={blocks.products}
         products={products}
+        shortcut={{ label: 'Trouver pour mon véhicule', href: '#choisir-mon-vehicule' }}
         filters={[
           { label: 'Tout découvrir', href: '/c' },
           { label: 'Phares LED', href: '/c/phares-led' },

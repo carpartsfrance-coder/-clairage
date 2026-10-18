@@ -132,7 +132,7 @@ async function seedDemo() {
       create: {
         storageKey: `demo/${file}`,
         url: `/demo/${file}`,
-        mimeType: 'image/jpeg',
+        mimeType: file.endsWith('.png') ? 'image/png' : 'image/jpeg',
         alt,
         caption,
         // Les visuels viennent des maquettes : ce sont des illustrations.
