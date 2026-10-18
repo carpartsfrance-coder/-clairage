@@ -23,6 +23,8 @@ export type HomeProduct = {
   tagline: string | null
   /** Prix du conditionnement le moins cher, en centimes. */
   fromPriceCents: number
+  /** Prix du kit complet, s'il existe et coûte plus que l'entrée de gamme. */
+  kitPriceCents: number | null
   /** Vrai si le produit propose un kit complet en plus des ampoules seules. */
   hasKit: boolean
   categorySlug: string | null
@@ -98,6 +100,16 @@ export async function getFeaturedProducts(limit = 4): Promise<HomeProduct[]> {
           tagline: product.tagline,
           fromPriceCents: cheapest.priceCents,
           hasKit: product.variants.some((variant) => variant.packaging === 'KIT'),
+          // Même règle que sur les listes : la pastille « kit » ne doit pas
+          // surmonter le prix d'un autre conditionnement.
+          kitPriceCents: (() => {
+            const kits = product.variants
+              .filter((variant) => variant.packaging === 'KIT')
+              .map((variant) => variant.priceCents)
+            if (kits.length === 0) return null
+            const moinsCher = Math.min(...kits)
+            return moinsCher > cheapest.priceCents ? moinsCher : null
+          })(),
           categorySlug: category?.slug ?? null,
           categoryName: category?.name ?? null,
           image: cover ? { url: cover.url, alt: cover.alt ?? product.name } : null,

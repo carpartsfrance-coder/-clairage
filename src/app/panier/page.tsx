@@ -320,6 +320,11 @@ export default async function PanierPage() {
                       {teaser ? teaser.priceLabel : 'calculée à l’étape suivante'}
                     </dd>
                   </div>
+                  {teaser && !teaser.isSettled ? (
+                    <p className="mt-1 text-right text-xs text-muted">
+                      estimation, selon le mode choisi
+                    </p>
+                  ) : null}
                   {teaser?.delayLabel ? (
                     <p className="mt-1 text-right text-xs text-muted">{teaser.delayLabel}</p>
                   ) : null}
@@ -330,15 +335,33 @@ export default async function PanierPage() {
                   ) : null}
                 </div>
 
+                {/*
+                  Le total est nommé pour ce qu'il contient.
+
+                  Il annonçait « Total » et, juste dessous, « les frais de
+                  livraison ne sont pas compris dans ce total » — alors même que
+                  la ligne au-dessus pouvait dire « Livraison offerte ». Les
+                  deux ne peuvent pas être vrais ensemble.
+
+                  Quand la franchise de port est atteinte, la livraison est
+                  offerte et le total est complet : il s'appelle « Total ».
+                  Sinon, il ne couvre que les articles, il le dit, et la note
+                  explique ce qui reste à déterminer.
+                */}
                 <div className="mt-1 flex items-baseline justify-between gap-4 border-t border-line pt-4">
-                  <dt className="font-semibold">Total</dt>
+                  <dt className="font-semibold">
+                    {teaser?.isSettled ? 'Total' : 'Total des articles'}
+                  </dt>
                   <dd className="text-xl font-bold">{formatPrice(cart.subtotalCents)}</dd>
                 </div>
               </dl>
 
               <p className="mt-2 text-xs text-muted">
-                Les frais de livraison définitifs dépendent de l&apos;adresse de livraison et ne
-                sont pas compris dans ce total.
+                {teaser?.isSettled
+                  ? 'Livraison comprise pour la France. Ce total est celui que vous réglerez.'
+                  : teaser
+                    ? 'Les frais de livraison s’ajoutent à l’étape suivante : le montant exact dépend du mode de livraison choisi et de votre adresse.'
+                    : 'Les frais de livraison seront calculés à l’étape suivante, une fois votre adresse connue.'}
               </p>
 
               <ButtonLink href="/commande" size="lg" block className="mt-5">

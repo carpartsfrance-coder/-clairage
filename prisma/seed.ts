@@ -22,6 +22,7 @@ import {
   demoHomeBlocks,
   demoLightPositions,
   demoProducts,
+  demoRelations,
   demoShipping,
   demoVehicle,
 } from './demo-data'
@@ -52,7 +53,11 @@ async function seedReferenceData() {
   for (const equipment of demoEquipment) {
     await prisma.lightingEquipment.upsert({
       where: { code: equipment.code },
-      update: { label: equipment.label, description: equipment.description },
+      update: {
+        label: equipment.label,
+        description: equipment.description,
+        hint: equipment.hint,
+      },
       create: { ...equipment },
     })
   }
@@ -204,6 +209,8 @@ async function seedDemo() {
   // --- Produits et variantes ------------------------------------------------
   const vat = await prisma.vatRate.findUnique({ where: { code: 'FR_STANDARD' } })
   const variantIdBySku = new Map<string, string>()
+  // Sert aux compléments facultatifs, écrits juste après les produits.
+  const productIdBySlug = new Map<string, string>()
 
   for (const product of demoProducts) {
     const record = await prisma.product.upsert({
@@ -254,6 +261,8 @@ async function seedDemo() {
         position: index,
       })),
     })
+
+    productIdBySlug.set(product.slug, record.id)
 
     if (product.image) {
       const mediaId = await media(product.image, `${product.name} — visuel illustratif`)
@@ -308,6 +317,21 @@ async function seedDemo() {
         })
       }
     }
+  }
+
+  // --- Compléments facultatifs ----------------------------------------------
+  for (const relation of demoRelations) {
+    const sourceId = productIdBySlug.get(relation.source)
+    const targetId = productIdBySlug.get(relation.target)
+    if (!sourceId || !targetId) continue
+
+    await prisma.productRelation.upsert({
+      where: {
+        sourceId_targetId_type: { sourceId, targetId, type: 'OPTIONAL_ADDON' },
+      },
+      update: { position: relation.position },
+      create: { sourceId, targetId, type: 'OPTIONAL_ADDON', position: relation.position },
+    })
   }
 
   // --- Compatibilités -------------------------------------------------------

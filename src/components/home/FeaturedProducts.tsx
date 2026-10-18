@@ -85,9 +85,11 @@ export function FeaturedProducts({ content, products, filters }: FeaturedProduct
                       </div>
                     ) : null}
 
+                    {/* Annonce l'existence d'un kit ; les deux prix sont donnés
+                        plus bas, chacun avec son intitulé. */}
                     {product.hasKit ? (
                       <Badge tone="dark" className="absolute top-2 left-2 uppercase">
-                        Le kit complet
+                        Existe en kit
                       </Badge>
                     ) : null}
                   </div>
@@ -102,12 +104,29 @@ export function FeaturedProducts({ content, products, filters }: FeaturedProduct
 
                     <div className="mt-auto flex items-end justify-between gap-3 pt-4">
                       <p className="min-w-0">
-                        {product.hasKit ? (
-                          <span className="block text-xs text-muted">À partir de</span>
-                        ) : null}
-                        <span className="block text-[1.05rem] font-bold text-slate-ink">
-                          {formatPrice(product.fromPriceCents)}
-                        </span>
+                        {product.kitPriceCents !== null ? (
+                          <>
+                            <span className="block text-xs text-muted">Ampoules seules</span>
+                            <span className="block text-[1.05rem] font-bold text-slate-ink">
+                              {formatPrice(product.fromPriceCents)}
+                            </span>
+                            <span className="mt-0.5 block text-xs text-muted-strong">
+                              Kit complet{' '}
+                              <span className="font-semibold text-slate-ink">
+                                {formatPrice(product.kitPriceCents)}
+                              </span>
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            {product.hasKit ? (
+                              <span className="block text-xs text-muted">À partir de</span>
+                            ) : null}
+                            <span className="block text-[1.05rem] font-bold text-slate-ink">
+                              {formatPrice(product.fromPriceCents)}
+                            </span>
+                          </>
+                        )}
                       </p>
                       <span
                         aria-hidden="true"

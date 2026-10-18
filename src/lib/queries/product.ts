@@ -1,6 +1,11 @@
 import 'server-only'
 import { prisma } from '../db'
-import { resolveFitments, type FitmentResult, type RequiredAccessory } from '../fitment'
+import {
+  resolveFitments,
+  type FitmentResult,
+  type FitmentStatus,
+  type RequiredAccessory,
+} from '../fitment'
 import {
   availabilityForKit,
   availabilityForVariant,
@@ -83,12 +88,27 @@ export type ProductView = {
     verifiedPurchase: boolean
     publishedAt: Date | null
   }>
-  /** Compléments facultatifs, jamais ajoutés d'office. */
+  /**
+   * Compléments facultatifs, jamais ajoutés d'office.
+   *
+   * Chacun porte de quoi décider sans quitter la fiche : ce que c'est, dans
+   * quel conditionnement, à quel prix réel, s'il est disponible, et ce qu'on
+   * sait de sa compatibilité avec le véhicule retenu — `null` quand aucun
+   * véhicule n'est sélectionné, parce qu'on n'affirme rien dans ce cas.
+   */
   optionalAddons: Array<{
     slug: string
     name: string
     tagline: string | null
-    fromPriceCents: number
+    /** Conditionnement proposé à l'ajout (le moins cher). */
+    variantId: string
+    variantName: string
+    packaging: VariantView['packaging']
+    priceCents: number
+    /** Vrai quand plusieurs conditionnements existent : le prix est un minimum. */
+    hasOtherPackagings: boolean
+    availability: Availability
+    fitment: FitmentStatus | null
     image: { url: string; alt: string } | null
   }>
 }
@@ -126,7 +146,13 @@ export async function getProduct(
           include: {
             target: {
               include: {
-                variants: { where: { active: true }, orderBy: { priceCents: 'asc' }, take: 1 },
+                variants: {
+                  where: { active: true },
+                  orderBy: { priceCents: 'asc' },
+                  include: {
+                    components: { include: { component: true } },
+                  },
+                },
                 media: {
                   where: { role: 'PRODUCT' },
                   orderBy: { position: 'asc' },
@@ -158,6 +184,20 @@ export async function getProduct(
       configurationId,
       product.variants.map((variant) => variant.id),
     )
+
+    /*
+      Compatibilité des compléments facultatifs.
+
+      Résolue par le même moteur, et séparément : un pack d'éclairage
+      intérieur n'a pas la même compatibilité que le kit de phares auquel il
+      est rattaché. Proposer un complément en lui prêtant le statut du produit
+      principal reviendrait à affirmer une compatibilité que personne n'a
+      vérifiée.
+    */
+    const addonVariantIds = product.relatedFrom.flatMap((relation) =>
+      relation.target.variants.map((variant) => variant.id),
+    )
+    const addonFitments = await resolveFitments(configurationId, addonVariantIds)
 
     const variants: VariantView[] = product.variants.map((variant) => {
       const isKit = variant.components.length > 0
@@ -265,11 +305,37 @@ export async function getProduct(
         .filter((relation) => relation.target.variants.length > 0)
         .map((relation) => {
           const cover = relation.target.media[0]?.media
+          const variant = relation.target.variants[0]
+          const isKit = variant.components.length > 0
+
           return {
             slug: relation.target.slug,
             name: relation.target.name,
             tagline: relation.target.tagline,
-            fromPriceCents: relation.target.variants[0].priceCents,
+            variantId: variant.id,
+            variantName: variant.name,
+            packaging: variant.packaging,
+            priceCents: variant.priceCents,
+            hasOtherPackagings: relation.target.variants.length > 1,
+            availability: isKit
+              ? availabilityForKit(
+                  variant.components.map((entry) => ({
+                    quantity: entry.quantity,
+                    required: entry.required,
+                    component: entry.component,
+                  })),
+                )
+              : availabilityForVariant(variant),
+            /*
+              Compatibilité du complément avec le véhicule retenu.
+
+              `addonFitments` a été résolu avec le même moteur que la fiche
+              elle-même. Sans véhicule, il vaut `null` : on ne propose pas un
+              complément en laissant croire qu'il a été vérifié.
+            */
+            fitment: configurationId
+              ? (addonFitments.get(variant.id)?.status ?? 'UNKNOWN')
+              : null,
             image: cover ? { url: cover.url, alt: cover.alt ?? relation.target.name } : null,
           }
         }),

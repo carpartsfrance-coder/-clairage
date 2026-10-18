@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Pagination } from '@/components/catalogue/Pagination'
 import { ProductCard } from '@/components/catalogue/ProductCard'
+import { FiltersPanel } from '@/components/catalogue/FiltersPanel'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { Button } from '@/components/ui/Button'
 import { SelectField, TextField } from '@/components/ui/Field'
@@ -229,20 +230,36 @@ export default async function RecherchePage({
     <div className="container-page py-8 sm:py-10">
       <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Recherche' }]} />
 
-      <header className="mt-5 flex flex-col gap-5">
+      {/*
+        En-tête volontairement court sur mobile.
+
+        Il contenait le titre, un paragraphe d'explication, un SECOND formulaire
+        de recherche et un grand bloc véhicule : le premier produit arrivait
+        au-delà du premier écran et demi. Ne reste ici que ce qui répond à
+        « qu'ai-je cherché, et combien y en a-t-il ? ».
+      */}
+      <header className="mt-4 flex flex-col gap-3">
         <div>
-          <h1 className="text-[1.75rem] leading-[1.15] font-extrabold sm:text-[2.125rem]">
+          <h1 className="text-[1.5rem] leading-[1.15] font-extrabold sm:text-[2.125rem]">
             {state.q ? `Résultats pour « ${state.q} »` : 'Rechercher'}
           </h1>
-          <p className="mt-2 max-w-2xl text-base text-muted-strong">
+          {countLabel ? <p className="mt-1 text-sm font-semibold">{countLabel}</p> : null}
+          {/* L'explication n'a d'intérêt que si l'on cherche encore quoi taper :
+              elle reste sur grand écran, et sur l'état vide plus bas. */}
+          <p className="mt-2 hidden max-w-2xl text-base text-muted-strong sm:block">
             La recherche accepte trois entrées : un nom de produit, une référence (SKU) ou un culot
             — H7, D1S, W5W.
           </p>
-          {countLabel ? <p className="mt-2 text-sm font-semibold">{countLabel}</p> : null}
         </div>
 
-        {/* Formulaire réel : la recherche reste utilisable sans JavaScript. */}
-        <form method="get" action="/recherche" className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        {/* Le formulaire reste sur grand écran, où il sert à affiner sans
+            remonter. Sur mobile, la recherche du header est à deux doigts : le
+            répéter en pleine largeur coûtait un écran pour rien. */}
+        <form
+          method="get"
+          action="/recherche"
+          className="hidden flex-col gap-3 sm:flex sm:flex-row sm:items-end"
+        >
           <TextField
             id="recherche-q"
             name="q"
@@ -259,7 +276,7 @@ export default async function RecherchePage({
           </Button>
         </form>
 
-        <VehicleBar vehicle={vehicle} />
+        <VehicleBar vehicle={vehicle} variant="compact" />
       </header>
 
       {!result ? (
@@ -272,12 +289,19 @@ export default async function RecherchePage({
         </div>
       ) : (
         <>
-          <section aria-labelledby="recherche-filtres" className="mt-8">
+          <section aria-labelledby="recherche-filtres" className="mt-5">
             <h2 id="recherche-filtres" className="sr-only">
               Filtrer et trier les résultats
             </h2>
 
-            <Card className="flex flex-col gap-5 p-4 sm:p-5">
+            <FiltersPanel
+              activeCount={state.culot.length + state.temp.length + state.cond.length}
+              resultLabel={result.total > 0 ? countLabel : null}
+              resetHref={
+                hasFacets ? hrefFor({ ...state, culot: [], temp: [], cond: [], page: 1 }) : null
+              }
+            >
+            <Card className="flex flex-col gap-5 border-0 p-0 lg:border lg:p-5">
               <form
                 method="get"
                 action="/recherche"
@@ -347,9 +371,10 @@ export default async function RecherchePage({
                 </div>
               ) : null}
             </Card>
+            </FiltersPanel>
           </section>
 
-          <section aria-labelledby="recherche-resultats" className="mt-8">
+          <section aria-labelledby="recherche-resultats" className="mt-5">
             <h2 id="recherche-resultats" className="sr-only">
               Résultats de la recherche
             </h2>

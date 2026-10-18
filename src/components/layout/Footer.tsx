@@ -83,11 +83,17 @@ export function Footer() {
           ) : null}
         </div>
 
+        {/*
+          Mention destinée au visiteur, pas à l'exploitant : elle dit ce qui
+          manque, sans nommer le fichier où le renseigner. La marche à suivre
+          est dans docs/render.md et dans l'écran « État de l'installation ».
+          Elle reste affichée — taire l'absence de mentions légales sur un site
+          qui prend des commandes serait pire que l'avouer.
+        */}
         {!hasLegalIdentity ? (
           <p className="mt-4 rounded-sm border border-ink-line px-3 py-2 text-xs text-white/45">
-            Identité légale à renseigner (raison sociale, SIRET, TVA, adresse, directeur de la
-            publication) dans <code className="text-white/70">src/lib/identity.ts</code> ou dans les
-            paramètres du back-office, avant toute ouverture commerciale.
+            Les mentions légales de ce site ne sont pas encore publiées. Cette boutique n&apos;est
+            pas ouverte à la vente.
           </p>
         ) : null}
       </div>

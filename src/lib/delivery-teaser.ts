@@ -28,6 +28,19 @@ export type DeliveryTeaser = {
   delayLabel: string | null
   /** Ce qu'il manque pour atteindre la franchise, le cas échéant. */
   missingForFreeCents: number | null
+  /**
+   * Prix retenu pour l'accroche, en centimes. Zéro quand la franchise de port
+   * est atteinte.
+   *
+   * Il est exposé parce que l'affichage d'un panier en dépend : quand la
+   * livraison est offerte, le total est complet et le dire « hors frais de
+   * port » est faux ; quand elle a un prix, ce prix n'est qu'un minimum, et le
+   * total affiché ne couvre que les articles. Sans cette valeur, le panier
+   * annonçait « Livraison offerte » ET « frais non compris dans ce total ».
+   */
+  priceCents: number
+  /** Vrai quand le montant est définitif pour la zone configurée. */
+  isSettled: boolean
 }
 
 /** Prix réellement appliqué à une méthode pour un sous-total donné. */
@@ -67,5 +80,14 @@ export function buildDeliveryTeaser(
     priceLabel: price === 0 ? 'Livraison offerte' : `Livraison à partir de ${formatPrice(price)}`,
     delayLabel,
     missingForFreeCents: price > 0 && franchises.length > 0 ? Math.min(...franchises) : null,
+    priceCents: price,
+    /*
+      « Réglé » veut dire : ce montant ne bougera plus pour la zone configurée.
+      C'est le cas quand la franchise de port est atteinte — la livraison est
+      offerte quelle que soit la méthode retenue ensuite. Sinon, `price` n'est
+      que le tarif de la méthode la moins chère : le client peut en choisir une
+      autre, et l'adresse reste à saisir.
+    */
+    isSettled: price === 0,
   }
 }

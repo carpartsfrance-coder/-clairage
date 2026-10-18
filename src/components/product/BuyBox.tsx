@@ -8,6 +8,7 @@ import { buildDeliveryTeaser, type ShippingOffer } from '@/lib/delivery-teaser'
 import { addToCart } from '@/lib/actions/cart'
 import { formatPrice } from '@/lib/identity'
 import { availabilityLabel, isPurchasable } from '@/lib/stock'
+import { defaultVariantId, useProductConfiguration } from './ProductConfiguration'
 import { cn } from '@/lib/cn'
 import { Alert } from '@/components/ui/Surface'
 import { Badge, RoadApprovalNote } from '@/components/ui/Badge'
@@ -62,20 +63,21 @@ export function BuyBox({
   const [pending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null)
 
-  // Ordre de préférence : la recommandation faite pour le véhicule, sinon le
-  // kit complet — c'est l'offre qui contient tout ce qu'il faut, et le client
-  // qui n'a pas encore dit son véhicule ne peut pas savoir ce qui lui manque.
-  // Le conditionnement moins cher reste visible juste en dessous, avec son prix.
-  const [selectedId, setSelectedId] = useState(
-    () =>
-      recommendedVariantId ??
-      variants.find(
-        (variant) => variant.components.length > 0 && isPurchasable(variant.availability),
-      )?.id ??
-      variants.find((variant) => isPurchasable(variant.availability))?.id ??
-      variants[0]?.id ??
-      '',
+  /*
+    Le conditionnement choisi est partagé avec le reste de la fiche
+    (`ProductConfigurationProvider`) : la section Installation et le contenu du
+    kit doivent décrire CE conditionnement, pas le produit en général.
+
+    Le repli local garde le bloc d'achat utilisable hors de ce contexte — un
+    rendu isolé, un test — plutôt que de lever.
+  */
+  const configuration = useProductConfiguration()
+  const [fallbackId, setFallbackId] = useState(() =>
+    defaultVariantId(variants, recommendedVariantId),
   )
+  const selectedId = configuration?.selectedId ?? fallbackId
+  const setSelectedId = configuration?.setSelectedId ?? setFallbackId
+
   const [acceptedAccessories, setAcceptedAccessories] = useState<string[]>([])
 
   const selected = variants.find((variant) => variant.id === selectedId) ?? variants[0]

@@ -487,10 +487,12 @@ export function CheckoutForm({
             </div>
           </dl>
 
+          {/* Le contrôle serveur des montants existe toujours (voir
+              `placeOrder`) ; il n'a simplement rien à faire sur cet écran. Ce
+              que le client a besoin de lire, c'est ce qu'il va payer. */}
           <p className="mt-3 text-xs text-muted">
-            Ce total est revalidé côté serveur au moment de payer : les prix et les frais de port
-            sont relus en base, rien de ce que votre navigateur affiche n&apos;entre dans le montant
-            encaissé.
+            Montant TTC, livraison comprise. C&apos;est la somme qui sera débitée, et rien ne s&apos;y
+            ajoute après validation.
           </p>
         </Card>
       </section>

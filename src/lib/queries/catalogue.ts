@@ -37,8 +37,19 @@ export type ProductListItem = {
   categoryName: string | null
   categorySlug: string | null
   image: { url: string; alt: string } | null
+  /** Prix du conditionnement le moins cher. */
   fromPriceCents: number
   hasKit: boolean
+  /**
+   * Prix du kit complet, quand il en existe un ET qu'il coûte plus cher que
+   * l'entrée de gamme.
+   *
+   * Sans lui, la carte portait la pastille « Le kit complet » au-dessus du
+   * prix des ampoules seules : deux informations vraies, qui ensemble
+   * annonçaient un kit à 69,90 € alors qu'il en coûte 99,90 €. Les deux prix
+   * sont désormais affichés côte à côte, chacun avec son intitulé.
+   */
+  kitPriceCents: number | null
   /** Nombre de conditionnements proposés (ampoules seules, kit…). */
   variantCount: number
   availability: Availability
@@ -336,6 +347,17 @@ export async function listProducts(
           image: cover ? { url: cover.url, alt: cover.alt ?? product.name } : null,
           fromPriceCents: cheapest.priceCents,
           hasKit: product.variants.some((variant) => variant.packaging === 'KIT'),
+          // Le moins cher des kits : c'est celui que la pastille désigne. On ne
+          // le renvoie que s'il est plus cher que l'entrée de gamme, sinon les
+          // deux prix affichés seraient le même nombre.
+          kitPriceCents: (() => {
+            const kits = product.variants
+              .filter((variant) => variant.packaging === 'KIT')
+              .map((variant) => variant.priceCents)
+            if (kits.length === 0) return null
+            const moinsCher = Math.min(...kits)
+            return moinsCher > cheapest.priceCents ? moinsCher : null
+          })(),
           variantCount: product.variants.length,
           availability,
           fitment: configurationId ? bestStatus(statuses) : null,

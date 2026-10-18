@@ -276,7 +276,7 @@ export default async function CategoryPage({
         ) : null}
       </header>
 
-      <VehicleBar vehicle={vehicle} className="mt-5" />
+      <VehicleBar vehicle={vehicle} variant="compact" className="mt-5" />
 
       {category.children.length > 0 ? (
         <section aria-labelledby="sous-categories-titre" className="mt-6">

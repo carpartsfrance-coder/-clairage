@@ -403,6 +403,7 @@ model Media {
 
   products        ProductMedia[]
   categoryHeroes  Category[]     @relation("CategoryHero")
+  equipmentIllustrations LightingEquipment[] @relation("EquipmentIllustration")
 
   @@index([nature])
 }
@@ -559,6 +560,13 @@ model LightingEquipment {
   code        String  @unique // HALOGEN | XENON_OEM | LED_OEM | ...
   label       String
   description String?
+  /// Repère visuel court : « ampoule à filament », « lumière bleutée »…
+  /// Sert à reconnaître son propre phare sans jargon.
+  hint        String?
+  /// Illustration explicative (photo d'un phare halogène, d'un xénon…).
+  /// Facultative : sans visuel vérifié, on n'en invente pas.
+  illustrationId String?
+  illustration   Media?  @relation("EquipmentIllustration", fields: [illustrationId], references: [id])
   position    Int     @default(0)
 
   configurations VehicleConfiguration[]

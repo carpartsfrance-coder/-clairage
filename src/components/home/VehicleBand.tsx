@@ -21,18 +21,19 @@ const TITLE_ID = 'selection-vehicule-titre'
 export function VehicleBand({ content }: VehicleBandProps) {
   return (
     <section aria-labelledby={TITLE_ID} className="bg-ink on-dark">
-      <div className="container-page py-8">
+      {/* L'ancre du bouton d'appel du bandeau d'ouverture. */}
+      <div id="choisir-mon-vehicule" className="container-page scroll-mt-40 py-5 lg:py-6">
         <h2
           id={TITLE_ID}
-          className="text-[1.35rem] leading-tight font-bold text-white"
+          className="text-[1.15rem] leading-tight font-bold text-white lg:text-[1.3rem]"
         >
           {content.title}
         </h2>
 
-        <VehicleSelector layout="inline" className="mt-4" />
+        <VehicleSelector layout="inline" className="mt-3" />
 
         {/* Précision sur l'équipement d'origine : elle suit les champs, sous le bouton. */}
-        <p className="mt-3 text-xs text-white/60 md:text-right">{content.note}</p>
+        <p className="mt-2 text-xs text-white/60 md:text-right">{content.note}</p>
       </div>
     </section>
   )

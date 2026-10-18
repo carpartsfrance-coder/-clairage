@@ -39,13 +39,35 @@ export const demoLightPositions = [
   { code: 'TURN_FRONT', label: 'Clignotants avant', family: 'TURN_SIGNAL', defaultQty: 2, position: 8 },
 ] as const
 
+/**
+ * Équipements d'origine.
+ *
+ * `hint` est écrit pour quelqu'un qui regarde ses phares, pas pour un
+ * mécanicien : c'est ce qui permet de se reconnaître sans ouvrir le capot ni
+ * chercher une référence.
+ */
 export const demoEquipment = [
-  { code: 'HALOGEN', label: 'Phares halogènes', position: 1,
-    description: "Équipement d'origine le plus courant, ampoule à filament." },
-  { code: 'XENON_OEM', label: "Xénon d'origine", position: 2,
-    description: "Bloc optique prévu pour une ampoule à décharge." },
-  { code: 'LED_OEM', label: "LED d'origine", position: 3,
-    description: "Module LED intégré au bloc optique, non remplaçable par une ampoule." },
+  {
+    code: 'HALOGEN',
+    label: 'Phares halogènes',
+    position: 1,
+    description: "Équipement d'origine le plus courant, ampoule à filament.",
+    hint: 'Lumière jaune à l’allumage, immédiate. Ampoule visible derrière le verre.',
+  },
+  {
+    code: 'XENON_OEM',
+    label: "Xénon d'origine",
+    position: 2,
+    description: 'Bloc optique prévu pour une ampoule à décharge.',
+    hint: 'Lumière blanche légèrement bleutée, qui met une seconde à monter en puissance.',
+  },
+  {
+    code: 'LED_OEM',
+    label: "LED d'origine",
+    position: 3,
+    description: 'Module LED intégré au bloc optique, non remplaçable par une ampoule.',
+    hint: 'Plusieurs petits points lumineux alignés, allumage instantané.',
+  },
 ] as const
 
 /** Un seul véhicule de démonstration, celui des maquettes. */
@@ -358,6 +380,28 @@ export const demoFitments: DemoFitment[] = [
   },
 ]
 
+/**
+ * Compléments facultatifs proposés sur une fiche.
+ *
+ * Ce sont des SUGGESTIONS, pas des pièces nécessaires : les adaptateurs et
+ * décodeurs qu'un kit exige passent par `demoFitments` (accessoires de
+ * compatibilité) et s'affichent dans le bloc d'achat. Mélanger les deux ferait
+ * passer une pièce indispensable pour une option, ou l'inverse.
+ *
+ * La compatibilité de chaque complément est résolue séparément, pour son
+ * propre véhicule : rien n'est hérité du produit qui le propose.
+ */
+export const demoRelations = [
+  // Qui pose des LED dans ses phares pense rarement à la plaque et à
+  // l'habitacle le même jour — mais les trois se montent ensemble.
+  { source: 'kit-led-h7-blanc-pur-6000k', target: 'pack-led-habitacle', position: 1 },
+  { source: 'kit-led-h7-blanc-pur-6000k', target: 'pack-led-plaque', position: 2 },
+  { source: 'ampoules-xenon-d1s', target: 'pack-led-plaque', position: 1 },
+  { source: 'ampoules-xenon-d1s', target: 'pack-led-habitacle', position: 2 },
+  { source: 'pack-led-habitacle', target: 'pack-led-plaque', position: 1 },
+  { source: 'pack-led-plaque', target: 'pack-led-habitacle', position: 1 },
+] as const
+
 /** Contenus éditoriaux de la page d'accueil, administrables ensuite. */
 export const demoHomeBlocks = {
   hero: {
@@ -366,7 +410,11 @@ export const demoHomeBlocks = {
     subtitle:
       'Phares, intérieur, plaque… Le bon éclairage pour votre véhicule, avec les bons accessoires.',
     ctaLabel: 'Trouver mon éclairage',
-    ctaHref: '/vehicule',
+    // Ancre, et non page séparée : le sélecteur est juste en dessous et visible
+    // dès l'arrivée. Y envoyer directement évite un chargement de page pour
+    // revenir au même geste. La page /vehicule reste accessible par le menu,
+    // pour qui veut l'explication complète du parcours.
+    ctaHref: '#choisir-mon-vehicule',
     bullets: ['Montage expliqué', 'Assistance au choix'],
     image: 'hero-voiture.jpg',
     imageCaption: 'Illustration de rendu.',

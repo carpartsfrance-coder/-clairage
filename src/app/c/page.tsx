@@ -43,7 +43,7 @@ export default async function CategoriesPage() {
           </p>
         </div>
 
-        <VehicleBar vehicle={vehicle} />
+        <VehicleBar vehicle={vehicle} variant="compact" />
       </header>
 
       <section aria-labelledby="categories-list-heading" className="mt-8">

@@ -8,6 +8,8 @@ import { cn } from '@/lib/cn'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { FitmentBadge } from '@/components/ui/Badge'
+import { ButtonLink } from '@/components/ui/Button'
+import { formatPrice } from '@/lib/identity'
 import { Alert, EmptyState } from '@/components/ui/Surface'
 import { IconCar } from '@/components/ui/icons'
 
@@ -34,16 +36,33 @@ type ResultLine = {
   restrictions: string | null
   source: string | null
   verifiedAt: Date | null
+  variantName: string
+  priceCents: number
+  /** Vrai quand ce conditionnement contient d'autres références (kit). */
+  isKit: boolean
+}
+
+/**
+ * Un produit, et les conditionnements qui conviennent à cet emplacement.
+ *
+ * Le regroupement est le point important : un même produit proposé en
+ * « ampoules seules » et en « kit complet » occupait deux lignes identiques à
+ * la photo et au nom près, et il fallait les comparer de l'œil pour voir ce qui
+ * les distinguait. Une carte par produit, les conditionnements à l'intérieur.
+ */
+type ResultProduct = {
   productSlug: string
   productName: string
-  variantName: string
   imageUrl: string | null
+  /** Le meilleur statut parmi les conditionnements : il mène la carte. */
+  status: FitmentStatus
+  lines: ResultLine[]
 }
 
 type PositionGroup = {
   code: string
   label: string
-  lines: ResultLine[]
+  products: ResultProduct[]
 }
 
 /**
@@ -64,6 +83,7 @@ async function getByPosition(configurationId: string): Promise<PositionGroup[] |
         position: true,
         variant: {
           include: {
+            components: { select: { id: true } },
             product: {
               include: {
                 media: {
@@ -88,27 +108,53 @@ async function getByPosition(configurationId: string): Promise<PositionGroup[] |
       const group = groups.get(row.position.code) ?? {
         code: row.position.code,
         label: row.position.label,
-        lines: [],
+        products: [],
       }
 
-      group.lines.push({
+      const slug = row.variant.product.slug
+      let product = group.products.find((entry) => entry.productSlug === slug)
+      if (!product) {
+        product = {
+          productSlug: slug,
+          productName: row.variant.product.name,
+          imageUrl: row.variant.product.media[0]?.media.url ?? null,
+          status: row.status,
+          lines: [],
+        }
+        group.products.push(product)
+      }
+
+      product.lines.push({
         id: row.id,
         status: row.status,
         quantity: row.quantity,
         restrictions: row.restrictions,
         source: row.source,
         verifiedAt: row.verifiedAt,
-        productSlug: row.variant.product.slug,
-        productName: row.variant.product.name,
         variantName: row.variant.name,
-        imageUrl: row.variant.product.media[0]?.media.url ?? null,
+        priceCents: row.variant.priceCents,
+        isKit: row.variant.components.length > 0,
       })
+
+      // Le statut de la carte est le MEILLEUR de ses conditionnements : si un
+      // kit convient, le produit convient — c'est le conditionnement qui ne
+      // convient pas, et on le dit sur sa ligne.
+      if (fitmentSortWeight[row.status] < fitmentSortWeight[product.status]) {
+        product.status = row.status
+      }
 
       groups.set(row.position.code, group)
     }
 
     for (const group of groups.values()) {
-      group.lines.sort(
+      for (const product of group.products) {
+        product.lines.sort(
+          (a, b) =>
+            fitmentSortWeight[a.status] - fitmentSortWeight[b.status] ||
+            a.priceCents - b.priceCents,
+        )
+      }
+      group.products.sort(
         (a, b) =>
           fitmentSortWeight[a.status] - fitmentSortWeight[b.status] ||
           a.productName.localeCompare(b.productName, 'fr'),
@@ -164,20 +210,41 @@ export default async function Page() {
         Les éclairages pour votre {vehicle.label}
       </h1>
 
-      <VehicleBar vehicle={vehicle} />
+      <VehicleBar vehicle={vehicle} variant="compact" />
 
-      <Alert tone="info" title="Comment lire les statuts" className="max-w-3xl">
-        <p>
-          <strong>Compatibilité confirmée</strong> : le montage a été vérifié pour cette
-          configuration précise. <strong>Informations insuffisantes</strong> : nous n&apos;avons pas
-          de quoi trancher — ce n&apos;est pas une confirmation, et ce n&apos;est pas un refus.{' '}
-          <strong>Incompatible</strong> : le produit ne convient pas à cette configuration.
-        </p>
-        <p className="mt-2">
-          La compatibilité de montage ne préjuge pas de l&apos;homologation routière : elle est
-          indiquée séparément sur chaque fiche produit.
-        </p>
-      </Alert>
+      {/*
+        L'explication des statuts est repliée.
+
+        Dépliée, elle occupait le haut de la page et repoussait les produits
+        sous la ligne de flottaison : on lisait un mode d'emploi avant de voir
+        une seule ampoule. Elle reste à un clic, et les trois statuts sont de
+        toute façon nommés en toutes lettres sur chaque carte.
+
+        `<details>` plutôt qu'un composant : le pliage, le clavier et la
+        restitution aux lecteurs d'écran sont natifs, et cela fonctionne sans
+        JavaScript.
+      */}
+      <details className="max-w-3xl rounded-md border border-line bg-surface-soft">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold marker:content-none">
+          <span className="underline decoration-line-strong underline-offset-4">
+            Comment lire les statuts de compatibilité
+          </span>
+        </summary>
+        <div className="border-t border-line px-4 py-3 text-sm text-muted-strong">
+          <p>
+            <strong className="text-slate-ink">Compatibilité confirmée</strong> : le montage a été
+            vérifié pour cette configuration précise.{' '}
+            <strong className="text-slate-ink">Informations insuffisantes</strong> : nous
+            n&apos;avons pas de quoi trancher — ce n&apos;est pas une confirmation, et ce n&apos;est
+            pas un refus. <strong className="text-slate-ink">Incompatible</strong> : le produit ne
+            convient pas à cette configuration.
+          </p>
+          <p className="mt-2">
+            La compatibilité de montage ne préjuge pas de l&apos;homologation routière : elle est
+            indiquée séparément sur chaque fiche produit.
+          </p>
+        </div>
+      </details>
 
       {groups === null ? (
         <Alert tone="danger" title="Compatibilités momentanément illisibles" live="polite">
@@ -209,68 +276,121 @@ export default async function Page() {
                 {group.label}
               </h2>
 
-              <ul className="divide-y divide-line overflow-hidden rounded-md border border-line">
-                {group.lines.map((line) => (
-                  <li key={line.id} className={cn(line.status === 'INCOMPATIBLE' && 'opacity-75')}>
-                    <Link
-                      href={`/p/${line.productSlug}`}
-                      className="flex items-start gap-4 p-3 transition-colors hover:bg-surface-soft sm:p-4"
-                    >
-                      {line.imageUrl ? (
-                        <Image
-                          src={line.imageUrl}
-                          alt=""
-                          width={64}
-                          height={64}
-                          className="size-16 shrink-0 rounded-sm bg-surface-muted object-contain"
-                        />
-                      ) : (
-                        <span
-                          aria-hidden
-                          className="size-16 shrink-0 rounded-sm bg-surface-muted"
-                        />
+              <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {group.products.map((product) => {
+                  // Conditionnement mis en avant : le moins cher parmi ceux
+                  // dont la compatibilité est CONFIRMÉE. Sans confirmation,
+                  // aucune recommandation — les lignes restent présentées à
+                  // égalité, ce qui est la seule chose honnête à faire quand on
+                  // ne sait pas.
+                  const recommande =
+                    product.lines.find((line) => line.status === 'CONFIRMED') ?? null
+
+                  return (
+                    <li
+                      key={product.productSlug}
+                      className={cn(
+                        'flex flex-col rounded-md border border-line bg-white',
+                        product.status === 'INCOMPATIBLE' && 'opacity-75',
                       )}
+                    >
+                      <Link
+                        href={`/p/${product.productSlug}`}
+                        className="flex flex-1 flex-col rounded-t-md transition-colors hover:bg-surface-soft"
+                      >
+                        <span className="flex items-start gap-4 p-4">
+                          {product.imageUrl ? (
+                            <Image
+                              src={product.imageUrl}
+                              alt=""
+                              width={80}
+                              height={80}
+                              className="size-20 shrink-0 rounded-sm bg-surface-muted object-contain"
+                            />
+                          ) : (
+                            <span aria-hidden className="size-20 shrink-0 rounded-sm bg-surface-muted" />
+                          )}
 
-                      <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-                          <span className="min-w-0">
-                            <span className="block font-semibold leading-snug">
-                              {line.productName}
+                          <span className="min-w-0 flex-1">
+                            {/* Le statut en tête : c'est ce qui décide si la
+                                suite mérite d'être lue. */}
+                            <FitmentBadge status={product.status} short className="w-fit" />
+                            <span className="mt-1.5 block font-semibold leading-snug">
+                              {product.productName}
                             </span>
-                            <span className="block text-sm text-muted">{line.variantName}</span>
+                            {product.lines[0]?.quantity > 1 ? (
+                              <span className="mt-1 block text-sm text-muted-strong">
+                                {product.lines[0].quantity} nécessaires pour cet emplacement
+                              </span>
+                            ) : null}
                           </span>
-                          <FitmentBadge status={line.status} className="shrink-0" />
                         </span>
+                      </Link>
 
-                        {line.quantity > 1 ? (
-                          <span className="mt-1.5 block text-sm font-semibold text-slate-ink">
-                            {line.quantity} nécessaires
-                          </span>
-                        ) : null}
+                      {/* Les conditionnements : prix réel, et ce qu'ils
+                          contiennent. Sur une seule ligne chacun. */}
+                      <ul className="flex flex-col gap-1.5 border-t border-line px-4 py-3 text-sm">
+                        {product.lines.map((line) => (
+                          <li key={line.id}>
+                            <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                              <span className="min-w-0">
+                                <span className="font-medium">{line.variantName}</span>
+                                {line.isKit ? (
+                                  <span className="text-muted"> · tout compris</span>
+                                ) : null}
+                                {recommande?.id === line.id && product.lines.length > 1 ? (
+                                  <span className="ml-2 rounded-xs bg-ok-soft px-1.5 py-0.5 text-xs font-semibold text-ok">
+                                    conseillé
+                                  </span>
+                                ) : null}
+                              </span>
+                              <span className="shrink-0 font-bold">
+                                {formatPrice(line.priceCents)}
+                              </span>
+                            </span>
 
-                        {line.restrictions ? (
-                          <span className="mt-1.5 block text-sm text-muted-strong">
-                            {line.restrictions}
-                          </span>
-                        ) : null}
+                            {/*
+                              La restriction appartient à SON conditionnement.
 
-                        {/* Pas de date de vérification = rien d'affiché : une
-                            compatibilité non datée ne doit pas en exhiber une.
-                            Et sur une ligne « informations insuffisantes », le mot
-                            « vérifié » se lirait comme une confirmation : la date
-                            dit alors quand nous avons cherché, pas que nous avons
-                            tranché. */}
-                        {line.verifiedAt ? (
-                          <span className="mt-1.5 block text-xs text-muted">
-                            {line.status === 'UNKNOWN' ? 'Information datée du' : 'Vérifié le'}{' '}
-                            {dateFormatter.format(line.verifiedAt)}
-                            {line.source ? ` · ${line.source}` : null}
+                              Mises en commun sous la carte, « Adaptateurs et
+                              décodeurs nécessaires, non inclus » (vrai des
+                              ampoules seules) se lisait comme valant aussi
+                              pour le kit complet, qui les contient. C'est
+                              exactement la contradiction corrigée sur la fiche
+                              produit : elle n'a pas à réapparaître ici.
+                            */}
+                            {line.restrictions ? (
+                              <span className="mt-0.5 block text-xs text-muted-strong">
+                                {line.restrictions}
+                              </span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-3">
+                        {product.lines[0]?.verifiedAt ? (
+                          <span className="text-xs text-muted">
+                            {product.status === 'UNKNOWN' ? 'Information datée du' : 'Vérifié le'}{' '}
+                            {dateFormatter.format(product.lines[0].verifiedAt)}
+                            {product.lines[0].source ? ` · ${product.lines[0].source}` : null}
                           </span>
-                        ) : null}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
+                        ) : (
+                          <span />
+                        )}
+
+                        <ButtonLink
+                          href={`/p/${product.productSlug}`}
+                          size="sm"
+                          variant={product.status === 'INCOMPATIBLE' ? 'secondary' : 'primary'}
+                          className="shrink-0"
+                        >
+                          {product.status === 'INCOMPATIBLE' ? 'Voir pourquoi' : 'Choisir'}
+                        </ButtonLink>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             </section>
           )

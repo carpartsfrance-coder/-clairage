@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
@@ -35,7 +36,15 @@ const getGeneration = cache(async function getGeneration(id: string) {
       where: { id, active: true },
       include: {
         model: { include: { make: true } },
-        configurations: { where: { active: true }, include: { equipment: true, trim: true } },
+        configurations: {
+          where: { active: true },
+          include: {
+            // L'illustration est facultative : elle n'est rendue que si un
+            // média lui a été rattaché.
+            equipment: { include: { illustration: true } },
+            trim: true,
+          },
+        },
       },
     })
     return { generation }
@@ -218,8 +227,35 @@ export default async function Page({
                       value={config.id}
                       className="flex w-full items-center gap-4 rounded-md border border-line-strong p-4 text-left transition-colors hover:border-slate-ink"
                     >
+                      {/*
+                        Illustration explicative, quand elle existe.
+
+                        Rien n'est affiché à la place si elle manque : une photo
+                        d'illustration générique sur un écran qui sert à
+                        reconnaître SON propre phare induirait en erreur. Pour
+                        en ajouter une, rattacher un média à
+                        `LightingEquipment.illustration` — aucun autre
+                        changement n'est nécessaire ici.
+                      */}
+                      {config.equipment.illustration ? (
+                        <Image
+                          src={config.equipment.illustration.url}
+                          alt={config.equipment.illustration.alt ?? ''}
+                          width={96}
+                          height={96}
+                          className="size-24 shrink-0 rounded-sm border border-line bg-surface-muted object-cover"
+                        />
+                      ) : null}
+
                       <span className="min-w-0 flex-1">
                         <span className="block font-bold">{config.equipment.label}</span>
+                        {/* Le repère avant la description : il est écrit pour
+                            quelqu'un qui regarde ses phares. */}
+                        {config.equipment.hint ? (
+                          <span className="mt-1 block text-sm text-slate-ink">
+                            {config.equipment.hint}
+                          </span>
+                        ) : null}
                         {config.equipment.description ? (
                           <span className="mt-1 block text-sm text-muted-strong">
                             {config.equipment.description}
@@ -247,7 +283,28 @@ export default async function Page({
               </ul>
             </form>
 
-            <p className="mt-8 text-sm text-muted-strong">
+            {/*
+              « Je ne sais pas » est une réponse, et elle doit avoir sa place.
+
+              Sans elle, quelqu'un d'incertain choisit au hasard — et un choix
+              au hasard ici produit une compatibilité affirmée sur la mauvaise
+              configuration. Mieux vaut l'envoyer vers une aide qui tranchera.
+            */}
+            <div className="mt-6 rounded-md border border-line bg-surface-soft p-4">
+              <p className="font-semibold">Vous ne savez pas lequel vous avez ?</p>
+              <p className="mt-1 text-sm text-muted-strong">
+                Ne choisissez pas au hasard : un halogène et un xénon n&apos;acceptent pas la même
+                pièce. Donnez-nous la plaque ou une photo de vos phares allumés, nous vous le
+                dirons.
+              </p>
+              <div className="mt-3">
+                <ButtonLink href={contactPath} variant="secondary" size="sm">
+                  Je ne sais pas, aidez-moi
+                </ButtonLink>
+              </div>
+            </div>
+
+            <p className="mt-6 text-sm text-muted-strong">
               Aucun de ces équipements ne correspond à ce que vous avez sous le capot ?{' '}
               <Link
                 href={contactPath}

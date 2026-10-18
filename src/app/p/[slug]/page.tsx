@@ -15,6 +15,9 @@ import {
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { ProductGallery } from '@/components/product/ProductGallery'
 import { BuyBox } from '@/components/product/BuyBox'
+import { ConfigurationContents } from '@/components/product/ConfigurationContents'
+import { OptionalAddons } from '@/components/product/OptionalAddons'
+import { ProductConfigurationProvider } from '@/components/product/ProductConfiguration'
 import { Alert, Card, EmptyState } from '@/components/ui/Surface'
 import { ButtonLink } from '@/components/ui/Button'
 import { IconArrowRight, IconCar, IconHeadset, IconShield, IconWrench } from '@/components/ui/icons'
@@ -70,12 +73,20 @@ export default async function ProductPage({ params }: PageProps) {
     .positionLabel
 
   const eyebrow = [product.category?.name, position].filter(Boolean).join(' / ')
-  const badge = [
-    product.colorTemperature ? 'Blanc pur' : null,
-    product.colorTemperature ? `${product.colorTemperature.toLocaleString('fr-FR')} K` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+
+  /*
+    Pastille posée sur le visuel.
+
+    Elle reprenait mot pour mot la seconde ligne du titre — « Blanc pur
+    6 000 K » — et sur mobile les deux se suivaient à quelques pixels : la même
+    étiquette, deux fois, dont une par-dessus la photo. Le titre porte
+    désormais seul la température de couleur, et la pastille ne sert plus qu'au
+    culot, qui n'est écrit nulle part ailleurs à cet endroit.
+
+    Elle disparaît donc complètement sur un produit sans culot, plutôt que de
+    répéter quelque chose.
+  */
+  const badge = product.bulbBase ? `Culot ${product.bulbBase}` : null
 
   // Même liste pour le fil d'Ariane affiché et pour son balisage : deux
   // sources finiraient par divergé, et c'est le balisage qu'on ne relit pas.
@@ -89,6 +100,15 @@ export default async function ProductPage({ params }: PageProps) {
   ]
 
   return (
+    /*
+      Le conditionnement choisi est partagé par toute la fiche : le bloc
+      d'achat le pose, la section Installation le lit. Sans ce partage, les deux
+      décrivaient des conditionnements différents sur la même page.
+    */
+    <ProductConfigurationProvider
+      variants={product.variants}
+      recommendedVariantId={product.recommendedVariantId}
+    >
     <div className="pb-28 lg:pb-16">
       {/* Données structurées : voir StructuredData.tsx — rien n'y est émis en
           préproduction, et rien n'y est affirmé qui ne soit en base. */}
@@ -138,7 +158,7 @@ export default async function ProductPage({ params }: PageProps) {
         <div className="lg:col-start-1 lg:row-span-2 lg:row-start-1">
           <ProductGallery
             items={product.gallery}
-            badge={badge || null}
+            badge={badge}
             productName={product.name}
           />
         </div>
@@ -280,9 +300,11 @@ export default async function ProductPage({ params }: PageProps) {
                   </li>
                 ))}
               </ul>
+              {/* Ce que le client gagne à savoir : le kit part complet, en un
+                  seul colis. Comment la disponibilité est calculée regarde le
+                  catalogue, pas l'acheteur — c'est documenté côté code. */}
               <p className="mt-3 text-xs text-muted">
-                Le stock d&apos;un kit se calcule à partir de ses composants : il est disponible
-                tant que chacun d&apos;eux l&apos;est.
+                Tout est expédié ensemble, dans le même colis.
               </p>
             </Card>
           ) : null}
@@ -306,40 +328,11 @@ export default async function ProductPage({ params }: PageProps) {
           <div className="mt-10">
             <h3 className="font-bold">Compléments facultatifs</h3>
             <p className="mt-1 text-sm text-muted-strong">
-              Ils ne sont pas nécessaires au montage et ne sont jamais ajoutés automatiquement.
+              Ils ne sont pas nécessaires au montage et ne sont jamais ajoutés automatiquement. Les
+              adaptateurs et décodeurs exigés par votre kit, eux, se trouvent dans le bloc
+              d&apos;achat.
             </p>
-            <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {product.optionalAddons.map((addon) => (
-                <li key={addon.slug}>
-                  <Link
-                    href={`/p/${addon.slug}`}
-                    className="flex h-full flex-col rounded-md border border-line bg-white transition-colors hover:border-line-strong"
-                  >
-                    <span className="relative block aspect-[4/3] overflow-hidden rounded-t-md">
-                      {addon.image ? (
-                        <Image
-                          src={addon.image.url}
-                          alt=""
-                          fill
-                          sizes="25vw"
-                          className="object-contain p-3"
-                        />
-                      ) : (
-                        <span className="flex h-full items-center justify-center bg-surface-muted text-xs text-muted">
-                          {addon.name}
-                        </span>
-                      )}
-                    </span>
-                    <span className="flex flex-1 flex-col gap-1 border-t border-line p-3">
-                      <span className="text-sm font-bold">{addon.name}</span>
-                      <span className="mt-auto text-sm font-bold">
-                        {formatPrice(addon.fromPriceCents)}
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <OptionalAddons addons={product.optionalAddons} vehicleSelected={Boolean(vehicle)} />
           </div>
         ) : null}
       </section>
@@ -369,21 +362,15 @@ export default async function ProductPage({ params }: PageProps) {
             )}
           </div>
 
-          {product.variants.some((variant) => variant.fitment.restrictions) ? (
-            <Alert tone="warn" title="Restrictions de montage" className="mt-5 max-w-3xl">
-              <ul className="list-disc space-y-1 pl-5">
-                {[
-                  ...new Set(
-                    product.variants
-                      .map((variant) => variant.fitment.restrictions)
-                      .filter((value): value is string => Boolean(value)),
-                  ),
-                ].map((restriction) => (
-                  <li key={restriction}>{restriction}</li>
-                ))}
-              </ul>
-            </Alert>
-          ) : null}
+          {/*
+            Contenu et restrictions du conditionnement CHOISI.
+
+            Ce bloc agrégeait auparavant les restrictions de tous les
+            conditionnements : la fiche affirmait en haut que le kit complet
+            contenait les adaptateurs et les décodeurs, et répétait ici qu'ils
+            n'étaient pas inclus. Les deux ne pouvaient pas être vrais ensemble.
+          */}
+          <ConfigurationContents />
 
           {product.guides.length > 0 ? (
             <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -492,5 +479,6 @@ export default async function ProductPage({ params }: PageProps) {
         </p>
       ) : null}
     </div>
+    </ProductConfigurationProvider>
   )
 }

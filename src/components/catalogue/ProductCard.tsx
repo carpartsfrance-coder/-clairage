@@ -15,9 +15,12 @@ import { IconArrowRight } from '@/components/ui/icons'
  * Sans véhicule, aucun badge : ne rien dire vaut mieux que laisser croire que
  * la question a été tranchée.
  *
- * Le prix est celui du conditionnement le moins cher. Quand plusieurs
- * conditionnements existent, il est précédé de « À partir de » — sinon le
- * montant annoncé ne correspondrait à aucun panier possible.
+ * **Les prix.** La carte portait la pastille « Le kit complet » au-dessus du
+ * prix du conditionnement le moins cher : les deux informations étaient
+ * exactes séparément, mais ensemble elles annonçaient un kit à 69,90 € alors
+ * qu'il en coûte 99,90 €. Quand un kit existe et coûte davantage, les deux
+ * lignes sont donc affichées, chacune avec son intitulé. Les montants viennent
+ * du catalogue, jamais du composant.
  */
 export function ProductCard({ product }: { product: ProductListItem }) {
   const multiplePackagings = product.variantCount > 1
@@ -48,9 +51,11 @@ export function ProductCard({ product }: { product: ProductListItem }) {
             </div>
           )}
 
+          {/* La pastille annonce l'existence d'un kit, pas le prix affiché
+              dessous : les deux prix sont donnés côte à côte dans la carte. */}
           {product.hasKit ? (
             <Badge tone="dark" className="absolute left-3 top-3">
-              Le kit complet
+              Existe en kit complet
             </Badge>
           ) : null}
         </div>
@@ -74,10 +79,31 @@ export function ProductCard({ product }: { product: ProductListItem }) {
 
           <div className="mt-auto flex items-end justify-between gap-3 pt-2">
             <div>
-              {multiplePackagings ? (
-                <p className="text-xs text-muted">À partir de</p>
-              ) : null}
-              <p className="text-[1.05rem] font-bold">{formatPrice(product.fromPriceCents)}</p>
+              {product.kitPriceCents !== null ? (
+                /* Deux conditionnements, deux prix nommés : aucun des deux ne
+                   peut être pris pour l'autre. */
+                <>
+                  <p className="text-xs text-muted">Ampoules seules</p>
+                  <p className="text-[1.05rem] font-bold">
+                    {formatPrice(product.fromPriceCents)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-strong">
+                    Kit complet{' '}
+                    <span className="font-semibold text-slate-ink">
+                      {formatPrice(product.kitPriceCents)}
+                    </span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  {multiplePackagings ? (
+                    <p className="text-xs text-muted">À partir de</p>
+                  ) : null}
+                  <p className="text-[1.05rem] font-bold">
+                    {formatPrice(product.fromPriceCents)}
+                  </p>
+                </>
+              )}
               <p
                 className={cn(
                   'text-xs',
