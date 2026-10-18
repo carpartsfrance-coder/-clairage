@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { getCurrentUser } from '@/lib/auth/session'
 import { getCart } from '@/lib/cart'
 import { getSelectedVehicle } from '@/lib/session'
 import { getShippingOffers } from '@/lib/shipping'
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
  * par le formulaire — une page ne doit jamais écrire.
  */
 export default async function CommandePage() {
+  const user = await getCurrentUser()
   const vehicle = await getSelectedVehicle()
   const cart = await getCart(vehicle?.configurationId ?? null)
 
@@ -68,6 +70,11 @@ export default async function CommandePage() {
 
       <div className="mt-8">
         <CheckoutForm
+          account={
+            user
+              ? { email: user.email, firstName: user.firstName, lastName: user.lastName }
+              : null
+          }
           lines={cart.lines.map((line) => ({
             id: line.id,
             productName: line.productName,

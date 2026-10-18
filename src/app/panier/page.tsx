@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getCart } from '@/lib/cart'
 import { getDeliveryTeaser } from '@/lib/shipping'
 import { getSelectedVehicle } from '@/lib/session'
+import { paymentIsSimulated } from '@/lib/payments'
 import { updateCartLine } from '@/lib/actions/cart'
 import { formatPrice } from '@/lib/identity'
 import { availabilityLabel, isPurchasable } from '@/lib/stock'
@@ -345,8 +346,9 @@ export default async function PanierPage() {
               </ButtonLink>
 
               <p className="mt-2 text-xs text-muted">
-                Le tunnel de commande et le paiement ne sont pas encore ouverts : cette étape ne
-                permet pas encore de régler votre panier.
+                {paymentIsSimulated()
+                  ? 'Le tunnel de commande est en service, mais aucun prestataire de paiement n’est configuré sur cet environnement : la dernière étape simule l’issue du paiement et n’encaisse rien.'
+                  : 'Paiement sécurisé à l’étape suivante. Rien n’est débité avant votre validation.'}
               </p>
             </Card>
           </section>

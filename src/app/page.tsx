@@ -9,6 +9,7 @@ import { FeaturedProducts } from '@/components/home/FeaturedProducts'
 import { MethodSection } from '@/components/home/MethodSection'
 import { MotoSection } from '@/components/home/MotoSection'
 import { FaqHelpSection } from '@/components/home/FaqHelpSection'
+import { OrganizationStructuredData } from '@/components/seo/StructuredData'
 
 export const metadata: Metadata = {
   title: 'Éclairage LED auto & moto',
@@ -34,6 +35,10 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* Rendu seulement si l'identité légale est renseignée : voir
+          StructuredData.tsx. */}
+      <OrganizationStructuredData />
+
       <HeroSection content={blocks.hero} />
       <VehicleBand content={blocks.vehicleBand} />
       <ReassuranceBand items={blocks.reassurance} />

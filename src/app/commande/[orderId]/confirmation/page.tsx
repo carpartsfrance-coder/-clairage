@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { Alert, Card } from '@/components/ui/Surface'
 import { IconTruck } from '@/components/ui/icons'
+import { emailIsSimulated } from '@/lib/email'
 import { formatPrice } from '@/lib/identity'
 
 /**
@@ -506,14 +507,15 @@ export default async function Page({
                     </span>
                   </li>
                   {/*
-                    Aucun e-mail d'expédition n'est envoyé à ce stade : le modèle
-                    existe, rien ne l'appelle. On ne promet donc pas un message
-                    que personne n'enverra — la référence, elle, est vraie.
+                    L'avis d'expédition EST envoyé à la mise en expédition
+                    (admin-orders.ts). Reste à dire s'il partira réellement :
+                    avec le pilote « log », il est seulement journalisé, et
+                    promettre un message que personne ne recevra serait faux.
                   */}
                   <li className="pl-8">
-                    L&apos;avis d&apos;expédition par e-mail n&apos;est pas encore en service :
-                    conservez la référence {order.reference}, elle suffit à nous interroger sur
-                    l&apos;avancement de cette commande.
+                    {emailIsSimulated()
+                      ? `L’avis d’expédition est préparé au départ du colis, mais l’envoi réel d’e-mails n’est pas activé sur cet environnement : conservez la référence ${order.reference}, elle suffit à nous interroger sur l’avancement de cette commande.`
+                      : `Vous recevrez un avis d’expédition par e-mail au départ du colis, avec le numéro de suivi s’il en existe un. Conservez la référence ${order.reference}.`}
                   </li>
                 </ul>
               </Card>

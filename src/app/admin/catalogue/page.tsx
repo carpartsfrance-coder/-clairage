@@ -76,8 +76,10 @@ export default async function AdminCatalogPage({
 
   const filters: CatalogFilters = {
     q: readOne(params, 'q'),
-    status: statusParam && STATUS_LABELS[statusParam] ? statusParam : undefined,
-    stock: stockParam && STOCK_LABELS[stockParam] ? stockParam : undefined,
+    // Object.hasOwn, pas une lecture nue : « ?status=constructor » remonterait
+    // la chaîne de prototypes et partirait en clause Prisma.
+    status: statusParam && Object.hasOwn(STATUS_LABELS, statusParam) ? statusParam : undefined,
+    stock: stockParam && Object.hasOwn(STOCK_LABELS, stockParam) ? stockParam : undefined,
     page: Number.isFinite(pageParam) ? Math.max(1, pageParam) : 1,
   }
 

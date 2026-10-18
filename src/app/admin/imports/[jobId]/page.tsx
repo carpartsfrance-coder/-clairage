@@ -131,8 +131,10 @@ export default async function AdminImportPage({
   const { jobId } = await params
   const { filtre } = await searchParams
   // Le filtre vient de l'URL : on ne garde que les verdicts connus, sinon la
-  // liste se viderait sans que personne comprenne pourquoi.
-  const outcome = filtre && OUTCOME_COPY[filtre] ? filtre : undefined
+  // liste se viderait sans que personne comprenne pourquoi. `Object.hasOwn` et
+  // non `OUTCOME_COPY[filtre]` : « constructor » ou « toString » remontent la
+  // chaîne de prototypes et passeraient pour des verdicts valides.
+  const outcome = filtre && Object.hasOwn(OUTCOME_COPY, filtre) ? filtre : undefined
 
   const report = await getImportReport(jobId, outcome)
   if (!report) notFound()
@@ -140,12 +142,25 @@ export default async function AdminImportPage({
   const { job, rows, counts } = report
   const definition = IMPORT_DEFINITIONS[job.kind]
   const mapping = (job.columnMapping ?? {}) as Record<string, string>
-  const headers = Object.keys(mapping)
+  // Les clés d'un champ JSON reviennent de la base dans un ordre interne, pas
+  // dans celui du fichier : on trie, pour que la liste des colonnes soit au
+  // moins stable et parcourable.
+  const headers = Object.keys(mapping).sort((a, b) => a.localeCompare(b, 'fr'))
   const missing = definition ? missingRequiredFields(mapping, definition) : []
 
   const step = STEP_BY_STATUS[job.status] ?? 1
   const isDraft = job.status === 'DRAFT'
   const canWrite = job.status === 'PREVIEW' || job.status === 'RUNNING' || job.status === 'PAUSED'
+
+  /**
+   * La validation remet chaque ligne à « à écrire » et les compteurs à zéro.
+   * Pendant une écriture elle ferait rejouer des lignes déjà passées ; après
+   * coup elle effacerait le rapport de ce qui a réellement été écrit. Les deux
+   * cas sont refusés par l'action — on ne propose donc pas ici un bouton dont
+   * la réponse serait toujours un refus. Le mode d'écriture est verrouillé de
+   * la même façon, et pour les mêmes raisons.
+   */
+  const canValidate = job.status !== 'RUNNING' && job.status !== 'DONE'
 
   const summary = job.summary as {
     valid?: number
@@ -153,6 +168,19 @@ export default async function AdminImportPage({
     duplicates?: number
     warnings?: number
   } | null
+
+  /**
+   * Le chiffrage et les verdicts de ligne datent de la dernière validation.
+   * Réenregistrer une correspondance remet l'import en brouillon sans les
+   * effacer : ils ne décrivent plus le fichier tel qu'il sera relu, et les
+   * afficher comme s'ils étaient courants ferait croire à une validation qui
+   * n'a pas eu lieu.
+   *
+   * Le `summary` fait la différence entre « brouillon jamais validé » — rien à
+   * périmer, les lignes sont encore en attente — et « brouillon revenu d'une
+   * validation », le seul cas où l'écran doit prévenir.
+   */
+  const verdictsAreStale = isDraft && summary !== null
 
   const countEntries = [
     ...OUTCOME_ORDER.filter((key) => counts[key] !== undefined),
@@ -268,10 +296,38 @@ export default async function AdminImportPage({
           </h2>
 
           <div className="mt-3 flex flex-col gap-4">
-            <WriteModeForm jobId={job.id} current={job.writeMode} />
-            <ActionForm action={runPreview} label="Valider le fichier" jobId={job.id} />
+            {canValidate ? (
+              <>
+                <WriteModeForm jobId={job.id} current={job.writeMode} />
+                <ActionForm action={runPreview} label="Valider le fichier" jobId={job.id} />
+              </>
+            ) : job.status === 'RUNNING' ? (
+              <Alert tone="info" title="Écriture commencée">
+                Tant que cet import n&apos;est pas terminé, ni le mode d&apos;écriture ni la
+                validation ne changent : des lignes déjà écrites seraient rejouées. Le mode retenu
+                est{' '}
+                <span className="font-semibold">
+                  {WRITE_MODE_LABELS[job.writeMode] ?? job.writeMode}
+                </span>
+                .
+              </Alert>
+            ) : (
+              <Alert tone="info" title="Import terminé">
+                Relancer la validation remettrait toutes les lignes à « à écrire » et effacerait le
+                rapport de ce qui a été écrit. Pour repasser ce fichier, déposez-le à nouveau depuis
+                la liste des imports.
+              </Alert>
+            )}
 
-            {summary ? (
+            {verdictsAreStale ? (
+              <Alert tone="warn" title="Chiffrage à refaire">
+                La correspondance des colonnes a changé depuis la dernière validation : le chiffrage
+                obtenu alors ne décrit plus ce fichier et n&apos;est plus affiché. Relancez la
+                validation.
+              </Alert>
+            ) : null}
+
+            {summary && !verdictsAreStale ? (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <Card className="px-3 py-2.5">
                   <p className="text-xs font-semibold text-muted-strong">Lignes valides</p>
@@ -348,7 +404,18 @@ export default async function AdminImportPage({
           4. Rapport
         </h2>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+        {verdictsAreStale && rows.length > 0 ? (
+          <Alert className="mt-3" tone="warn" title="Verdicts antérieurs à la dernière correction">
+            Les résultats ci-dessous sont ceux de la validation précédente. La correspondance des
+            colonnes a changé depuis : ils ne disent pas ce que donnerait le fichier aujourd&apos;hui.
+            Relancez la validation à l&apos;étape 2.
+          </Alert>
+        ) : null}
+
+        <nav
+          aria-label="Filtrer le rapport par résultat"
+          className="mt-3 flex flex-wrap items-center gap-2 text-sm"
+        >
           <Link
             href={`/admin/imports/${job.id}`}
             aria-current={outcome ? undefined : 'page'}
@@ -378,7 +445,7 @@ export default async function AdminImportPage({
               </Link>
             )
           })}
-        </div>
+        </nav>
 
         {rows.length === 0 ? (
           <p className="mt-3 text-sm text-muted-strong">

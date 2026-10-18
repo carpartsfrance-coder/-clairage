@@ -65,8 +65,16 @@ services:
         value: 'on'
 
       # --- Sessions ----------------------------------------------------------
-      - key: SESSION_SECRET
-        generateValue: true
+      # Aucun secret de signature : le cookie de session porte un jeton
+      # aléatoire de 32 octets dont la base ne garde que le condensé SHA-256
+      # (src/lib/auth/session.ts). Il n'y a donc rien à signer, et pas de
+      # variable à faire tourner.
+      #
+      # Coût du hachage des mots de passe (scrypt, 2^N). 15 par défaut, ajusté
+      # à une instance de 512 Mo ; à relever avec l'offre.
+      # Voir src/lib/auth/password.ts.
+      - key: AUTH_SCRYPT_LOG_N
+        value: '15'
 
       # --- Stockage des médias (S3-compatible) -------------------------------
       # Cloudflare R2, Backblaze B2 ou AWS S3 — voir docs/render.md.
@@ -135,6 +143,15 @@ services:
         fromDatabase:
           name: lumera-db
           property: connectionString
+      # Indispensable : le cron est ce qui envoie réellement les e-mails, et
+      # chaque lien d'un e-mail est construit depuis cette valeur. Absente, la
+      # valeur de repli est http://localhost:3400 — les liens de suivi et de
+      # réinitialisation partiraient inutilisables, sans aucune erreur.
+      - key: NEXT_PUBLIC_SITE_URL
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: NEXT_PUBLIC_SITE_URL
       - key: EMAIL_DRIVER
         fromService:
           type: web
@@ -180,3 +197,13 @@ services:
           type: web
           name: lumera-web
           envVarKey: MEDIA_SECRET_ACCESS_KEY
+      - key: MEDIA_PUBLIC_HOST
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: MEDIA_PUBLIC_HOST
+      - key: JOB_RUNNER_TOKEN
+        fromService:
+          type: web
+          name: lumera-web
+          envVarKey: JOB_RUNNER_TOKEN

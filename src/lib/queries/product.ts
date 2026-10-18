@@ -56,6 +56,10 @@ export type ProductView = {
   tagline: string | null
   description: string | null
   body: string | null
+  /** Marque de la pièce, quand elle est renseignée. Jamais déduite. */
+  brand: string | null
+  /** Fiche de démonstration : exclue du plan de site et des données structurées. */
+  isDemo: boolean
   bulbBase: string | null
   colorTemperature: number | null
   difficulty: 'UNKNOWN' | 'EASY' | 'MEDIUM' | 'HARD'
@@ -221,6 +225,8 @@ export async function getProduct(
       tagline: product.tagline,
       description: product.description,
       body: product.body,
+      brand: product.brand,
+      isDemo: product.isDemo,
       bulbBase: product.bulbBase,
       colorTemperature: product.colorTemperature,
       difficulty: product.difficulty,

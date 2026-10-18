@@ -44,6 +44,8 @@ export type CheckoutShippingOption = {
 }
 
 type Props = {
+  /** Compte connecté, quand il y en a un. La commande lui sera rattachée. */
+  account: { email: string; firstName: string | null; lastName: string | null } | null
   lines: CheckoutLineView[]
   subtotalCents: number
   /** TVA contenue dans le sous-total des articles (les prix sont TTC). */
@@ -177,6 +179,7 @@ function AddressFields({
 }
 
 export function CheckoutForm({
+  account,
   lines,
   subtotalCents,
   vatCents,
@@ -214,6 +217,22 @@ export function CheckoutForm({
           {/* 1. Coordonnées --------------------------------------------- */}
           <fieldset className={fieldsetClass}>
             <legend className={legendClass}>Coordonnées</legend>
+
+            {/*
+              Dire à qui la commande sera rattachée. Sans cette ligne, un client
+              connecté voyait un champ vide, pouvait saisir une autre adresse, et
+              la commande partait sur son compte avec un contact différent — sans
+              que rien ne le signale.
+            */}
+            {account ? (
+              <p className="mt-2 text-sm text-muted-strong">
+                Connecté avec <strong className="text-slate-ink">{account.email}</strong> : cette
+                commande sera rattachée à ce compte et visible dans votre espace client. Vous
+                pouvez indiquer une autre adresse de contact ci-dessous si la confirmation doit
+                partir ailleurs.
+              </p>
+            ) : null}
+
             <div className="mt-4 flex flex-col gap-4">
               <TextField
                 id="email"
@@ -222,6 +241,7 @@ export function CheckoutForm({
                 label="Adresse e-mail"
                 required
                 autoComplete="email"
+                defaultValue={account?.email ?? ''}
                 hint="Sert à l'envoi de la confirmation et du suivi de commande."
                 error={fieldErrors?.email}
               />

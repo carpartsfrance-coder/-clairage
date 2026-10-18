@@ -297,3 +297,14 @@ export function IconImport(p: IconProps) {
     </Svg>
   )
 }
+
+/** Média : un cadre, un horizon et un soleil. */
+export function IconImage(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="3" y="4.5" width="18" height="15" rx="2" />
+      <circle cx="8.5" cy="9.5" r="1.6" />
+      <path d="m3.5 17 4.8-4.4a1.6 1.6 0 0 1 2.2 0l3.1 2.9 2.1-1.8a1.6 1.6 0 0 1 2.1 0l2.7 2.3" />
+    </Svg>
+  )
+}

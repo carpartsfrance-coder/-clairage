@@ -1142,6 +1142,9 @@ model ImportJob {
   errorRows     Int          @default(0)
   /// Index de la dernière ligne traitée, pour reprendre après interruption.
   cursor        Int          @default(0)
+  /// Verrou d'écriture : empêche deux lots concurrents d'écrire les mêmes
+  /// lignes. Repris au bout de dix minutes si le processus a été tué.
+  lockedAt      DateTime?
   summary       Json?
   createdBy     String?
   createdAt     DateTime     @default(now())

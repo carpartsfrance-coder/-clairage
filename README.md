@@ -9,6 +9,12 @@ démonstration » et reste en `noindex` tant que `NEXT_PUBLIC_DEMO_MODE` vaut `o
 Voir [docs/matrice-reception.md](docs/matrice-reception.md) pour ce qui est fait,
 ce qui reste à vérifier et ce qui manque.
 
+**La boutique ne peut pas encore ouvrir**, et l'application le dit elle-même :
+*Administration › Paramètres › État de l'installation* liste les points
+bloquants, et `GET /api/health` en renvoie la version courte. Aujourd'hui :
+paiement simulé, aucun envoi d'e-mail réel, identité légale non renseignée,
+données de démonstration encore en base.
+
 ---
 
 ## Pile technique
@@ -71,6 +77,11 @@ c'est ce qu'il faut pour partir d'un catalogue vide.
 | `npm run seed:demo` | Référentiels + démonstration |
 | `npm run seed -- --purge-demo` | Retire tout ce qui porte `isDemo` |
 | `npx tsx scripts/run-jobs.ts` | Dépile `JobQueue` une fois (le cron Render fait la même chose) |
+| `npm run admin:create` | Crée un compte de l'équipe (aucun identifiant par défaut n'existe) |
+| `npm test` | 171 tests sur une base PostgreSQL dédiée |
+| `npm run test:db:setup` | Crée et migre `lumera_test`, à faire une fois |
+| `./scripts/backup.sh sauvegarder` | Dump horodaté de la base |
+| `./scripts/backup.sh verifier <dump>` | Restaure le dump dans une base jetable et compte les lignes |
 
 ### Données de démonstration
 
@@ -102,23 +113,26 @@ src/
     layout/            Header, Footer, MobileNav, recherche, panier, véhicule
     home/              les sections de la page d'accueil, une par fichier
     vehicle/           sélecteur de véhicule (marque → modèle → année)
+    seo/               données structurées (schema.org), rien d'inventé
   lib/
     identity.ts        marque, coordonnées, conditions commerciales
+    readiness.ts       état de l'installation : un seul endroit dit si on peut ouvrir
     navigation.ts      arborescence par défaut (la table MenuEntry la remplace)
     session.ts         véhicule et panier de la session
+    media-nature.ts    photo réelle / illustration / essai : vocabulaire partagé
     queries/           lectures par page
     email.ts           envoi transactionnel, pilote `log` par défaut
-scripts/
-  run-jobs.ts          dépilage de JobQueue
-  admin/               droits, garde d'accès, indicateurs du tableau de bord
-  imports/             lecture CSV, formats, validation, écriture par lots
-  email/               gabarit et modèles de messages
-  auth/                mots de passe, sessions, limitation des tentatives
+    storage/           médias : pilote local (développement) ou S3 (production)
+    admin/             droits, garde d'accès, indicateurs du tableau de bord
+    imports/           lecture CSV, formats, validation, écriture par lots
+    email/             gabarit et modèles de messages
+    auth/              mots de passe, sessions, limitation des tentatives
 scripts/
   run-jobs.ts          dépilage de JobQueue
   create-admin.ts      création d'un compte de l'équipe
-tests/                 100 tests, base PostgreSQL dédiée (npm run test:db:setup)
-docs/                  Render, administration, matrice de réception
+  backup.sh            sauvegarder / vérifier (restauration d'essai) / restaurer
+tests/                 171 tests, base PostgreSQL dédiée (npm run test:db:setup)
+docs/                  Render, administration, imports, matrice de réception
 design-references/     les trois maquettes fournies
 ```
 

@@ -473,3 +473,174 @@ describe('correspondance corrigée à la main', () => {
     expect(variant.priceCents).toBe(1500)
   })
 })
+
+/* -------------------------------------------------------------------------- */
+
+describe('écriture concurrente', () => {
+  /**
+   * Le cas réel : deux onglets ouverts sur le même import, ou deux membres de
+   * l'équipe qui cliquent « Écrire le prochain lot » en même temps. Sans
+   * verrou, les deux appels lisaient le même lot de lignes au-delà du curseur
+   * et l'écrivaient deux fois, en comptant deux fois.
+   */
+  it('refuse un second lot pendant qu’un lot est en cours', async () => {
+    await reset()
+
+    const content = [
+      'slug;nom;sku;conditionnement;prix',
+      'kit-a;Kit A;SKU-A1;La paire;19,90',
+      'kit-b;Kit B;SKU-B1;La paire;29,90',
+    ].join('\n')
+
+    const prepared = await prepareImport({
+      kind: 'PRODUCTS',
+      filename: 'concurrence.csv',
+      content,
+      createdBy: 'test',
+    })
+    if (!('jobId' in prepared)) throw new Error('préparation échouée')
+    await previewImport(prepared.jobId)
+
+    // Les deux appels partent ensemble, comme deux requêtes simultanées.
+    const [first, second] = await Promise.all([
+      runImportChunk(prepared.jobId),
+      runImportChunk(prepared.jobId),
+    ])
+
+    const refused = [first, second].filter((result) => 'error' in result)
+    const accepted = [first, second].filter((result) => !('error' in result))
+
+    expect(accepted).toHaveLength(1)
+    expect(refused).toHaveLength(1)
+    expect((refused[0] as { error: string }).error).toContain('déjà en cours')
+
+    // Et surtout : chaque ligne n'a été écrite qu'une fois.
+    const job = await prisma.importJob.findUniqueOrThrow({ where: { id: prepared.jobId } })
+    expect(job.createdRows).toBe(2)
+    expect(job.processedRows).toBe(2)
+    expect(await prisma.product.count()).toBe(2)
+  })
+
+  it('relâche le verrou en fin de lot, pour que le suivant passe', async () => {
+    await reset()
+
+    const content = [
+      'slug;nom;sku;conditionnement;prix',
+      'kit-c;Kit C;SKU-C1;La paire;19,90',
+    ].join('\n')
+
+    const prepared = await prepareImport({
+      kind: 'PRODUCTS',
+      filename: 'suite.csv',
+      content,
+      createdBy: 'test',
+    })
+    if (!('jobId' in prepared)) throw new Error('préparation échouée')
+    await previewImport(prepared.jobId)
+
+    const result = await runToCompletion(prepared.jobId)
+    // Si le verrou n'était pas relâché, le second lot serait refusé et
+    // `runToCompletion` ne terminerait jamais l'import.
+    expect(result).toMatchObject({ done: true })
+
+    const job = await prisma.importJob.findUniqueOrThrow({ where: { id: prepared.jobId } })
+    expect(job.status).toBe('DONE')
+    expect(job.lockedAt).toBeNull()
+  })
+})
+
+describe('correspondance modifiée après validation', () => {
+  /**
+   * Changer la correspondance invalide ce qui en découlait. Le chiffrage et les
+   * verdicts de ligne doivent disparaître, sinon l'écran continue d'afficher
+   * « n lignes valides » à propos d'une association qui n'existe plus — un
+   * rapport périmé qui se lit comme une vérification.
+   */
+  it('efface le chiffrage et les verdicts', async () => {
+    await reset()
+
+    const content = [
+      'slug;nom;sku;conditionnement;prix',
+      'kit-d;Kit D;SKU-D1;La paire;19,90',
+    ].join('\n')
+
+    const prepared = await prepareImport({
+      kind: 'PRODUCTS',
+      filename: 'remap.csv',
+      content,
+      createdBy: 'test',
+    })
+    if (!('jobId' in prepared)) throw new Error('préparation échouée')
+
+    await previewImport(prepared.jobId)
+    expect(
+      await prisma.importRow.count({ where: { jobId: prepared.jobId, outcome: 'ready' } }),
+    ).toBe(1)
+
+    const result = await updateMapping(prepared.jobId, prepared.mapping)
+    expect(result).toMatchObject({ ok: true })
+
+    const job = await prisma.importJob.findUniqueOrThrow({ where: { id: prepared.jobId } })
+    expect(job.status).toBe('DRAFT')
+    expect(job.summary).toBeNull()
+    expect(
+      await prisma.importRow.count({ where: { jobId: prepared.jobId, outcome: 'ready' } }),
+    ).toBe(0)
+    expect(
+      await prisma.importRow.count({ where: { jobId: prepared.jobId, outcome: 'pending' } }),
+    ).toBe(1)
+  })
+
+  it('REFUSE de changer la correspondance d’un import terminé', async () => {
+    await reset()
+
+    const content = [
+      'slug;nom;sku;conditionnement;prix',
+      'kit-e;Kit E;SKU-E1;La paire;19,90',
+    ].join('\n')
+
+    const prepared = await prepareImport({
+      kind: 'PRODUCTS',
+      filename: 'termine.csv',
+      content,
+      createdBy: 'test',
+    })
+    if (!('jobId' in prepared)) throw new Error('préparation échouée')
+
+    await previewImport(prepared.jobId)
+    await runToCompletion(prepared.jobId)
+
+    const result = await updateMapping(prepared.jobId, prepared.mapping)
+    expect('error' in result).toBe(true)
+    if ('error' in result) expect(result.error).toContain('terminé')
+  })
+})
+
+describe('plafond de lignes', () => {
+  it('refuse un fichier au-delà du plafond, en disant combien', async () => {
+    await reset()
+
+    const header = 'slug;nom;sku;conditionnement;prix'
+    const rows = Array.from(
+      { length: 20_001 },
+      (_, i) => `kit-${i};Kit ${i};SKU-${i};La paire;19,90`,
+    )
+
+    const result = await prepareImport({
+      kind: 'PRODUCTS',
+      filename: 'enorme.csv',
+      content: [header, ...rows].join('\n'),
+      createdBy: 'test',
+    })
+
+    expect('error' in result).toBe(true)
+    if ('error' in result) {
+      // toLocaleString('fr-FR') sépare les milliers par une espace fine
+      // insécable (U+202F), pas par une espace ordinaire.
+      expect(result.error).toContain((20_001).toLocaleString('fr-FR'))
+      expect(result.error).toContain('Découpez')
+    }
+    // Rien n'a été créé : le refus arrive avant l'écriture du travail.
+    expect(await prisma.importJob.count()).toBe(0)
+  })
+})

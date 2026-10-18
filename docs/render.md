@@ -49,10 +49,22 @@ comportement.
 | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | Le domaine définitif, avec `https://` | URL canoniques et liens d'e-mail faux |
 | `MEDIA_ENDPOINT`, `MEDIA_REGION`, `MEDIA_BUCKET`, `MEDIA_ACCESS_KEY_ID`, `MEDIA_SECRET_ACCESS_KEY`, `MEDIA_PUBLIC_HOST` | Console du stockage objet | Aucun envoi de média possible |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe › Développeurs › Clés d'API (**mode test** d'abord) | Paiement indisponible |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe › Développeurs › Clés d'API (**mode test** d'abord) | Paiement indisponible en production, simulé en développement |
 | `EMAIL_FROM`, `EMAIL_API_KEY` | Prestataire e-mail | Les envois restent simulés et tracés comme tels |
 
-Générées par Render : `SESSION_SECRET`, `JOB_RUNNER_TOKEN`, `DATABASE_URL`.
+Générées par Render : `JOB_RUNNER_TOKEN`, `DATABASE_URL`.
+
+Il n'y a **aucun secret de session à définir** : le cookie porte un jeton
+aléatoire de 32 octets dont la base ne garde que le condensé SHA-256. Rien n'est
+signé, donc il n'y a pas de clé à faire tourner.
+
+`AUTH_SCRYPT_LOG_N` (coût du hachage des mots de passe, `2^N`) vaut 15, calibré
+pour une instance de 512 Mo. À relever si vous passez à une offre plus grande.
+
+Un contrôle de tout cela est disponible en ligne : **Administration ›
+Paramètres › État de l'installation**, et `GET /api/health` en donne la version
+courte (`configuration.readyToOpen`, `configuration.blocking`). Les deux lisent
+le même code, `src/lib/readiness.ts` — il n'y a pas deux listes à tenir à jour.
 
 `NEXT_PUBLIC_DEMO_MODE` reste à `on` tant que des données de démonstration sont
 en base. Le passer à `off` retire le bandeau et lève le `noindex` : c'est
@@ -77,7 +89,15 @@ pour un site français :
 Un disque persistant Render (`disk:`) est possible mais déconseillé : il
 attache le service à une seule instance et empêche la montée en charge.
 
-Mettre `MEDIA_DRIVER=local` uniquement en développement.
+Mettre `MEDIA_DRIVER=local` uniquement en développement : **le code refuse ce
+pilote quand `NODE_ENV` vaut `production`** plutôt que d'écrire un fichier qui
+disparaîtra. L'écran `/admin/medias` affiche l'état du stockage avant le
+formulaire de dépôt, et désactive ce dernier tant qu'il n'est pas opérationnel.
+
+Les clés de stockage portent une empreinte du contenu, ce qui permet de servir
+les médias avec `Cache-Control: public, max-age=31536000, immutable` : une URL
+ne désigne jamais deux fichiers différents. Les six variables `MEDIA_*` sont
+aussi transmises au cron, qui peut avoir à écrire un média.
 
 ## 4. Paiement
 
@@ -170,12 +190,12 @@ bout de 30 jours** : elle ne convient pas à une boutique.
 
 ### Sauvegarde manuelle
 
-À faire avant toute migration structurante :
+`scripts/backup.sh` enveloppe les trois gestes. À faire avant toute migration
+structurante :
 
 ```bash
-# Récupérer l'URL externe dans Render › lumera-db › Connect › External
-pg_dump --no-owner --no-privileges --format=custom \
-  "$DATABASE_EXTERNAL_URL" > lumera-$(date +%Y%m%d-%H%M).dump
+# L'URL externe se récupère dans Render › lumera-db › Connect › External
+./scripts/backup.sh sauvegarder "$DATABASE_EXTERNAL_URL"
 ```
 
 Le stockage objet se sauvegarde séparément (`rclone sync` vers un second
@@ -186,9 +206,8 @@ restaurée sans ses médias affiche des fiches sans photo.
 
 ```bash
 # 1. Mettre le service web en pause (Render › lumera-web › Settings › Suspend)
-# 2. Restaurer
-pg_restore --no-owner --no-privileges --clean --if-exists \
-  --dbname "$DATABASE_EXTERNAL_URL" lumera-20260101-1200.dump
+# 2. Restaurer — le script demande une confirmation explicite
+./scripts/backup.sh restaurer sauvegardes/lumera-20260101-1200.dump "$DATABASE_EXTERNAL_URL"
 # 3. Vérifier que le schéma correspond au code déployé
 npx prisma migrate status
 # 4. Réactiver le service, puis contrôler /api/health
@@ -200,8 +219,18 @@ migrations, et l'application échouera sur les colonnes manquantes.
 
 ### Répétition
 
-Une restauration qui n'a jamais été essayée n'est pas une sauvegarde. À tester
-une fois sur une base jetable avant l'ouverture.
+Une restauration qui n'a jamais été essayée n'est pas une sauvegarde : c'est un
+fichier. La commande `verifier` fait l'essai **sans toucher à quoi que ce soit**
+— elle crée une base jetable, y restaure le dump, compte les lignes des cinq
+tables qui comptent, puis supprime la base :
+
+```bash
+./scripts/backup.sh verifier sauvegardes/lumera-20260101-1200.dump
+```
+
+À faire une fois avant l'ouverture, puis après chaque changement de schéma
+important. **Cela n'a pas encore été fait sur une base réelle** : il n'y en a
+pas encore.
 
 ## 7. Journaux et diagnostic
 

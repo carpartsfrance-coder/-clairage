@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { requireStaff } from '@/lib/admin/guard'
 import { can, ROLE_DESCRIPTIONS, ROLE_LABELS } from '@/lib/admin/permissions'
 import { listAuditLog, listSettings, listStaff } from '@/lib/queries/admin'
+import { assessReadiness, type CheckState } from '@/lib/readiness'
 import { Badge } from '@/components/ui/Badge'
 import { Alert, Card, EmptyState } from '@/components/ui/Surface'
 
@@ -48,6 +49,14 @@ function valueText(value: unknown): string {
 
 type StaffRow = Awaited<ReturnType<typeof listStaff>>[number]
 
+/* L'état d'un contrôle est écrit, pas seulement coloré : « bloquant » doit se
+   lire sans distinguer le rouge du jaune. */
+const CHECK_COPY: Record<CheckState, { label: string; tone: 'ok' | 'warn' | 'danger' }> = {
+  ok: { label: 'Opérationnel', tone: 'ok' },
+  warn: { label: 'À surveiller', tone: 'warn' },
+  blocking: { label: 'Bloquant', tone: 'danger' },
+}
+
 /* -------------------------------------------------------------------------- */
 /* Page                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -61,6 +70,7 @@ export default async function AdminSettingsPage() {
 
   const canManageStaff = can(staff.role, 'staff.manage')
 
+  const readiness = await assessReadiness()
   const settings = await listSettings()
   // Lecture conditionnée au droit : masquer une section déjà chargée laisserait
   // la donnée partir dans la réponse du serveur.
@@ -78,6 +88,62 @@ export default async function AdminSettingsPage() {
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-xl font-extrabold">Paramètres</h1>
+
+      {/* ---------------------------------------------------------------------
+          État de l'installation
+          Placé en tête : c'est le seul endroit qui répond à « peut-on ouvrir ? »,
+          et la réponse se déduit des contrôles, elle n'est pas déclarée.
+          --------------------------------------------------------------------- */}
+      <section aria-labelledby="parametres-etat">
+        <h2 id="parametres-etat" className={h2Class}>
+          État de l&apos;installation
+        </h2>
+
+        {readiness.mayOpen ? (
+          <Alert tone="ok" className="mt-2" title="Aucun point bloquant">
+            Les fonctions essentielles sont configurées. Cela ne remplace pas un essai de bout en
+            bout : une commande réelle, un e-mail reçu, un remboursement.
+          </Alert>
+        ) : (
+          <Alert
+            tone="danger"
+            className="mt-2"
+            title={`La boutique n'est pas prête pour l'ouverture commerciale (${readiness.blocking} point${readiness.blocking > 1 ? 's' : ''} bloquant${readiness.blocking > 1 ? 's' : ''})`}
+          >
+            Les points marqués « bloquant » ci-dessous désignent des fonctions simulées, absentes ou
+            non configurées. Tant qu&apos;ils subsistent, une commande peut être prise sans être
+            encaissée, ou confirmée sans que le client en soit averti.
+          </Alert>
+        )}
+
+        <Card className="mt-2">
+          <ul className="divide-y divide-line">
+            {readiness.checks.map((check) => {
+              const copy = CHECK_COPY[check.state]
+              return (
+                <li key={check.key} className="flex flex-col gap-1 px-3 py-2.5 sm:flex-row sm:gap-4">
+                  <div className="flex shrink-0 items-start gap-2 sm:w-56">
+                    <Badge tone={copy.tone}>{copy.label}</Badge>
+                    <span className="text-sm font-semibold">{check.label}</span>
+                  </div>
+                  <div className="min-w-0 text-sm">
+                    <p className="text-muted-strong">{check.detail}</p>
+                    {check.action ? (
+                      <p className="mt-0.5 text-xs text-muted">{check.action}</p>
+                    ) : null}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
+
+        <p className="mt-2 text-xs text-muted">
+          Ces contrôles lisent les variables d&apos;environnement et la base. Ils ne vérifient pas
+          qu&apos;un envoi aboutit ni qu&apos;un encaissement est bien crédité : seul un essai réel
+          le montre.
+        </p>
+      </section>
 
       <Alert tone="info">
         La modification des paramètres depuis le back-office n&apos;est pas encore disponible : une

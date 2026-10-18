@@ -17,8 +17,9 @@ import type { WriteMode } from '../imports/handlers'
  * 1. **Chaque action revérifie le droit.** La page qui affiche le bouton l'a
  *    déjà fait, mais une action de serveur est un point d'entrée public : elle
  *    est atteignable sans jamais voir l'écran.
- * 2. **Rien n'est écrit sans l'avoir demandé.** Déposer un fichier l'analyse
- *    et le valide ; l'écriture est une action distincte, lot par lot.
+ * 2. **Rien n'est écrit sans l'avoir demandé.** Déposer un fichier le lit et
+ *    propose une correspondance de colonnes ; la validation ligne par ligne et
+ *    l'écriture par lots sont deux actions distinctes, demandées à la main.
  * 3. **Tout est tracé** dans `AuditLog` : qui a déposé quel fichier, qui a
  *    corrigé la correspondance, qui a lancé l'écriture.
  *
@@ -53,8 +54,13 @@ export async function startImport(
   const staff = await requireStaff('imports.run')
 
   const kind = readId(formData, 'kind')
+  // `Object.hasOwn` et non `IMPORT_DEFINITIONS[kind]` : « constructor » remonte
+  // la chaîne de prototypes et passerait ce test, pour échouer plus loin avec un
+  // message qui parlerait du fichier au lieu du format.
+  if (!Object.hasOwn(IMPORT_DEFINITIONS, kind)) {
+    return { error: "Choisissez un format d'import." }
+  }
   const definition = IMPORT_DEFINITIONS[kind]
-  if (!definition) return { error: "Choisissez un format d'import." }
 
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) {
@@ -159,7 +165,11 @@ export async function saveMapping(
     }
 
     const before = job.columnMapping as Prisma.InputJsonValue
-    await updateMapping(jobId, mapping)
+    // `updateMapping` revérifie le statut et refuse au besoin : le contrôle
+    // ci-dessus porte sur ce que la page a lu, qui peut avoir changé depuis.
+    const result = await updateMapping(jobId, mapping)
+    if ('error' in result) return { error: result.error }
+
     await audit(staff, 'import.mapping', 'ImportJob', jobId, before, mapping)
 
     revalidatePath(`/admin/imports/${jobId}`)
@@ -168,7 +178,10 @@ export async function saveMapping(
     const ignored = Object.keys(mapping).length - mapped
     return {
       jobId,
-      notice: `Correspondance enregistrée : ${mapped} colonne${s(mapped)} associée${s(mapped)}, ${ignored} ignorée${s(ignored)}. L'import repasse en brouillon : relancez la validation.`,
+      notice:
+        `Correspondance enregistrée : ${mapped} colonne${s(mapped)} associée${s(mapped)}, ` +
+        `${ignored} ignorée${s(ignored)}. L'import repasse en brouillon et les verdicts de ` +
+        `l'ancienne validation sont effacés : relancez la validation.`,
     }
   } catch (error) {
     console.error('[admin] import.mapping', error)
@@ -240,6 +253,24 @@ export async function runPreview(
   if (!jobId) return { error: 'Import introuvable.' }
 
   try {
+    const job = await prisma.importJob.findUnique({ where: { id: jobId } })
+    if (!job) return { error: 'Import introuvable.' }
+
+    // Les deux mêmes verrous que la correspondance et le mode d'écriture, pour
+    // la même raison : la validation remet chaque ligne à « à écrire » et remet
+    // les compteurs à zéro. Pendant une écriture, cela ferait rejouer des
+    // lignes déjà passées ; après coup, cela effacerait le rapport de ce qui a
+    // réellement été écrit — un rapport effacé ne se reconstitue pas.
+    if (job.status === 'RUNNING') {
+      return { error: "L'écriture est en cours : la validation ne peut pas être relancée maintenant." }
+    }
+    if (job.status === 'DONE') {
+      return {
+        error:
+          "Cet import est terminé : relancer la validation effacerait le rapport de ce qui a été écrit. Pour repasser ce fichier, déposez-le à nouveau.",
+      }
+    }
+
     const result = await previewImport(jobId)
     if ('error' in result) return { error: result.error }
 
@@ -259,7 +290,7 @@ export async function runPreview(
         `${result.valid} ligne${s(result.valid)} valide${s(result.valid)}, ` +
         `${result.errors} en erreur, ` +
         `${result.duplicates} doublon${s(result.duplicates)}, ` +
-        `${result.warnings} avertissement${s(result.warnings)}. Rien n'a été écrit.`,
+        `${result.warnings} avertissement${s(result.warnings)}. La validation n'écrit rien.`,
     }
   } catch (error) {
     console.error('[admin] import.preview', error)

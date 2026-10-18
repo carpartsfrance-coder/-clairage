@@ -57,8 +57,11 @@ export function StartImportForm() {
   const [kind, setKind] = useState<string>(IMPORT_KINDS[0] ?? '')
   const definition: ImportDefinition | undefined = IMPORT_DEFINITIONS[kind]
 
+  // Ni `method` ni `encType` sur le formulaire : React les pose lui-même quand
+  // l'action est une fonction, et les indiquer déclenche un avertissement sans
+  // rien changer à l'envoi du fichier.
   return (
-    <form action={formAction} encType="multipart/form-data" className={formClass}>
+    <form action={formAction} className={formClass}>
       <Feedback state={state} />
 
       <SelectField
@@ -101,8 +104,9 @@ export function StartImportForm() {
           className="w-full rounded-sm border border-line-strong bg-white px-3 py-2 text-sm text-slate-ink file:mr-3 file:rounded-sm file:border-0 file:bg-surface-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-slate-ink hover:border-muted sm:w-80"
         />
         <p className="text-xs text-muted">
-          CSV ou TXT, 5 Mo au maximum. Le fichier est analysé et validé ; aucune écriture n&apos;a
-          lieu à ce stade.
+          CSV ou TXT, 5 Mo au maximum. Le fichier est lu et ses colonnes reconnues ; la validation
+          ligne par ligne est l&apos;étape suivante, et aucune écriture n&apos;a lieu avant de
+          l&apos;avoir demandée.
         </p>
       </div>
 

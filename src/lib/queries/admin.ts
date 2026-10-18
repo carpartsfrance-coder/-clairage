@@ -505,3 +505,70 @@ export async function listAuditLog(limit = 50) {
     return []
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Médias                                                                     */
+/* -------------------------------------------------------------------------- */
+
+export type MediaFilters = { q?: string; nature?: string; page?: number }
+
+/**
+ * Médiathèque.
+ *
+ * Le nombre de rattachements est compté et renvoyé, pas seulement pour
+ * l'affichage : c'est lui qui décide si la suppression est proposée. Un média
+ * encore utilisé par une fiche ne doit pas pouvoir partir d'un clic.
+ */
+export async function listMedia(filters: MediaFilters) {
+  const where: Prisma.MediaWhereInput = {}
+
+  if (filters.q) {
+    where.OR = [
+      { alt: { contains: filters.q, mode: 'insensitive' } },
+      { caption: { contains: filters.q, mode: 'insensitive' } },
+      { storageKey: { contains: filters.q, mode: 'insensitive' } },
+    ]
+  }
+  if (filters.nature) {
+    where.nature = filters.nature as Prisma.MediaWhereInput['nature']
+  }
+
+  const page = Math.max(1, filters.page ?? 1)
+
+  const [total, rows, byNature] = await Promise.all([
+    prisma.media.count({ where }),
+    prisma.media.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
+      include: { _count: { select: { products: true, categoryHeroes: true } } },
+    }),
+    prisma.media.groupBy({ by: ['nature'], _count: { _all: true } }),
+  ])
+
+  return {
+    items: rows.map((media) => ({
+      id: media.id,
+      url: media.url,
+      storageKey: media.storageKey,
+      mimeType: media.mimeType,
+      sizeBytes: media.sizeBytes,
+      alt: media.alt,
+      caption: media.caption,
+      nature: media.nature,
+      isDemo: media.isDemo,
+      createdAt: media.createdAt,
+      uses: media._count.products + media._count.categoryHeroes,
+    })),
+    total,
+    page,
+    pageCount: Math.max(1, Math.ceil(total / PER_PAGE)),
+    counts: Object.fromEntries(byNature.map((row) => [row.nature, row._count._all])) as Record<
+      string,
+      number
+    >,
+    /** Combien de visuels n'ont pas de texte alternatif, tous filtres confondus. */
+    missingAlt: await prisma.media.count({ where: { OR: [{ alt: null }, { alt: '' }] } }),
+  }
+}

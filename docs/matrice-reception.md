@@ -1,18 +1,23 @@
 # Matrice de réception
 
-État au 18 octobre 2026, après les étapes 1 à 9 : analyse, architecture, design
+État au 18 octobre 2026, après les étapes 1 à 11 : analyse, architecture, design
 system, header final, accueil, catalogue, parcours véhicule, fiche produit,
-panier, tunnel de commande, paiement, espace client, back-office, imports et
-messages transactionnels.
+panier, tunnel de commande, paiement, espace client, back-office, imports,
+messages transactionnels, configuration Render et passe de vérification.
 
-**La boutique n'est pas prête pour une ouverture commerciale.** Le back-office
-existe mais reste **en lecture seule sur le catalogue, les véhicules et le
-SAV** : on peut tout consulter, on ne peut créer ni modifier un produit, une
-compatibilité ou une demande depuis l'écran. Aucune facture n'est émise, les
-adresses e-mail ne sont pas vérifiées, les codes promotionnels ne sont pas
-appliqués au panier, et aucun paiement réel n'a jamais été encaissé : le tunnel
-a été vérifié avec le pilote de simulation, pas avec Stripe. Ce document dit où
-en est chaque fonction, sans arrondi.
+**La boutique n'est pas prête pour une ouverture commerciale.** Quatre points
+l'empêchent, et le back-office les affiche lui-même (Administration ›
+Paramètres › *État de l'installation*, également exposé par `/api/health`) :
+
+1. **le paiement est simulé** — aucune clé Stripe, donc aucun encaissement ;
+2. **aucun e-mail ne part réellement** — pilote `log`, tout est journalisé ;
+3. **l'identité légale n'est pas renseignée** — mentions obligatoires absentes ;
+4. **les données de démonstration sont encore en base** — 6 produits, 13 médias.
+
+S'y ajoute ce qui n'est pas écrit : le back-office reste **en lecture seule sur
+le catalogue, les véhicules et le SAV**, aucune facture n'est émise, les
+adresses e-mail ne sont pas vérifiées et les codes promotionnels ne sont pas
+appliqués au panier. Ce document dit où en est chaque fonction, sans arrondi.
 
 ## Légende
 
@@ -180,13 +185,14 @@ en est chaque fonction, sans arrondi.
 | Liste du catalogue | ✅ | Recherche, statut, stock faible / rupture, prix, variantes, visuels. Les produits de démonstration portent un badge « démo » |
 | Fiche produit (lecture) | ✅ | Variantes, TVA, stocks, composition des kits, compatibilités avec source et date, visuels avec leur nature, caractéristiques. Les visuels sans texte alternatif sont signalés |
 | Création / modification du catalogue | ⬜ | **Aucune écriture.** Le catalogue se peuple par le script d'amorçage. L'écran le dit |
+| Médiathèque | 🔸 | `/admin/medias` : dépôt d'un fichier, texte alternatif, nature du visuel, légende, suppression. L'état du stockage est affiché **avant** le formulaire, et le dépôt est désactivé quand il n'est pas opérationnel. Les médias sans texte alternatif sont comptés et signalés. **Le rattachement d'un média à une fiche n'existe pas encore depuis cet écran** |
 | Véhicules | 🔸 | Marques, modèles, générations et nombre de configurations consultables ; les générations sans configuration sont signalées. **Aucune saisie** |
 | Compatibilités | 🔸 | Visibles depuis la fiche produit. **Aucune saisie ni modification en série** |
 | Clients | ✅ | Recherche, fiche avec coordonnées, adresses, commandes, véhicules, demandes SAV et notes internes |
 | Ajout de note client | ⬜ | Les notes existantes s'affichent ; l'ajout n'est pas implémenté, et l'écran le dit |
 | SAV | 🔸 | File et dossier consultables, échanges affichés, notes internes distinguées. **Lecture seule** : ni réponse, ni changement de statut |
 | Promotions | 🔸 | Liste consultable. **Les codes ne sont pas appliqués au panier** — l'écran l'affiche en avertissement |
-| Paramètres | 🔸 | Réglages, équipe (ADMIN seulement) et journal des actions consultables. **Aucune modification** |
+| Paramètres | 🔸 | **État de l'installation** (huit contrôles, verdict d'ouverture), réglages, équipe (ADMIN seulement) et journal des actions consultables. **Aucune modification des réglages** |
 | Imports | ✅ | Voir la section dédiée ci-dessous |
 
 ### Imports
@@ -226,14 +232,17 @@ en est chaque fonction, sans arrondi.
 
 | Fonction | État | Détail |
 | --- | --- | --- |
-| `render.yaml` | 🔸 | Trois ressources décrites ; jamais déployé |
+| `render.yaml` | 🔸 | Trois ressources décrites, variables du cron complétées ; **jamais déployé** |
 | Commandes de build et de démarrage | ✅ | `npm run build` vérifié en local ; `npm start` écoute sur `$PORT` |
 | `.env.example` sans secret | ✅ | Chaque variable documentée avec ce qu'elle casse si elle manque |
-| Route de santé | ✅ | — |
-| Stockage durable des médias | ⚙️ | Pilote `local` en développement ; le pilote S3 est décrit mais non écrit |
+| Route de santé | ✅ | Teste la base, et rapporte l'état de configuration sans faire échouer le contrôle |
+| **État de l'installation** | ✅ | `src/lib/readiness.ts` : huit contrôles, un seul endroit décide si la boutique peut ouvrir. Affiché dans Paramètres et dans `/api/health` |
+| Adaptateur de stockage (local + S3) | ✅ | Écrit et testé (16 tests). Type reconnu sur les octets d'entête, pas sur l'extension ; **le pilote `local` est refusé en production** |
+| Stockage objet réellement configuré | ⚙️ | Aucun bucket : `MEDIA_DRIVER=local`. Les variables `MEDIA_*` attendent un compte R2, B2, Scaleway ou AWS |
+| Téléversement depuis le back-office | 🔸 | `/admin/medias` : dépôt, texte alternatif, nature, suppression refusée si le média est utilisé. **Le dépôt d'un fichier par le navigateur n'a pas été exercé** (les écritures le sont par les tests) |
 | Travaux de fond | 🔸 | `scripts/run-jobs.ts` écrit, avec verrous et report exponentiel ; non exercé |
-| Sauvegarde et restauration | 🔸 | Procédure écrite ([render.md](render.md)) ; **jamais répétée** |
-| E-mails transactionnels | ⚙️ | Adaptateur écrit, pilote `log`, trace systématique. Aucun modèle de message rédigé |
+| Sauvegarde et restauration | 🔸 | `scripts/backup.sh` : `sauvegarder`, `verifier` (restauration d'essai dans une base jetable), `restaurer` (confirmation exigée). **Jamais exécuté sur une base de production** ; le stockage objet n'y est pas inclus |
+| E-mails transactionnels | ⚙️ | Dix modèles rédigés et testés, pilote `log`, trace systématique. Aucun prestataire configuré |
 
 ## Qualité et conformité
 
@@ -244,7 +253,10 @@ en est chaque fonction, sans arrondi.
 | Contrastes | 🔸 | Travaillés (voiles de lisibilité sur les bandeaux sombres) ; aucune mesure automatique |
 | Titres et métadonnées | ✅ | Un seul `h1`, sections titrées, `metadataBase`, titres par page |
 | `noindex` en préproduction | ✅ | Actif tant que `NEXT_PUBLIC_DEMO_MODE` vaut `on` |
-| Données structurées | ⬜ | À écrire avec la fiche produit, et seulement à partir de données réelles |
+| Plan de site | ✅ | `sitemap.ts`. En préproduction : l'accueil seul. En mode ouvert : pages fixes, catégories, fiches, guides — **les fiches de démonstration en sont exclues** (`isDemo`), et une erreur de lecture ne produit pas un plan vide |
+| `robots.txt` | ✅ | `robots.ts`. Tout refusé en préproduction ; en mode ouvert, refus du back-office, de l'espace client, du tunnel et de `/suivi` (dont les URL portent un jeton) |
+| Données structurées | ✅ | `Product` (une offre par conditionnement, disponibilité tirée du stock réel), `BreadcrumbList`, `FAQPage`, `Organization`. **Rien n'est émis en préproduction, ni pour une fiche de démonstration.** Pas de note moyenne sans avis réels, pas de marque déduite du nom de la boutique, pas de `priceValidUntil` arbitraire |
+| URL canoniques | ✅ | `alternates.canonical` sur les fiches ; `metadataBase` depuis `NEXT_PUBLIC_SITE_URL` |
 | Consentement et cookies | ⬜ | À écrire quand les services réellement utilisés seront connus |
 | Aucune affirmation inventée | ✅ | Aucun avis, note, volume, certification, stock tendu ni délai garanti. `Review` existe et reste vide |
 | Illustrations signalées | ✅ | `Media.nature = ILLUSTRATION`, mentions reprises des maquettes |
@@ -253,7 +265,7 @@ en est chaque fonction, sans arrondi.
 
 ## Vérifications effectuées
 
-### Automatisées — `npm test` (150 tests, base PostgreSQL dédiée)
+### Automatisées — `npm test` (171 tests, base PostgreSQL dédiée)
 
 | Fichier | Ce qui est couvert |
 | --- | --- |
@@ -262,7 +274,8 @@ en est chaque fonction, sans arrondi.
 | `tests/orders.test.ts` (11) | Confirmation et décompte, **3 rejeux séquentiels sans effet**, **3 webhooks simultanés → un seul décompte** (vérifié : le test échoue si l'on retire le verrou), refus d'un « payé » après un échec, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
 | `tests/order-access.test.ts` (9) | Jeton d'accès : bon jeton accepté, jeton absent, faux jeton de même longueur, préfixe correct, commande sans jeton, propriétaire connecté ; lecture du paramètre, paramètre répété, valeur vide |
 | `tests/csv.test.ts` (25) | Délimiteur deviné (point-virgule, virgule, tabulation), délimiteur protégé par des guillemets, BOM retiré, saut de ligne et guillemet doublé dans un champ, fins de ligne Windows, lignes vides comptées ; nombres français et anglais, **« vide » distingué de « zéro »**, prix en centimes sans erreur de virgule flottante |
-| `tests/imports.test.ts` (14) | Correspondance automatique sur intitulés accentués, aucun champ associé deux fois ; produits créés en brouillon et prix « 69,90 » lu 6990 ; erreurs par ligne sans arrêter l'import ; **doublon signalé, première ligne conservée** ; détail du changement lors d'une mise à jour ; mode création seule ; **reprise : 120 lignes, un lot puis reprise jusqu'au bout** ; compatibilité sans statut → « à vérifier », date posée seulement si confirmée ; véhicule ou référence inconnus refusés ; mouvement de stock tracé ; stock d'un kit refusé ; correspondance corrigée à la main |
+| `tests/imports.test.ts` (19) | Correspondance automatique sur intitulés accentués, aucun champ associé deux fois ; produits créés en brouillon et prix « 69,90 » lu 6990 ; erreurs par ligne sans arrêter l'import ; **doublon signalé, première ligne conservée** ; détail du changement lors d'une mise à jour ; mode création seule ; **reprise : 120 lignes, un lot puis reprise jusqu'au bout** ; compatibilité sans statut → « à vérifier », date posée seulement si confirmée ; véhicule ou référence inconnus refusés ; mouvement de stock tracé ; stock d'un kit refusé ; correspondance corrigée à la main. **Ajoutés à l'étape 11** : deux lots concurrents → un seul écrit (verrou vérifié : 2 lignes écrites une fois, pas deux), verrou relâché en fin de lot, correspondance modifiée → chiffrage et verdicts effacés, refus de modifier la correspondance d'un import terminé, plafond de 20 000 lignes refusé avant toute écriture |
+| `tests/storage.test.ts` (16) | Formats reconnus **sur les octets d'entête** ; un PNG annoncé JPEG est reconnu PNG ; **un script renommé `.png` est refusé** ; fichier vide, fichier trop lourd (avec la taille dans le message), fichier trop court ; pilote `local` accepté hors production et **refusé en production** ; variables `MEDIA_*` manquantes nommées une à une, valeur blanche tenue pour absente ; pilote S3 jamais choisi implicitement ; écriture, URL servable, **deux dépôts du même fichier ne partagent jamais une clé** ; suppression, et suppression rejouée sans erreur |
 | `tests/email-templates.test.ts` (9) | Les dix modèles rendus, sujet + HTML + texte, **aucune variable non remplacée**, HTML des valeurs échappé, montants en euros, **aucun délai garanti**, pas de bouton de suivi sans URL, message de bienvenue identique dans les deux cas |
 | `tests/permissions.test.ts` (21) | Table des droits : tous les rôles couverts, aucune permission non déclarée, rien sans rôle ; ADMIN a tout ; READ_ONLY n'écrit nulle part ; **le préparateur ne peut ni rembourser ni annuler** ; le SAV ne peut pas rembourser ; le gestionnaire catalogue ne touche ni à l'argent ni à la préparation ; remboursement, annulation, paramètres et gestion de l'équipe réservés à ADMIN |
 | `tests/email.test.ts` (3) | Les variables publiques sont journalisées, **les variables sensibles ne le sont jamais** (le lien de réinitialisation ne doit pas atterrir dans `EmailLog`), envoi marqué simulé sans prestataire |
@@ -339,28 +352,106 @@ en est chaque fonction, sans arrondi.
     enregistré dans le journal avec la mention “simulé” », et la ligne
     correspondante porte bien `simulated=true` en base.
 
+24. **Routes SEO, dans les deux modes.** En préproduction : `robots.txt` refuse
+    tout, `sitemap.xml` ne déclare que l'accueil, et une fiche ne porte **aucun**
+    bloc JSON-LD (`<meta name="robots" content="noindex, nofollow">` présent).
+    Puis `NEXT_PUBLIC_DEMO_MODE=off` : `robots.txt` autorise et liste ses refus,
+    le plan de site remonte les pages fixes, et **zéro produit ni catégorie** —
+    les six fiches étant de démonstration, le filtre `isDemo` les écarte. La
+    fiche porte alors `Product` et `BreadcrumbList`, avec une offre par
+    conditionnement, les prix réels, `InStock` tiré du stock, et **aucune
+    `aggregateRating`** puisqu'il n'existe aucun avis. Mode préproduction rétabli.
+25. **`GET /api/health`** → `database: up`, `readyToOpen: false`, bloquants
+    nommés (`payment`, `email`), avertissements nommés (`site-url`, `storage`).
+26. **État de l'installation** : les huit contrôles rendus dans Paramètres, avec
+    le verdict « la boutique n'est pas prête pour l'ouverture commerciale
+    (4 points bloquants) ».
+27. **Médiathèque** : écran chargé, treize médias listés avec leur nature, leur
+    poids, leur clé de stockage et leur nombre de rattachements ; bandeau de
+    stockage en tête ; un média utilisé par une fiche affiche « Utilisé à 1
+    endroit : détachez-le d'abord » **à la place** du bouton de suppression.
+28. **Séparation des rôles sur les nouveaux écrans** : en « Consultation seule »,
+    `/admin/medias` répond 200 mais remplace les formulaires par « Votre rôle
+    donne accès à la consultation de la médiathèque, pas à sa modification » ;
+    `/admin/preparation` renvoie au tableau de bord avec `?refus=orders.fulfil`,
+    et la tentative est tracée.
+29. **Commande complète, à nouveau** (`CMD-2026-00005`), après les corrections :
+    panier → tunnel → paiement simulé accepté → confirmation. En base :
+    `stockOnHand` 95 → 94, `stockReserved` 1 → 0, `StockMovement` `order|-1`,
+    commande `CONFIRMED/PAID`, `EmailLog` `commande.confirmation` en `simulated`.
+30. **Prérenseignement du tunnel** : connecté, la page de commande affiche
+    « Connecté avec *adresse* : cette commande sera rattachée à ce compte » et le
+    champ e-mail contient cette adresse (relu dans le DOM).
+31. **Sauvegarde** : `scripts/backup.sh` exécuté sans argument (aide affichée).
+    `npm run build` et `tsc --noEmit` sans erreur, `npm test` à 171 tests verts.
+
+---
+
+## Écarts trouvés à l'étape 11, et corrigés
+
+La passe de vérification a servi à cela. Quatorze écarts, dont six étaient des
+**affirmations fausses** affichées au client ou à l'exploitant — la catégorie la
+plus coûteuse, parce qu'elle se lit comme une information vérifiée.
+
+| # | Écart | Correction |
+| --- | --- | --- |
+| 1 | `NATURE_OPTIONS` exporté depuis un module `'use client'` : la page serveur recevait une référence client, pas un tableau. **L'écran des médias ne s'affichait pas du tout** | Vocabulaire déplacé dans `src/lib/media-nature.ts`, module neutre lu des deux côtés |
+| 2 | `SESSION_SECRET` déclaré dans `render.yaml` et `.env.example`, et annoncé **bloquant** par l'état de l'installation — alors qu'aucune ligne de code ne le lit (les sessions portent un jeton aléatoire dont seul le condensé est stocké) | Contrôle et variable retirés, avec la raison écrite à leur place |
+| 3 | Le panier affirmait « le tunnel de commande et le paiement ne sont pas encore ouverts » : vrai à l'étape 5, faux depuis l'étape 6 | Texte conditionné à `paymentIsSimulated()` |
+| 4 | La confirmation de commande affirmait « l'avis d'expédition par e-mail n'est pas encore en service » : il l'est depuis l'étape 9 (`admin-orders.ts`) | Texte conditionné à `emailIsSimulated()` : le message est préparé, l'envoi réel reste inactif |
+| 5 | Les URL d'images des données structurées étaient relatives (`/demo/x.jpg`) : ignorées en silence par les validateurs | Rendues absolues |
+| 6 | Les données structurées ne vérifiaient pas `isDemo` : le plan de site excluait les fiches de démonstration, le balisage non | Garde ajoutée, la même des deux côtés |
+| 7 | `robots.txt` refusait `/paiement`, qui est la page publique « Moyens de paiement » et non le tunnel | Refus restreint à `/commande` |
+| 8 | Un client connecté voyait un champ e-mail vide ; la commande partait sur son compte avec une autre adresse de contact, **sans que rien ne le signale** | Le tunnel nomme le compte et prérenseigne e-mail, prénom et nom |
+| 9 | `npm run e2e` appelait `playwright test` : Playwright n'est pas installé et aucun test n'existe | Script retiré |
+| 10 | `runImportChunk` n'avait **aucun verrou** : deux lots concurrents écrivaient les mêmes lignes deux fois, comptées deux fois | Verrou atomique (`updateMany` conditionnel) avec reprise d'un verrou orphelin après dix minutes ; deux tests de concurrence |
+| 11 | `updateMapping` remettait l'import en brouillon **sans effacer** le chiffrage ni les verdicts : l'écran continuait d'afficher « n lignes valides » à propos d'une association qui n'existait plus | Chiffrage et verdicts purgés dans la même transaction ; refus sur un import en cours ou terminé |
+| 12 | `listImportJobs` avalait l'erreur de base et renvoyait `[]` : l'écran affichait « Aucun import », une affirmation qu'il n'était pas en mesure de faire | Erreur propagée, et `src/app/admin/error.tsx` ajouté pour que la panne soit lisible |
+| 13 | Aucun plafond de lignes : un CSV de 5 Mo (≈ 100 000 lignes) était lu en mémoire puis inséré en un seul `createMany` dans une action de serveur | Plafond de 20 000 lignes refusé **avant** toute écriture, avec le nombre et la consigne de découper ; insertion par paquets de 1 000 |
+| 14 | `?nature=constructor` et `?status=constructor` remontaient la chaîne de prototypes et passaient pour des valeurs connues avant de partir en clause Prisma | `Object.hasOwn` sur les deux écrans |
+
+Deux points annexes relevés et corrigés au passage : l'état `PAUSED`, affiché par
+les écrans d'import, n'était posé par aucun code (il l'est maintenant entre deux
+lots), et la limite de corps des actions de serveur était à 6 Mo alors que le
+téléversement d'un média en accepte 8 — le refus applicatif, avec son message,
+n'aurait jamais été atteint.
+
+---
+
 ## Ce qui n'a pas été vérifié
 
+Par ordre d'importance pour une ouverture.
+
+- **Un paiement réel, même en mode test Stripe.** Aucune clé n'est configurée :
+  le pilote Stripe n'a jamais parlé à Stripe. Tout ce qui est écrit ci-dessus au
+  sujet du tunnel a été vérifié **avec le pilote de simulation**. C'est le point
+  le plus important de cette liste.
+- **Le webhook de bout en bout depuis Stripe.** Seule la vérification de
+  signature est testée, hors réseau : signature absente, mauvais secret, corps
+  modifié, horodatage rejoué.
+- **Un envoi d'e-mail réel.** Les dix modèles sont rendus et testés, mais aucun
+  message n'a quitté la machine. L'authentification du domaine (SPF, DKIM,
+  DMARC) reste entièrement à faire.
+- **Le déploiement Render.** Rien n'a été déployé. `render.yaml` est relu et
+  complet à notre connaissance, ce qui n'est pas la même chose que vérifié.
+- **La restauration d'une sauvegarde sur une base réelle.** `scripts/backup.sh
+  verifier` existe précisément pour ça, mais il n'a pas été exécuté contre une
+  base de production — il n'y en a pas encore.
+- **Le stockage objet.** L'adaptateur S3 est écrit et testé dans sa logique
+  (clés, types, refus), mais **aucun appel n'a été fait à un bucket réel** :
+  aucune clé d'accès n'est configurée. Le pilote `local` est le seul exercé.
+- **Le dépôt d'un fichier depuis le navigateur** sur `/admin/medias` : les
+  écritures sont couvertes par les tests, pas le passage par le formulaire.
 - **La vérification des adresses e-mail**, qui n'existe pas : on peut s'inscrire
   avec l'adresse de quelqu'un d'autre. C'est pour cela que le rattachement d'une
   commande exige la référence, mais il faudra la mettre en place avant
   l'ouverture.
-- **Un paiement réel, même en mode test Stripe** : aucune clé n'est configurée,
-  le pilote Stripe n'a donc jamais parlé à Stripe. C'est le point le plus
-  important de cette liste.
-- Le webhook de bout en bout depuis Stripe (seule la vérification de signature
-  est testée, hors réseau).
-- Le déploiement Render lui-même : rien n'a été déployé.
-- La restauration d'une sauvegarde.
-- Le pilote de stockage S3 (non écrit).
-- Un envoi d'e-mail réel.
-- Un paiement, même en mode test.
-- La navigation au clavier ailleurs que sur le menu mobile, la recherche et la
-  galerie produit.
-- Les contrastes, au-delà de l'œil.
-- Le comportement sous achats simultanés : le stock est borné à l'ajout, mais
-  rien ne réserve encore une quantité entre le panier et la commande.
-- Les imports, les e-mails et le back-office, qui n'existent pas.
+- **La navigation au clavier** ailleurs que sur le menu mobile, la recherche et
+  la galerie produit.
+- **Les contrastes**, au-delà de l'œil : aucune mesure automatique.
+- **Le comportement du cron Render** : `scripts/run-jobs.ts` n'a jamais tourné.
+- **Les écrans sous charge** : aucune mesure de temps de réponse, et le
+  catalogue de démonstration ne compte que six fiches.
 
 ## Deux décisions qui vous reviennent
 

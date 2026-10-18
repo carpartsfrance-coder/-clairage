@@ -21,12 +21,12 @@
     "seed:demo": "tsx prisma/seed.ts --demo",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
     "admin:create": "tsx scripts/create-admin.ts",
     "jobs:run": "tsx scripts/run-jobs.ts",
     "test:db:setup": "createdb lumera_test || true && DATABASE_URL=\"postgresql://$USER@localhost:5432/lumera_test?schema=public\" prisma migrate deploy"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
     "@prisma/client": "^6.19.3",
     "next": "^16.3.1",
     "react": "^19.2.0",

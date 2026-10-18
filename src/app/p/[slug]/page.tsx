@@ -7,6 +7,11 @@ import { getSelectedVehicle } from '@/lib/session'
 import { getShippingOffers } from '@/lib/shipping'
 import { commercialTerms, formatPrice, siteConfig } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
+import {
+  BreadcrumbStructuredData,
+  FaqStructuredData,
+  ProductStructuredData,
+} from '@/components/seo/StructuredData'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { ProductGallery } from '@/components/product/ProductGallery'
 import { BuyBox } from '@/components/product/BuyBox'
@@ -72,19 +77,27 @@ export default async function ProductPage({ params }: PageProps) {
     .filter(Boolean)
     .join(' · ')
 
+  // Même liste pour le fil d'Ariane affiché et pour son balisage : deux
+  // sources finiraient par divergé, et c'est le balisage qu'on ne relit pas.
+  const breadcrumbItems = [
+    { label: 'Accueil', href: '/' },
+    { label: 'Catégories', href: '/c' },
+    ...(product.category
+      ? [{ label: product.category.name, href: `/c/${product.category.slug}` }]
+      : []),
+    { label: product.name },
+  ]
+
   return (
     <div className="pb-28 lg:pb-16">
+      {/* Données structurées : voir StructuredData.tsx — rien n'y est émis en
+          préproduction, et rien n'y est affirmé qui ne soit en base. */}
+      <ProductStructuredData product={product} />
+      <BreadcrumbStructuredData items={breadcrumbItems} />
+      <FaqStructuredData items={product.faq} />
+
       <div className="container-page pt-5">
-        <Breadcrumb
-          items={[
-            { label: 'Accueil', href: '/' },
-            { label: 'Catégories', href: '/c' },
-            ...(product.category
-              ? [{ label: product.category.name, href: `/c/${product.category.slug}` }]
-              : []),
-            { label: product.name },
-          ]}
-        />
+        <Breadcrumb items={breadcrumbItems} />
 
         {/*
           Masqué sous lg : le header mobile porte déjà un bandeau véhicule, et

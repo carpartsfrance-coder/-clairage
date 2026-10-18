@@ -152,7 +152,7 @@ export async function getDashboard(period: Period = '30d'): Promise<DashboardDat
       'testRevenue',
       'Dont paiements de test',
       'money',
-      `Commandes réglées avec une clé de test ou le paiement simulé, sur les ${label}. **Exclues** du chiffre d'affaires ci-dessus : aucun montant n'a été encaissé.`,
+      `Commandes réglées avec une clé de test ou le paiement simulé, sur les ${label}. Exclues du chiffre d'affaires ci-dessus : aucun montant n'a été encaissé.`,
     ),
     outOfStock: EMPTY_METRIC(
       'outOfStock',

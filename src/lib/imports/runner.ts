@@ -1,4 +1,5 @@
 import 'server-only'
+import { Prisma } from '@prisma/client'
 import { prisma } from '../db'
 import { mapRow, parseCsv } from './csv'
 import { IMPORT_DEFINITIONS, missingRequiredFields, suggestMapping } from './definitions'
@@ -37,6 +38,17 @@ export type PreparedImport = {
   missingRequired: string[]
 }
 
+/**
+ * Plafond en nombre de lignes.
+ *
+ * La limite de 5 Mo annoncée à l'écran est tenable côté requête, pas côté
+ * temps d'exécution : un CSV de 5 Mo porte environ 100 000 lignes, lues en
+ * mémoire puis insérées en un seul `createMany` dans une action de serveur.
+ * Mieux vaut un refus chiffré, qui dit comment découper, qu'une action qui
+ * dépasse son temps imparti et laisse un import à moitié créé.
+ */
+const MAX_IMPORT_ROWS = 20_000
+
 /** Étape 1 : lit le fichier, crée le travail, propose une correspondance. */
 export async function prepareImport(options: {
   kind: string
@@ -53,6 +65,14 @@ export async function prepareImport(options: {
   }
   if (table.rows.length === 0) {
     return { error: 'Le fichier ne contient aucune ligne de données.' }
+  }
+  if (table.rows.length > MAX_IMPORT_ROWS) {
+    return {
+      error:
+        `Le fichier contient ${table.rows.length.toLocaleString('fr-FR')} lignes, au-delà des ` +
+        `${MAX_IMPORT_ROWS.toLocaleString('fr-FR')} traitées en un seul import. Découpez-le : ` +
+        'plusieurs imports successifs donnent le même résultat et chacun reste vérifiable ligne à ligne.',
+    }
   }
 
   const mapping = suggestMapping(table.headers, definition)
@@ -71,14 +91,22 @@ export async function prepareImport(options: {
 
   // Les lignes brutes sont conservées : la prévisualisation, la reprise et le
   // rapport s'appuient dessus, et on peut rejouer un diagnostic après coup.
-  await prisma.importRow.createMany({
-    data: table.rows.map((row, index) => ({
-      jobId: job.id,
-      rowNumber: index + 2, // +2 : l'en-tête est la ligne 1 du fichier.
-      raw: Object.fromEntries(table.headers.map((header, i) => [header, row[i] ?? ''])),
-      outcome: 'pending',
-    })),
-  })
+  // Insertion par paquets de 1 000 : un seul `createMany` de 20 000 lignes
+  // produit une requête que PostgreSQL accepte mal, et la mémoire du paquet
+  // reste bornée.
+  const INSERT_CHUNK = 1_000
+  for (let offset = 0; offset < table.rows.length; offset += INSERT_CHUNK) {
+    const slice = table.rows.slice(offset, offset + INSERT_CHUNK)
+    await prisma.importRow.createMany({
+      data: slice.map((row, index) => ({
+        jobId: job.id,
+        // +2 : l'en-tête est la ligne 1 du fichier.
+        rowNumber: offset + index + 2,
+        raw: Object.fromEntries(table.headers.map((header, i) => [header, row[i] ?? ''])),
+        outcome: 'pending',
+      })),
+    })
+  }
 
   return {
     jobId: job.id,
@@ -92,11 +120,53 @@ export async function prepareImport(options: {
 }
 
 /** Enregistre une correspondance corrigée à la main. */
+/**
+ * Étape 1 bis : la correspondance des colonnes est corrigée à la main.
+ *
+ * Changer la correspondance invalide tout ce qui en découlait. On efface donc
+ * le chiffrage ET les verdicts de ligne, au lieu de laisser l'écran afficher
+ * « 1 240 lignes valides, 3 erreurs » à propos d'une association qui n'existe
+ * plus. Un rapport périmé qui se présente comme courant est pire qu'un rapport
+ * absent : il se lit comme une vérification.
+ */
 export async function updateMapping(jobId: string, mapping: Record<string, string>) {
-  await prisma.importJob.update({
-    where: { id: jobId },
-    data: { columnMapping: mapping, status: 'DRAFT' },
-  })
+  const job = await prisma.importJob.findUnique({ where: { id: jobId } })
+  if (!job) return { error: 'Import introuvable.' }
+
+  // On ne réécrit pas la correspondance d'un import en cours d'écriture, ni
+  // d'un import terminé : les lignes déjà écrites l'ont été avec l'ancienne.
+  if (job.status === 'RUNNING') {
+    return { error: 'Écriture en cours : la correspondance ne peut pas être modifiée.' }
+  }
+  if (job.status === 'DONE') {
+    return {
+      error:
+        'Cet import est terminé. Déposez un nouveau fichier plutôt que de modifier ' +
+        'la correspondance d’un import déjà écrit.',
+    }
+  }
+
+  await prisma.$transaction([
+    prisma.importJob.update({
+      where: { id: jobId },
+      data: {
+        columnMapping: mapping,
+        status: 'DRAFT',
+        // Le chiffrage et les compteurs décrivaient l'ancienne association.
+        // `JsonNull` et non `null` : sur une colonne Json, Prisma distingue
+        // « champ absent de la mise à jour » de « valeur JSON nulle ».
+        summary: Prisma.JsonNull,
+        errorRows: 0,
+        skippedRows: 0,
+      },
+    }),
+    prisma.importRow.updateMany({
+      where: { jobId },
+      data: { outcome: 'pending', message: null },
+    }),
+  ])
+
+  return { ok: true as const }
 }
 
 export type PreviewResult = {
@@ -237,10 +307,42 @@ export async function runImportChunk(jobId: string): Promise<RunResult | { error
   const mapping = job.columnMapping as Record<string, string>
   const mode = job.writeMode as WriteMode
 
-  await prisma.importJob.update({
-    where: { id: jobId },
-    data: { status: 'RUNNING', startedAt: job.startedAt ?? new Date() },
+  /*
+    Verrou d'écriture.
+
+    Sans lui, deux appels concurrents — deux onglets, deux membres de l'équipe,
+    un double-clic — lisaient le même lot de lignes au-delà du curseur et
+    l'écrivaient deux fois, en comptant deux fois. `updateMany` avec une
+    condition sur le statut est atomique : un seul appel obtient le passage de
+    PREVIEW/PAUSED à RUNNING, les autres repartent avec un refus explicite.
+
+    Le verrou porte aussi une empreinte temporelle : un processus tué en cours
+    de lot laisserait l'import bloqué en RUNNING pour toujours, sans personne
+    pour le débloquer.
+  */
+  const STALE_LOCK_MS = 10 * 60 * 1000
+  const staleBefore = new Date(Date.now() - STALE_LOCK_MS)
+
+  const claimed = await prisma.importJob.updateMany({
+    where: {
+      id: jobId,
+      OR: [
+        { status: { in: ['PREVIEW', 'PAUSED'] } },
+        // Verrou orphelin : repris au bout de dix minutes sans progression.
+        { status: 'RUNNING', lockedAt: { lt: staleBefore } },
+        { status: 'RUNNING', lockedAt: null },
+      ],
+    },
+    data: { status: 'RUNNING', lockedAt: new Date(), startedAt: job.startedAt ?? new Date() },
   })
+
+  if (claimed.count === 0) {
+    return {
+      error:
+        'Un lot est déjà en cours d’écriture pour cet import. Attendez qu’il se termine ' +
+        'avant de relancer — sans quoi les mêmes lignes seraient écrites deux fois.',
+    }
+  }
 
   // Seules les lignes validées sont écrites, et seulement au-delà du curseur.
   const chunk = await prisma.importRow.findMany({
@@ -322,10 +424,21 @@ export async function runImportChunk(jobId: string): Promise<RunResult | { error
     where: { jobId, outcome: 'ready', rowNumber: { gt: cursor } },
   })
 
+  // Fin de lot : le verrou est relâché dans les deux cas. Sans cela, le lot
+  // suivant se heurterait au verrou de celui qui vient de finir, et l'import
+  // resterait coincé dix minutes à chaque paquet.
   if (remaining === 0) {
     await prisma.importJob.update({
       where: { id: jobId },
-      data: { status: 'DONE', finishedAt: new Date() },
+      data: { status: 'DONE', finishedAt: new Date(), lockedAt: null },
+    })
+  } else {
+    // PAUSED, pas RUNNING : l'écriture avance lot par lot, à la demande. C'est
+    // aussi ce qui rend cet état atteignable — les deux écrans l'affichaient
+    // sans qu'aucun code ne le pose jamais.
+    await prisma.importJob.update({
+      where: { id: jobId },
+      data: { status: 'PAUSED', lockedAt: null },
     })
   }
 
@@ -365,11 +478,14 @@ export async function getImportReport(jobId: string, outcome?: string) {
   }
 }
 
+/**
+ * Historique.
+ *
+ * L'erreur est PROPAGÉE, volontairement. Renvoyer un tableau vide faisait
+ * afficher « Aucun import » : une affirmation que l'écran n'est pas en mesure
+ * de faire quand la requête a échoué. Mieux vaut une page en erreur, qui se
+ * voit, qu'une page qui prétend savoir.
+ */
 export async function listImportJobs(limit = 30) {
-  try {
-    return await prisma.importJob.findMany({ orderBy: { createdAt: 'desc' }, take: limit })
-  } catch (error) {
-    console.error('[import] historique indisponible', error)
-    return []
-  }
+  return prisma.importJob.findMany({ orderBy: { createdAt: 'desc' }, take: limit })
 }
