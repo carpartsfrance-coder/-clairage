@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { VariantView } from '@/lib/queries/product'
@@ -11,10 +11,10 @@ import { availabilityLabel, isPurchasable } from '@/lib/stock'
 import { defaultVariantId, useProductConfiguration } from './ProductConfiguration'
 import { cn } from '@/lib/cn'
 import { Alert } from '@/components/ui/Surface'
-import { Badge, RoadApprovalNote } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
+import { RoadApprovalNote } from '@/components/ui/Badge'
 import {
   IconCart,
+  IconCheck,
   IconCheckCircle,
   IconChevronRight,
   IconClock,
@@ -30,7 +30,13 @@ const PACKAGING_LABELS: Record<VariantView['packaging'], string> = {
 }
 
 /**
- * Bloc d'achat de la fiche produit (02-fiche-produit.png, colonne de droite).
+ * Bloc d'achat — `.buybox` et `.sticky-buy` du code de référence.
+ *
+ * Valeurs reprises de `styles.css` : note de compatibilité verte de 11/12 px,
+ * options de kit à filet de 8 px de rayon (1,5 px rouge sur fond #fdf6f5 pour
+ * celle retenue), prix à 32 px, bouton principal de 51 px, puis livraison,
+ * réassurance et mention d'homologation. La barre fixe fait 74 px, apparaît
+ * au défilement sur grand écran et reste posée en bas en mobile.
  *
  * Trois règles s'y appliquent, et elles passent avant la conversion :
  *
@@ -39,17 +45,23 @@ const PACKAGING_LABELS: Record<VariantView['packaging'], string> = {
  * 2. Un accessoire rendu nécessaire par le montage est PROPOSÉ, coché par
  *    personne. Rien ne part au panier que le client n'ait vu et accepté.
  * 3. Quand la pièce est incompatible avec le véhicule retenu, l'achat est
- *    bloqué et on dit pourquoi, avec une porte de sortie. Vendre une pièce
- *    qu'on sait inadaptée coûte un retour et un client.
+ *    bloqué et on dit pourquoi, avec une porte de sortie.
+ *
+ * La barre fixe appelle exactement la même fonction que le bouton principal :
+ * même variante, mêmes accessoires cochés, même total. Une barre qui
+ * ajouterait « le produit » sans tenir compte du conditionnement choisi serait
+ * un piège.
  */
 export function BuyBox({
+  productName,
   variants,
   recommendedVariantId,
   vehicleLabel,
   shippingOffers,
   returnWindowDays,
-  contentAnchor = '#contenu',
+  contentAnchor = '#dans-votre-kit',
 }: {
+  productName: string
   variants: VariantView[]
   recommendedVariantId: string | null
   /** Null quand aucun véhicule n'est sélectionné. */
@@ -65,8 +77,8 @@ export function BuyBox({
 
   /*
     Le conditionnement choisi est partagé avec le reste de la fiche
-    (`ProductConfigurationProvider`) : la section Installation et le contenu du
-    kit doivent décrire CE conditionnement, pas le produit en général.
+    (`ProductConfigurationProvider`) : le contenu du kit et la section
+    Installation décrivent CE conditionnement, pas le produit en général.
 
     Le repli local garde le bloc d'achat utilisable hors de ce contexte — un
     rendu isolé, un test — plutôt que de lever.
@@ -79,6 +91,51 @@ export function BuyBox({
   const setSelectedId = configuration?.setSelectedId ?? setFallbackId
 
   const [acceptedAccessories, setAcceptedAccessories] = useState<string[]>([])
+
+  /*
+    Apparition de la barre fixe sur grand écran.
+
+    La référence la révèle une fois le bouton principal dépassé. En dessous du
+    basculement elle est posée en permanence, donc l'observateur ne sert plus à
+    rien : l'état reste vrai.
+  */
+  const boutonRef = useRef<HTMLButtonElement | null>(null)
+  const [barreVisible, setBarreVisible] = useState(false)
+
+  useEffect(() => {
+    const bouton = boutonRef.current
+    if (!bouton) return
+
+    /*
+      Visible seulement quand le bouton est sorti par le HAUT.
+
+      Un `IntersectionObserver` ne convient pas ici : il ne se déclenche qu'au
+      franchissement d'un bord. Un saut de défilement — une ancre, un retour
+      depuis le panier — fait passer le bouton du dessous au-dessus de la
+      fenêtre sans qu'il la traverse, le rapport d'intersection reste à zéro,
+      et la barre garde l'état qu'elle avait. On lit donc la position à chaque
+      défilement, groupée par image pour ne pas relire la mise en page à
+      chaque événement.
+    */
+    let prevu = 0
+    const juger = () => {
+      prevu = 0
+      setBarreVisible(bouton.getBoundingClientRect().bottom < 0)
+    }
+    const planifier = () => {
+      if (prevu) return
+      prevu = requestAnimationFrame(juger)
+    }
+
+    juger()
+    window.addEventListener('scroll', planifier, { passive: true })
+    window.addEventListener('resize', planifier)
+    return () => {
+      if (prevu) cancelAnimationFrame(prevu)
+      window.removeEventListener('scroll', planifier)
+      window.removeEventListener('resize', planifier)
+    }
+  }, [])
 
   const selected = variants.find((variant) => variant.id === selectedId) ?? variants[0]
 
@@ -111,6 +168,12 @@ export function BuyBox({
     )
     .join(' + ')
 
+  const libelleBouton = pending
+    ? 'Ajout en cours…'
+    : incompatible
+      ? 'Incompatible avec votre véhicule'
+      : `Ajouter ${selected.name.toLowerCase()}`
+
   function submit() {
     setFeedback(null)
     startTransition(async () => {
@@ -120,10 +183,7 @@ export function BuyBox({
         extraVariantIds: acceptedAccessories,
       })
       if (result.ok) {
-        setFeedback({
-          tone: 'ok',
-          text: result.message ?? 'Ajouté au panier.',
-        })
+        setFeedback({ tone: 'ok', text: result.message ?? 'Ajouté au panier.' })
         // Rafraîchit le compteur du header, qui est rendu côté serveur.
         router.refresh()
       } else {
@@ -133,26 +193,30 @@ export function BuyBox({
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* ---- Compatibilité pour le véhicule retenu ---- */}
+    <div>
+      {/* ---- .fit-note : compatibilité pour le véhicule retenu ---- */}
       {vehicleLabel && selected.fitment.status === 'CONFIRMED' ? (
-        <div className="flex items-start gap-3 rounded-md border border-ok-border bg-ok-soft px-4 py-3.5">
-          <IconCheckCircle className="mt-0.5 size-6 shrink-0 text-ok" />
+        <div className="mb-[19px] flex items-center gap-2.5 rounded-[7px] bg-ok-soft p-3 text-[#2a6441] fiche:mb-5 fiche:px-3 fiche:py-[11px]">
+          <span className="grid size-5 shrink-0 place-items-center rounded-full bg-ok text-white">
+            <IconCheck className="size-[13px]" strokeWidth={2} />
+          </span>
           <div className="min-w-0">
-            <p className="font-bold">La configuration pour votre {vehicleLabel}</p>
+            <strong className="mb-px block text-[11px] min-[1101px]:text-[10px] min-[1281px]:text-[11px]">
+              La configuration pour votre {vehicleLabel}
+            </strong>
             {compositionSummary ? (
-              <p className="mt-0.5 text-sm text-muted-strong">{compositionSummary}</p>
+              <span className="block text-[10px] text-[#4a7359]">{compositionSummary}</span>
             ) : selected.fitment.quantity > 1 ? (
-              <p className="mt-0.5 text-sm text-muted-strong">
+              <span className="block text-[10px] text-[#4a7359]">
                 {selected.fitment.quantity} nécessaires pour cet emplacement
-              </p>
+              </span>
             ) : null}
           </div>
         </div>
       ) : null}
 
       {vehicleLabel && selected.fitment.status === 'UNKNOWN' ? (
-        <Alert tone="warn" title="Compatibilité non établie pour votre véhicule.">
+        <Alert tone="warn" title="Compatibilité non établie pour votre véhicule." className="mb-5">
           Nous n&apos;avons pas l&apos;information nécessaire pour confirmer que cette référence
           convient à votre {vehicleLabel}. Une donnée manquante ne vaut pas compatibilité —{' '}
           <Link href="/contact" className="font-semibold underline underline-offset-4">
@@ -163,7 +227,11 @@ export function BuyBox({
       ) : null}
 
       {incompatible ? (
-        <Alert tone="danger" title="Cette référence ne convient pas à votre véhicule.">
+        <Alert
+          tone="danger"
+          title="Cette référence ne convient pas à votre véhicule."
+          className="mb-5"
+        >
           {selected.fitment.restrictions ??
             "L'équipement d'origine du véhicule sélectionné n'accepte pas cette référence."}{' '}
           <Link href="/vehicule/resultats" className="font-semibold underline underline-offset-4">
@@ -174,7 +242,7 @@ export function BuyBox({
       ) : null}
 
       {!vehicleLabel ? (
-        <Alert tone="info" title="Indiquez votre véhicule.">
+        <Alert tone="info" title="Indiquez votre véhicule." className="mb-5">
           Le bon éclairage dépend du bloc optique et de l&apos;équipement d&apos;origine, pas
           seulement du culot.{' '}
           <Link href="/vehicule" className="font-semibold underline underline-offset-4">
@@ -184,21 +252,20 @@ export function BuyBox({
         </Alert>
       ) : null}
 
-      {/* ---- Choix du conditionnement ---- */}
+      {/* ---- .pack-heading + .pack-options ---- */}
       {variants.length > 1 ? (
         <fieldset>
-          <div className="mb-3 flex items-center justify-between gap-4">
-            <legend className="text-[1.0625rem] font-bold">Choisissez votre kit</legend>
+          <div className="mb-2.5 flex items-center justify-between gap-4 text-[12px] font-bold fiche:text-[11px]">
+            <legend>Choisissez votre kit</legend>
             <a
               href={contentAnchor}
-              className="flex shrink-0 items-center gap-1.5 text-sm underline underline-offset-4 hover:text-brand"
+              className="shrink-0 text-[10px] text-[#6b6d70] underline underline-offset-2 hover:text-ink"
             >
               Voir le contenu
-              <IconChevronRight className="size-4" />
             </a>
           </div>
 
-          <div className="flex flex-col gap-2.5">
+          <div className="grid gap-2">
             {variants.map((variant) => {
               const active = variant.id === selected.id
               const recommended = variant.id === recommendedVariantId
@@ -207,10 +274,10 @@ export function BuyBox({
                 <label
                   key={variant.id}
                   className={cn(
-                    'flex cursor-pointer items-start gap-3 rounded-md border px-4 py-3.5 transition-colors',
+                    'flex cursor-pointer items-center gap-[11px] rounded-lg transition-colors fiche:gap-2.5',
                     active
-                      ? 'border-brand bg-brand-soft'
-                      : 'border-line-strong bg-white hover:border-slate-ink',
+                      ? 'border-[1.5px] border-brand bg-[#fdf6f5] px-[12.5px] py-[14.5px] fiche:px-[9.5px] fiche:py-[12.5px] min-[1101px]:px-[13.5px]'
+                      : 'border border-[#ddddda] px-[13px] py-[15px] fiche:px-2.5 fiche:py-[13px] min-[1101px]:px-3.5',
                     !available && 'opacity-60',
                   )}
                 >
@@ -228,32 +295,43 @@ export function BuyBox({
                       setAcceptedAccessories([])
                       setFeedback(null)
                     }}
-                    className="mt-1 size-5 shrink-0 accent-[var(--color-brand)]"
+                    className="absolute size-px opacity-0"
                   />
-                  <span className="min-w-0 flex-1">
+
+                  {/* .radio-dot : le bouton radio, dessiné. */}
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'relative block size-[15px] shrink-0 rounded-full border',
+                      active
+                        ? 'border-brand after:absolute after:inset-[3px] after:rounded-full after:bg-brand'
+                        : 'border-[#b5b5b1]',
+                    )}
+                  />
+
+                  <span className="flex min-w-0 flex-col gap-px">
                     {recommended ? (
-                      <Badge tone="danger" className="mb-1.5">
+                      <span className="mb-0.5 text-[6.5px] font-bold tracking-[0.5px] text-brand uppercase fiche:text-[6px] min-[1101px]:text-[7px] min-[1101px]:tracking-[0.7px]">
                         Recommandé pour votre véhicule
-                      </Badge>
-                    ) : null}
-                    <span className="flex items-baseline justify-between gap-3">
-                      <span className="font-bold">{variant.name}</span>
-                      <span className="shrink-0 text-[1.0625rem] font-bold">
-                        {formatPrice(variant.priceCents)}
                       </span>
-                    </span>
-                    <span className="mt-0.5 block text-sm text-muted-strong">
+                    ) : null}
+                    <strong className="text-[13px] fiche:text-[12px]">{variant.name}</strong>
+                    <small className="text-[10px] text-[#777974] fiche:text-[9px] min-[1281px]:text-[10px]">
                       {variant.components.length > 0
                         ? 'Ampoules + accessoires nécessaires'
                         : variant.missingAccessories.length > 0
                           ? 'Vous possédez déjà les accessoires'
                           : PACKAGING_LABELS[variant.packaging]}
-                    </span>
+                    </small>
                     {!available ? (
-                      <span className="mt-1 block text-sm font-semibold text-muted">
+                      <small className="text-[10px] font-semibold text-muted">
                         {availabilityLabel(variant.availability)}
-                      </span>
+                      </small>
                     ) : null}
+                  </span>
+
+                  <span className="ml-auto shrink-0 text-[13px] font-bold whitespace-nowrap">
+                    {formatPrice(variant.priceCents)}
                   </span>
                 </label>
               )
@@ -262,30 +340,33 @@ export function BuyBox({
         </fieldset>
       ) : null}
 
-      {selected.components.length > 0 ? (
-        <p className="flex items-center gap-2 text-sm font-medium text-ok">
-          <IconCheckCircle className="size-4 shrink-0" />
-          {selected.components
-            .filter((component) => component.required)
-            .map((component) => component.productName)
-            .join(' et ')}{' '}
-          inclus
-        </p>
-      ) : null}
+      {/* .pack-explanation : réserve sa ligne même quand elle est vide. */}
+      <p className="my-[9px] mb-[19px] flex min-h-3.5 items-center gap-1.5 text-[9px] leading-[1.5] text-[#52705c] fiche:mb-[18px]">
+        {selected.components.length > 0 ? (
+          <>
+            <IconCheckCircle className="size-3 shrink-0" />
+            {selected.components
+              .filter((component) => component.required)
+              .map((component) => component.productName)
+              .join(' et ')}{' '}
+            inclus. Aucun accessoire à rechercher.
+          </>
+        ) : null}
+      </p>
 
       {/* ---- Accessoires nécessaires non inclus : proposés, jamais cochés ---- */}
       {accessories.length > 0 ? (
-        <fieldset className="rounded-md border border-warn-border bg-warn-soft px-4 py-3.5">
-          <legend className="px-1 text-sm font-bold">
+        <fieldset className="mb-[18px] rounded-[7px] border border-warn-border bg-warn-soft px-3 py-3">
+          <legend className="px-1 text-[10px] font-bold">
             Nécessaire pour ce montage, non inclus
           </legend>
-          <p className="mb-3 text-sm text-muted-strong">
+          <p className="mb-2 text-[10px] text-muted-strong">
             Ce conditionnement ne contient pas ces pièces. Elles ne sont ajoutées que si vous les
             cochez.
           </p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {accessories.map((accessory) => (
-              <label key={accessory.variantId} className="flex cursor-pointer items-start gap-3">
+              <label key={accessory.variantId} className="flex cursor-pointer items-start gap-2.5">
                 <input
                   type="checkbox"
                   checked={acceptedAccessories.includes(accessory.variantId)}
@@ -296,9 +377,9 @@ export function BuyBox({
                         : current.filter((id) => id !== accessory.variantId),
                     )
                   }
-                  className="mt-0.5 size-5 shrink-0 accent-[var(--color-brand)]"
+                  className="mt-0.5 size-4 shrink-0 accent-[var(--color-brand)]"
                 />
-                <span className="min-w-0 flex-1 text-sm">
+                <span className="min-w-0 flex-1 text-[10px]">
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="font-semibold">
                       {accessory.quantity > 1 ? `${accessory.quantity} × ` : ''}
@@ -318,140 +399,151 @@ export function BuyBox({
         </fieldset>
       ) : null}
 
-      {/* ---- Total et achat ---- */}
-      <div className="border-t border-line pt-4">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted-strong">Total</p>
-            <p className="text-[1.875rem] font-extrabold leading-tight">
-              {formatPrice(total)} <span className="text-xl">TTC</span>
-            </p>
-          </div>
-          <p
-            className={cn(
-              'flex shrink-0 items-center gap-2 text-sm font-semibold',
-              purchasable ? 'text-ok' : 'text-muted',
-            )}
-          >
-            <span
-              aria-hidden
-              className={cn(
-                'size-2.5 rounded-full',
-                purchasable ? 'bg-ok' : 'bg-line-strong',
-              )}
-            />
-            {availabilityLabel(selected.availability)}
-          </p>
+      {/* ---- .price-line ---- */}
+      <div className="mb-3.5 flex items-center justify-between gap-4">
+        <div>
+          <strong className="block text-[34px] leading-none font-extrabold tracking-[-1.2px] fiche:text-[32px]">
+            {formatPrice(total)}
+          </strong>
+          <span className="mt-[7px] block text-[10px] text-muted fiche:text-[9px]">
+            TTC · {selected.name.toLowerCase()}
+            {accessoriesTotal > 0 ? ' et accessoires cochés' : null}
+          </span>
         </div>
-
-        <Button
-          size="lg"
-          block
-          className="mt-4"
-          disabled={!purchasable || pending}
-          onClick={submit}
-          iconLeft={<IconCart className="size-6 shrink-0" />}
-          iconRight={<IconChevronRight className="ml-auto size-5 shrink-0" />}
+        <span
+          className={cn(
+            'flex shrink-0 items-center gap-1.5 text-[10px] fiche:text-[9px]',
+            purchasable ? 'text-ok' : 'text-muted',
+          )}
         >
-          {pending
-            ? 'Ajout en cours…'
-            : incompatible
-              ? 'Incompatible avec votre véhicule'
-              : `Ajouter ${selected.name.toLowerCase()}`}
-        </Button>
-
-        {feedback ? (
-          <Alert
-            tone={feedback.tone === 'ok' ? 'ok' : 'danger'}
-            live={feedback.tone === 'danger' ? 'assertive' : 'polite'}
-            className="mt-3"
-          >
-            {feedback.text}
-            {feedback.tone === 'ok' ? (
-              <>
-                {' '}
-                <Link href="/panier" className="font-semibold underline underline-offset-4">
-                  Voir le panier
-                </Link>
-              </>
-            ) : null}
-          </Alert>
-        ) : null}
+          <span
+            aria-hidden="true"
+            className={cn('size-[5px] rounded-full', purchasable ? 'bg-ok' : 'bg-line-strong')}
+          />
+          {availabilityLabel(selected.availability)}
+        </span>
       </div>
 
-      {/*
-        Barre d'achat fixe du mobile.
+      {/* .primary.add-main : 51 px, pleine largeur, flèche poussée à droite. */}
+      <button
+        ref={boutonRef}
+        type="button"
+        disabled={!purchasable || pending}
+        onClick={submit}
+        className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-[7px] bg-brand px-[22px] py-3 text-[13px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[51px]"
+      >
+        <IconCart className="size-[19px] shrink-0" />
+        <span className="flex-1">{libelleBouton}</span>
+        <IconChevronRight className="ml-auto size-[17px] shrink-0" />
+      </button>
 
-        Elle reflète la sélection en cours — même variante, mêmes accessoires
-        cochés, même total — parce qu'elle appelle exactement la même fonction
-        que le bouton principal. Une barre qui ajouterait « le produit » sans
-        tenir compte du conditionnement choisi serait un piège.
-        Elle disparaît dès lg : sur grand écran le bloc d'achat reste visible.
-      */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white px-4 py-3 shadow-pop lg:hidden">
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-muted-strong">{selected.name}</p>
-            <p className="text-lg font-extrabold leading-tight">{formatPrice(total)}</p>
-          </div>
-          <Button
-            size="md"
-            className="shrink-0"
-            disabled={!purchasable || pending}
-            onClick={submit}
-            iconLeft={<IconCart className="size-5 shrink-0" />}
-          >
-            {pending ? 'Ajout…' : incompatible ? 'Incompatible' : 'Ajouter'}
-          </Button>
-        </div>
-      </div>
-
-      {/* ---- Livraison, retours, assistance ---- */}
-      <div className="flex flex-col gap-3 border-t border-line pt-4 text-sm">
-        {delivery ? (
-          <p className="flex items-start gap-2.5">
-            <IconTruck className="mt-0.5 size-5 shrink-0 text-muted-strong" />
-            <span className="min-w-0 flex-1">
-              <span className="font-semibold">{delivery.priceLabel}</span>
-              {delivery.delayLabel ? (
-                <span className="text-muted-strong"> · {delivery.delayLabel}</span>
-              ) : null}
-              {delivery.missingForFreeCents ? (
-                <span className="block text-xs text-muted">
-                  Plus que {formatPrice(delivery.missingForFreeCents)} pour la livraison offerte.
-                </span>
-              ) : null}
-            </span>
-            <Link
-              href="/livraison-retours"
-              className="flex shrink-0 items-center gap-1 underline underline-offset-4 hover:text-brand"
-            >
-              Voir les détails
-              <IconChevronRight className="size-4" />
-            </Link>
-          </p>
-        ) : null}
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          {returnWindowDays ? (
-            <p className="flex items-center gap-2.5">
-              <IconClock className="size-5 shrink-0 text-muted-strong" />
-              Retours sous {returnWindowDays} jours
-            </p>
+      {feedback ? (
+        <Alert
+          tone={feedback.tone === 'ok' ? 'ok' : 'danger'}
+          live={feedback.tone === 'danger' ? 'assertive' : 'polite'}
+          className="mt-3"
+        >
+          {feedback.text}
+          {feedback.tone === 'ok' ? (
+            <>
+              {' '}
+              <Link href="/panier" className="font-semibold underline underline-offset-4">
+                Voir le panier
+              </Link>
+            </>
           ) : null}
-          <p className="flex items-center gap-2.5 sm:border-l sm:border-line sm:pl-4">
-            <IconWrench className="size-5 shrink-0 text-muted-strong" />
-            <Link href="/contact" className="underline underline-offset-4 hover:text-brand">
-              Assistance au montage
-            </Link>
-          </p>
-        </div>
+        </Alert>
+      ) : null}
 
+      {/* ---- .shipping ---- */}
+      {delivery ? (
+        <p className="mt-3 flex flex-wrap items-center gap-x-[7px] gap-y-[3px] text-[9px] text-[#696b68] fiche:mt-3 min-[1101px]:text-[8px] min-[1281px]:text-[9px]">
+          <IconTruck className="size-[15px] shrink-0 text-ok" />
+          <span>
+            <strong className="text-[#365d42]">{delivery.priceLabel}</strong>
+            {delivery.delayLabel ? ` · ${delivery.delayLabel}` : null}
+            {delivery.missingForFreeCents ? (
+              <span className="block">
+                Plus que {formatPrice(delivery.missingForFreeCents)} pour la livraison offerte.
+              </span>
+            ) : null}
+          </span>
+          <Link
+            href="/livraison-retours"
+            className="ml-auto shrink-0 text-[8px] text-[#6b6d70] underline underline-offset-2 hover:text-ink fiche:text-[9px]"
+          >
+            Détails
+          </Link>
+        </p>
+      ) : null}
+
+      {/* ---- .purchase-reassurance ---- */}
+      <div className="mt-4 flex justify-center gap-5 border-b border-line pb-[15px] text-[9px] text-[#6a6c6c] fiche:mt-3.5 fiche:gap-[23px]">
+        {returnWindowDays ? (
+          <span className="flex items-center gap-1.5">
+            <IconClock className="size-[13px] shrink-0" />
+            Retours sous {returnWindowDays} jours
+          </span>
+        ) : null}
+        <Link href="/contact" className="flex items-center gap-1.5 hover:underline">
+          <IconWrench className="size-[13px] shrink-0" />
+          Assistance au montage
+        </Link>
+      </div>
+
+      {/* ---- .road-note : l'homologation, dite telle qu'elle est connue ---- */}
+      <div className="mt-2.5 text-[8px] text-[#85837e]">
         <RoadApprovalNote
           status={selected.fitment.roadApproval}
           market={selected.fitment.approvalMarket}
           note={selected.fitment.approvalNote}
         />
+      </div>
+
+      {/*
+        .sticky-buy — posée en bas en mobile, révélée au défilement au-delà du
+        basculement. Même fonction d'ajout que le bouton principal.
+      */}
+      <div
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-20 border-t border-[#e2e3df] bg-white/93 backdrop-blur-xl transition-[translate] duration-200',
+          barreVisible ? 'translate-y-0' : 'max-fiche:translate-y-0 fiche:translate-y-[110%]',
+        )}
+      >
+        <div className="container-page flex min-h-[76px] items-center justify-between gap-3.5 pb-[env(safe-area-inset-bottom)] fiche:min-h-[74px]">
+          {/* .sticky-product : masqué en mobile, où la place manque. */}
+          <div className="hidden items-center gap-3 fiche:flex">
+            <IconCart className="size-5 shrink-0 text-brand" />
+            <div className="min-w-0">
+              <strong className="block text-[12px]">{productName}</strong>
+              <span className="mt-0.5 block text-[9px] text-[#7a8076]">
+                {selected.name}
+                {vehicleLabel ? ` · ${vehicleLabel}` : null}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex w-full items-center justify-between gap-3.5 fiche:w-auto fiche:gap-[25px]">
+            <div className="shrink-0">
+              <strong className="block text-[23px] leading-none tracking-[-0.7px] fiche:text-[22px]">
+                {formatPrice(total)}
+              </strong>
+              <span className="mt-1 block text-[7px] text-[#7a8076] fiche:mt-[5px] fiche:text-[8px]">
+                TTC{delivery?.priceLabel ? ` · ${delivery.priceLabel.toLowerCase()}` : null}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              disabled={!purchasable || pending}
+              onClick={submit}
+              className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-[7px] bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[44px] fiche:min-w-[255px] fiche:flex-none fiche:gap-3"
+            >
+              <IconCart className="size-[17px] shrink-0" />
+              <span className="truncate">{libelleBouton}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

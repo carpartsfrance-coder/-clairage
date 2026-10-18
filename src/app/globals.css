@@ -96,6 +96,16 @@
 
   /* --- Rythme ------------------------------------------------------------ */
   --spacing-section: 4.5rem;
+
+  /*
+    Seuil propre à la fiche produit.
+
+    La référence bascule la fiche en colonne unique à 800 px — pas à 1024 px
+    comme le `lg` de Tailwind. Le préfixe `fiche:` vaut donc « au-delà du
+    basculement », et permet d'écrire les règles de la référence sans les
+    décaler de 224 px.
+  */
+  --breakpoint-fiche: 801px;
 }
 
 /* --------------------------------------------------------------------------

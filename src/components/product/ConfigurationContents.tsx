@@ -1,7 +1,6 @@
 'use client'
 
 import { Alert } from '@/components/ui/Surface'
-import { IconCheck } from '@/components/ui/icons'
 import { useProductConfiguration } from './ProductConfiguration'
 
 /**
@@ -13,11 +12,11 @@ import { useProductConfiguration } from './ProductConfiguration'
  * « Adaptateurs et décodeurs nécessaires, non inclus » — une restriction qui ne
  * vaut que pour les ampoules seules.
  *
- * Elle décrit désormais le conditionnement réellement sélectionné :
+ * Elle ne dit plus ce que le conditionnement CONTIENT — `KitContents` s'en
+ * charge, juste au-dessus. Il lui reste ce qui manquerait au moment du
+ * montage, et c'est l'information qui évite un colis inutilisable :
  *
- *  - ce qu'il contient, quand il a des composants ;
- *  - ce qu'il exige et ne fournit PAS, quand le montage le demande — c'est
- *    l'information qui évite un colis inutilisable à l'arrivée ;
+ *  - ce que le conditionnement exige et ne fournit PAS ;
  *  - ses propres restrictions.
  *
  * Les restrictions d'un conditionnement qu'on n'a pas choisi ne sont pas
@@ -28,41 +27,13 @@ export function ConfigurationContents() {
   const selected = configuration?.selected
   if (!selected) return null
 
-  const inclus = selected.components
   const manquants = selected.missingAccessories
   const restrictions = selected.fitment.restrictions
 
-  if (inclus.length === 0 && manquants.length === 0 && !restrictions) return null
+  if (manquants.length === 0 && !restrictions) return null
 
   return (
-    <div className="mt-5 flex max-w-3xl flex-col gap-4">
-      <p className="text-sm text-muted-strong">
-        Pour le conditionnement retenu :{' '}
-        <span className="font-semibold text-slate-ink">{selected.name}</span>.
-      </p>
-
-      {inclus.length > 0 ? (
-        <div className="rounded-md border border-ok-border bg-ok-soft px-4 py-3">
-          <p className="text-sm font-semibold">Fourni dans ce kit</p>
-          <ul className="mt-2 flex flex-col gap-1.5 text-sm">
-            {inclus.map((composant) => (
-              <li key={composant.sku} className="flex items-start gap-2">
-                <IconCheck className="mt-0.5 size-4 shrink-0 text-ok" strokeWidth={2.4} />
-                <span>
-                  {composant.quantity} × {composant.productName}
-                  {composant.variantName ? (
-                    <span className="text-muted-strong"> — {composant.variantName}</span>
-                  ) : null}
-                  {!composant.required ? (
-                    <span className="text-muted"> (facultatif)</span>
-                  ) : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
+    <div className="mt-5 flex max-w-3xl flex-col gap-4 text-[11px]">
       {manquants.length > 0 ? (
         <Alert tone="warn" title="Nécessaire au montage, non fourni dans ce conditionnement">
           <ul className="mt-1 list-disc space-y-1 pl-5">

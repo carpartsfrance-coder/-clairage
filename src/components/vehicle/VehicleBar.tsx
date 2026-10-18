@@ -61,42 +61,51 @@ export function VehicleBar({
     )
   }
 
+  /*
+    `.vehicle-bar` du code de référence : fond #f5f6f3, filet #e7e9e2, rayon
+    8 px, 12/19 px de retrait, pastille blanche de 36 px, surtitre à 8 px et
+    intitulé à 12 px. L'état « aucun véhicule » garde le fond rouge pâle du
+    projet : c'est le seul endroit de la fiche qui dit qu'aucune compatibilité
+    ne peut être affirmée, et la référence n'a pas cet état.
+  */
   return (
     <div
       className={cn(
-        'flex flex-col gap-2 rounded-md border px-4 py-3 sm:flex-row sm:items-center sm:gap-4',
-        vehicle ? 'border-line bg-surface-soft' : 'border-brand-border bg-brand-soft',
+        'flex items-center justify-between gap-3 rounded-lg border px-3 py-[11px] fiche:px-[19px] fiche:py-3',
+        vehicle ? 'border-[#e7e9e2] bg-[#f5f6f3]' : 'border-brand-border bg-brand-soft',
         className,
       )}
     >
-      <Icon className="size-7 shrink-0 text-slate-ink" />
+      <div className="flex min-w-0 items-center gap-2.5 fiche:gap-3.5">
+        <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-white fiche:size-9">
+          <Icon className="size-5 text-slate-ink fiche:size-[22px]" />
+        </span>
 
-      {vehicle ? (
-        <>
-          <p className="min-w-0 flex-1 text-sm">
-            <span className="mr-3 text-xs font-bold uppercase tracking-wide text-muted">
+        {vehicle ? (
+          <div className="min-w-0">
+            <small className="mb-px block text-[7px] tracking-[1.3px] text-[#697164] uppercase fiche:text-[8px]">
               Votre véhicule
-            </span>
-            <span className="font-semibold">{vehicle.label}</span>
-            {vehicle.equipmentLabel ? (
-              <span className="text-muted-strong"> · {vehicle.equipmentLabel}</span>
-            ) : null}
-          </p>
-          <div className="shrink-0">
-            <VehicleMenu vehicle={vehicle} variant="action" />
+            </small>
+            <strong className="block text-[10px] fiche:text-[12px]">
+              {vehicle.label}
+              {vehicle.equipmentLabel ? (
+                <span className="mt-0.5 block font-normal text-[9px] text-[#686c67] fiche:mt-0 fiche:ml-[5px] fiche:inline fiche:text-[12px]">
+                  · {vehicle.equipmentLabel}
+                </span>
+              ) : null}
+            </strong>
           </div>
-        </>
-      ) : (
-        <>
-          <p className="min-w-0 flex-1 text-sm">
+        ) : (
+          <p className="min-w-0 text-[10px] fiche:text-[12px]">
             <span className="font-semibold">Aucun véhicule sélectionné.</span>{' '}
             <span className="text-muted-strong">Aucune compatibilité ne peut être affirmée.</span>
           </p>
-          <div className="shrink-0">
-            <VehicleMenu vehicle={null} variant="action" />
-          </div>
-        </>
-      )}
+        )}
+      </div>
+
+      <div className="shrink-0">
+        <VehicleMenu vehicle={vehicle} variant="action" />
+      </div>
     </div>
   )
 }

@@ -91,12 +91,17 @@ export function RoadApprovalNote({
     NOT_APPROVED: `Non homologué pour un usage routier (${market}).`,
     UNKNOWN: `Usage routier : homologation à confirmer (${market}).`,
   }[status]
+  /*
+    `.road-note` de la référence : une ligne de 8 px, pastille d'information à
+    gauche. La taille est héritée du conteneur pour que la fiche produit la
+    compose à 8 px sans forcer les autres pages qui s'en servent.
+  */
   return (
-    <p className="flex items-start gap-2 text-sm text-muted-strong">
-      <IconInfo className="mt-0.5 size-4 shrink-0" />
+    <p className="flex items-start gap-1.5 text-[inherit] text-[#85837e]">
+      <IconInfo className="mt-px size-3 shrink-0" />
       <span>
         {copy}
-        {note ? <span className="block text-xs text-muted">{note}</span> : null}
+        {note ? <span className="ml-1 text-muted">{note}</span> : null}
       </span>
     </p>
   )

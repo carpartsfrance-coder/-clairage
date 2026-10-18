@@ -49,6 +49,14 @@ export type VariantView = {
     variantName: string
     quantity: number
     required: boolean
+    /**
+     * Prix de ce composant vendu seul, pour la quantité incluse.
+     *
+     * Il sert à montrer ce que le kit réunit, pas à décomposer son prix : la
+     * somme des composants ne fait pas le prix du kit, et c'est précisément ce
+     * qu'il faut pouvoir dire au client.
+     */
+    priceCents: number
   }>
   fitment: FitmentResult
   /** Accessoires exigés par le montage et absents de ce conditionnement. */
@@ -229,6 +237,7 @@ export async function getProduct(
           variantName: entry.component.name,
           quantity: entry.quantity,
           required: entry.required,
+          priceCents: entry.component.priceCents * entry.quantity,
         })),
         fitment,
         // Un accessoire obligatoire déjà présent dans le kit n'est pas manquant.

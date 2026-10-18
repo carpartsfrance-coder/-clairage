@@ -9,193 +9,269 @@ import { addToCart } from '@/lib/actions/cart'
 import { formatPrice } from '@/lib/identity'
 import { availabilityLabel, isPurchasable } from '@/lib/stock'
 import { Alert } from '@/components/ui/Surface'
-import { Button } from '@/components/ui/Button'
 import { FitmentBadge } from '@/components/ui/Badge'
-import { IconCart } from '@/components/ui/icons'
+import { IconCheck } from '@/components/ui/icons'
+import { cn } from '@/lib/cn'
 
-const PACKAGING_LABELS: Record<ProductView['variants'][number]['packaging'], string> = {
-  UNIT: "À l'unité",
-  PAIR: 'La paire',
-  PACK: 'Le pack',
-  KIT: 'Le kit',
+type Addon = ProductView['optionalAddons'][number]
+
+const PACKAGING_LABELS: Record<Addon['packaging'], string> = {
+  UNIT: "à l'unité",
+  PAIR: 'la paire',
+  PACK: 'le pack',
+  KIT: 'le kit',
 }
 
 /**
- * Compléments facultatifs : pack intérieur, éclairage de plaque, etc.
+ * Compléments facultatifs — `#complements` / `.extra-card` de la référence.
+ *
+ * Valeurs reprises de `styles.css` : deux colonnes de 20 px d'écart, cartes à
+ * filet et rayon 9 px, panneau visuel sombre de 124 × 119 px, case à cocher
+ * carrée en haut à droite, et la bande de synthèse #f4f6f0 qui n'apparaît que
+ * lorsqu'un complément est coché.
  *
  * Trois règles, et la première prime sur les deux autres :
  *
- * 1. **Rien n'est ajouté sans un geste.** Aucune case cochée d'avance, aucun
- *    article glissé dans le panier au passage. Chaque complément a son propre
- *    bouton, et c'est le seul chemin.
- * 2. **On ne prétend pas que c'est compatible.** Le statut affiché vient du
- *    moteur de compatibilité, résolu pour le complément lui-même et pas hérité
- *    du produit principal. Sans véhicule sélectionné, aucun statut n'est
- *    affiché : on invite à le renseigner. Un complément déclaré incompatible
- *    n'est pas proposé à l'achat.
+ * 1. **Rien n'est ajouté sans un geste.** Aucune case cochée d'avance. La
+ *    bande de synthèse reste masquée tant que rien n'est sélectionné, et elle
+ *    annonce le total exact avant l'ajout.
+ * 2. **On ne prétend pas que c'est compatible.** Le statut vient du moteur de
+ *    compatibilité, résolu pour le complément lui-même. Sans véhicule, aucun
+ *    statut n'est affiché. Un complément incompatible n'est pas sélectionnable.
  * 3. **Ce ne sont pas les accessoires du montage.** Les adaptateurs et
- *    décodeurs exigés par le kit vivent dans le bloc d'achat, avec leur propre
- *    traitement : les mélanger ici ferait passer une pièce indispensable pour
- *    une suggestion.
+ *    décodeurs exigés par le kit vivent dans le bloc d'achat : les mélanger
+ *    ferait passer une pièce indispensable pour une suggestion.
  *
- * Après un ajout, on reste sur la fiche : le compteur du panier est rafraîchi
- * et une confirmation s'affiche à côté du complément concerné.
+ * Chaque complément part au panier par son propre appel : ce sont des articles
+ * à part entière, pas des accessoires rattachés au kit. Les passer en
+ * `extraVariantIds` les enregistrerait comme « exigés par » le produit
+ * principal, ce qu'ils ne sont pas.
  */
 export function OptionalAddons({
   addons,
   vehicleSelected,
 }: {
-  addons: ProductView['optionalAddons']
+  addons: Addon[]
   vehicleSelected: boolean
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const [busySlug, setBusySlug] = useState<string | null>(null)
-  const [feedback, setFeedback] = useState<{
-    slug: string
-    tone: 'ok' | 'danger'
-    text: string
-  } | null>(null)
+  const [selection, setSelection] = useState<string[]>([])
+  const [feedback, setFeedback] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null)
 
   if (addons.length === 0) return null
 
-  function ajouter(addon: ProductView['optionalAddons'][number]) {
-    setBusySlug(addon.slug)
+  const selectionnables = addons.filter(
+    (addon) => addon.fitment !== 'INCOMPATIBLE' && isPurchasable(addon.availability),
+  )
+  const retenus = selectionnables.filter((addon) => selection.includes(addon.slug))
+  const total = retenus.reduce((somme, addon) => somme + addon.priceCents, 0)
+
+  function basculer(slug: string) {
+    setFeedback(null)
+    setSelection((courant) =>
+      courant.includes(slug) ? courant.filter((item) => item !== slug) : [...courant, slug],
+    )
+  }
+
+  function ajouter() {
+    if (retenus.length === 0) return
     setFeedback(null)
 
     startTransition(async () => {
-      const result = await addToCart({ variantId: addon.variantId, quantity: 1 })
-      setBusySlug(null)
+      const echecs: Array<{ slug: string; message: string }> = []
+      const remarques: string[] = []
 
-      if (!result.ok) {
-        setFeedback({ slug: addon.slug, tone: 'danger', text: result.error })
-        return
+      for (const addon of retenus) {
+        const result = await addToCart({ variantId: addon.variantId, quantity: 1 })
+        if (result.ok) {
+          if (result.message) remarques.push(result.message)
+        } else {
+          echecs.push({ slug: addon.slug, message: `${addon.name} : ${result.error}` })
+        }
       }
 
-      setFeedback({
-        slug: addon.slug,
-        tone: 'ok',
-        // Le message du serveur s'il en donne un (stock ajusté, par exemple),
-        // sinon une confirmation simple. On ne réécrit pas ce qu'il dit.
-        text: result.message ?? `${addon.name} ajouté au panier.`,
-      })
-      // Rafraîchit le compteur du panier dans le header sans quitter la fiche.
-      router.refresh()
+      const ajoutes = retenus.length - echecs.length
+
+      // Ce qui est parti sort de la sélection ; ce qui a échoué reste coché,
+      // pour que le client voie exactement ce qu'il reste à régler.
+      setSelection(echecs.map((echec) => echec.slug))
+      if (ajoutes > 0) router.refresh()
+
+      if (echecs.length > 0) {
+        setFeedback({
+          tone: 'danger',
+          text: [
+            ajoutes > 0
+              ? `${ajoutes} sur ${retenus.length} ajoutés.`
+              : 'Aucun complément n’a été ajouté.',
+            ...echecs.map((echec) => echec.message),
+          ].join(' '),
+        })
+      } else {
+        setFeedback({
+          tone: 'ok',
+          text: [
+            ajoutes > 1
+              ? `${ajoutes} compléments ajoutés au panier.`
+              : 'Complément ajouté au panier.',
+            ...remarques,
+          ].join(' '),
+        })
+      }
     })
   }
 
   return (
-    <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {addons.map((addon) => {
-        const incompatible = addon.fitment === 'INCOMPATIBLE'
-        const disponible = isPurchasable(addon.availability)
-        const achetable = disponible && !incompatible
-        const retour = feedback?.slug === addon.slug ? feedback : null
+    <>
+      {/* .extra-grid : deux colonnes au-delà du basculement. */}
+      <ul className="grid grid-cols-1 gap-3 fiche:grid-cols-2 fiche:gap-5">
+        {addons.map((addon) => {
+          const incompatible = addon.fitment === 'INCOMPATIBLE'
+          const disponible = isPurchasable(addon.availability)
+          const selectionnable = disponible && !incompatible
+          const coche = selection.includes(addon.slug)
 
-        return (
-          <li
-            key={addon.slug}
-            className="flex flex-col rounded-md border border-line bg-white"
-          >
-            <Link
-              href={`/p/${addon.slug}`}
-              className="group flex flex-1 flex-col rounded-t-md transition-colors hover:bg-surface-soft"
-            >
-              <span className="relative block aspect-[4/3] overflow-hidden rounded-t-md">
-                {addon.image ? (
-                  <Image
-                    src={addon.image.url}
-                    alt=""
-                    fill
-                    sizes="(min-width: 1024px) 20vw, (min-width: 640px) 45vw, 90vw"
-                    className="object-contain p-3"
-                  />
-                ) : (
-                  <span className="flex h-full items-center justify-center bg-surface-muted text-xs text-muted">
-                    {addon.name}
-                  </span>
+          return (
+            <li key={addon.slug}>
+              {/* .extra-card : la carte entière est l'étiquette de la case. */}
+              <label
+                className={cn(
+                  'relative flex items-center gap-[18px] rounded-[9px] border p-[13px] fiche:gap-[14px] fiche:p-4 min-[1101px]:gap-5',
+                  coche ? 'border-brand bg-[#fdf9f8]' : 'border-[#e2e3dc]',
+                  selectionnable ? 'cursor-pointer' : 'cursor-default opacity-75',
                 )}
-              </span>
+              >
+                <input
+                  type="checkbox"
+                  className="absolute size-px opacity-0"
+                  checked={coche}
+                  disabled={!selectionnable || pending}
+                  onChange={() => basculer(addon.slug)}
+                />
 
-              <span className="flex flex-1 flex-col gap-1.5 border-t border-line p-3">
-                {/* Statut seulement s'il a été établi pour CE complément. */}
-                {addon.fitment ? (
-                  <FitmentBadge status={addon.fitment} short className="w-fit" />
-                ) : null}
-
-                <span className="text-sm font-bold leading-snug">{addon.name}</span>
-
-                {addon.tagline ? (
-                  <span className="line-clamp-2 text-xs text-muted">{addon.tagline}</span>
-                ) : null}
-
-                {/* Le nom du conditionnement répète souvent son intitulé
-                    (« Le pack · Le pack ») : on ne l'ajoute que s'il apprend
-                    quelque chose. */}
-                <span className="mt-auto pt-1 text-xs text-muted">
-                  {addon.variantName &&
-                  addon.variantName.toLowerCase() !== PACKAGING_LABELS[addon.packaging].toLowerCase()
-                    ? `${PACKAGING_LABELS[addon.packaging]} · ${addon.variantName}`
-                    : PACKAGING_LABELS[addon.packaging]}
+                {/* .extra-art : panneau sombre, le visuel réel du complément. */}
+                <span className="relative grid h-[108px] w-[105px] shrink-0 place-items-center overflow-hidden rounded-[5px] bg-[#202429] fiche:w-[100px] min-[1101px]:h-[119px] min-[1101px]:w-[124px]">
+                  {addon.image ? (
+                    <Image
+                      src={addon.image.url}
+                      alt=""
+                      fill
+                      sizes="124px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="px-2 text-center text-[8px] text-white/70">{addon.name}</span>
+                  )}
                 </span>
 
-                <span className="flex items-baseline gap-2">
-                  <span className="text-[1.05rem] font-bold">{formatPrice(addon.priceCents)}</span>
-                  {addon.hasOtherPackagings ? (
-                    <span className="text-xs text-muted">autres conditionnements sur la fiche</span>
+                {/* .extra-copy : surtitre, intitulé, description, prix. */}
+                <span className="flex min-w-0 flex-col gap-1.5 pr-2.5 fiche:pr-2">
+                  <small className="text-[7px] tracking-[1.1px] text-[#93968b] uppercase">
+                    {addon.variantName}
+                  </small>
+                  <strong className="text-[12px] tracking-[-0.2px] min-[1101px]:text-[13px]">
+                    {addon.name}
+                  </strong>
+                  {addon.tagline ? (
+                    <span className="text-[9px] leading-[1.5] text-[#83877d] fiche:text-[8px] min-[1101px]:text-[9px]">
+                      {addon.tagline}
+                    </span>
+                  ) : null}
+
+                  {/* Statut seulement s'il a été établi pour CE complément. */}
+                  {addon.fitment ? (
+                    <FitmentBadge status={addon.fitment} short className="w-fit" />
+                  ) : null}
+
+                  <b className="mt-1 text-[13px]">
+                    {formatPrice(addon.priceCents)}
+                    <em className="ml-[3px] text-[8px] font-normal text-[#8e9186] not-italic">
+                      {PACKAGING_LABELS[addon.packaging]}
+                      {addon.hasOtherPackagings ? ' · autres conditionnements sur la fiche' : null}
+                    </em>
+                  </b>
+
+                  {!selectionnable ? (
+                    <span className="text-[9px] text-muted-strong">
+                      {incompatible ? (
+                        <>
+                          Ne convient pas au véhicule retenu.{' '}
+                          <Link
+                            href={`/p/${addon.slug}`}
+                            className="font-semibold underline underline-offset-2"
+                          >
+                            Voir la fiche
+                          </Link>
+                        </>
+                      ) : (
+                        availabilityLabel(addon.availability)
+                      )}
+                    </span>
                   ) : null}
                 </span>
 
+                {/* .extra-toggle : la case, dessinée. */}
                 <span
-                  className={disponible ? 'text-xs text-ok' : 'text-xs text-muted'}
+                  aria-hidden="true"
+                  className={cn(
+                    'absolute top-3 right-3 grid size-[18px] place-items-center rounded-[5px] border fiche:top-3.5 fiche:right-3.5 fiche:size-[21px]',
+                    coche ? 'border-brand bg-brand text-white' : 'border-[#d6d9cf] bg-white',
+                  )}
                 >
-                  {availabilityLabel(addon.availability)}
+                  {coche ? <IconCheck className="size-3.5" strokeWidth={2} /> : null}
                 </span>
-              </span>
-            </Link>
+              </label>
+            </li>
+          )
+        })}
+      </ul>
 
-            <div className="border-t border-line p-3">
-              {retour ? (
-                <Alert tone={retour.tone} live="polite" className="mb-3 text-xs">
-                  {retour.text}
-                </Alert>
-              ) : null}
+      {/* .extras-summary : masquée tant que rien n'est coché. */}
+      {retenus.length > 0 ? (
+        <div className="mt-3.5 block items-center justify-between rounded-[7px] bg-[#f4f6f0] p-[17px] text-[10px] fiche:flex fiche:text-[11px]">
+          <p>
+            {retenus.length === 1
+              ? `1 complément retenu : ${retenus[0].name}`
+              : `${retenus.length} compléments retenus`}{' '}
+            — <strong>{formatPrice(total)}</strong> à ajouter à votre panier.
+          </p>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={ajouter}
+            className="mt-[9px] inline-flex min-h-11 items-center gap-2 text-[10px] font-bold hover:underline disabled:opacity-60 fiche:mt-0 fiche:min-h-0 fiche:text-[11px]"
+          >
+            {pending ? 'Ajout en cours…' : 'Ajouter les compléments sélectionnés'}
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      ) : null}
 
-              {incompatible ? (
-                /* On ne propose pas d'ajouter ce qu'on sait inadapté. */
-                <p className="text-xs text-muted-strong">
-                  Ne convient pas au véhicule retenu.{' '}
-                  <Link href={`/p/${addon.slug}`} className="font-semibold underline underline-offset-2">
-                    Voir la fiche
-                  </Link>
-                </p>
-              ) : achetable ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  block
-                  disabled={pending && busySlug === addon.slug}
-                  onClick={() => ajouter(addon)}
-                  iconLeft={<IconCart className="size-4" />}
-                >
-                  {pending && busySlug === addon.slug ? 'Ajout…' : 'Ajouter'}
-                </Button>
-              ) : (
-                <p className="text-xs text-muted-strong">
-                  Indisponible pour le moment.
-                </p>
-              )}
+      {feedback ? (
+        <Alert
+          tone={feedback.tone === 'ok' ? 'ok' : 'danger'}
+          live={feedback.tone === 'danger' ? 'assertive' : 'polite'}
+          className="mt-3.5"
+        >
+          {feedback.text}
+          {feedback.tone === 'ok' ? (
+            <>
+              {' '}
+              <Link href="/panier" className="font-semibold underline underline-offset-4">
+                Voir le panier
+              </Link>
+            </>
+          ) : null}
+        </Alert>
+      ) : null}
 
-              {!vehicleSelected ? (
-                <p className="mt-2 text-xs text-muted">
-                  Compatibilité non vérifiée : ajoutez votre véhicule.
-                </p>
-              ) : null}
-            </div>
-          </li>
-        )
-      })}
-    </ul>
+      {!vehicleSelected ? (
+        <p className="mt-3 text-[8px] leading-[1.7] text-[#999b92]">
+          Aucun véhicule n&apos;est sélectionné : la compatibilité de ces compléments n&apos;est pas
+          vérifiée.
+        </p>
+      ) : null}
+    </>
   )
 }

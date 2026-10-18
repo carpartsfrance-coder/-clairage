@@ -175,10 +175,15 @@ export const demoProducts: DemoProduct[] = [
     difficulty: 'EASY',
     kind: 'KIT',
     image: 'product.png',
+    /*
+      Pas de vue « montage » : la vignette dont on disposait était une capture
+      de maquette recadrée, bouton de lecture compris, pour une vidéo qui
+      n'existe pas. Un visuel d'interface incrusté dans une photo produit
+      promet une fonction absente.
+    */
     gallery: [
-      { file: 'fiche-vignette-rendu.jpg', role: 'RESULT', caption: 'Illustration de rendu — simulation de teinte.' },
-      { file: 'fiche-vignette-contenu.jpg', role: 'KIT_CONTENT', caption: 'Contenu du kit complet.' },
-      { file: 'fiche-vignette-montage.jpg', role: 'INSTALL', caption: 'Étape de montage.' },
+      { file: 'car-night.png', role: 'RESULT', caption: 'Illustration de rendu — simulation de teinte.' },
+      { file: 'product.png', role: 'KIT_CONTENT', caption: 'Contenu du kit complet.' },
     ],
     specs: [
       ['Culot', 'H7'],
@@ -188,13 +193,6 @@ export const demoProducts: DemoProduct[] = [
       ['Refroidissement', 'Ventilé'],
     ],
     variants: [
-      {
-        sku: 'LED-H7-6000K-PAIR',
-        name: 'Les ampoules seules',
-        packaging: 'PAIR',
-        priceCents: 6990,
-        stockOnHand: 64,
-      },
       {
         sku: 'KIT-LED-H7-6000K',
         name: 'Le kit complet',
@@ -206,6 +204,13 @@ export const demoProducts: DemoProduct[] = [
           { sku: 'ACC-ADAPT-H7', quantity: 2 },
           { sku: 'ACC-CANBUS-01', quantity: 2 },
         ],
+      },
+      {
+        sku: 'LED-H7-6000K-PAIR',
+        name: 'Les ampoules seules',
+        packaging: 'PAIR',
+        priceCents: 6990,
+        stockOnHand: 64,
       },
     ],
     featured: true,
