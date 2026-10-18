@@ -256,7 +256,7 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
   // Écrire une note interne est un droit à part : 'orders.view' ouvre la
   // lecture du dossier, pas l'écriture dedans. Sans cela, un rôle de
   // consultation se verrait offrir un formulaire d'écriture.
-  const showNote = can(staff.role, 'customers.note')
+  const showNote = can(staff.role, 'orders.note')
 
   // La fiche client est derrière 'customers.view', que tous les rôles ayant
   // 'orders.view' n'ont pas : sans ce test, le lien renverrait vers un refus.

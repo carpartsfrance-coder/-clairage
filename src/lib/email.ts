@@ -1,4 +1,5 @@
 import { prisma } from './db'
+import { TEMPLATES, renderEmail, type TemplateKey } from './email/templates'
 
 /**
  * Envoi des e-mails transactionnels.
@@ -13,17 +14,8 @@ import { prisma } from './db'
  * jamais pouvoir passer pour un envoi.
  */
 
-export type EmailTemplate =
-  | 'compte.bienvenue'
-  | 'compte.reinitialisation'
-  | 'commande.confirmation'
-  | 'commande.paiement'
-  | 'commande.expedition'
-  | 'commande.annulation'
-  | 'commande.remboursement'
-  | 'sav.ouverture'
-  | 'sav.reponse'
-  | 'sav.retour'
+/** Les clés viennent du catalogue de modèles : une seule liste, pas deux. */
+export type EmailTemplate = TemplateKey
 
 export type EmailMessage = {
   template: EmailTemplate
@@ -76,6 +68,19 @@ export function renderVariables(message: EmailMessage): Record<string, unknown> 
 export async function sendEmail(message: EmailMessage): Promise<{ simulated: boolean }> {
   const driver = currentDriver()
   const simulated = emailIsSimulated()
+
+  // Le corps est composé à partir du modèle, sauf si l'appelant a fourni le
+  // sien (envoi de test depuis le back-office). Les variables sensibles sont
+  // incluses au rendu et restent hors du journal.
+  if (!message.html && TEMPLATES[message.template]) {
+    const rendered = renderEmail(message.template, renderVariables(message))
+    message = {
+      ...message,
+      subject: message.subject || rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+    }
+  }
 
   if (simulated) {
     await trace(message, { simulated: true, provider: driver, status: 'simulated' })

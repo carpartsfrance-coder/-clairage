@@ -237,6 +237,40 @@ export async function listAdminProducts(filters: CatalogFilters) {
   if (filters.status) where.status = filters.status as Prisma.ProductWhereInput['status']
 
   try {
+    /**
+     * Le filtre de stock porte sur une valeur dérivée (`stockOnHand -
+     * stockReserved`, kits exclus). L'appliquer après pagination donnerait un
+     * total qui ne correspond pas à ce qu'on affiche — et le tableau de bord,
+     * lui, compte sur tout le catalogue. On restreint donc d'abord l'ensemble
+     * des identifiants concernés, puis on pagine dessus.
+     */
+    if (filters.stock === 'faible' || filters.stock === 'rupture') {
+      const candidates = await prisma.product.findMany({
+        where,
+        select: {
+          id: true,
+          variants: {
+            where: { components: { none: {} } },
+            select: { stockOnHand: true, stockReserved: true, lowStockThreshold: true },
+          },
+        },
+      })
+
+      const matching = candidates
+        .filter((product) => {
+          const bearing = product.variants
+          if (bearing.length === 0) return false
+          const lowest = Math.min(
+            ...bearing.map((v) => Math.max(0, v.stockOnHand - v.stockReserved)),
+          )
+          const threshold = Math.max(...bearing.map((v) => v.lowStockThreshold), 0)
+          return filters.stock === 'rupture' ? lowest === 0 : lowest > 0 && lowest <= threshold
+        })
+        .map((product) => product.id)
+
+      where.id = { in: matching }
+    }
+
     const [total, rows] = await Promise.all([
       prisma.product.count({ where }),
       prisma.product.findMany({
@@ -255,7 +289,7 @@ export async function listAdminProducts(filters: CatalogFilters) {
       }),
     ])
 
-    let items = rows.map((product) => {
+    const items = rows.map((product) => {
       // Un kit n'a pas de stock propre : on ne somme que les variantes qui en
       // portent un, sinon le total afficherait du vent.
       const stockBearing = product.variants.filter((v) => v.components.length === 0)
@@ -285,13 +319,6 @@ export async function listAdminProducts(filters: CatalogFilters) {
         updatedAt: product.updatedAt,
       }
     })
-
-    // Les filtres de stock portent sur une valeur dérivée : ils s'appliquent
-    // après lecture, sur la page courante, et la page le dit à l'écran.
-    if (filters.stock === 'rupture') items = items.filter((p) => p.lowest === 0)
-    if (filters.stock === 'faible') {
-      items = items.filter((p) => p.lowest > 0 && p.lowest <= p.threshold)
-    }
 
     return { items, total, page, pageCount: Math.max(1, Math.ceil(total / PER_PAGE)) }
   } catch (error) {

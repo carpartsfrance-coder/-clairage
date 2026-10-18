@@ -125,6 +125,31 @@ le code **retombe en simulation et le dit** plutôt que d'échouer en silence.
 `isTestMode` : une commande payée en mode test reste identifiable après coup,
 ce qui évite de la compter dans un chiffre d'affaires réel.
 
+### Modèles de messages
+
+Dix modèles couvrent les messages du cahier des charges : création et
+récupération de compte, confirmation de commande, paiement non abouti,
+expédition, annulation, remboursement, ouverture de demande SAV, réponse et
+instructions de retour.
+
+**Administration › Messages** les liste avec, pour chacun :
+
+- son **déclencheur** — quand il part, dit en une phrase ;
+- l'**aperçu HTML** rendu avec un jeu d'exemple, dans un cadre isolé ;
+- la **version texte brut**, qui part avec chaque message : les filtres
+  anti-spam pénalisent un HTML sans équivalent, et certains clients n'affichent
+  que celui-là ;
+- les **variables d'exemple** utilisées pour l'aperçu ;
+- un bouton d'**envoi de test** vers l'adresse de votre choix.
+
+Un bandeau en haut de l'écran dit si les envois partent réellement ou sont
+seulement journalisés. C'est l'information la plus importante de la page :
+personne ne doit croire qu'un message est parti alors qu'il a été enregistré
+avec la mention « simulé ».
+
+Les modèles n'annoncent aucun délai ni aucune garantie, et un test le vérifie :
+rien dans l'application ne permettrait de les tenir.
+
 ### Journaux
 
 | Table | Contenu |

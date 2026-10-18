@@ -386,7 +386,10 @@ const noteSchema = z.object({
 })
 
 export async function addOrderNote(_previous: AdminState, formData: FormData): Promise<AdminState> {
-  const staff = await requireStaff('orders.view')
+  // 'orders.note' et non 'orders.view' : écrire dans le dossier n'est pas le
+  // lire. Masquer le formulaire ne protégeait rien — l'action est atteignable
+  // sans jamais voir la page.
+  const staff = await requireStaff('orders.note')
 
   const parsed = noteSchema.safeParse({
     orderId: formData.get('orderId'),

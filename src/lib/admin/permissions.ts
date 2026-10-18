@@ -23,7 +23,14 @@ export const PERMISSIONS = [
   'orders.refund',
   /** Annuler une commande et remettre le stock à disposition. */
   'orders.cancel',
-  'orders.export',
+  /**
+   * Écrire une note interne sur une commande.
+   *
+   * Droit à part, et pas `orders.view` : lire une commande et y écrire ne sont
+   * pas la même chose. Garder une écriture derrière un droit de lecture
+   * laisserait un compte en consultation seule écrire dans le dossier.
+   */
+  'orders.note',
 
   'customers.view',
   /** Écrire une note interne, invisible du client. */
@@ -88,7 +95,7 @@ const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
     'dashboard.view',
     'orders.view',
     'orders.fulfil',
-    'orders.export',
+    'orders.note',
     'customers.view',
     'catalog.view',
     'vehicles.view',
@@ -99,6 +106,7 @@ const ROLE_PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
   SUPPORT: [
     'dashboard.view',
     'orders.view',
+    'orders.note',
     'customers.view',
     'customers.note',
     'catalog.view',

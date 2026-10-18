@@ -276,3 +276,24 @@ export function IconUser(p: IconProps) {
     </Svg>
   )
 }
+
+export function IconMail(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="3" y="5.5" width="18" height="13" rx="2" />
+      <path d="m3.8 7 7.1 5.4a1.8 1.8 0 0 0 2.2 0L20.2 7" />
+    </Svg>
+  )
+}
+
+/** Import de fichier : une feuille et une flèche qui entre. */
+export function IconImport(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M14 3.5H7a1.5 1.5 0 0 0-1.5 1.5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8z" />
+      <path d="M14 3.5V8h4.5" />
+      <path d="M12 10.5v5.5" />
+      <path d="m9.8 13.8 2.2 2.2 2.2-2.2" />
+    </Svg>
+  )
+}

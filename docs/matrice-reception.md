@@ -1,8 +1,9 @@
 # Matrice de réception
 
-État au 18 octobre 2026, après les étapes 1 à 8 : analyse, architecture, design
+État au 18 octobre 2026, après les étapes 1 à 9 : analyse, architecture, design
 system, header final, accueil, catalogue, parcours véhicule, fiche produit,
-panier, tunnel de commande, paiement, espace client et back-office.
+panier, tunnel de commande, paiement, espace client, back-office, imports et
+messages transactionnels.
 
 **La boutique n'est pas prête pour une ouverture commerciale.** Le back-office
 existe mais reste **en lecture seule sur le catalogue, les véhicules et le
@@ -186,7 +187,40 @@ en est chaque fonction, sans arrondi.
 | SAV | 🔸 | File et dossier consultables, échanges affichés, notes internes distinguées. **Lecture seule** : ni réponse, ni changement de statut |
 | Promotions | 🔸 | Liste consultable. **Les codes ne sont pas appliqués au panier** — l'écran l'affiche en avertissement |
 | Paramètres | 🔸 | Réglages, équipe (ADMIN seulement) et journal des actions consultables. **Aucune modification** |
-| Imports | ⬜ | Modélisés (reprise, rapport par ligne), moteur non écrit |
+| Imports | ✅ | Voir la section dédiée ci-dessous |
+
+### Imports
+
+| Fonction | État | Détail |
+| --- | --- | --- |
+| Trois formats documentés | ✅ | Produits et variantes, compatibilités, stocks. Les colonnes, exemples et fichiers types sont générés depuis le code : l'écran ne peut pas diverger |
+| Lecture CSV | ✅ | Point-virgule, virgule, tabulation ; BOM retiré ; guillemets, séparateur et sauts de ligne protégés ; nombres français et anglais. 25 tests |
+| Correspondance des colonnes | ✅ | Proposée automatiquement (intitulés accentués et ponctués reconnus), **corrigeable avant toute écriture**. Ce qui n'est pas reconnu est écarté, jamais deviné |
+| Prévisualisation | ✅ | Chaque ligne validée et stockée avec son verdict. **Rien n'est écrit à ce stade**, et l'écran le dit |
+| Détection des doublons | ✅ | Cherchés dans le fichier : la première ligne passe, les suivantes sont signalées avec le numéro de celle qui les précède. Vérifié en conditions réelles |
+| Règles de création / mise à jour | ✅ | Créer et mettre à jour · Créer seulement · Mettre à jour seulement |
+| Rapport par ligne | ✅ | Numéro de ligne, verdict et motif en clair : « Stock 63 → 120 (+57) », « Référence introuvable », « est un kit : son stock se calcule » |
+| Pas d'écrasement muet | ✅ | Une mise à jour dit quelle valeur change et avec quoi |
+| Reprise | ✅ | Écriture par lots de 50 avec curseur. Testé : 120 lignes, un lot écrit, reprise jusqu'au bout sans rejouer |
+| Historique | ✅ | Tous les imports, avec leurs compteurs et leur statut |
+| Garde-fous métier | ✅ | Les produits importés sont créés en **brouillon** ; une compatibilité sans statut devient « à vérifier », jamais « compatible » ; le stock d'un kit est refusé |
+| Taille et type de fichier | ✅ | 5 Mo maximum, .csv ou .txt. La limite de corps des actions est relevée à 6 Mo pour que le refus soit explicite plutôt qu'une requête coupée |
+| Médias importés | ⬜ | L'import n'accepte aucune image : les visuels se téléversent autrement |
+| Exports | ⬜ | **Aucun.** Ni catalogue, ni commandes, ni comptabilité. Les écrans le disent au lieu d'offrir un bouton mort |
+
+### Messages transactionnels
+
+| Fonction | État | Détail |
+| --- | --- | --- |
+| Dix modèles | ✅ | Bienvenue, réinitialisation, confirmation, paiement non abouti, expédition, annulation, remboursement, SAV reçu, réponse SAV, instructions de retour |
+| HTML et texte brut | ✅ | Composés depuis les mêmes blocs, donc jamais divergents. Tableaux et styles en ligne, pour s'afficher chez Outlook aussi |
+| Vérifiables avant envoi | ✅ | `Administration › Messages` : déclencheur, sujet, aperçu HTML dans un cadre isolé (`sandbox=""`), version texte, variables d'exemple |
+| Envoi de test | ✅ | Vers l'adresse de son choix, depuis l'écran |
+| Simulation identifiée | ✅ | Bandeau permanent, et le retour d'un envoi de test dit explicitement qu'aucun message n'est parti. Vérifié : tracé `simulated=true` en base |
+| Aucune promesse inventée | ✅ | Un test vérifie qu'aucun modèle n'annonce de délai ni de garantie. Pas de bouton de suivi sans URL de suivi |
+| Valeurs échappées | ✅ | Un motif de SAV contenant du balisage ne peut pas l'injecter dans le message |
+| Prestataire réel | ⚙️ | Pilotes MailerSend, Brevo et Resend écrits, aucun exercé : il manque `EMAIL_DRIVER`, `EMAIL_API_KEY` et `EMAIL_FROM` |
+| Domaine authentifié | ⬜ | SPF, DKIM et DMARC à poser avant tout envoi réel, sans quoi les messages partiront en indésirable |
 
 ## Infrastructure Render
 
@@ -219,7 +253,7 @@ en est chaque fonction, sans arrondi.
 
 ## Vérifications effectuées
 
-### Automatisées — `npm test` (100 tests, base PostgreSQL dédiée)
+### Automatisées — `npm test` (150 tests, base PostgreSQL dédiée)
 
 | Fichier | Ce qui est couvert |
 | --- | --- |
@@ -227,7 +261,10 @@ en est chaque fonction, sans arrondi.
 | `tests/reservation.test.ts` (13) | Réservation sur vraie base : vendable abaissé sans toucher au détenu, refus au-delà du stock, **2 commandes simultanées sur la dernière pièce → 1 seule passe**, **12 commandes sur 5 unités → exactement 5**, kit développé en composants, échec total si un composant manque, cycle réserver → payer → décompter, libération rejouée sans passer sous zéro, 20 numéros de commande concurrents tous distincts |
 | `tests/orders.test.ts` (11) | Confirmation et décompte, **3 rejeux séquentiels sans effet**, **3 webhooks simultanés → un seul décompte** (vérifié : le test échoue si l'on retire le verrou), refus d'un « payé » après un échec, libération à l'échec, refus d'un montant incohérent avec trace, paiement inconnu ignoré, **seul le panier d'origine est vidé**, e-mail tracé comme simulé, expiration des commandes impayées |
 | `tests/order-access.test.ts` (9) | Jeton d'accès : bon jeton accepté, jeton absent, faux jeton de même longueur, préfixe correct, commande sans jeton, propriétaire connecté ; lecture du paramètre, paramètre répété, valeur vide |
-| `tests/permissions.test.ts` (19) | Table des droits : tous les rôles couverts, aucune permission non déclarée, rien sans rôle ; ADMIN a tout ; READ_ONLY n'écrit nulle part ; **le préparateur ne peut ni rembourser ni annuler** ; le SAV ne peut pas rembourser ; le gestionnaire catalogue ne touche ni à l'argent ni à la préparation ; remboursement, annulation, paramètres et gestion de l'équipe réservés à ADMIN |
+| `tests/csv.test.ts` (25) | Délimiteur deviné (point-virgule, virgule, tabulation), délimiteur protégé par des guillemets, BOM retiré, saut de ligne et guillemet doublé dans un champ, fins de ligne Windows, lignes vides comptées ; nombres français et anglais, **« vide » distingué de « zéro »**, prix en centimes sans erreur de virgule flottante |
+| `tests/imports.test.ts` (14) | Correspondance automatique sur intitulés accentués, aucun champ associé deux fois ; produits créés en brouillon et prix « 69,90 » lu 6990 ; erreurs par ligne sans arrêter l'import ; **doublon signalé, première ligne conservée** ; détail du changement lors d'une mise à jour ; mode création seule ; **reprise : 120 lignes, un lot puis reprise jusqu'au bout** ; compatibilité sans statut → « à vérifier », date posée seulement si confirmée ; véhicule ou référence inconnus refusés ; mouvement de stock tracé ; stock d'un kit refusé ; correspondance corrigée à la main |
+| `tests/email-templates.test.ts` (9) | Les dix modèles rendus, sujet + HTML + texte, **aucune variable non remplacée**, HTML des valeurs échappé, montants en euros, **aucun délai garanti**, pas de bouton de suivi sans URL, message de bienvenue identique dans les deux cas |
+| `tests/permissions.test.ts` (21) | Table des droits : tous les rôles couverts, aucune permission non déclarée, rien sans rôle ; ADMIN a tout ; READ_ONLY n'écrit nulle part ; **le préparateur ne peut ni rembourser ni annuler** ; le SAV ne peut pas rembourser ; le gestionnaire catalogue ne touche ni à l'argent ni à la préparation ; remboursement, annulation, paramètres et gestion de l'équipe réservés à ADMIN |
 | `tests/email.test.ts` (3) | Les variables publiques sont journalisées, **les variables sensibles ne le sont jamais** (le lien de réinitialisation ne doit pas atterrir dans `EmailLog`), envoi marqué simulé sans prestataire |
 | `tests/auth.test.ts` (20) | Hachage : bon et mauvais mot de passe, jamais de clair stocké, sel aléatoire, paramètres portés par le condensé, condensé corrompu refusé sans lever ; règles de robustesse (longueur, phrase sans caractère spécial acceptée, mots devinables, reprise de l'e-mail, longueur démesurée) ; sessions : seul le condensé du jeton est stocké, valide/expirée/révoquée distinguées ; jetons de réinitialisation à usage unique, expirants, jamais stockés en clair ; redirection après connexion : chemin interne accepté, URL absolue, relative au protocole et antislash rejetés |
 | `tests/webhook.test.ts` (10) | Refus sans signature, avec un autre secret, sur corps modifié, sur horodatage rejoué, sans secret configuré ; acceptation et normalisation d'une signature valide ; session non encaissée non retenue ; expiration normalisée ; type inconnu ignoré ; mode test déduit de la clé |
@@ -288,6 +325,19 @@ en est chaque fonction, sans arrondi.
     apparaissent dans `AuditLog` en `access.denied`.
 21. **Mise en page** : l'en-tête et le pied de page de la boutique ne sont plus
     rendus sous `/admin` (vérifié dans le DOM, pas seulement à l'œil).
+22. **Import réel de bout en bout**, fichier volontairement sale (6 lignes : un
+    kit, une référence inconnue, un stock illisible, un doublon) :
+    analyse → correspondance → validation (« 4 lignes valides, 1 en erreur,
+    1 doublon. Rien n'a été écrit. ») → écriture → rapport.
+    Chaque ligne a reçu son verdict et son motif. En base : les deux stocks
+    attendus mis à jour, deux mouvements tracés, **le kit intact**, et
+    **ACC-ADAPT-H7 resté à la valeur de la première ligne, pas à celle du
+    doublon**. Journal : `import.start`, `import.preview`, `import.chunk`.
+23. **Écran des messages** : les dix modèles listés avec leur déclencheur,
+    aperçu HTML rendu dans un `iframe sandbox=""`, version texte et variables
+    d'exemple. Un envoi de test a répondu « Aucun envoi réel : le message a été
+    enregistré dans le journal avec la mention “simulé” », et la ligne
+    correspondante porte bien `simulated=true` en base.
 
 ## Ce qui n'a pas été vérifié
 

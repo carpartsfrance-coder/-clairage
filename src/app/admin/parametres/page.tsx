@@ -80,8 +80,9 @@ export default async function AdminSettingsPage() {
       <h1 className="text-xl font-extrabold">Paramètres</h1>
 
       <Alert tone="info">
-        La modification des paramètres depuis le back-office n&apos;est pas encore disponible : ils
-        se changent en base, ou par le script d&apos;amorçage.
+        La modification des paramètres depuis le back-office n&apos;est pas encore disponible : une
+        valeur déjà enregistrée se change en base. Le script d&apos;amorçage ne crée que les
+        réglages manquants — il ne réécrit jamais une valeur existante.
       </Alert>
 
       {/* ---------------------------------------------------------------------

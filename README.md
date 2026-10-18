@@ -111,6 +111,8 @@ src/
 scripts/
   run-jobs.ts          dépilage de JobQueue
   admin/               droits, garde d'accès, indicateurs du tableau de bord
+  imports/             lecture CSV, formats, validation, écriture par lots
+  email/               gabarit et modèles de messages
   auth/                mots de passe, sessions, limitation des tentatives
 scripts/
   run-jobs.ts          dépilage de JobQueue
@@ -138,4 +140,5 @@ Trois règles ont dicté la plupart des arbitrages, et il faut les tenir :
 
 - [docs/render.md](docs/render.md) — déploiement, variables, sauvegarde et restauration
 - [docs/administration.md](docs/administration.md) — rôles, premier administrateur, exploitation
+- [docs/imports.md](docs/imports.md) — formats d'import, déroulé, reprise, exports
 - [docs/matrice-reception.md](docs/matrice-reception.md) — état fonction par fonction

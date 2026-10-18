@@ -222,9 +222,9 @@ export default async function AdminTicketPage({
               Motif
             </h2>
             <Card className="mt-2 px-4 py-3">
-              <p className="text-sm font-semibold">{ticket.reason}</p>
+              <p className="text-sm font-semibold break-words">{ticket.reason}</p>
               {ticket.description ? (
-                <p className="mt-2 text-sm whitespace-pre-line text-muted-strong">
+                <p className="mt-2 text-sm break-words whitespace-pre-line text-muted-strong">
                   {ticket.description}
                 </p>
               ) : (
@@ -264,7 +264,9 @@ export default async function AdminTicketPage({
                       </time>
                       {message.internal ? <Badge tone="warn">Interne</Badge> : null}
                     </p>
-                    <p className="mt-1.5 text-sm whitespace-pre-line">{message.body}</p>
+                    <p className="mt-1.5 text-sm break-words whitespace-pre-line">
+                      {message.body}
+                    </p>
                     {message.mediaIds.length > 0 ? (
                       <p className="mt-1.5 text-xs text-muted">
                         {message.mediaIds.length} pièce{message.mediaIds.length > 1 ? 's' : ''}{' '}

@@ -11,6 +11,8 @@ import {
   IconCart,
   IconGear,
   IconHeadset,
+  IconImport,
+  IconMail,
   IconPencil,
   IconSliders,
   IconTruck,
@@ -44,9 +46,11 @@ const ENTRIES: Entry[] = [
   { href: '/admin/preparation', label: 'Préparation', permission: 'orders.fulfil', Icon: IconTruck },
   { href: '/admin/catalogue', label: 'Catalogue', permission: 'catalog.view', Icon: IconWrench },
   { href: '/admin/vehicules', label: 'Véhicules', permission: 'vehicles.view', Icon: IconCar },
+  { href: '/admin/imports', label: 'Imports', permission: 'imports.run', Icon: IconImport },
   { href: '/admin/clients', label: 'Clients', permission: 'customers.view', Icon: IconUser },
   { href: '/admin/sav', label: 'SAV', permission: 'sav.view', Icon: IconHeadset },
   { href: '/admin/promotions', label: 'Promotions', permission: 'promotions.view', Icon: IconPencil },
+  { href: '/admin/emails', label: 'Messages', permission: 'settings.view', Icon: IconMail },
   { href: '/admin/parametres', label: 'Paramètres', permission: 'settings.view', Icon: IconGear },
 ]
 

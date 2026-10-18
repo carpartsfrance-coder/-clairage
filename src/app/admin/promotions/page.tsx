@@ -69,12 +69,7 @@ export default async function AdminPromotionsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-extrabold">Promotions</h1>
-        <p className="mt-1 text-sm text-muted-strong">
-          {promotions.length} code{plural} enregistré{plural}.
-        </p>
-      </div>
+      <h1 className="text-xl font-extrabold">Promotions</h1>
 
       <Alert tone="warn" title="Ces codes ne remisent rien pour l’instant.">
         Le modèle de données existe, mais ni le panier ni le tunnel de commande ne lisent cette
@@ -82,85 +77,93 @@ export default async function AdminPromotionsPage() {
         communiqué à un client ne fonctionnerait pas.
       </Alert>
 
-      {promotions.length === 0 ? (
-        <EmptyState title="Aucun code promotionnel." />
-      ) : (
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[72rem] text-sm">
-              <caption className="sr-only">Codes promotionnels enregistrés</caption>
-              <thead>
-                <tr className="border-b border-line bg-surface-soft">
-                  <th scope="col" className={thClass}>
-                    Code
-                  </th>
-                  <th scope="col" className={thClass}>
-                    Libellé
-                  </th>
-                  <th scope="col" className={thClass}>
-                    Type
-                  </th>
-                  <th scope="col" className={`${thClass} text-right`}>
-                    Valeur
-                  </th>
-                  <th scope="col" className={thClass}>
-                    Période
-                  </th>
-                  <th scope="col" className={`${thClass} text-right`}>
-                    Minimum de commande
-                  </th>
-                  <th scope="col" className={`${thClass} text-right`}>
-                    Utilisations
-                  </th>
-                  <th scope="col" className={thClass}>
-                    Cumulable
-                  </th>
-                  <th scope="col" className={thClass}>
-                    Active
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {promotions.map((promotion) => (
-                  <tr key={promotion.id} className="border-b border-line last:border-b-0">
-                    <th scope="row" className={`${tdClass} text-left font-mono font-semibold`}>
-                      {promotion.code}
+      <section aria-labelledby="promotions-resultats" className="flex flex-col gap-2">
+        <h2 id="promotions-resultats" className="text-sm font-semibold">
+          {promotions.length} code{plural} enregistré{plural}
+        </h2>
+
+        {promotions.length === 0 ? (
+          <EmptyState title="Aucun code promotionnel." />
+        ) : (
+          <Card>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[72rem] text-sm">
+                <caption className="sr-only">Codes promotionnels enregistrés</caption>
+                <thead>
+                  <tr className="border-b border-line bg-surface-soft">
+                    <th scope="col" className={thClass}>
+                      Code
                     </th>
-                    <td className={tdClass}>
-                      <span className="block max-w-[22rem]">{promotion.label}</span>
-                    </td>
-                    <td className={`${tdClass} whitespace-nowrap`}>{typeCopy[promotion.type]}</td>
-                    <td className={`${tdClass} text-right whitespace-nowrap tabular-nums`}>
-                      {valueLabel(promotion.type, promotion.value)}
-                    </td>
-                    <td className={`${tdClass} whitespace-nowrap`}>
-                      {periodLabel(promotion.startsAt, promotion.endsAt)}
-                    </td>
-                    <td className={`${tdClass} text-right whitespace-nowrap tabular-nums`}>
-                      {promotion.minOrderCents !== null ? (
-                        formatPrice(promotion.minOrderCents)
-                      ) : (
-                        <span className="text-muted">aucun</span>
-                      )}
-                    </td>
-                    <td className={`${tdClass} text-right whitespace-nowrap tabular-nums`}>
-                      {promotion.redemptions} / {promotion.maxRedemptions ?? 'illimité'}
-                    </td>
-                    <td className={tdClass}>{promotion.stackable ? 'Oui' : 'Non'}</td>
-                    <td className={tdClass}>
-                      {promotion.active ? (
-                        <Badge tone="ok">Active</Badge>
-                      ) : (
-                        <Badge tone="neutral">Inactive</Badge>
-                      )}
-                    </td>
+                    <th scope="col" className={thClass}>
+                      Libellé
+                    </th>
+                    <th scope="col" className={thClass}>
+                      Type
+                    </th>
+                    <th scope="col" className={`${thClass} text-right`}>
+                      Valeur
+                    </th>
+                    <th scope="col" className={thClass}>
+                      Période
+                    </th>
+                    <th scope="col" className={`${thClass} text-right`}>
+                      Minimum de commande
+                    </th>
+                    <th scope="col" className={`${thClass} text-right`}>
+                      Utilisations
+                    </th>
+                    <th scope="col" className={thClass}>
+                      Cumulable
+                    </th>
+                    <th scope="col" className={thClass}>
+                      Active
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
+                </thead>
+                <tbody>
+                  {promotions.map((promotion) => (
+                    <tr key={promotion.id} className="border-b border-line last:border-b-0">
+                      <th scope="row" className={`${tdClass} text-left font-mono font-semibold`}>
+                        {promotion.code}
+                      </th>
+                      <td className={tdClass}>
+                        <span className="block max-w-[22rem]">{promotion.label}</span>
+                      </td>
+                      <td className={`${tdClass} whitespace-nowrap`}>
+                        {typeCopy[promotion.type]}
+                      </td>
+                      <td className={`${tdClass} text-right whitespace-nowrap tabular-nums`}>
+                        {valueLabel(promotion.type, promotion.value)}
+                      </td>
+                      <td className={`${tdClass} whitespace-nowrap`}>
+                        {periodLabel(promotion.startsAt, promotion.endsAt)}
+                      </td>
+                      <td className={`${tdClass} text-right whitespace-nowrap tabular-nums`}>
+                        {promotion.minOrderCents !== null ? (
+                          formatPrice(promotion.minOrderCents)
+                        ) : (
+                          <span className="text-muted">aucun</span>
+                        )}
+                      </td>
+                      <td className={`${tdClass} text-right whitespace-nowrap tabular-nums`}>
+                        {promotion.redemptions} / {promotion.maxRedemptions ?? 'illimité'}
+                      </td>
+                      <td className={tdClass}>{promotion.stackable ? 'Oui' : 'Non'}</td>
+                      <td className={tdClass}>
+                        {promotion.active ? (
+                          <Badge tone="ok">Active</Badge>
+                        ) : (
+                          <Badge tone="neutral">Inactive</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+      </section>
 
       <p className="text-sm text-muted">
         La création et la modification des codes depuis le back-office ne sont pas disponibles :

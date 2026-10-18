@@ -104,6 +104,9 @@ export default async function AdminDashboardPage({
     data.openTickets,
     data.lowStock,
     data.outOfStock,
+    // Affichée seulement si elle est non nulle : sans paiement de test,
+    // cette ligne n'apprendrait rien.
+    ...(data.testRevenue.value > 0 ? [data.testRevenue] : []),
   ]
 
   const canSeeOrders = can(staff.role, 'orders.view')

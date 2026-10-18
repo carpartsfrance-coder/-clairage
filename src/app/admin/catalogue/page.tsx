@@ -14,8 +14,8 @@ import { EmptyState } from '@/components/ui/Surface'
  *
  * Lecture seule : aucune action d'écriture n'existe encore côté back-office,
  * donc aucun bouton ne prétend le contraire. Le filtre de stock porte sur une
- * valeur dérivée, calculée après pagination : la page le dit à l'écran plutôt
- * que de laisser croire que le total lui obéit.
+ * valeur dérivée (stock vendable, kits exclus) : il est appliqué avant la
+ * pagination, pour que le total affiché corresponde à ce qu'on liste.
  */
 
 export const metadata: Metadata = {
@@ -88,10 +88,6 @@ export default async function AdminCatalogPage({
     <div className="container-page py-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-[1.5rem] leading-tight font-extrabold">Catalogue</h1>
-        <p className="text-sm text-muted-strong">
-          {total} produit{total === 1 ? '' : 's'} correspondant aux critères
-          {filters.stock ? ', avant filtre de stock' : ''}.
-        </p>
       </header>
 
       <section aria-labelledby="filtres-catalogue" className="mt-4">
@@ -150,13 +146,6 @@ export default async function AdminCatalogPage({
             ) : null}
           </div>
         </form>
-
-        {filters.stock ? (
-          <p className="mt-2 text-xs text-muted">
-            Le filtre de stock s&apos;applique à la page affichée : le total ci-dessus porte sur
-            l&apos;ensemble des produits correspondant aux autres critères.
-          </p>
-        ) : null}
       </section>
 
       <section aria-labelledby="liste-catalogue" className="mt-5">
@@ -170,7 +159,7 @@ export default async function AdminCatalogPage({
             title="Aucun produit"
             description={
               hasFilters
-                ? 'Aucun produit ne correspond à ces critères. Le filtre de stock ne porte que sur la page affichée : essayez une autre page ou retirez-le.'
+                ? 'Aucun produit ne correspond à ces critères.'
                 : "Le catalogue est vide. Il se peuple par le script d'amorçage."
             }
             action={hasFilters ? { label: 'Réinitialiser les filtres', href: '/admin/catalogue' } : undefined}

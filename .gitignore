@@ -12,3 +12,6 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /prisma/*.db
+
+# Scripts jetables de mise au point : jamais versionnés.
+scripts/_*

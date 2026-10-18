@@ -18,6 +18,10 @@ import { prisma } from '../db'
  *     pas sur la date de création : une commande créée le 31 et payée le 1er
  *     appartient au mois où l'argent est entré.
  *   - Les **remboursements sont déduits** du chiffre d'affaires, à leur date.
+ *   - Les commandes réglées avec un **paiement en mode test ou simulé** sont
+ *     exclues du chiffre d'affaires, et comptées à part. Les inclure
+ *     reviendrait à présenter de l'argent qui n'a jamais été encaissé comme une
+ *     recette — c'est précisément ce que `Payment.isTestMode` sert à éviter.
  */
 
 export type Period = '7d' | '30d' | '90d' | '365d'
@@ -60,6 +64,8 @@ export type DashboardData = {
   openTickets: Metric
   lowStock: Metric
   outOfStock: Metric
+  /** Montant réglé en mode test. Affiché seulement s'il est non nul. */
+  testRevenue: Metric
   /** Commandes payées non expédiées les plus anciennes d'abord. */
   oldestUnfulfilled: Array<{
     id: string
@@ -142,6 +148,12 @@ export async function getDashboard(period: Period = '30d'): Promise<DashboardDat
       'count',
       "Références dont le stock vendable est au niveau du seuil d'alerte ou en dessous, sans être à zéro.",
     ),
+    testRevenue: EMPTY_METRIC(
+      'testRevenue',
+      'Dont paiements de test',
+      'money',
+      `Commandes réglées avec une clé de test ou le paiement simulé, sur les ${label}. **Exclues** du chiffre d'affaires ci-dessus : aucun montant n'a été encaissé.`,
+    ),
     outOfStock: EMPTY_METRIC(
       'outOfStock',
       'Ruptures',
@@ -153,24 +165,49 @@ export async function getDashboard(period: Period = '30d'): Promise<DashboardDat
   }
 
   try {
-    const [paid, refundAgg, toPrepare, pendingPayments, openTickets, unfulfilled, variants] =
+    const [paid, testPaid, refundAgg, toPrepare, pendingPayments, openTickets, unfulfilled, variants] =
       await Promise.all([
         prisma.order.aggregate({
-          where: { paymentStatus: 'PAID', placedAt: { gte: from } },
+          // `none` : aucune ligne de paiement encaissée en mode test. Un
+          // paiement simulé porte lui aussi isTestMode, il est donc écarté.
+          where: {
+            paymentStatus: 'PAID',
+            placedAt: { gte: from },
+            payments: { none: { status: 'PAID', isTestMode: true } },
+          },
           _sum: { totalCents: true },
           _count: true,
+        }),
+        prisma.order.aggregate({
+          where: {
+            paymentStatus: 'PAID',
+            placedAt: { gte: from },
+            payments: { some: { status: 'PAID', isTestMode: true } },
+          },
+          _sum: { totalCents: true },
         }),
         prisma.refund.aggregate({
           where: { createdAt: { gte: from } },
           _sum: { amountCents: true },
         }),
+        // Mêmes critères que `listToPrepare` : le compteur et la file qu'il
+        // ouvre doivent donner le même nombre, sinon on ne sait plus lequel
+        // croire.
         prisma.order.count({
-          where: { paymentStatus: 'PAID', fulfillmentStatus: { in: ['UNFULFILLED', 'PARTIALLY_FULFILLED'] } },
+          where: {
+            paymentStatus: { in: ['PAID', 'PARTIALLY_REFUNDED'] },
+            fulfillmentStatus: { in: ['UNFULFILLED', 'PARTIALLY_FULFILLED'] },
+            status: { not: 'CANCELLED' },
+          },
         }),
         prisma.order.count({ where: { paymentStatus: 'PENDING', status: 'PENDING' } }),
         prisma.supportTicket.count({ where: { status: { notIn: ['CLOSED', 'REJECTED'] } } }),
         prisma.order.findMany({
-          where: { paymentStatus: 'PAID', fulfillmentStatus: 'UNFULFILLED' },
+          where: {
+            paymentStatus: { in: ['PAID', 'PARTIALLY_REFUNDED'] },
+            fulfillmentStatus: 'UNFULFILLED',
+            status: { not: 'CANCELLED' },
+          },
           orderBy: { placedAt: 'asc' },
           take: 8,
           select: { id: true, reference: true, placedAt: true, email: true, totalCents: true },
@@ -195,6 +232,8 @@ export async function getDashboard(period: Period = '30d'): Promise<DashboardDat
     const refunded = refundAgg._sum.amountCents ?? 0
     const netRevenue = grossRevenue - refunded
 
+    base.testRevenue.value = testPaid._sum.totalCents ?? 0
+    base.testRevenue.tone = base.testRevenue.value > 0 ? 'warn' : 'neutral'
     base.revenue.value = netRevenue
     base.refunds.value = refunded
     base.refunds.tone = refunded > 0 ? 'warn' : 'neutral'
@@ -206,7 +245,7 @@ export async function getDashboard(period: Period = '30d'): Promise<DashboardDat
     base.toPrepare.tone = toPrepare > 0 ? 'warn' : 'neutral'
 
     base.pendingPayments.value = pendingPayments
-    base.pendingPayments.href = '/admin/commandes?paiement=PENDING'
+    base.pendingPayments.href = '/admin/commandes?payment=PENDING'
 
     base.openTickets.value = openTickets
     base.openTickets.href = '/admin/sav'

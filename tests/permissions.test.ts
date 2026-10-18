@@ -135,6 +135,21 @@ describe('droits réservés à l’administration', () => {
   )
 })
 
+describe('notes de commande', () => {
+  it("n'est pas couverte par un simple droit de lecture", () => {
+    // Le défaut corrigé : l'écriture d'une note était gardée par 'orders.view',
+    // donc atteignable par un compte en consultation seule.
+    expect(can('READ_ONLY', 'orders.view')).toBe(true)
+    expect(can('READ_ONLY', 'orders.note')).toBe(false)
+  })
+
+  it('est ouverte à la préparation et au SAV, pas au catalogue', () => {
+    expect(can('FULFILLMENT', 'orders.note')).toBe(true)
+    expect(can('SUPPORT', 'orders.note')).toBe(true)
+    expect(can('CATALOG_MANAGER', 'orders.note')).toBe(false)
+  })
+})
+
 describe('canAny', () => {
   it('suffit qu’un seul droit soit présent', () => {
     expect(canAny('FULFILLMENT', ['orders.refund', 'orders.fulfil'])).toBe(true)
