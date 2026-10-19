@@ -10,6 +10,7 @@ import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { MakeSearch } from '@/components/packs/MakeSearch'
 import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { IconChevronRight } from '@/components/ui/icons'
+import { GenerationThumb } from '@/components/packs/GenerationThumb'
 
 type PageProps = { params: Promise<{ type: string; marque: string }> }
 
@@ -123,7 +124,8 @@ export default async function PacksMarquePage({ params }: PageProps) {
                     href={`/packs/${type}/${marque}/${model.slug}/${generation.slug}`}
                     className="flex min-h-14 items-center justify-between gap-4 px-4 py-2.5 transition-colors hover:bg-surface-soft"
                   >
-                    <span className="min-w-0">
+                    <GenerationThumb photo={generation.photo} className="h-[38px] w-[56px]" />
+                    <span className="min-w-0 flex-1">
                       <span className="block text-[12px] font-semibold">
                         {generation.name}
                         <span className="ml-2 font-normal text-[#686c67]">{generation.years}</span>

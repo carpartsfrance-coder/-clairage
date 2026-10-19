@@ -405,6 +405,7 @@ model Media {
   categoryHeroes  Category[]     @relation("CategoryHero")
   equipmentIllustrations LightingEquipment[] @relation("EquipmentIllustration")
   vehicleMakeLogos VehicleMake[] @relation("VehicleMakeLogo")
+  vehicleGenerationPhotos VehicleGeneration[] @relation("VehicleGenerationPhoto")
 
   @@index([nature])
 }
@@ -528,18 +529,24 @@ model VehicleModel {
 
 /// Génération / phase : c'est le niveau qui porte la période de production.
 model VehicleGeneration {
-  id        String       @id @default(cuid())
-  modelId   String
-  model     VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
-  slug      String
-  name      String // "Golf VII", "Golf VII phase 2"
-  phase     String? // "Phase 1", "Restylage"
-  yearFrom  Int
+  id           String       @id @default(cuid())
+  modelId      String
+  model        VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  slug         String
+  name         String // "Golf VII", "Golf VII phase 2"
+  phase        String? // "Phase 1", "Restylage"
+  yearFrom     Int
   /// Nul si la génération est toujours produite.
-  yearTo    Int?
-  active    Boolean      @default(true)
+  yearTo       Int?
+  /// Visuel de la génération, choisi parmi les médias. Facultatif, et il le
+  /// reste : la photo aide à se reconnaître, elle ne porte aucune information
+  /// dont dépende un achat. Sans elle, le parcours affiche le nom et les
+  /// millésimes, qui suffisent à identifier le véhicule.
+  photoMediaId String?
+  photo        Media?       @relation("VehicleGenerationPhoto", fields: [photoMediaId], references: [id], onDelete: SetNull)
+  active       Boolean      @default(true)
 
-  trims          VehicleTrim[]
+  trims        VehicleTrim[]
   configurations VehicleConfiguration[]
 
   @@unique([modelId, slug])

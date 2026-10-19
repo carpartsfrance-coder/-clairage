@@ -65,6 +65,11 @@ export type PackModel = {
     configurationCount: number
     /** Vrai dès qu'au moins une compatibilité est enregistrée. */
     hasFitments: boolean
+    /**
+     * Visuel de la génération. Facultatif, et purement d'aide à la
+     * reconnaissance : le nom et les millésimes identifient le véhicule.
+     */
+    photo: { url: string; alt: string } | null
   }>
 }
 
@@ -162,6 +167,9 @@ export async function getPackMake(
                   where: { active: true },
                   select: { _count: { select: { fitments: true } } },
                 },
+                // En « SET NULL » : supprimer un média détache le visuel sans
+                // emporter la génération, et la ligne s'affiche sans vignette.
+                photo: { select: { url: true, alt: true } },
               },
             },
           },
@@ -185,6 +193,9 @@ export async function getPackMake(
               phase: generation.phase,
               configurationCount: generation._count.configurations,
               hasFitments: generation.configurations.some((config) => config._count.fitments > 0),
+              photo: generation.photo
+                ? { url: generation.photo.url, alt: generation.photo.alt ?? generation.name }
+                : null,
             })),
           }))
           // Un modèle sans génération active n'ouvre sur rien.
