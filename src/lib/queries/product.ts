@@ -9,8 +9,10 @@ import {
 import {
   availabilityForKit,
   availabilityForVariant,
+  isPurchasable,
   type Availability,
 } from '../stock'
+import { recommendPackaging } from '../recommendation'
 
 /**
  * Lecture d'une fiche produit.
@@ -247,16 +249,23 @@ export async function getProduct(
       }
     })
 
-    // Le conditionnement conseillé n'existe que si le véhicule est connu : on
-    // retient le kit confirmé en priorité, puis n'importe quelle variante
-    // confirmée. Sans confirmation, aucune recommandation.
-    const confirmed = variants.filter(
-      (variant) => variant.fitment.status === 'CONFIRMED' && variant.availability.state !== 'OUT_OF_STOCK',
-    )
-    const recommended =
-      configurationId && confirmed.length > 0
-        ? (confirmed.find((variant) => variant.packaging === 'KIT') ?? confirmed[0])
-        : null
+    /*
+      Conditionnement conseillé : règle unique, partagée avec les résultats
+      véhicule et les cartes de listing (`lib/recommendation.ts`). Elle
+      préférait ici le kit par principe, et le moins cher ailleurs — d'où deux
+      conseils contraires pour la même pièce et le même véhicule.
+    */
+    const recommended = configurationId
+      ? recommendPackaging(
+          variants.map((variant) => ({
+            id: variant.id,
+            priceCents: variant.priceCents,
+            status: variant.fitment.status,
+            purchasable: isPurchasable(variant.availability),
+            missingRequired: variant.missingAccessories.length,
+          })),
+        )
+      : null
 
     const gallery: GalleryItem[] = product.media
       .map((entry) => ({

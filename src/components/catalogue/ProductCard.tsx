@@ -36,14 +36,23 @@ export function ProductCard({ product }: { product: ProductListItem }) {
           incompatible && 'opacity-75',
         )}
       >
-        <div className="relative aspect-[4/3] overflow-hidden rounded-t-md bg-white p-4">
+        {/*
+          Hauteur fixe en mobile plutôt qu'un 4/3.
+
+          Sur un téléphone, une carte pleine largeur en 4/3 donnait un visuel
+          de 268 px : le nom et le prix du premier résultat passaient sous la
+          ligne de flottaison. 150 px suffisent à reconnaître la pièce, et
+          c'est l'ordre de grandeur de la maquette de référence. Au-delà de
+          `sm`, les cartes sont en colonnes et le 4/3 reprend.
+        */}
+        <div className="relative h-[150px] overflow-hidden rounded-t-md bg-white p-3 sm:aspect-[4/3] sm:h-auto sm:p-4">
           {product.image ? (
             <Image
               src={product.image.url}
               alt=""
               fill
               sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-              className="object-contain p-4"
+              className="object-contain p-3 sm:p-4"
             />
           ) : (
             <div className="flex h-full items-center justify-center rounded-sm bg-surface-muted text-sm text-muted">
@@ -79,9 +88,38 @@ export function ProductCard({ product }: { product: ProductListItem }) {
 
           <div className="mt-auto flex items-end justify-between gap-3 pt-2">
             <div>
-              {product.kitPriceCents !== null ? (
-                /* Deux conditionnements, deux prix nommés : aucun des deux ne
-                   peut être pris pour l'autre. */
+              {product.recommended ? (
+                /*
+                  Un véhicule est retenu et un conditionnement est conseillé :
+                  c'est SON prix qui mène la carte. Mettre en avant le moins
+                  cher pendant que la fiche conseille l'autre donnait deux
+                  conseils contraires pour la même pièce. L'autre
+                  conditionnement reste nommé juste en dessous.
+                */
+                <>
+                  <p className="text-xs text-muted">{product.recommended.name}</p>
+                  <p className="text-[1.05rem] font-bold">
+                    {formatPrice(product.recommended.priceCents)}
+                  </p>
+                  {product.recommended.priceCents !== product.fromPriceCents ? (
+                    <p className="mt-0.5 text-xs text-muted-strong">
+                      Autre conditionnement à partir de{' '}
+                      <span className="font-semibold text-slate-ink">
+                        {formatPrice(product.fromPriceCents)}
+                      </span>
+                    </p>
+                  ) : product.kitPriceCents !== null ? (
+                    <p className="mt-0.5 text-xs text-muted-strong">
+                      Kit complet{' '}
+                      <span className="font-semibold text-slate-ink">
+                        {formatPrice(product.kitPriceCents)}
+                      </span>
+                    </p>
+                  ) : null}
+                </>
+              ) : product.kitPriceCents !== null ? (
+                /* Sans véhicule, rien n'est conseillé : les deux
+                   conditionnements sont nommés et chiffrés à égalité. */
                 <>
                   <p className="text-xs text-muted">Ampoules seules</p>
                   <p className="text-[1.05rem] font-bold">

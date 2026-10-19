@@ -227,7 +227,7 @@ export default async function RecherchePage({
       : []
 
   return (
-    <div className="container-page py-8 sm:py-10">
+    <div className="container-page py-4 sm:py-10">
       <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Recherche' }]} />
 
       {/*
@@ -238,9 +238,9 @@ export default async function RecherchePage({
         au-delà du premier écran et demi. Ne reste ici que ce qui répond à
         « qu'ai-je cherché, et combien y en a-t-il ? ».
       */}
-      <header className="mt-4 flex flex-col gap-3">
+      <header className="mt-2 flex flex-col gap-3 sm:mt-4">
         <div>
-          <h1 className="text-[1.5rem] leading-[1.15] font-extrabold sm:text-[2.125rem]">
+          <h1 className="text-[1.25rem] leading-[1.15] font-extrabold sm:text-[2.125rem]">
             {state.q ? `Résultats pour « ${state.q} »` : 'Rechercher'}
           </h1>
           {countLabel ? <p className="mt-1 text-sm font-semibold">{countLabel}</p> : null}
@@ -276,7 +276,12 @@ export default async function RecherchePage({
           </Button>
         </form>
 
-        <VehicleBar vehicle={vehicle} variant="compact" />
+        {/*
+          Masqué sous `sm` : l'en-tête du site porte déjà un bandeau véhicule
+          en mobile. Le répéter ici repoussait le premier résultat de 56 px
+          pour redire ce qui est affiché deux rangées plus haut.
+        */}
+        <VehicleBar vehicle={vehicle} variant="compact" className="max-sm:hidden" />
       </header>
 
       {!result ? (

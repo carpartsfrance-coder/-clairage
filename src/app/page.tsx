@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getFeaturedProducts, getHomeBlocks, getHomeFaq, getUniverses } from '@/lib/queries/home'
+import { getSelectedVehicle } from '@/lib/session'
 import { HeroSection } from '@/components/home/HeroSection'
 import { VehicleBand } from '@/components/home/VehicleBand'
 import { ReassuranceBand } from '@/components/home/ReassuranceBand'
@@ -26,11 +27,14 @@ export const metadata: Metadata = {
  * section isolément.
  */
 export default async function HomePage() {
-  const [blocks, universes, products, faq] = await Promise.all([
+  const [blocks, universes, products, faq, vehicle] = await Promise.all([
     getHomeBlocks(),
     getUniverses(6),
     getFeaturedProducts(4),
     getHomeFaq(4),
+    // Le bandeau de sélection s'ouvre sur le véhicule déjà retenu plutôt que
+    // de redemander ce que l'en-tête affiche.
+    getSelectedVehicle(),
   ])
 
   return (
@@ -40,7 +44,7 @@ export default async function HomePage() {
       <OrganizationStructuredData />
 
       <HeroSection content={blocks.hero} />
-      <VehicleBand content={blocks.vehicleBand} />
+      <VehicleBand content={blocks.vehicleBand} vehicle={vehicle} />
       <ReassuranceBand items={blocks.reassurance} />
       <UniversesSection content={blocks.universes} universes={universes} />
       <ComparisonSection content={blocks.comparison} />

@@ -1,6 +1,7 @@
 import Link from 'next/link'
+import type { SelectedVehicle } from '@/lib/session'
 import { VehicleSelector } from '@/components/vehicle/VehicleSelector'
-import { IconShield } from '@/components/ui/icons'
+import { IconArrowRight, IconShield } from '@/components/ui/icons'
 
 /**
  * Sélection du véhicule — `.finder-section` du code de référence.
@@ -13,6 +14,12 @@ import { IconShield } from '@/components/ui/icons'
  * connaît la cascade marque → modèle → année, l'étape d'équipement d'origine
  * et le véhicule enregistré en session. La référence n'en fournit qu'une
  * démonstration avec des `<option>` écrites en dur.
+ *
+ * **Deux états, parce que la question n'est pas la même.** Sans véhicule, le
+ * bandeau demande lequel. Avec un véhicule déjà retenu, il n'a plus de
+ * question à poser : il mène à ses éclairages, et range le formulaire derrière
+ * « Changer de véhicule ». Le bandeau redemandait l'information qu'il affichait
+ * déjà dans l'en-tête, avec des champs vides à re-saisir.
  */
 
 export type VehicleBandProps = {
@@ -20,11 +27,22 @@ export type VehicleBandProps = {
     title: string
     note: string
   }
+  /** Véhicule déjà retenu, s'il y en a un. */
+  vehicle?: SelectedVehicle | null
 }
 
 const TITLE_ID = 'selection-vehicule-titre'
 
-export function VehicleBand({ content }: VehicleBandProps) {
+export function VehicleBand({ content, vehicle = null }: VehicleBandProps) {
+  const initial = vehicle
+    ? {
+        type: vehicle.type,
+        makeId: vehicle.selection.makeId,
+        modelId: vehicle.selection.modelId,
+        year: vehicle.selection.year,
+      }
+    : null
+
   return (
     <section
       aria-labelledby={TITLE_ID}
@@ -41,7 +59,9 @@ export function VehicleBand({ content }: VehicleBandProps) {
               id={TITLE_ID}
               className="max-w-[275px] text-[16px] leading-[1.3] font-semibold tracking-[-0.3px] lg:max-w-none"
             >
-              {content.title}
+              {vehicle
+                ? `Vos éclairages pour la ${vehicle.label}`
+                : content.title}
             </h2>
           </div>
 
@@ -58,7 +78,46 @@ export function VehicleBand({ content }: VehicleBandProps) {
           </Link>
         </div>
 
-        <VehicleSelector layout="inline" />
+        {vehicle ? (
+          <>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/vehicule/resultats"
+                className="inline-flex min-h-[43px] items-center justify-center gap-[18px] rounded-[7px] bg-brand px-[17px] py-[11px] text-[11px] font-bold text-white transition-colors hover:bg-brand-dark"
+              >
+                Voir les éclairages compatibles
+                <IconArrowRight className="size-4 shrink-0" />
+              </Link>
+
+              {vehicle.equipmentLabel ? (
+                <p className="text-[10px] text-[#a7b0b5]">
+                  Équipement d&apos;origine retenu :{' '}
+                  <span className="text-white">{vehicle.equipmentLabel}</span>
+                </p>
+              ) : null}
+            </div>
+
+            {/*
+              Action distincte, et formulaire rangé : le client qui revient
+              n'a pas à traverser un formulaire pour atteindre ses éclairages.
+              `<details>` plutôt qu'un état React — l'ouverture, la fermeture
+              et le clavier sont assurés par le navigateur.
+            */}
+            <details className="group mt-[15px]">
+              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-[10px] text-[#adb4b6] underline underline-offset-[3px] hover:text-white [&::-webkit-details-marker]:hidden">
+                Changer de véhicule
+                <span aria-hidden="true" className="ml-2 transition-transform group-open:rotate-45">
+                  +
+                </span>
+              </summary>
+              <div className="mt-3">
+                <VehicleSelector layout="inline" initial={initial} />
+              </div>
+            </details>
+          </>
+        ) : (
+          <VehicleSelector layout="inline" initial={null} />
+        )}
 
         {/* .finder-footnote : 8 px, bouclier à gauche, exemple poussé à droite. */}
         <p className="mt-[11px] flex items-center gap-1.5 text-[8px] text-[#a7b0b5]">

@@ -15,6 +15,8 @@ import { RoadApprovalNote } from '@/components/ui/Badge'
 import {
   IconCart,
   IconCheck,
+  IconInfo,
+  IconShield,
   IconCheckCircle,
   IconChevronRight,
   IconClock,
@@ -157,7 +159,15 @@ export function BuyBox({
   // tout de suite plutôt qu'au paiement.
   const delivery = buildDeliveryTeaser(shippingOffers, total)
   const incompatible = selected.fitment.status === 'INCOMPATIBLE'
+  /*
+    Compatibilité non établie : l'achat reste autorisé — c'est la règle métier
+    existante, et refuser la vente d'une pièce dont on ignore seulement si elle
+    convient serait aussi faux que l'affirmer. Mais ce n'est plus l'action mise
+    en avant : vérifier passe devant, acheter reste possible et le dit.
+  */
+  const inconnu = Boolean(vehicleLabel) && selected.fitment.status === 'UNKNOWN'
   const purchasable = isPurchasable(selected.availability) && !incompatible
+  const lienVerification = `/verification?variante=${encodeURIComponent(selected.id)}`
 
   /** « 2 × Ampoules LED H7 + 2 × Adaptateur… », construit depuis la vraie composition. */
   const compositionSummary = selected.components
@@ -215,15 +225,35 @@ export function BuyBox({
         </div>
       ) : null}
 
-      {vehicleLabel && selected.fitment.status === 'UNKNOWN' ? (
-        <Alert tone="warn" title="Compatibilité non établie pour votre véhicule." className="mb-5">
-          Nous n&apos;avons pas l&apos;information nécessaire pour confirmer que cette référence
-          convient à votre {vehicleLabel}. Une donnée manquante ne vaut pas compatibilité —{' '}
-          <Link href="/contact" className="font-semibold underline underline-offset-4">
-            demandez-nous de vérifier
-          </Link>{' '}
-          avant d&apos;acheter.
-        </Alert>
+      {/*
+        Compatibilité non établie.
+
+        Le bandeau faisait un paragraphe au-dessus du prix et renvoyait vers
+        une page de contact non construite ; pendant ce temps le bouton
+        principal restait « Ajouter au panier ». La phrase tient maintenant en
+        une ligne, le détail est accessible juste dessous, et c'est la
+        vérification qui devient l'action principale (plus bas).
+      */}
+      {vehicleLabel && inconnu ? (
+        <div className="mb-5 rounded-[7px] bg-warn-soft p-3 text-[#8d5420]">
+          <p className="flex items-center gap-2.5 text-[11px] font-bold">
+            <IconInfo className="size-4 shrink-0" />
+            Compatibilité à vérifier pour votre {vehicleLabel}.
+          </p>
+          <details className="group mt-1.5">
+            <summary className="inline-flex min-h-9 cursor-pointer list-none items-center text-[10px] underline underline-offset-2 [&::-webkit-details-marker]:hidden">
+              Pourquoi
+              <span aria-hidden="true" className="ml-1.5 transition-transform group-open:rotate-45">
+                +
+              </span>
+            </summary>
+            <p className="mt-1 text-[10px] leading-[1.7]">
+              Nous n&apos;avons pas l&apos;information nécessaire pour confirmer que cette
+              référence convient à ce véhicule et à son équipement d&apos;origine. Une donnée
+              manquante ne vaut pas compatibilité : nous préférons le dire et vérifier.
+            </p>
+          </details>
+        </div>
       ) : null}
 
       {incompatible ? (
@@ -424,18 +454,50 @@ export function BuyBox({
         </span>
       </div>
 
-      {/* .primary.add-main : 51 px, pleine largeur, flèche poussée à droite. */}
-      <button
-        ref={boutonRef}
-        type="button"
-        disabled={!purchasable || pending}
-        onClick={submit}
-        className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-[7px] bg-brand px-[22px] py-3 text-[13px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[51px]"
-      >
-        <IconCart className="size-[19px] shrink-0" />
-        <span className="flex-1">{libelleBouton}</span>
-        <IconChevronRight className="ml-auto size-[17px] shrink-0" />
-      </button>
+      {/*
+        .primary.add-main — 51 px, pleine largeur.
+
+        Quand la compatibilité n'est pas établie, c'est la vérification qui
+        occupe cette place : proposer d'abord « Ajouter au panier » sur une
+        pièce dont on ignore si elle se monte revient à faire porter le risque
+        au client. L'achat reste possible juste en dessous, nommé pour ce
+        qu'il est.
+      */}
+      {inconnu ? (
+        <div className="flex flex-col gap-2">
+          <Link
+            href={lienVerification}
+            className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-[7px] bg-brand px-[22px] py-3 text-[13px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-h-[51px]"
+          >
+            <IconShield className="size-[19px] shrink-0" />
+            <span className="flex-1">Faire vérifier mon véhicule</span>
+            <IconChevronRight className="ml-auto size-[17px] shrink-0" />
+          </Link>
+
+          <button
+            ref={boutonRef}
+            type="button"
+            disabled={!purchasable || pending}
+            onClick={submit}
+            className="flex min-h-[42px] w-full items-center justify-center gap-3 rounded-md border border-[#c7c9c0] bg-white px-[17px] py-2.5 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <IconCart className="size-4 shrink-0" />
+            {pending ? 'Ajout en cours…' : 'Commander sans attendre la vérification'}
+          </button>
+        </div>
+      ) : (
+        <button
+          ref={boutonRef}
+          type="button"
+          disabled={!purchasable || pending}
+          onClick={submit}
+          className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-[7px] bg-brand px-[22px] py-3 text-[13px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[51px]"
+        >
+          <IconCart className="size-[19px] shrink-0" />
+          <span className="flex-1">{libelleBouton}</span>
+          <IconChevronRight className="ml-auto size-[17px] shrink-0" />
+        </button>
+      )}
 
       {feedback ? (
         <Alert
@@ -533,15 +595,28 @@ export function BuyBox({
               </span>
             </div>
 
-            <button
-              type="button"
-              disabled={!purchasable || pending}
-              onClick={submit}
-              className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-[7px] bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[44px] fiche:min-w-[255px] fiche:flex-none fiche:gap-3"
-            >
-              <IconCart className="size-[17px] shrink-0" />
-              <span className="truncate">{libelleBouton}</span>
-            </button>
+            {/* La barre fixe ne peut pas proposer autre chose que le bloc
+                d'achat : une compatibilité non établie n'y devient pas un
+                « Ajouter » tranquille. */}
+            {inconnu ? (
+              <Link
+                href={lienVerification}
+                className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-[7px] bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-h-[44px] fiche:min-w-[255px] fiche:flex-none fiche:gap-3"
+              >
+                <IconShield className="size-[17px] shrink-0" />
+                <span className="truncate">Faire vérifier mon véhicule</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled={!purchasable || pending}
+                onClick={submit}
+                className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-[7px] bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[44px] fiche:min-w-[255px] fiche:flex-none fiche:gap-3"
+              >
+                <IconCart className="size-[17px] shrink-0" />
+                <span className="truncate">{libelleBouton}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

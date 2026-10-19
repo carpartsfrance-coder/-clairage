@@ -182,6 +182,16 @@ export function VehicleMenu({
               <VehicleSelector
                 layout="stacked"
                 currentConfigurationId={vehicle?.configurationId ?? null}
+                initial={
+                  vehicle
+                    ? {
+                        type: vehicle.type,
+                        makeId: vehicle.selection.makeId,
+                        modelId: vehicle.selection.modelId,
+                        year: vehicle.selection.year,
+                      }
+                    : null
+                }
                 onDone={() => setOpen(false)}
               />
             </div>

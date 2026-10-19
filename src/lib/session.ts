@@ -21,6 +21,25 @@ export type SelectedVehicle = {
   /** Équipement d'origine, affiché en fiche produit. */
   equipmentLabel: string | null
   type: 'CAR' | 'MOTORCYCLE'
+  /**
+   * De quoi repartir de cette sélection dans un formulaire.
+   *
+   * Les formulaires s'ouvraient vides alors que le véhicule était affiché dans
+   * l'en-tête : il fallait re-saisir ce qui était déjà connu. Ce sont les
+   * identifiants attendus par le sélecteur, pas des libellés.
+   *
+   * `year` n'est pas la valeur saisie par le client : seule la génération est
+   * enregistrée, et le millésime exact n'est pas conservé. C'est donc la
+   * première année de la génération — elle désigne la même génération au
+   * moment de valider, ce qui est tout ce dont le formulaire a besoin.
+   */
+  selection: {
+    makeId: string
+    modelId: string
+    generationId: string
+    year: number
+    equipmentId: string
+  }
 }
 
 export type CartSummary = {
@@ -63,6 +82,13 @@ export async function getSelectedVehicle(): Promise<SelectedVehicle | null> {
       label: `${generation.model.make.name} ${generation.name} · ${years}`,
       equipmentLabel: config.equipment.label,
       type: generation.model.make.type === 'MOTORCYCLE' ? 'MOTORCYCLE' : 'CAR',
+      selection: {
+        makeId: generation.model.make.id,
+        modelId: generation.model.id,
+        generationId: generation.id,
+        year: generation.yearFrom,
+        equipmentId: config.equipmentId,
+      },
     }
   } catch {
     // Base indisponible : on n'affiche pas de véhicule plutôt qu'un faux.

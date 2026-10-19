@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { getSelectedVehicle } from '@/lib/session'
 import { fitmentSortWeight, type FitmentStatus } from '@/lib/fitment'
+import { recommendPackaging } from '@/lib/recommendation'
+import { availabilityForKit, availabilityForVariant, isPurchasable } from '@/lib/stock'
 import { cn } from '@/lib/cn'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
@@ -40,6 +42,15 @@ type ResultLine = {
   priceCents: number
   /** Vrai quand ce conditionnement contient d'autres références (kit). */
   isKit: boolean
+  /**
+   * Accessoires indispensables que ce conditionnement ne fournit pas.
+   *
+   * C'est ce qui décide du conseil : un conditionnement qui ne se monte pas
+   * seul ne peut pas être « conseillé » avec son seul prix.
+   */
+  missingRequired: number
+  /** Vendable en l'état : on ne conseille pas une rupture. */
+  purchasable: boolean
 }
 
 /**
@@ -81,9 +92,12 @@ async function getByPosition(configurationId: string): Promise<PositionGroup[] |
       where: { configurationId, variant: { active: true, product: { status: 'PUBLISHED' } } },
       include: {
         position: true,
+        accessories: { select: { variantId: true, required: true } },
         variant: {
           include: {
-            components: { select: { id: true } },
+            // La composition sert deux fois : savoir ce que le conditionnement
+            // fournit déjà, et calculer sa disponibilité réelle.
+            components: { include: { component: true } },
             product: {
               include: {
                 media: {
@@ -134,6 +148,26 @@ async function getByPosition(configurationId: string): Promise<PositionGroup[] |
         variantName: row.variant.name,
         priceCents: row.variant.priceCents,
         isKit: row.variant.components.length > 0,
+        missingRequired: (() => {
+          // Ce que le conditionnement fournit lui-même ne lui manque pas.
+          const fournis = new Set(row.variant.components.map((entry) => entry.componentId))
+          return row.accessories.filter(
+            (accessoire) => accessoire.required && !fournis.has(accessoire.variantId),
+          ).length
+        })(),
+        // Même calcul de disponibilité que la fiche produit : sans lui, cette
+        // page pourrait conseiller un conditionnement que la fiche écarte.
+        purchasable: isPurchasable(
+          row.variant.components.length > 0
+            ? availabilityForKit(
+                row.variant.components.map((entry) => ({
+                  quantity: entry.quantity,
+                  required: entry.required,
+                  component: entry.component,
+                })),
+              )
+            : availabilityForVariant(row.variant),
+        ),
       })
 
       // Le statut de la carte est le MEILLEUR de ses conditionnements : si un
@@ -278,13 +312,23 @@ export default async function Page() {
 
               <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {group.products.map((product) => {
-                  // Conditionnement mis en avant : le moins cher parmi ceux
-                  // dont la compatibilité est CONFIRMÉE. Sans confirmation,
-                  // aucune recommandation — les lignes restent présentées à
-                  // égalité, ce qui est la seule chose honnête à faire quand on
-                  // ne sait pas.
-                  const recommande =
-                    product.lines.find((line) => line.status === 'CONFIRMED') ?? null
+                  /*
+                    Conditionnement mis en avant : la règle partagée avec la
+                    fiche produit et les cartes de listing. Elle prenait ici le
+                    premier confirmé — donc le moins cher, les lignes étant
+                    triées par prix — ce qui conseillait les ampoules seules
+                    tout en annonçant sur la même carte que les accessoires
+                    n'étaient pas inclus.
+                  */
+                  const recommande = recommendPackaging(
+                    product.lines.map((line) => ({
+                      id: line.id,
+                      priceCents: line.priceCents,
+                      status: line.status,
+                      purchasable: line.purchasable,
+                      missingRequired: line.missingRequired,
+                    })),
+                  )
 
                   return (
                     <li

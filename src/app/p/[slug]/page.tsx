@@ -119,11 +119,27 @@ export default async function ProductPage({ params }: PageProps) {
   const rendu = product.gallery.find((item) => item.role === 'RESULT')
   const visuelKit = product.gallery.find((item) => item.role === 'KIT_CONTENT') ?? product.gallery[0]
 
+  /*
+    Une section ne s'affiche que si elle a quelque chose à dire, et son ancre
+    disparaît avec elle.
+
+    La fiche montrait « Aucun guide de montage n'est encore publié » et
+    « Aucun avis pour le moment » sous deux onglets qui promettaient du
+    contenu : trois clics pour apprendre qu'il n'y a rien. Rien n'est inventé
+    pour les remplir — elles s'effacent, et l'assistance reste joignable en bas
+    de page comme dans le bloc d'achat.
+  */
+  const aContenuKit = Boolean(kitVariant) || product.specs.length > 0
+  const aContenuMontage = product.guides.length > 0 || product.difficulty !== 'UNKNOWN'
+  const aContenuQuestions = product.faq.length > 0 || product.reviews.length > 0
+
   const sections = [
     ...(rendu ? [{ href: '#rendu', label: 'Le changement' }] : []),
-    { href: '#dans-votre-kit', label: kitVariant ? 'Dans votre kit' : 'Caractéristiques' },
-    { href: '#montage', label: 'Installation' },
-    { href: '#questions', label: 'Vos questions' },
+    ...(aContenuKit
+      ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans votre kit' : 'Caractéristiques' }]
+      : []),
+    ...(aContenuMontage ? [{ href: '#montage', label: 'Installation' }] : []),
+    ...(aContenuQuestions ? [{ href: '#questions', label: 'Vos questions' }] : []),
   ]
 
   const barres = DIFFICULTY_BARS[product.difficulty] ?? 0
@@ -266,7 +282,7 @@ export default async function ProductPage({ params }: PageProps) {
         </section>
 
         {/* ---------------- .section-nav ---------------- */}
-        <SectionNav items={sections} />
+        {sections.length > 0 ? <SectionNav items={sections} /> : null}
 
         {/* ---------------- #rendu ---------------- */}
         {rendu ? (
@@ -278,8 +294,10 @@ export default async function ProductPage({ params }: PageProps) {
           />
         ) : null}
 
+        {/* ---------------- #dans-votre-kit ---------------- */}
+        {aContenuKit ? (
+        <>
         {/*
-          ---------------- #contenu ----------------
           La référence nomme cette section `#contenu`. Cet identifiant est déjà
           pris ici : le lien d'évitement du gabarit pointe sur `<main
           id="contenu">`. Deux éléments portaient donc le même identifiant, et
@@ -335,8 +353,11 @@ export default async function ProductPage({ params }: PageProps) {
             </div>
           ) : null}
         </section>
+        </>
+        ) : null}
 
         {/* ---------------- #montage ---------------- */}
+        {aContenuMontage ? (
         <section
           id="montage"
           aria-labelledby="titre-montage"
@@ -378,13 +399,17 @@ export default async function ProductPage({ params }: PageProps) {
                   'Difficulté de montage non évaluée pour cette référence'}
               </p>
 
-              <ButtonLink
-                href="/guides"
-                variant="secondary"
-                className="mt-4 min-h-[42px] gap-4 rounded-md px-[17px] text-[11px] fiche:mt-5"
-              >
-                Découvrir les guides
-              </ButtonLink>
+              {/* Le bouton ne s'affiche que s'il mène quelque part : sans
+                  guide publié, il ouvrait une page vide. */}
+              {product.guides.length > 0 ? (
+                <ButtonLink
+                  href="/guides"
+                  variant="secondary"
+                  className="mt-4 min-h-[42px] gap-4 rounded-md px-[17px] text-[11px] fiche:mt-5"
+                >
+                  Découvrir les guides
+                </ButtonLink>
+              ) : null}
             </div>
 
             <div className="mt-[30px] fiche:mt-0">
@@ -420,21 +445,7 @@ export default async function ProductPage({ params }: PageProps) {
                     </li>
                   ))}
                 </ol>
-              ) : (
-                /*
-                  La référence déroule trois étapes rédigées. Elles ne sont pas
-                  reprises : écrire « préparez, installez, vérifiez » sans guide
-                  publié donnerait l'apparence d'un accompagnement qui n'existe
-                  pas encore pour cette référence.
-                */
-                <p className="max-w-[360px] text-[11px] leading-[1.8] text-[#787a73]">
-                  Aucun guide de montage n&apos;est encore publié pour cette référence.{' '}
-                  <Link href="/contact" className="font-semibold underline underline-offset-[3px]">
-                    Demandez-nous la marche à suivre
-                  </Link>{' '}
-                  — nous répondons au cas par cas.
-                </p>
-              )}
+              ) : null}
 
               {/*
                 Contenu et restrictions du conditionnement CHOISI : ce que le
@@ -459,6 +470,7 @@ export default async function ProductPage({ params }: PageProps) {
             </div>
           </div>
         </section>
+        ) : null}
 
         {/* ---------------- #complements ---------------- */}
         {product.optionalAddons.length > 0 ? (
@@ -501,6 +513,7 @@ export default async function ProductPage({ params }: PageProps) {
         ) : null}
 
         {/* ---------------- #questions ---------------- */}
+        {aContenuQuestions ? (
         <section
           id="questions"
           aria-labelledby="titre-questions"
@@ -553,42 +566,41 @@ export default async function ProductPage({ params }: PageProps) {
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-[11px] text-[#7b8074]">
-                Aucune question n&apos;est encore publiée pour cette référence.
-              </p>
-            )}
+            ) : null}
 
             {/*
-              Les avis n'existent pas dans la référence. Ils restent : c'est une
-              fonction réelle de la boutique, et sa section dit franchement
-              qu'elle est vide tant qu'aucun avis n'a été déposé.
+              Les avis n'existent pas dans la référence. Ils restent une
+              fonction réelle de la boutique — mais le bloc ne s'affiche que
+              s'il y en a. Annoncer « Aucun avis pour le moment » occupait un
+              écran pour ne rien dire, et aucun avis n'est fabriqué pour le
+              remplir.
             */}
-            <h3 className="mt-10 text-[12px] font-bold">Avis</h3>
             {product.reviews.length > 0 ? (
-              <ul className="mt-3 grid gap-3 fiche:grid-cols-2">
-                {product.reviews.map((review, index) => (
-                  <li key={index}>
-                    <Card className="h-full p-4">
-                      <p className="text-[12px] font-bold">{review.title ?? review.authorName}</p>
-                      <p className="mt-1 text-[10px] leading-[1.8] text-[#7b8074]">{review.body}</p>
-                      <p className="mt-2 text-[9px] text-muted">
-                        {review.authorName}
-                        {review.verifiedPurchase ? ' · achat vérifié' : null}
-                      </p>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState
-                className="mt-3"
-                title="Aucun avis pour le moment."
-                description="Les avis seront publiés ici lorsque des clients en auront déposé après un achat. Rien n'est affiché tant qu'il n'y en a pas."
-              />
-            )}
+              <>
+                <h3 className="mt-10 text-[12px] font-bold">Avis</h3>
+                <ul className="mt-3 grid gap-3 fiche:grid-cols-2">
+                  {product.reviews.map((review, index) => (
+                    <li key={index}>
+                      <Card className="h-full p-4">
+                        <p className="text-[12px] font-bold">
+                          {review.title ?? review.authorName}
+                        </p>
+                        <p className="mt-1 text-[10px] leading-[1.8] text-[#7b8074]">
+                          {review.body}
+                        </p>
+                        <p className="mt-2 text-[9px] text-muted">
+                          {review.authorName}
+                          {review.verifiedPurchase ? ' · achat vérifié' : null}
+                        </p>
+                      </Card>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
           </div>
         </section>
+        ) : null}
 
         {/* ---------------- #assistance ---------------- */}
         <section

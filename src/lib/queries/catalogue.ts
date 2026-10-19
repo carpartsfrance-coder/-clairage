@@ -7,7 +7,13 @@ import {
   resolveFitments,
   type FitmentStatus,
 } from '../fitment'
-import { availabilityForKit, availabilityForVariant, type Availability } from '../stock'
+import {
+  availabilityForKit,
+  availabilityForVariant,
+  isPurchasable,
+  type Availability,
+} from '../stock'
+import { recommendPackaging, recommendationReason } from '../recommendation'
 
 /**
  * Lectures du catalogue : index des catégories, listes filtrées, recherche.
@@ -55,6 +61,15 @@ export type ProductListItem = {
   availability: Availability
   /** `null` tant qu'aucun véhicule n'est sélectionné : on n'affirme rien. */
   fitment: FitmentStatus | null
+  /**
+   * Conditionnement conseillé pour le véhicule retenu.
+   *
+   * `null` sans véhicule, ou tant qu'aucun conditionnement n'est confirmé. La
+   * règle est celle de `lib/recommendation.ts`, partagée avec la fiche produit
+   * et les résultats véhicule : la carte met donc en avant le même prix que
+   * ces deux écrans.
+   */
+  recommended: { priceCents: number; name: string; reason: string | null } | null
 }
 
 export type SortKey = 'pertinence' | 'prix-croissant' | 'prix-decroissant' | 'nouveautes'
@@ -361,6 +376,42 @@ export async function listProducts(
           variantCount: product.variants.length,
           availability,
           fitment: configurationId ? bestStatus(statuses) : null,
+          recommended: (() => {
+            if (!configurationId) return null
+
+            const candidats = product.variants.map((variant) => {
+              const fitment = fitments.get(variant.id)
+              const fournis = new Set(variant.components.map((entry) => entry.componentId))
+              return {
+                id: variant.id,
+                name: variant.name,
+                priceCents: variant.priceCents,
+                status: fitment?.status ?? 'UNKNOWN',
+                purchasable: isPurchasable(
+                  variant.components.length > 0
+                    ? availabilityForKit(
+                        variant.components.map((entry) => ({
+                          quantity: entry.quantity,
+                          required: entry.required,
+                          component: entry.component,
+                        })),
+                      )
+                    : availabilityForVariant(variant),
+                ),
+                missingRequired: (fitment?.accessories ?? []).filter(
+                  (accessoire) => accessoire.required && !fournis.has(accessoire.variantId),
+                ).length,
+              }
+            })
+
+            const retenu = recommendPackaging(candidats)
+            if (!retenu) return null
+            return {
+              priceCents: retenu.priceCents,
+              name: retenu.name,
+              reason: recommendationReason(retenu, candidats),
+            }
+          })(),
         }
       })
 

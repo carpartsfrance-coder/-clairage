@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/Button'
@@ -24,26 +24,54 @@ import { IconArrowRight, IconCar, IconMotorcycle } from '@/components/ui/icons'
 type Option = { id: string; name: string }
 type VehicleType = 'CAR' | 'MOTORCYCLE'
 
+/** Sélection déjà enregistrée, pour rouvrir le formulaire là où on l'a laissé. */
+export type VehicleSelectorInitial = {
+  type: VehicleType
+  makeId: string
+  modelId: string
+  year: number
+}
+
 export function VehicleSelector({
   layout = 'inline',
   currentConfigurationId = null,
+  initial = null,
   onDone,
   className,
 }: {
   layout?: 'inline' | 'stacked'
   currentConfigurationId?: string | null
+  /**
+   * Véhicule déjà retenu. Le formulaire s'ouvre dessus au lieu de repartir de
+   * zéro : il était vide alors que l'en-tête affichait le véhicule, et il
+   * fallait tout re-saisir pour changer une seule chose.
+   */
+  initial?: VehicleSelectorInitial | null
   onDone?: () => void
   className?: string
 }) {
   const router = useRouter()
   const baseId = useId()
-  const [type, setType] = useState<VehicleType>('CAR')
+  const [type, setType] = useState<VehicleType>(initial?.type ?? 'CAR')
   const [makes, setMakes] = useState<Option[]>([])
   const [models, setModels] = useState<Option[]>([])
   const [years, setYears] = useState<number[]>([])
-  const [makeId, setMakeId] = useState('')
-  const [modelId, setModelId] = useState('')
-  const [year, setYear] = useState('')
+  const [makeId, setMakeId] = useState(initial?.makeId ?? '')
+  const [modelId, setModelId] = useState(initial?.modelId ?? '')
+  const [year, setYear] = useState(initial ? String(initial.year) : '')
+
+  /*
+    L'effet ci-dessous vide les champs quand on bascule voiture ↔ moto. Au
+    premier rendu, il effaçait la sélection reprise avant même qu'elle
+    s'affiche.
+
+    On compare donc au type précédent au lieu de sauter « le premier
+    passage » : en développement, React joue les effets deux fois, un
+    garde-fou à usage unique est consommé par le premier appel et le second
+    vide quand même. Ici, tant que le type n'a pas changé, il n'y a rien à
+    vider — que l'effet soit rejoué ou non.
+  */
+  const typePrecedent = useRef(type)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -52,11 +80,14 @@ export function VehicleSelector({
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    setMakeId('')
-    setModelId('')
-    setYear('')
-    setModels([])
-    setYears([])
+    if (typePrecedent.current !== type) {
+      setMakeId('')
+      setModelId('')
+      setYear('')
+      setModels([])
+      setYears([])
+    }
+    typePrecedent.current = type
     fetch(`/api/vehicules/marques?type=${type}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('indisponible'))))
       .then((data: { items: Option[] }) => {

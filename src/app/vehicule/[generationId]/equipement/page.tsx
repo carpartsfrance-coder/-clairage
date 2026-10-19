@@ -11,6 +11,7 @@ import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { ButtonLink } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Surface'
 import { IconChevronRight } from '@/components/ui/icons'
+import { cn } from '@/lib/cn'
 
 /**
  * Étape d'équipement lumineux d'origine.
@@ -130,6 +131,10 @@ export default async function Page({
   const generation = read.generation
   if (!generation) notFound()
 
+  // Équipement déjà retenu, pour le marquer au lieu de repartir de zéro.
+  const store = await cookies()
+  const configurationRetenue = store.get(VEHICLE_COOKIE)?.value ?? null
+
   /**
    * Enregistre la configuration choisie pour la session, puis enchaîne sur les
    * résultats. Le cookie est la même clé que celle lue par getSelectedVehicle.
@@ -174,29 +179,26 @@ export default async function Page({
         ]}
       />
 
+      {/*
+        La question d'abord, les choix tout de suite après.
+
+        Cet écran ouvrait sur un paragraphe de six lignes expliquant pourquoi
+        la question se pose : sur un téléphone, il fallait le faire défiler
+        avant de voir le premier choix. L'explication n'a pas disparu — elle
+        est repliée sous les cartes, là où elle sert ceux qui hésitent.
+      */}
       <p className="eyebrow mt-6 text-brand">Équipement d&apos;origine</p>
-      <h1 className="mt-2 max-w-3xl text-[1.75rem] leading-[1.15] font-extrabold sm:text-[2.125rem]">
-        Quel est l&apos;éclairage d&apos;origine de votre {make.name} {generation.name} ?
+      <h1 className="mt-2 max-w-3xl text-[25px] leading-[1.15] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
+        Quel éclairage avez-vous d&apos;origine ?
       </h1>
 
-      <p className="mt-3 text-sm text-muted-strong">
-        {generation.model.name} · {years}
+      <p className="mt-2 text-[11px] text-muted-strong">
+        {make.name} {generation.name} · {years}
         {generation.phase ? ` · ${generation.phase}` : ''}
       </p>
 
-      <p className="mt-5 max-w-2xl text-base text-muted-strong">
-        C&apos;est l&apos;équipement monté en usine qui détermine ce qui peut le remplacer : un
-        phare halogène et un xénon d&apos;origine n&apos;acceptent pas la même pièce, même quand le
-        culot porte le même nom. En cas de doute, l&apos;information est lisible sur l&apos;ampoule
-        déposée, ou vous pouvez{' '}
-        <Link href={contactPath} className="font-semibold text-brand underline underline-offset-4">
-          demander à notre équipe
-        </Link>
-        .
-      </p>
-
-      <section aria-labelledby="equipements-title" className="mt-10">
-        <h2 id="equipements-title" className="text-lg font-bold">
+      <section aria-labelledby="equipements-title" className="mt-6">
+        <h2 id="equipements-title" className="sr-only">
           Équipements documentés pour cette génération
         </h2>
 
@@ -225,7 +227,12 @@ export default async function Page({
                       type="submit"
                       name="configurationId"
                       value={config.id}
-                      className="flex w-full items-center gap-4 rounded-md border border-line-strong p-4 text-left transition-colors hover:border-slate-ink"
+                      className={cn(
+                        'flex w-full items-center gap-4 rounded-lg p-4 text-left transition-colors',
+                        config.id === configurationRetenue
+                          ? 'border-[1.5px] border-brand bg-[#fdf6f5]'
+                          : 'border border-[#ddddda] hover:border-slate-ink',
+                      )}
                     >
                       {/*
                         Illustration explicative, quand elle existe.
@@ -248,16 +255,23 @@ export default async function Page({
                       ) : null}
 
                       <span className="min-w-0 flex-1">
-                        <span className="block font-bold">{config.equipment.label}</span>
+                        {config.id === configurationRetenue ? (
+                          <span className="mb-1 block text-[7px] font-bold tracking-[0.7px] text-brand uppercase">
+                            Votre choix actuel
+                          </span>
+                        ) : null}
+                        <span className="block text-[13px] font-bold">
+                          {config.equipment.label}
+                        </span>
                         {/* Le repère avant la description : il est écrit pour
                             quelqu'un qui regarde ses phares. */}
                         {config.equipment.hint ? (
-                          <span className="mt-1 block text-sm text-slate-ink">
+                          <span className="mt-1 block text-[11px] text-slate-ink">
                             {config.equipment.hint}
                           </span>
                         ) : null}
                         {config.equipment.description ? (
-                          <span className="mt-1 block text-sm text-muted-strong">
+                          <span className="mt-1 block text-[10px] leading-[1.7] text-muted-strong">
                             {config.equipment.description}
                           </span>
                         ) : null}
@@ -284,43 +298,67 @@ export default async function Page({
             </form>
 
             {/*
-              « Je ne sais pas » est une réponse, et elle doit avoir sa place.
+              « Je ne sais pas » est une réponse, et elle doit avoir sa place —
+              juste sous les cartes, visible sans défiler.
 
               Sans elle, quelqu'un d'incertain choisit au hasard — et un choix
               au hasard ici produit une compatibilité affirmée sur la mauvaise
-              configuration. Mieux vaut l'envoyer vers une aide qui tranchera.
+              configuration. Elle ouvre maintenant une vraie demande, avec le
+              véhicule déjà renseigné, au lieu de renvoyer vers une page de
+              contact qui n'est pas construite.
             */}
-            <div className="mt-6 rounded-md border border-line bg-surface-soft p-4">
-              <p className="font-semibold">Vous ne savez pas lequel vous avez ?</p>
-              <p className="mt-1 text-sm text-muted-strong">
+            <div className="mt-4 rounded-[7px] bg-[#f7f7f3] p-[15px]">
+              <p className="text-[12px] font-bold">Vous ne savez pas lequel vous avez ?</p>
+              <p className="mt-1.5 text-[10px] leading-[1.7] text-[#7f8775]">
                 Ne choisissez pas au hasard : un halogène et un xénon n&apos;acceptent pas la même
-                pièce. Donnez-nous la plaque ou une photo de vos phares allumés, nous vous le
-                dirons.
+                pièce. Nous l&apos;identifions à partir de votre véhicule.
               </p>
               <div className="mt-3">
-                <ButtonLink href={contactPath} variant="secondary" size="sm">
+                <ButtonLink
+                  href={`/verification?generation=${generation.id}`}
+                  variant="secondary"
+                  className="min-h-[42px] gap-3 rounded-md px-[17px] text-[11px]"
+                >
                   Je ne sais pas, aidez-moi
                 </ButtonLink>
               </div>
             </div>
 
-            <p className="mt-6 text-sm text-muted-strong">
-              Aucun de ces équipements ne correspond à ce que vous avez sous le capot ?{' '}
-              <Link
-                href={contactPath}
-                className="font-semibold text-brand underline underline-offset-4"
-              >
-                Écrivez-nous
-              </Link>{' '}
-              plutôt que de choisir au hasard, ou{' '}
-              <Link
-                href="/vehicule"
-                className="font-semibold text-brand underline underline-offset-4"
-              >
-                reprenez la sélection du véhicule
-              </Link>
-              .
-            </p>
+            {/* L'explication longue, rangée : elle ouvrait la page et repoussait
+                les choix sous la ligne de flottaison en mobile. */}
+            <details className="group mt-4 border-t border-line pt-4">
+              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-[11px] font-semibold [&::-webkit-details-marker]:hidden">
+                Pourquoi cette question change tout
+                <span aria-hidden="true" className="ml-2 transition-transform group-open:rotate-45">
+                  +
+                </span>
+              </summary>
+              <div className="mt-2 max-w-2xl text-[11px] leading-[1.8] text-muted-strong">
+                <p>
+                  C&apos;est l&apos;équipement monté en usine qui détermine ce qui peut le
+                  remplacer : un phare halogène et un xénon d&apos;origine n&apos;acceptent pas la
+                  même pièce, même quand le culot porte le même nom. L&apos;information est
+                  généralement lisible sur l&apos;ampoule déposée.
+                </p>
+                <p className="mt-2">
+                  Aucun de ces équipements ne correspond à ce que vous avez sous le capot ?{' '}
+                  <Link
+                    href={`/verification?generation=${generation.id}`}
+                    className="font-semibold text-brand underline underline-offset-4"
+                  >
+                    Dites-le-nous
+                  </Link>{' '}
+                  plutôt que de choisir au hasard, ou{' '}
+                  <Link
+                    href="/vehicule"
+                    className="font-semibold text-brand underline underline-offset-4"
+                  >
+                    reprenez la sélection du véhicule
+                  </Link>
+                  .
+                </p>
+              </div>
+            </details>
           </>
         )}
       </section>

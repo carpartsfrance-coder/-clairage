@@ -32,6 +32,15 @@ export const RULES = {
   passwordReset: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
   orderLookup: { max: 10, windowSeconds: 15 * 60, blockSeconds: 30 * 60 },
   /*
+    Demande de vérification de compatibilité.
+
+    Elle ouvre une demande SAV sans compte ni commande : c'est le seul endroit
+    du site où un visiteur anonyme écrit en base. Le plafond est bas — une
+    poignée de demandes par heure suffit à un client réel, et la boîte SAV
+    n'est pas une file d'attente publique.
+  */
+  fitmentCheck: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
+  /*
     Webhook de paiement.
 
     L'URL est publique et devinable, et le webhook de Mollie n'est pas signé :
