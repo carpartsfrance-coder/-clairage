@@ -1,0 +1,652 @@
+{
+ "_source": "Demande de devis de l'exploitant (Purchase_list_LED_halogen_HID.xlsx) pour les caracteristiques ; ledperf.com, partenaire, pour les prix de depart et les visuels.",
+ "_releve": "2026-10-19",
+ "_avertissement": "Les caracteristiques viennent du fichier de l'exploitant, pas d'un tiers. Les PRIX sont ceux d'un revendeur et ne refletent AUCUN cout d'achat : ils sont un point de depart, a remplacer au retour du devis fournisseur. Les references `sourceRef` sont celles du revendeur et ne doivent pas servir de SKU. Aucune description redigee n'est reprise : le redactionnel est ecrit a partir des specifications ci-dessus.",
+ "produits": [
+  {
+   "ref": "1",
+   "slug": "ampoule-led-w5w-t10-blanc-6000-k",
+   "name": "T10 LED bulb (position / number plate / interior)",
+   "bulbBase": "W5W",
+   "alsoKnownAs": "194, 168, 2825",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, no polarity, good heat sink",
+   "unit": "pcs",
+   "category": "veilleuses",
+   "vehicleType": "CAR",
+   "priceCents": 590,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/6f/W500/ampoule-led-t10-xtrem-hp-v1-blanche-w5w.jpg",
+   "sourceRef": "LEDT10XTRMWH-329",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-led-t10-xtrem-hp-v1-blanche-w5w-p-329.html"
+   ]
+  },
+  {
+   "ref": "2",
+   "slug": "navette-led-c5w-36-mm-blanc-6000-k",
+   "name": "Festoon LED bulb 36 mm",
+   "bulbBase": "C5W",
+   "alsoKnownAs": "36mm festoon, 6418",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, no polarity",
+   "unit": "pcs",
+   "category": "interieur",
+   "vehicleType": "CAR",
+   "priceCents": 490,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/13/W500/ampoule-navette-37mm-a-leds-blanches-c5w.jpg",
+   "sourceRef": "LED37WH-140",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-navette-37mm-a-leds-blanches-c5w-p-140.html",
+    "https://www.ledperf.com/led-navette-37mm-blanc-antierreur-ordinateur-de-bord-c5w-p-489.html"
+   ]
+  },
+  {
+   "ref": "3",
+   "slug": "navette-led-c5w-39-mm-blanc-6000-k",
+   "name": "Festoon LED bulb 39 mm",
+   "bulbBase": "C5W",
+   "alsoKnownAs": "39mm festoon, 6411",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, no polarity",
+   "unit": "pcs",
+   "category": "interieur",
+   "vehicleType": "CAR",
+   "priceCents": 690,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/e4/W500/ampoule-navette-39mm-a-leds-blanches-full-intensity.jpg",
+   "sourceRef": "LED39FIWH-454",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-navette-39mm-aleds-blanches-full-intensity-p-454.html"
+   ]
+  },
+  {
+   "ref": "4",
+   "slug": "navette-led-c3w-31-mm-blanc-6000-k",
+   "name": "Festoon LED bulb 31 mm",
+   "bulbBase": "C3W",
+   "alsoKnownAs": "31mm festoon, DE3175",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, no polarity",
+   "unit": "pcs",
+   "category": "interieur",
+   "vehicleType": "CAR",
+   "priceCents": 490,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/ee/W500/ampoule-navette-31mm-a-leds-blanches-c3w.jpg",
+   "sourceRef": "LED29WH-439",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-navette-31mm-a-leds-blanches-c3w-p-439.html"
+   ]
+  },
+  {
+   "ref": "5",
+   "slug": "navette-led-c10w-41-mm-blanc-6000-k",
+   "name": "Festoon LED bulb 41 mm (must also fit 42 mm)",
+   "bulbBase": "C10W",
+   "alsoKnownAs": "41/42mm festoon, 578",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, no polarity",
+   "unit": "pcs",
+   "category": "interieur",
+   "vehicleType": "CAR",
+   "priceCents": 490,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/0f/W500/ampoule-navette-42mm-a-leds-blanches-c10w.jpg",
+   "sourceRef": "LED42WH-141",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-navette-42mm-a-leds-blanches-c10w-p-141.html",
+    "https://www.ledperf.com/led-navette-42mm-blanc-antierreur-ordinateur-de-bord-c10w-p-465.html"
+   ]
+  },
+  {
+   "ref": "6",
+   "slug": "kit-ampoules-led-h7-blanc-6000-k",
+   "name": "H7 LED headlight bulb kit, fan-cooled, MINI size (same size as halogen)",
+   "bulbBase": "H7",
+   "alsoKnownAs": null,
+   "type": "LED",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "12V (24V if available), CANBUS error-free, 1:1 halogen size, adjustable locking ring, correct beam cut-off, real lumens per pair",
+   "unit": "pairs",
+   "category": "phares-led",
+   "vehicleType": "CAR",
+   "priceCents": 10980,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/39/W500/15861_kit-ampoules-h7-led-ventilees-taille-mini.jpg",
+   "sourceRef": "KITLEDHPH7MD-15861",
+   "sourcePage": [
+    "https://www.ledperf.com/kit-ampoules-h7-led-ventilees-taille-mini-p-15861.html"
+   ]
+  },
+  {
+   "ref": "7",
+   "slug": "kit-ampoules-led-h4-blanc-6000-k",
+   "name": "H4 LED headlight bulb kit, high/low beam (bi-LED)",
+   "bulbBase": "H4",
+   "alsoKnownAs": "9003, HB2",
+   "type": "LED",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "12V (24V if available), CANBUS error-free, compact size, correct beam cut-off, real lumens per pair",
+   "unit": "pairs",
+   "category": "phares-led",
+   "vehicleType": "CAR",
+   "priceCents": 11490,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/61/W500/11589_kit-ampoules-bi-led-haute-puissance-h4.jpg",
+   "sourceRef": "KITLEDHPH4-11589",
+   "sourcePage": [
+    "https://www.ledperf.com/kit-ampoules-bi-led-haute-puissance-h4-p-11589.html",
+    "https://www.ledperf.com/ampoule-h4-bi-led-ventilee-taille-mini-p-15833.html"
+   ]
+  },
+  {
+   "ref": "8",
+   "slug": "ampoule-led-d1s-blanc-6000-k",
+   "name": "D1S LED bulb – plug & play replacement for xenon",
+   "bulbBase": "D1S",
+   "alsoKnownAs": null,
+   "type": "LED",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "Plug & play on original xenon ballast, CANBUS error-free",
+   "unit": "pairs",
+   "category": "phares-led",
+   "vehicleType": "CAR",
+   "priceCents": 10890,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/60/W500/136398_ampoules-led-d1s---d1r-simplyfit-kit-de-conversion-xenon-en-led.jpg",
+   "sourceRef": "KITLEDD1SFI-136398",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoules-led-d1s-d1r-led-plug-and-play-pour-phares-xenon-p-136398.html"
+   ]
+  },
+  {
+   "ref": "9",
+   "slug": "ampoule-led-d3s-blanc-6000-k",
+   "name": "D3S LED bulb – plug & play replacement for xenon",
+   "bulbBase": "D3S",
+   "alsoKnownAs": null,
+   "type": "LED",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "Plug & play on original xenon ballast, CANBUS error-free",
+   "unit": "pairs",
+   "category": "phares-led",
+   "vehicleType": "CAR",
+   "priceCents": 10890,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/77/W500/136404_ampoules-led-d3s---d3r-simplyfit-kit-de-conversion-xenon-en-led.jpg",
+   "sourceRef": "KITLEDD3SFI-136404",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoules-led-d3s-d3r-led-plug-and-play-pour-phares-xenon-p-136404.html"
+   ]
+  },
+  {
+   "ref": "10",
+   "slug": "ampoule-halogene-h7-effet-xenon-5000-k",
+   "name": "H7 halogen bulb, xenon-look super white",
+   "bulbBase": "H7",
+   "alsoKnownAs": null,
+   "type": "Halogen",
+   "colour": "5000K",
+   "colorTemperature": 5000,
+   "requirements": "12V 55W, E-mark (ECE R37) approved",
+   "unit": "pairs",
+   "category": "ampoules-effet-xenon",
+   "vehicleType": "CAR",
+   "priceCents": 990,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/67/W500/400_pack-de-2-ampoules-h7-diamond-white-5000k.jpg",
+   "sourceRef": "AMPXENH7-400",
+   "sourcePage": [
+    "https://www.ledperf.com/pack-de-2-ampoules-h7-diamond-white-5000k-p-400.html"
+   ]
+  },
+  {
+   "ref": "11",
+   "slug": "ampoule-led-py21w-orange",
+   "name": "Amber LED indicator bulb",
+   "bulbBase": "PY21W",
+   "alsoKnownAs": "1156PY, 7507",
+   "type": "LED",
+   "colour": "Amber",
+   "colorTemperature": null,
+   "requirements": "12V, CANBUS, NO hyper-flash (built-in resistor)",
+   "unit": "pcs",
+   "category": "clignotants",
+   "vehicleType": "CAR",
+   "priceCents": 2240,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/07/W500/30343_ampoule-py21w-xtrem-odb-a-32-leds-ultra-puissante-culot-bau15s-orange.jpg",
+   "sourceRef": "LEDPY21WMRORX-30343",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-py21w-xtrem-odb-a-32-leds-ultra-puissante-culot-bau15s-orange-p-30343.html"
+   ]
+  },
+  {
+   "ref": "12",
+   "slug": "ampoule-led-w21w-blanc-6000-k",
+   "name": "LED bulb for daytime running lights",
+   "bulbBase": "W21W",
+   "alsoKnownAs": "7440, T20 single",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, high brightness",
+   "unit": "pcs",
+   "category": "feux-de-jour",
+   "vehicleType": "CAR",
+   "priceCents": 1690,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/13/W500/34716_ampoule-w21w-led-t20-ultimate-ultra-puissante-24-leds-cree-anti-erreur-odb.jpg",
+   "sourceRef": "LEDW21WULWH-34716",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-w21w-led-t20-ultimate-ultra-puissante-24-leds-cree-anti-erreur-odb-p-34716.html"
+   ]
+  },
+  {
+   "ref": "13",
+   "slug": "ampoule-led-psx24w-blanc-6000-k",
+   "name": "LED bulb for daytime running lights / fog",
+   "bulbBase": "PSX24W",
+   "alsoKnownAs": "2504",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free",
+   "unit": "pairs",
+   "category": "feux-de-jour",
+   "vehicleType": "CAR",
+   "priceCents": 8490,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/e0/W500/109739_kit-ampoules-led-psx24w-2504-nano-technology-ultra-compact.jpg",
+   "sourceRef": "KITLEDHPPSX24WDN-109739",
+   "sourcePage": [
+    "https://www.ledperf.com/kit-ampoules-psx24w-2504-led-nano-technology-ultra-compact-p-109739.html"
+   ]
+  },
+  {
+   "ref": "14",
+   "slug": "ampoule-led-p21w-blanc-6000-k",
+   "name": "LED bulb for reverse light",
+   "bulbBase": "P21W",
+   "alsoKnownAs": "1156, 7506",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, high brightness",
+   "unit": "pcs",
+   "category": "feux-recul",
+   "vehicleType": "CAR",
+   "priceCents": 1690,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/6f/W500/34712_ampoule-p21w-led-ultimate-ultra-puissante-24-leds-cree-anti-erreur-odb.jpg",
+   "sourceRef": "LEDP21WULWH-34712",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-p21w-led-ultimate-ultra-puissante-24-leds-cree-anti-erreur-odb-p-34712.html"
+   ]
+  },
+  {
+   "ref": "15",
+   "slug": "ampoule-led-wy5w-orange",
+   "name": "Amber LED side repeater bulb",
+   "bulbBase": "WY5W",
+   "alsoKnownAs": "T10 amber, 2827",
+   "type": "LED",
+   "colour": "Amber",
+   "colorTemperature": null,
+   "requirements": "12V, CANBUS, NO hyper-flash",
+   "unit": "pcs",
+   "category": "clignotants",
+   "vehicleType": "CAR",
+   "priceCents": 590,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/49/W500/ampoule-led-t10-xtrem-hp-orange-jaune-w5w.jpg",
+   "sourceRef": "LEDT10XTRMOR-453",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-led-t10-xtrem-hp-orangejaune-w5w-p-453.html"
+   ]
+  },
+  {
+   "ref": "16",
+   "slug": "kit-ampoules-led-h11-blanc-6000-k",
+   "name": "H11 LED headlight / fog bulb kit (must also fit H8 / H16)",
+   "bulbBase": "H11",
+   "alsoKnownAs": "H8, H16",
+   "type": "LED",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, compact size, real lumens per pair",
+   "unit": "pairs",
+   "category": "phares-led",
+   "vehicleType": "CAR",
+   "priceCents": 10980,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/b2/W500/15864_kit-ampoules-h11-led-ventilees-taille-mini.jpg",
+   "sourceRef": "KITLEDHPH11MD-15864",
+   "sourcePage": [
+    "https://www.ledperf.com/kit-ampoules-h11-led-ventilees-taille-mini-p-15864.html"
+   ]
+  },
+  {
+   "ref": "17",
+   "slug": "kit-ampoules-led-h1-blanc-6000-k",
+   "name": "H1 LED headlight bulb kit",
+   "bulbBase": "H1",
+   "alsoKnownAs": null,
+   "type": "LED",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, compact size",
+   "unit": "pairs",
+   "category": "phares-led",
+   "vehicleType": "CAR",
+   "priceCents": 10980,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/8c/W500/30448_kit-ampoules-h1-led-ventilees-taille-mini.jpg",
+   "sourceRef": "KITLEDHPH1MD-30448",
+   "sourcePage": [
+    "https://www.ledperf.com/kit-ampoules-h1-led-ventilees-taille-mini-p-30448.html"
+   ]
+  },
+  {
+   "ref": "18",
+   "slug": "ampoule-led-p21-5w-rouge",
+   "name": "LED brake / tail light bulb (dual filament)",
+   "bulbBase": "P21/5W",
+   "alsoKnownAs": "1157, 7528",
+   "type": "LED",
+   "colour": "Red",
+   "colorTemperature": null,
+   "requirements": "12V, CANBUS error-free, 2 brightness levels (tail + brake)",
+   "unit": "pcs",
+   "category": "veilleuses",
+   "vehicleType": "CAR",
+   "priceCents": 1690,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/94/W500/43618_ampoule-p21-5w-led-ultimate-ultra-puissante-rouge-bay15d-24-leds-cree-canbus.jpg",
+   "sourceRef": "LEDP215WULRD-43618",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-p215w-led-ultimate-ultra-puissante-24-led-cree-rouge-1157-p-43618.html"
+   ]
+  },
+  {
+   "ref": "19",
+   "slug": "ampoule-led-w16w-blanc-6000-k",
+   "name": "LED bulb for reverse light",
+   "bulbBase": "W16W",
+   "alsoKnownAs": "T15, 921, 912",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, high brightness",
+   "unit": "pcs",
+   "category": "feux-recul",
+   "vehicleType": "CAR",
+   "priceCents": 1390,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/b4/W500/34709_ampoule-w16w-led-t15-ultimate-ultra-puissante-12-leds-cree-anti-erreur-odb.jpg",
+   "sourceRef": "LEDT15ULCREE-34709",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-w16w-led-t15-ultimate-ultra-puissante-12-leds-cree-anti-erreur-odb-p-34709.html"
+   ]
+  },
+  {
+   "ref": "20",
+   "slug": "ampoule-led-w21-5w-blanc-6000-k",
+   "name": "LED bulb for daytime running + position light (dual)",
+   "bulbBase": "W21/5W",
+   "alsoKnownAs": "7443, T20 dual",
+   "type": "LED",
+   "colour": "6000K pure white",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, 2 brightness levels",
+   "unit": "pcs",
+   "category": "feux-de-jour",
+   "vehicleType": "CAR",
+   "priceCents": 1690,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/1f/W500/34718_ampoule-w21-5w-led-t20-ultimate-ultra-puissante-24-leds-cree-anti-erreur-odb.jpg",
+   "sourceRef": "LEDW215WULWH-34718",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-w215w-led-t20-ultimate-ultra-puissante-24-leds-cree-anti-erreur-odb-p-34718.html"
+   ]
+  },
+  {
+   "ref": "21",
+   "slug": "ampoule-led-t5-blanche",
+   "name": "Small LED bulb for dashboard / instrument cluster",
+   "bulbBase": "T5",
+   "alsoKnownAs": "W1.2W, W2.3W, 74, 37, 286",
+   "type": "LED",
+   "colour": "White",
+   "colorTemperature": null,
+   "requirements": "12V",
+   "unit": "pcs",
+   "category": "interieur",
+   "vehicleType": "CAR",
+   "priceCents": 290,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/66/W500/ampoule-t5-efficacity-a-2-leds-tl-blanches-w1-2w.jpg",
+   "sourceRef": "LEDT5EFFWH-431",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-t5-efficacity-a-2-leds-tl-blanches-w12w-p-431.html"
+   ]
+  },
+  {
+   "ref": "22",
+   "slug": "ampoule-halogene-h4-effet-xenon-5000-k",
+   "name": "H4 halogen bulb, xenon-look super white",
+   "bulbBase": "H4",
+   "alsoKnownAs": "9003, HB2",
+   "type": "Halogen",
+   "colour": "5000K",
+   "colorTemperature": 5000,
+   "requirements": "12V 60/55W, E-mark (ECE R37) approved",
+   "unit": "pairs",
+   "category": "ampoules-effet-xenon",
+   "vehicleType": "CAR",
+   "priceCents": 1190,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/81/W500/pack-de-2-ampoules-h4-diamond-white-5000k.jpg",
+   "sourceRef": "AMPXENH4-401",
+   "sourcePage": [
+    "https://www.ledperf.com/pack-de-2-ampoules-h4-diamond-white-5000k-p-401.html"
+   ]
+  },
+  {
+   "ref": "23",
+   "slug": "ampoule-halogene-h11-effet-xenon-5000-k",
+   "name": "H11 halogen bulb, xenon-look super white",
+   "bulbBase": "H11",
+   "alsoKnownAs": null,
+   "type": "Halogen",
+   "colour": "5000K",
+   "colorTemperature": 5000,
+   "requirements": "12V 55W, E-mark (ECE R37) approved",
+   "unit": "pairs",
+   "category": "ampoules-effet-xenon",
+   "vehicleType": "CAR",
+   "priceCents": 1190,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/29/W500/pack-de-2-ampoules-h11-diamond-white-5000k.jpg",
+   "sourceRef": "AMPXENH11-532",
+   "sourcePage": [
+    "https://www.ledperf.com/pack-de-2-ampoules-h11-diamond-white-5000k-p-532.html"
+   ]
+  },
+  {
+   "ref": "24",
+   "slug": "ampoule-xenon-d1s-35-w-6000-k",
+   "name": "HID xenon replacement bulb 35W",
+   "bulbBase": "D1S",
+   "alsoKnownAs": null,
+   "type": "HID xenon",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "OEM quality, 35W, E-mark if available (please also quote 4300K)",
+   "unit": "pcs",
+   "category": "xenon",
+   "vehicleType": "CAR",
+   "priceCents": 2990,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/1f/W500/30372_ampoule-xenon-d1s-6000k-35w-de-rechange.jpg",
+   "sourceRef": "AMPLPD1S6000K-30372",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-xenon-d1s-6000k-35w-de-rechange-p-30372.html"
+   ]
+  },
+  {
+   "ref": "25",
+   "slug": "ampoule-xenon-d3s-35-w-6000-k",
+   "name": "HID xenon replacement bulb 35W",
+   "bulbBase": "D3S",
+   "alsoKnownAs": null,
+   "type": "HID xenon",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "OEM quality, 35W, E-mark if available (please also quote 4300K)",
+   "unit": "pcs",
+   "category": "xenon",
+   "vehicleType": "CAR",
+   "priceCents": 3490,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/f5/W500/30381_ampoule-xenon-d3s-6000k-35w-de-rechange.jpg",
+   "sourceRef": "AMPLPD3S6000K-30381",
+   "sourcePage": [
+    "https://www.ledperf.com/ampoule-xenon-d3s-6000k-35w-de-rechange-p-30381.html"
+   ]
+  },
+  {
+   "ref": "26",
+   "slug": "decodeur-anti-erreur-h7",
+   "name": "CANBUS decoder for H7 LED (error canceller / anti-flicker)",
+   "bulbBase": "H7",
+   "alsoKnownAs": null,
+   "type": "LED accessory",
+   "colour": null,
+   "colorTemperature": null,
+   "requirements": "Plug & play between car and LED bulb",
+   "unit": "pairs",
+   "category": "decodeurs",
+   "vehicleType": "CAR",
+   "priceCents": 1990,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/3c/W500/15655_boitiers-anti-erreur-odb-pour-kit-led-haute-puissance-h7.jpg",
+   "sourceRef": "BOILHPH7-15655",
+   "sourcePage": [
+    "https://www.ledperf.com/boitiers-antierreur-odb-pour-kit-led-haute-puissance-h7-p-15655.html"
+   ]
+  },
+  {
+   "ref": "27",
+   "slug": "adaptateur-de-fixation-h7",
+   "name": "H7 LED bulb holder adapters (car-specific)",
+   "bulbBase": "H7",
+   "alsoKnownAs": null,
+   "type": "LED accessory",
+   "colour": null,
+   "colorTemperature": null,
+   "requirements": "Types for VW, Mercedes, BMW, Audi, Ford, Hyundai/Kia, Opel, Peugeot/Citroën – please send your list of types",
+   "unit": "pcs",
+   "category": "adaptateurs",
+   "vehicleType": "CAR",
+   "priceCents": 490,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/03/W500/30420_adaptateur-porte-ampoule-special-kit-ampoule-led-h7-pour-mercedes-type-1.jpg",
+   "sourceRef": "AKLMERCEDEST1-30420",
+   "sourcePage": [
+    "https://www.ledperf.com/adaptateur-porte-ampoule-special-kit-ampoule-led-h7-pour-volkswagen-type-3-p-15851.html",
+    "https://www.ledperf.com/adaptateur-porte-ampoule-special-kit-ampoule-led-h7-pour-mercedes-type-1-p-30420.html"
+   ]
+  },
+  {
+   "ref": "28",
+   "slug": "kit-ampoules-led-9012-blanc-6000-k",
+   "name": "LED headlight bulb kit",
+   "bulbBase": "9012",
+   "alsoKnownAs": "HIR2",
+   "type": "LED",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, compact size",
+   "unit": "pairs",
+   "category": "phares-led",
+   "vehicleType": "CAR",
+   "priceCents": 10980,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/ce/W500/28089_kit-ampoules-hir2-9012-led-ventilees-taille-mini.jpg",
+   "sourceRef": "KITLEDHPHIR2MD-28089",
+   "sourcePage": [
+    "https://www.ledperf.com/kit-ampoules-hir2-9012-led-ventilees-taille-mini-p-28089.html"
+   ]
+  },
+  {
+   "ref": "29",
+   "slug": "kit-ampoules-led-9005-blanc-6000-k",
+   "name": "LED headlight bulb kit",
+   "bulbBase": "9005",
+   "alsoKnownAs": "HB3",
+   "type": "LED",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "12V, CANBUS error-free, compact size",
+   "unit": "pairs",
+   "category": "phares-led",
+   "vehicleType": "CAR",
+   "priceCents": 10980,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/a2/W500/15865_kit-ampoules-hb3-9005-led-ventilees-taille-mini.jpg",
+   "sourceRef": "KITLEDHPHB3MD-15865",
+   "sourcePage": [
+    "https://www.ledperf.com/kit-ampoules-hb3-9005-led-ventilees-taille-mini-p-15865.html"
+   ]
+  },
+  {
+   "ref": "30",
+   "slug": "centrale-clignotante-led-moto",
+   "name": "LED flasher relay for motorcycle (stops hyper-flash)",
+   "bulbBase": null,
+   "alsoKnownAs": null,
+   "type": "Accessory",
+   "colour": null,
+   "colorTemperature": null,
+   "requirements": "12V, works with LED indicators",
+   "unit": "pcs",
+   "category": "accessoires",
+   "vehicleType": "MOTORCYCLE",
+   "priceCents": 1190,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/0a/W500/15821_centrale-de-clignotants-led-universelle-3-broches-pour-moto.jpg",
+   "sourceRef": "CCLMT3B-15821",
+   "sourcePage": [
+    "https://www.ledperf.com/centrale-de-clignotants-led-universelle-2-broches-pour-moto--p-15822.html",
+    "https://www.ledperf.com/centrale-de-clignotants-led-universelle-3-broches-pour-moto--p-15821.html"
+   ]
+  },
+  {
+   "ref": "31",
+   "slug": "clignotants-led-moto-orange",
+   "name": "Motorcycle LED turn signals",
+   "bulbBase": null,
+   "alsoKnownAs": null,
+   "type": "LED",
+   "colour": "Amber",
+   "colorTemperature": null,
+   "requirements": "12V, E-mark approved, small size, black housing",
+   "unit": "pairs",
+   "category": "moto",
+   "vehicleType": "MOTORCYCLE",
+   "priceCents": 4990,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/2d/W500/36626_clignotants-sequentiels-a-led-pour-kawasaki-z900.jpg",
+   "sourceRef": "CLIDYZ9001718T1-36626",
+   "sourcePage": [
+    "https://www.ledperf.com/clignotants-sequentiels-a-led-pour-kawasaki-z900--p-36626.html"
+   ]
+  },
+  {
+   "ref": "32",
+   "slug": "phare-led-rond-7-pouces-moto",
+   "name": "7-inch round LED headlight for motorcycle",
+   "bulbBase": null,
+   "alsoKnownAs": null,
+   "type": "LED",
+   "colour": "6000K",
+   "colorTemperature": 6000,
+   "requirements": "E-mark approved, black housing, high/low beam (+ DRL ring if available)",
+   "unit": "pcs",
+   "category": "moto",
+   "vehicleType": "MOTORCYCLE",
+   "priceCents": 12990,
+   "image": "https://www.ledperf.com/images/products/ledperf.com/37/W500/30359_optique-moto-full-led-noir-pour-phare-rond-7-pouces-type-5.jpg",
+   "sourceRef": "HEADM7T5BL-30359",
+   "sourcePage": [
+    "https://www.ledperf.com/optique-moto-full-led-noir-pour-phare-rond-7-pouces-type-5-p-30359.html"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,293 @@
+{
+ "_note": "Rédactionnel original, écrit à partir des spécifications de la demande de devis de l'exploitant. Aucun texte n'est repris d'un tiers. Les valeurs annoncées sont celles que l'exploitant exige du fournisseur ; lumens et nombre de LED sont volontairement absents tant que le devis n'a pas fixé le produit réel. Le champ `name` est le nom commercial francais : celui de la demande de devis est en anglais, ecrit pour un fournisseur, et n'a pas sa place sur une fiche client.",
+ "fiches": {
+  "1": {
+   "sku": "LUM-W5W-6000",
+   "tagline": "La veilleuse qui change tout le regard de la voiture",
+   "description": "Ampoule LED W5W à culot T10, en blanc pur 6000 K. Elle remplace la veilleuse d'origine, l'éclairage de plaque ou une liseuse d'habitacle sans modification du faisceau.",
+   "body": "La W5W est l'ampoule la plus répandue d'un véhicule : veilleuses avant, éclairage de plaque, plafonnier, boîte à gants, coffre. En halogène elle tire vers le jaune ; en LED 6000 K elle passe au blanc pur, dans le même ton que des optiques récentes.\n\n**Montage** : culot T10 d'origine, aucune adaptation. La LED n'ayant pas de polarité imposée, elle fonctionne dans les deux sens.\n\n**Anti-erreur** : la consommation d'une LED est trop faible pour certains calculateurs, qui signalent alors une ampoule grillée. Ce modèle intègre la résistance nécessaire pour éviter ce voyant.",
+   "metaTitle": "Ampoule LED W5W T10 blanc 6000K — veilleuse, plaque, habitacle",
+   "metaDescription": "LED W5W culot T10 blanc pur 6000 K, anti-erreur ODB, 12 V. Pour veilleuses, éclairage de plaque et habitacle. Montage direct, sans polarité.",
+   "name": "Ampoule LED W5W T10 blanc 6000 K"
+  },
+  "2": {
+   "sku": "LUM-C5W-36",
+   "tagline": "Navette 36 mm : le plafonnier sort du jaune",
+   "description": "Navette LED C5W de 36 mm, blanc 6000 K, dimensions 37 × 8 mm. Pour plafonnier, liseuse, coffre et éclairage de plaque.",
+   "body": "La navette C5W se monte entre deux ressorts, sans détrompeur. Sa longueur est la seule chose à vérifier : **37 mm hors tout** ici, soit la taille standard dite « 36 mm ».\n\nL'écart avec l'halogène d'origine se voit surtout au plafonnier, où le jaune donne un aspect daté à un habitacle récent.\n\n**Anti-erreur** intégré, 12 V, sans polarité.",
+   "metaTitle": "Navette LED C5W 36 mm blanche 6000K — plafonnier et plaque",
+   "metaDescription": "Navette LED 36 mm (37 × 8 mm) culot C5W, blanc 6000 K, anti-erreur, 12 V. Plafonnier, liseuse, coffre, éclairage de plaque.",
+   "name": "Navette LED C5W 36 mm blanc 6000 K"
+  },
+  "3": {
+   "sku": "LUM-C5W-39",
+   "tagline": "Navette 39 mm, pour les plafonniers les plus longs",
+   "description": "Navette LED C5W de 39 mm, blanc 6000 K, dimensions 39 × 13 mm. La longueur au-dessus du format courant.",
+   "body": "Même principe que la 36 mm, trois millimètres de plus. Beaucoup de véhicules allemands et de monospaces utilisent ce format au plafonnier central.\n\n**Mesurez avant de commander** : une navette trop longue ne rentre pas dans son logement, une trop courte ne touche pas les deux contacts. La cote à relever est la distance entre les deux ressorts.\n\nAnti-erreur intégré, 12 V, sans polarité.",
+   "metaTitle": "Navette LED C5W 39 mm blanche 6000K — plafonnier",
+   "metaDescription": "Navette LED 39 mm (39 × 13 mm) culot C5W, blanc 6000 K, anti-erreur, 12 V. Format long pour plafonnier et éclairage de coffre.",
+   "name": "Navette LED C5W 39 mm blanc 6000 K"
+  },
+  "4": {
+   "sku": "LUM-C3W-31",
+   "tagline": "Navette courte 31 mm, pour les logements étroits",
+   "description": "Navette LED C3W de 31 mm, blanc 6000 K, dimensions 31 × 8 mm. Le format court, fréquent en liseuse et en boîte à gants.",
+   "body": "La C3W est la petite sœur de la C5W : même montage entre ressorts, mais un corps plus court et moins puissant. On la trouve en liseuse, en boîte à gants, en seuil de porte.\n\n**31 mm hors tout** : c'est la cote à vérifier dans le logement avant de commander.\n\nAnti-erreur intégré, 12 V, sans polarité.",
+   "metaTitle": "Navette LED C3W 31 mm blanche 6000K — liseuse et boîte à gants",
+   "metaDescription": "Navette LED 31 mm (31 × 8 mm) culot C3W, blanc 6000 K, anti-erreur, 12 V. Format court pour liseuse, boîte à gants et seuil de porte.",
+   "name": "Navette LED C3W 31 mm blanc 6000 K"
+  },
+  "5": {
+   "sku": "LUM-C10W-41",
+   "tagline": "Navette 41 mm, le format des grands plafonniers",
+   "description": "Navette LED C10W de 41 mm, blanc 6000 K, dimensions 42 × 10 mm. Le format le plus long de la famille.",
+   "body": "La C10W équipe les plafonniers de grande taille, souvent sur des breaks, des utilitaires et des véhicules américains.\n\n**42 mm hors tout.** Les logements prévus pour du 41 ou du 42 mm acceptent indifféremment cette navette ; en dessous, elle forcera sur les ressorts.\n\nAnti-erreur intégré, 12 V, sans polarité.",
+   "metaTitle": "Navette LED C10W 41 mm blanche 6000K — plafonnier et coffre",
+   "metaDescription": "Navette LED 41/42 mm (42 × 10 mm) culot C10W, blanc 6000 K, anti-erreur, 12 V. Grands plafonniers, coffre, utilitaires.",
+   "name": "Navette LED C10W 41 mm blanc 6000 K"
+  },
+  "6": {
+   "sku": "LUM-H7-LED",
+   "tagline": "Le kit H7 qui remplace l'halogène sans toucher au phare",
+   "description": "Kit de deux ampoules LED H7, blanc 6000 K, pour feux de croisement ou de route. Culot PX26d d'origine, ventilation intégrée.",
+   "body": "La H7 est le culot de croisement le plus répandu en Europe. Ce kit reprend la cote du culot d'origine, avec son détrompeur, pour que l'ampoule se positionne exactement là où était le filament halogène — c'est cette position qui détermine la coupure du faisceau.\n\n**Dissipation** : une LED de phare chauffe par la base, pas par l'avant. Le dissipateur doit pouvoir respirer ; vérifiez la place disponible derrière le bloc avant de commander.\n\n**Anti-erreur** intégré pour les véhicules qui surveillent la consommation du circuit.\n\n**Homologation** : un kit LED en remplacement d'un halogène d'origine n'est pas homologué pour la route en France. Vendu pour un usage hors voie publique.",
+   "metaTitle": "Kit ampoules LED H7 6000K — feux de croisement et de route",
+   "metaDescription": "Kit 2 ampoules LED H7 (PX26d) blanc 6000 K, anti-erreur CANBUS, ventilation intégrée, 12 V. Remplacement direct de l'halogène d'origine.",
+   "name": "Kit ampoules LED H7 blanc 6000 K"
+  },
+  "7": {
+   "sku": "LUM-H4-LED",
+   "tagline": "H4 : croisement et route dans une seule ampoule",
+   "description": "Kit de deux ampoules LED H4 (P43t), blanc 6000 K, double fonction croisement et route. Également désignée 9003 ou HB2.",
+   "body": "La H4 porte deux filaments : un pour le croisement, un pour la route. Une LED H4 doit donc reproduire **deux positions d'émission distinctes**, et c'est ce qui la rend plus délicate à concevoir qu'une H7.\n\nLe basculement se fait par le commodo, sans modification du câblage.\n\n**Dissipation** : prévoyez la place du radiateur derrière le phare, en particulier sur les blocs fermés par un cache.\n\n**Anti-erreur** intégré. **Homologation** : usage hors voie publique en remplacement d'un halogène d'origine.",
+   "metaTitle": "Kit ampoules LED H4 6000K — croisement et route (9003, HB2)",
+   "metaDescription": "Kit 2 ampoules LED H4 (P43t) blanc 6000 K, double fonction croisement/route, anti-erreur, 12 V. Compatible désignations 9003 et HB2.",
+   "name": "Kit ampoules LED H4 blanc 6000 K"
+  },
+  "8": {
+   "sku": "LUM-D1S-LED",
+   "tagline": "Remplacer un xénon D1S par de la LED, sans ballast",
+   "description": "Ampoule LED D1S (PK32d-2), blanc 6000 K, conçue pour se brancher sur un bloc xénon d'origine. Vendue par paire.",
+   "body": "Sur un véhicule équipé de xénon en usine, l'ampoule D1S est alimentée par un ballast haute tension. Cette LED est prévue pour s'y brancher directement, sans déposer ni contourner le ballast.\n\n**À vérifier avant achat** : le D1S existe sur un grand nombre de blocs, mais la place derrière le capuchon varie. Mesurez le dégagement disponible.\n\n**Homologation** : un véhicule homologué en xénon reste homologué avec son xénon. Le passage en LED sort du cadre d'origine — usage hors voie publique.",
+   "metaTitle": "Ampoule LED D1S 6000K plug and play — remplacement xénon d'origine",
+   "metaDescription": "LED D1S (PK32d-2) blanc 6000 K pour bloc xénon d'origine, branchement direct sur ballast, 12 V. Vendue par paire.",
+   "name": "Ampoule LED D1S blanc 6000 K"
+  },
+  "9": {
+   "sku": "LUM-D3S-LED",
+   "tagline": "La D3S en LED, sur le ballast d'origine",
+   "description": "Ampoule LED D3S (PK32d-5), blanc 6000 K, pour bloc xénon d'origine. Vendue par paire.",
+   "body": "La D3S a remplacé la D1S sur les véhicules produits à partir du début des années 2010. Elle fonctionne sous une tension plus basse et **n'est pas interchangeable** avec une D1S : le culot diffère.\n\nCette LED se branche sur le ballast d'origine, sans dépose.\n\n**Homologation** : usage hors voie publique, le véhicule étant homologué avec son xénon d'origine.",
+   "metaTitle": "Ampoule LED D3S 6000K plug and play — remplacement xénon d'origine",
+   "metaDescription": "LED D3S (PK32d-5) blanc 6000 K pour bloc xénon d'origine, branchement direct sur ballast, 12 V. Vendue par paire.",
+   "name": "Ampoule LED D3S blanc 6000 K"
+  },
+  "10": {
+   "sku": "LUM-H7-HAL50",
+   "tagline": "L'effet xénon, en restant homologué",
+   "description": "Ampoule halogène H7 55 W à lumière blanche 5000 K, marquage E (ECE R37). Vendue par paire.",
+   "body": "**C'est une halogène, pas un xénon.** Le verre est traité pour décaler la lumière vers le blanc et donner l'aspect d'une ampoule à décharge, mais la technologie reste le filament.\n\nL'intérêt est précisément là : une ampoule halogène de remplacement **porte le marquage E et reste homologuée** pour la route, là où un kit LED ou un kit de conversion xénon ne l'est pas.\n\nContrepartie honnête : une lumière plus blanche se paie en durée de vie, le traitement du verre absorbant une partie du flux.\n\n12 V, 55 W, culot PX26d d'origine.",
+   "metaTitle": "Ampoule halogène H7 effet xénon 5000K 55W homologuée E",
+   "metaDescription": "Ampoule halogène H7 55 W, lumière blanche 5000 K effet xénon, marquage E ECE R37, 12 V. Homologuée route, vendue par paire.",
+   "name": "Ampoule halogène H7 effet xénon 5000 K"
+  },
+  "11": {
+   "sku": "LUM-PY21W-AMB",
+   "tagline": "Le clignotant orange qui ne clignote pas trop vite",
+   "description": "Ampoule LED PY21W orange à culot BAU15S, avec résistance intégrée contre l'hyper-clignotement. Également désignée 1156PY ou 7507.",
+   "body": "Sur un clignotant, remplacer l'halogène par une LED fait chuter la consommation du circuit. La centrale interprète cette chute comme une ampoule grillée et **double la cadence** : c'est l'hyper-clignotement.\n\nCe modèle intègre la résistance qui rétablit la charge attendue, sans ajout de module externe.\n\n**Culot BAU15S** : ergots décalés, à ne pas confondre avec le BA15S à ergots alignés. Les deux ne sont pas interchangeables.\n\n**La couleur orange est obligatoire** pour un clignotant : elle doit venir de la LED elle-même, pas d'un cabochon teinté.",
+   "metaTitle": "Ampoule LED PY21W orange BAU15S anti hyper-clignotement",
+   "metaDescription": "LED PY21W orange (BAU15S, 1156PY, 7507) avec résistance intégrée anti hyper-clignotement, 12 V, CANBUS. Clignotants avant et arrière.",
+   "name": "Ampoule LED PY21W orange"
+  },
+  "12": {
+   "sku": "LUM-W21W-6000",
+   "tagline": "W21W en LED pour les feux de jour",
+   "description": "Ampoule LED W21W (W3x16d) blanc 6000 K, haute intensité, pour feux de jour et feux de recul. Également désignée 7440 ou T20 simple filament.",
+   "body": "La W21W est le culot des feux de jour et des feux de recul sur une grande partie du parc. **Simple filament** : à ne pas confondre avec la W21/5W, qui en a deux.\n\nEn feu de jour, la LED a un avantage net sur l'halogène : elle atteint sa pleine intensité instantanément et consomme peu, alors que ce feu reste allumé en permanence.\n\nAnti-erreur intégré, 12 V.",
+   "metaTitle": "Ampoule LED W21W 6000K — feux de jour et recul (7440, T20)",
+   "metaDescription": "LED W21W (W3x16d, 7440, T20) blanc 6000 K haute intensité, anti-erreur, 12 V. Feux de jour et feux de recul.",
+   "name": "Ampoule LED W21W blanc 6000 K"
+  },
+  "13": {
+   "sku": "LUM-PSX24W",
+   "tagline": "PSX24W : le feu de jour des véhicules récents",
+   "description": "Ampoule LED PSX24W (PG20/7) blanc 6000 K, pour feux de jour et antibrouillards. Également désignée 2504. Vendue par paire.",
+   "body": "La PSX24W équipe les feux de jour et les antibrouillards d'une génération récente de véhicules, notamment chez les constructeurs français et allemands.\n\nSon culot PG20/7 est **spécifique** : il ne s'adapte pas sur un logement H11 ou H8, malgré une apparence proche.\n\nAnti-erreur intégré, 12 V. Vendue par paire.",
+   "metaTitle": "Ampoule LED PSX24W 6000K — feux de jour et antibrouillards (2504)",
+   "metaDescription": "LED PSX24W (PG20/7, 2504) blanc 6000 K, anti-erreur CANBUS, 12 V. Feux de jour et antibrouillards. Vendue par paire.",
+   "name": "Ampoule LED PSX24W blanc 6000 K"
+  },
+  "14": {
+   "sku": "LUM-P21W-6000",
+   "tagline": "Le feu de recul qui éclaire vraiment derrière",
+   "description": "Ampoule LED P21W (BA15S) blanc 6000 K, haute intensité, pour feux de recul. Également désignée 1156 ou 7506.",
+   "body": "Le feu de recul est l'éclairage le plus négligé d'une voiture, et souvent le plus utile : c'est lui qui montre ce qu'il y a derrière, de nuit, dans un parking.\n\nUne P21W halogène produit une lumière jaune et diffuse. En LED 6000 K et haute intensité, la zone derrière le véhicule devient réellement lisible, caméra de recul comprise.\n\n**Culot BA15S** : ergots alignés, à ne pas confondre avec le BAU15S des clignotants.\n\nAnti-erreur intégré, 12 V.",
+   "metaTitle": "Ampoule LED P21W 6000K — feu de recul (BA15S, 1156, 7506)",
+   "metaDescription": "LED P21W (BA15S, 1156, 7506) blanc 6000 K haute intensité, anti-erreur, 12 V. Feux de recul et clignotants blancs.",
+   "name": "Ampoule LED P21W blanc 6000 K"
+  },
+  "15": {
+   "sku": "LUM-WY5W-AMB",
+   "tagline": "Le répétiteur orange, dans son format d'origine",
+   "description": "Ampoule LED WY5W orange à culot T10 (W2.1x9.5d), avec protection contre l'hyper-clignotement. Également désignée T10 orange ou 2827.",
+   "body": "La WY5W est une W5W orange : même culot T10, même encombrement, couleur différente. On la trouve en répétiteur d'aile et en clignotant de rétroviseur.\n\n**La couleur vient de la LED**, pas d'un vernis sur le verre : un vernis se décolore et vire au rose en quelques saisons.\n\nProtection anti hyper-clignotement intégrée, 12 V, sans polarité.",
+   "metaTitle": "Ampoule LED WY5W orange T10 — répétiteur et clignotant rétroviseur",
+   "metaDescription": "LED WY5W orange (T10, W2.1x9.5d, 2827), anti hyper-clignotement, CANBUS, 12 V. Répétiteurs d'aile et clignotants de rétroviseur.",
+   "name": "Ampoule LED WY5W orange"
+  },
+  "16": {
+   "sku": "LUM-H11-LED",
+   "tagline": "H11 : antibrouillard ou croisement, au choix du véhicule",
+   "description": "Kit de deux ampoules LED H11 (PGJ19-2), blanc 6000 K, avec ventilation. Compatible avec les logements H8 et H16.",
+   "body": "La H11 sert d'antibrouillard sur la plupart des véhicules, et de feu de croisement sur certains. Son culot PGJ19-2 est **partagé avec les H8 et H16**, qui ne diffèrent que par la puissance d'origine — un kit H11 se monte donc dans ces trois logements.\n\n**Ventilation** : en antibrouillard, le dissipateur se trouve dans le pare-chocs, un emplacement confiné et exposé aux projections. Vérifiez l'étanchéité du cache arrière avant de refermer.\n\nAnti-erreur intégré. **Homologation** : usage hors voie publique en remplacement d'un halogène.",
+   "metaTitle": "Kit ampoules LED H11 6000K — antibrouillard et croisement (H8, H16)",
+   "metaDescription": "Kit 2 ampoules LED H11 (PGJ19-2) blanc 6000 K, ventilation, anti-erreur, 12 V. Compatible logements H8 et H16.",
+   "name": "Kit ampoules LED H11 blanc 6000 K"
+  },
+  "17": {
+   "sku": "LUM-H1-LED",
+   "tagline": "H1 : le culot sans détrompeur, à positionner soi-même",
+   "description": "Kit de deux ampoules LED H1 (P14.5s), blanc 6000 K, avec ventilation. Pour feux de route, croisement ou antibrouillard.",
+   "body": "La H1 a une particularité : son culot **n'a pas de détrompeur angulaire**. L'ampoule peut donc être montée dans n'importe quelle orientation — et c'est précisément ce qu'il ne faut pas faire avec une LED.\n\nLes diodes doivent être **à plat, horizontales**, pour que la lumière parte vers le réflecteur comme le faisait le filament. Montées à la verticale, elles éclairent le haut du bloc et le faisceau devient inutilisable.\n\nAnti-erreur intégré. **Homologation** : usage hors voie publique.",
+   "metaTitle": "Kit ampoules LED H1 6000K — route, croisement, antibrouillard",
+   "metaDescription": "Kit 2 ampoules LED H1 (P14.5s) blanc 6000 K, ventilation, anti-erreur, 12 V. Orientation des diodes à respecter au montage.",
+   "name": "Kit ampoules LED H1 blanc 6000 K"
+  },
+  "18": {
+   "sku": "LUM-P215W-RED",
+   "tagline": "Stop et veilleuse arrière dans la même ampoule",
+   "description": "Ampoule LED P21/5W rouge à culot BAY15D, double intensité. Également désignée 1157 ou 7528.",
+   "body": "La P21/5W a **deux filaments d'intensité différente** : le faible fait la veilleuse arrière, le fort s'allume au freinage. Une LED de remplacement doit reproduire cet écart, sinon le feu stop ne se distingue plus de la veilleuse — ce qui est un vrai danger en circulation.\n\n**Culot BAY15D** : ergots décalés en hauteur, pour que l'ampoule ne puisse se monter que dans un sens. Le BA15D, à ergots alignés, est un autre culot.\n\n**Le rouge vient de la LED**, pas du cabochon. Anti-erreur intégré, 12 V.",
+   "metaTitle": "Ampoule LED P21/5W rouge BAY15D — feu stop et veilleuse",
+   "metaDescription": "LED P21/5W rouge (BAY15D, 1157, 7528) double intensité stop et veilleuse, anti-erreur, 12 V. Deux niveaux distincts.",
+   "name": "Ampoule LED P21/5W rouge"
+  },
+  "19": {
+   "sku": "LUM-W16W-6000",
+   "tagline": "W16W : le recul des véhicules récents",
+   "description": "Ampoule LED W16W (W2.1x9.5d) blanc 6000 K, haute intensité, pour feux de recul. Également désignée T15, 921 ou 912.",
+   "body": "La W16W est une évolution du culot T10 : même embase en verre, mais un corps plus large et une puissance supérieure. Elle a largement remplacé la P21W en feu de recul sur les véhicules récents.\n\n**À ne pas confondre avec la W5W** : le culot se ressemble, l'encombrement non. Une W16W ne rentre pas dans un support de W5W.\n\nAnti-erreur intégré, 12 V, sans polarité.",
+   "metaTitle": "Ampoule LED W16W 6000K — feu de recul (T15, 921, 912)",
+   "metaDescription": "LED W16W (W2.1x9.5d, T15, 921, 912) blanc 6000 K haute intensité, anti-erreur, 12 V. Feux de recul.",
+   "name": "Ampoule LED W16W blanc 6000 K"
+  },
+  "20": {
+   "sku": "LUM-W215W-60",
+   "tagline": "Double intensité au format T20",
+   "description": "Ampoule LED W21/5W (W3x16q) blanc 6000 K, double intensité. Également désignée 7443 ou T20 double filament.",
+   "body": "La W21/5W combine deux intensités dans un culot T20 : un niveau faible en veilleuse ou feu de jour, un niveau fort en feu stop ou de recul selon le montage du véhicule.\n\n**Culot W3x16q** : quatre languettes, contre trois pour la W21W simple filament. Les deux ne sont pas interchangeables, même si l'ampoule semble entrer.\n\nAnti-erreur intégré, 12 V.",
+   "metaTitle": "Ampoule LED W21/5W 6000K double intensité (7443, T20)",
+   "metaDescription": "LED W21/5W (W3x16q, 7443, T20) blanc 6000 K, double intensité, anti-erreur, 12 V. Feux de jour, veilleuses et stop.",
+   "name": "Ampoule LED W21/5W blanc 6000 K"
+  },
+  "21": {
+   "sku": "LUM-T5-WH",
+   "tagline": "La petite LED du tableau de bord",
+   "description": "Ampoule LED T5 (W2x4.6d) blanche, 12 V, pour éclairage de tableau de bord, boutons et commandes. Également désignée W1.2W, W2.3W, 74, 37 ou 286.",
+   "body": "La T5 est la plus petite ampoule d'un véhicule : quelques millimètres, derrière un cadran ou une commande de chauffage. Elles grillent une par une, et un tableau de bord à moitié éclairé fait plus vieux que tout le reste de l'habitacle.\n\n**Remplacez-les toutes en même temps** : une LED neuve à côté d'une halogène fatiguée se voit immédiatement, la différence de teinte étant plus visible que la différence de luminosité.\n\n12 V. Selon les supports, le culot est enfiché directement ou monté sur une bague tournante.",
+   "metaTitle": "Ampoule LED T5 blanche — tableau de bord et commandes",
+   "metaDescription": "LED T5 (W2x4.6d, W1.2W, 74, 37, 286) blanche, 12 V. Éclairage de tableau de bord, boutons, commandes de chauffage.",
+   "name": "Ampoule LED T5 blanche"
+  },
+  "22": {
+   "sku": "LUM-H4-HAL50",
+   "tagline": "H4 effet xénon, homologuée pour la route",
+   "description": "Ampoule halogène H4 60/55 W à lumière blanche 5000 K, marquage E (ECE R37). Vendue par paire.",
+   "body": "**Technologie halogène**, verre traité pour une lumière blanche proche d'un xénon. La H4 gère croisement et route avec ses deux filaments, 60 W pour la route et 55 W pour le croisement.\n\nL'avantage sur un kit LED est juridique autant que pratique : une ampoule halogène de remplacement **conserve le marquage E** et reste conforme pour un usage routier.\n\nComme toute ampoule à verre traité, elle a une durée de vie inférieure à une H4 standard. C'est le prix de la teinte.\n\n12 V, culot P43t. Également désignée 9003 ou HB2.",
+   "metaTitle": "Ampoule halogène H4 effet xénon 5000K 60/55W homologuée",
+   "metaDescription": "Ampoule halogène H4 60/55 W, blanc 5000 K effet xénon, marquage E ECE R37, 12 V. Croisement et route, homologuée, par paire.",
+   "name": "Ampoule halogène H4 effet xénon 5000 K"
+  },
+  "23": {
+   "sku": "LUM-H11-HAL50",
+   "tagline": "H11 effet xénon, pour antibrouillards homologués",
+   "description": "Ampoule halogène H11 55 W à lumière blanche 5000 K, marquage E (ECE R37). Vendue par paire.",
+   "body": "Même principe que les H4 et H7 à effet xénon : filament halogène, verre traité, lumière blanche à 5000 K.\n\nEn antibrouillard, le choix se discute : une lumière blanche est **moins pénétrante dans le brouillard** qu'un jaune, qui diffuse moins sur les gouttelettes. L'effet xénon est ici un choix esthétique, pour accorder l'antibrouillard à un croisement déjà blanc.\n\n12 V, 55 W, culot PGJ19-2, marquage E conservé.",
+   "metaTitle": "Ampoule halogène H11 effet xénon 5000K 55W homologuée",
+   "metaDescription": "Ampoule halogène H11 55 W, blanc 5000 K effet xénon, marquage E ECE R37, 12 V. Antibrouillards et croisement, par paire.",
+   "name": "Ampoule halogène H11 effet xénon 5000 K"
+  },
+  "24": {
+   "sku": "LUM-D1S-HID",
+   "tagline": "La D1S de remplacement, qualité origine",
+   "description": "Ampoule xénon D1S (PK32d-2) 35 W, 6000 K, marquage E. Pour remplacer une ampoule à décharge d'origine.",
+   "body": "**C'est un vrai xénon**, pas une LED imitant le xénon : une ampoule à décharge, alimentée par le ballast d'origine du véhicule.\n\nSur un véhicule livré avec des phares à décharge, c'est la pièce de remplacement conforme. Le marquage E est conservé et l'homologation du véhicule n'est pas remise en cause.\n\n**Remplacez les deux côtés ensemble** : une ampoule à décharge dérive en température de couleur avec l'âge. Une neuve à côté d'une usée donne deux phares de teintes différentes.\n\n35 W, culot PK32d-2.",
+   "metaTitle": "Ampoule xénon D1S 35W 6000K — remplacement origine homologué",
+   "metaDescription": "Ampoule xénon D1S (PK32d-2) 35 W, 6000 K, marquage E. Remplacement d'origine pour véhicule équipé de phares à décharge.",
+   "name": "Ampoule xénon D1S 35 W 6000 K"
+  },
+  "25": {
+   "sku": "LUM-D3S-HID",
+   "tagline": "La D3S de remplacement, qualité origine",
+   "description": "Ampoule xénon D3S (PK32d-5) 35 W, 6000 K, marquage E. Pour remplacer une ampoule à décharge d'origine.",
+   "body": "La D3S a succédé à la D1S sur les véhicules du début des années 2010. Elle fonctionne sous une tension d'amorçage plus basse et **ne s'y substitue pas** : le culot et le ballast diffèrent.\n\nVraie ampoule à décharge, marquage E, compatible avec le ballast d'origine.\n\n**Remplacez les deux côtés ensemble** pour éviter deux teintes de phare.\n\n35 W, culot PK32d-5.",
+   "metaTitle": "Ampoule xénon D3S 35W 6000K — remplacement origine homologué",
+   "metaDescription": "Ampoule xénon D3S (PK32d-5) 35 W, 6000 K, marquage E. Remplacement d'origine pour phares à décharge récents.",
+   "name": "Ampoule xénon D3S 35 W 6000 K"
+  },
+  "26": {
+   "sku": "LUM-DEC-H7",
+   "tagline": "Le module qui fait taire le voyant d'ampoule grillée",
+   "description": "Décodeur anti-erreur pour ampoules LED H7, à intercaler entre le faisceau et l'ampoule. Vendu par paire.",
+   "body": "Certains véhicules surveillent en permanence la consommation du circuit d'éclairage. Une LED consommant beaucoup moins qu'une halogène, le calculateur en conclut que l'ampoule est grillée et **allume un voyant** — parfois même en coupant le feu concerné.\n\nCe module rétablit la charge attendue par le calculateur. Il se branche entre le connecteur du véhicule et l'ampoule, sans coupe-fil ni dérivation.\n\n**Il chauffe en fonctionnement** : c'est normal, il dissipe en chaleur l'énergie que la LED n'utilise pas. Fixez-le sur une partie métallique, à distance des gaines et des durites.\n\nÀ n'ajouter que si le voyant apparaît : une LED déjà anti-erreur n'en a pas besoin.",
+   "metaTitle": "Décodeur anti-erreur CANBUS pour ampoule LED H7 — par paire",
+   "metaDescription": "Module anti-erreur CANBUS pour LED H7, branchement entre faisceau et ampoule. Supprime le voyant d'ampoule grillée. Vendu par paire.",
+   "name": "Décodeur anti-erreur H7"
+  },
+  "27": {
+   "sku": "LUM-ADAPT-H7",
+   "tagline": "L'adaptateur qui tient l'ampoule là où il faut",
+   "description": "Bague adaptatrice pour ampoule LED H7, reprenant la fixation d'origine du véhicule. Types disponibles pour Volkswagen, Mercedes, BMW et autres.",
+   "body": "Tous les phares H7 ne tiennent pas l'ampoule de la même façon. Certains constructeurs utilisent un **clip, une baïonnette ou une bague spécifique** au lieu de l'étrier à ressort classique — et une ampoule LED dont le corps diffère de l'halogène ne s'y fixe plus.\n\nCet adaptateur reprend la fixation d'origine d'un côté, et reçoit l'ampoule LED de l'autre, **à la cote exacte du filament** qu'elle remplace. C'est cette cote qui détermine la coupure du faisceau : une ampoule mal positionnée éblouit ou n'éclaire pas.\n\n**Le type dépend du véhicule.** Relevez la fixation de votre phare avant de commander.",
+   "metaTitle": "Adaptateur de fixation pour ampoule LED H7 — VW, Mercedes, BMW",
+   "metaDescription": "Bague adaptatrice H7 reprenant la fixation d'origine du phare. Positionne l'ampoule LED à la cote du filament. Types par constructeur.",
+   "name": "Adaptateur de fixation H7"
+  },
+  "28": {
+   "sku": "LUM-9012-LED",
+   "tagline": "9012 : le culot HIR2 en LED",
+   "description": "Kit de deux ampoules LED 9012 (PX22d), blanc 6000 K, avec ventilation. Également désignée HIR2.",
+   "body": "La 9012, ou HIR2, équipe les feux de croisement d'une partie des véhicules asiatiques et américains. Son culot PX22d ressemble à une HB4 mais **ne s'y substitue pas** : l'ergot est positionné différemment.\n\nKit complet de deux ampoules avec ventilation intégrée.\n\nAnti-erreur intégré. **Homologation** : usage hors voie publique en remplacement d'un halogène d'origine.",
+   "metaTitle": "Kit ampoules LED 9012 HIR2 6000K — feux de croisement",
+   "metaDescription": "Kit 2 ampoules LED 9012 (PX22d, HIR2) blanc 6000 K, ventilation, anti-erreur, 12 V. Feux de croisement.",
+   "name": "Kit ampoules LED 9012 blanc 6000 K"
+  },
+  "29": {
+   "sku": "LUM-9005-LED",
+   "tagline": "9005 : la route en LED",
+   "description": "Kit de deux ampoules LED 9005 (P20d), blanc 6000 K, avec ventilation. Également désignée HB3.",
+   "body": "La 9005, ou HB3, sert le plus souvent de **feu de route** sur les véhicules qui séparent route et croisement en deux optiques distinctes.\n\nEn feu de route, la LED est dans son meilleur emploi : usage intermittent, donc moins de contrainte thermique, et une portée qui gagne à la lumière blanche.\n\n**À ne pas confondre avec la 9006 (HB4)**, qui fait le croisement sur ces mêmes véhicules : les culots P20d et P22d sont différents.\n\nAnti-erreur intégré. **Homologation** : usage hors voie publique.",
+   "metaTitle": "Kit ampoules LED 9005 HB3 6000K — feux de route",
+   "metaDescription": "Kit 2 ampoules LED 9005 (P20d, HB3) blanc 6000 K, ventilation, anti-erreur, 12 V. Feux de route.",
+   "name": "Kit ampoules LED 9005 blanc 6000 K"
+  },
+  "30": {
+   "sku": "LUM-MOTO-REL",
+   "tagline": "La centrale qui remet le clignotant moto à la bonne cadence",
+   "description": "Centrale clignotante électronique pour moto, compatible avec les clignotants LED. Versions 2 broches et 3 broches, 12 V.",
+   "body": "Sur une moto, la centrale clignotante d'origine est calibrée pour la consommation d'ampoules à filament. Avec des clignotants LED, elle **accélère la cadence** ou ne déclenche plus du tout.\n\nCette centrale électronique fonctionne indépendamment de la charge : la cadence reste correcte avec des LED, des ampoules d'origine, ou un mélange des deux pendant une transition.\n\n**Deux ou trois broches selon la machine.** Relevez le connecteur d'origine avant de commander : le boîtier se remplace à l'identique, sans modification du faisceau.",
+   "metaTitle": "Centrale clignotante LED moto 2 et 3 broches — anti hyper-clignotement",
+   "metaDescription": "Centrale clignotante électronique moto pour clignotants LED, 12 V. Versions 2 et 3 broches. Cadence correcte quelle que soit la charge.",
+   "name": "Centrale clignotante LED moto"
+  },
+  "31": {
+   "sku": "LUM-MOTO-CLI",
+   "tagline": "Des clignotants LED qui tiennent dans la main",
+   "description": "Paire de clignotants LED pour moto, orange, filetage M8 ou M10, homologués E. 12 V.",
+   "body": "Un clignotant moto d'origine est souvent surdimensionné par rapport à la machine. Les modèles LED compacts tiennent dans la main pour une visibilité équivalente.\n\n**Homologués E** : contrairement aux kits de phare, ces clignotants portent le marquage européen et sont conformes pour un usage routier.\n\n**Filetage M8 ou M10** selon le support d'origine. Mesurez la vis de votre clignotant actuel.\n\n**Prévoyez une centrale compatible** : des LED seules sur une centrale d'origine provoquent l'hyper-clignotement.\n\nVendus par paire, orange, 12 V.",
+   "metaTitle": "Clignotants LED moto orange homologués E — filetage M8 et M10",
+   "metaDescription": "Paire de clignotants LED moto orange, homologués E, filetage M8 ou M10, 12 V. Format compact, visibilité conservée.",
+   "name": "Clignotants LED moto orange"
+  },
+  "32": {
+   "sku": "LUM-MOTO-7IN",
+   "tagline": "Le phare rond 7 pouces, tout en LED",
+   "description": "Phare avant LED rond de 7 pouces, blanc 6000 K, boîtier noir, connecteur H4. Homologué E, 12 V.",
+   "body": "Le 7 pouces est le format historique du phare rond : roadsters, customs, 4x4 anciens, Jeep. Ce bloc complet remplace l'optique d'origine **sans adaptateur**, par le connecteur H4 à trois broches déjà en place.\n\nContrairement à une ampoule LED montée dans un réflecteur conçu pour un filament, un bloc entièrement LED est **optiquement cohérent** : le réflecteur est dessiné pour la source qu'il reçoit, et la coupure du faisceau est nette.\n\n**Homologué E**, donc utilisable sur route — ce qui n'est pas le cas d'un kit LED en remplacement d'ampoule.\n\nBoîtier noir, 6000 K, 12 V. Vérifiez le diamètre de votre support : le 7 pouces fait 178 mm.",
+   "metaTitle": "Phare LED rond 7 pouces moto homologué E — connecteur H4",
+   "metaDescription": "Phare avant LED rond 7 pouces (178 mm) blanc 6000 K, boîtier noir, connecteur H4, homologué E, 12 V. Roadster, custom, 4x4.",
+   "name": "Phare LED rond 7 pouces moto"
+  }
+ }
+}

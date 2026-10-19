@@ -28,7 +28,9 @@
     "import:brand-logos": "tsx scripts/import-brand-logos.ts",
     "import:vehicles-cars": "tsx scripts/import-vehicles.ts car",
     "import:vehicles-motos": "tsx scripts/import-vehicles.ts moto",
-    "import:vehicle-photos": "tsx scripts/import-vehicle-photos.ts"
+    "import:vehicle-photos": "tsx scripts/import-vehicle-photos.ts",
+    "import:produits": "tsx scripts/import-produits.ts",
+    "import:packs-vehicule": "tsx scripts/import-packs-vehicule.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",
