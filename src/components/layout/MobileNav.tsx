@@ -197,7 +197,14 @@ export function MobileNav({
                     Toutes les rubriques
                   </button>
 
-                  <p className="px-3 pt-2 pb-1 text-base font-bold">{ouverte.label}</p>
+                  <p className="px-3 pt-2 pb-1 text-base font-bold">
+                    {ouverte.kicker ? (
+                      <span className="block text-[11px] font-normal text-muted-strong">
+                        {ouverte.kicker}
+                      </span>
+                    ) : null}
+                    {ouverte.label}
+                  </p>
 
                   <Link
                     href={ouverte.href}
@@ -248,22 +255,34 @@ export function MobileNav({
                             type="button"
                             onClick={() => ouvrir(section.key)}
                             className={cn(
-                              'flex min-h-12 w-full items-center justify-between gap-3 px-3 text-left text-base font-semibold',
+                              'flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left',
                               section.highlight && 'text-brand',
                             )}
                           >
-                            {section.label}
+                            <span className="flex flex-col leading-tight">
+                              {section.kicker ? (
+                                <span className="text-[11px] text-muted-strong">
+                                  {section.kicker}
+                                </span>
+                              ) : null}
+                              <span className="text-base font-semibold">{section.label}</span>
+                            </span>
                             <IconChevronRight className="size-5 shrink-0 text-muted-strong" />
                           </button>
                         ) : (
                           <Link
                             href={section.href}
                             className={cn(
-                              'flex min-h-12 items-center px-3 text-base font-semibold',
+                              'flex min-h-12 flex-col justify-center px-3 py-2 leading-tight',
                               section.highlight && 'text-brand',
                             )}
                           >
-                            {section.label}
+                            {section.kicker ? (
+                              <span className="text-[11px] text-muted-strong">
+                                {section.kicker}
+                              </span>
+                            ) : null}
+                            <span className="text-base font-semibold">{section.label}</span>
                           </Link>
                         )}
                       </li>

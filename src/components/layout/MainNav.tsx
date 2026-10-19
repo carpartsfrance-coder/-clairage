@@ -72,6 +72,12 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
           const deployable = section.columns.length > 0
           const active = ouverte === section.key
           const panneauId = `panneau-${section.key}`
+          /*
+            Le nom complet, surtitre compris. Le libellé seul produisait
+            « Déplier LED haute puissance », indistinct de « Déplier LED
+            veilleuses » pour qui n'a que l'annonce vocale.
+          */
+          const nomComplet = section.kicker ? `${section.kicker} ${section.label}` : section.label
 
           return (
             <li
@@ -85,15 +91,35 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
             >
               {index > 0 ? <span aria-hidden className="h-4 w-px bg-[#e6eadd]" /> : null}
 
+              {/*
+                Deux lignes : le surtitre dit la nature de la rubrique
+                (« Packs par marque », « Ampoules »), le libellé dit laquelle.
+                Sur une seule ligne, « Kits LED et ampoules LED haute
+                puissance » déborderait la barre.
+              */}
               <Link
                 href={section.href}
                 className={cn(
-                  'py-2 pl-[14px] text-[12px] font-medium whitespace-nowrap transition-colors first:pl-0',
+                  'flex flex-col justify-center py-1.5 pl-[14px] leading-tight whitespace-nowrap transition-colors first:pl-0',
                   deployable ? 'pr-1' : 'pr-[14px]',
-                  section.highlight ? 'font-semibold text-brand' : 'hover:text-brand',
+                  section.highlight ? 'text-brand' : 'hover:text-brand',
                 )}
               >
-                {section.label}
+                {section.kicker ? (
+                  <span
+                    className={cn(
+                      'text-[9px] font-medium',
+                      section.highlight ? 'text-brand/80' : 'text-[#8c9481]',
+                    )}
+                  >
+                    {section.kicker}
+                  </span>
+                ) : null}
+                <span
+                  className={cn('text-[12px]', section.highlight ? 'font-bold' : 'font-medium')}
+                >
+                  {section.label}
+                </span>
               </Link>
 
               {deployable ? (
@@ -101,7 +127,7 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
                   type="button"
                   aria-expanded={active}
                   aria-controls={panneauId}
-                  aria-label={`${active ? 'Replier' : 'Déplier'} ${section.label}`}
+                  aria-label={`${active ? 'Replier' : 'Déplier'} ${nomComplet}`}
                   onClick={() => setOuverte(active ? null : section.key)}
                   className="mr-[10px] flex size-6 items-center justify-center rounded-xs text-muted transition-colors hover:text-brand"
                 >
@@ -177,7 +203,7 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
               onClick={() => setOuverte(null)}
               className="mt-4 inline-flex min-h-9 items-center border-t border-line pt-3 text-[10px] font-bold hover:text-brand"
             >
-              Voir toute la rubrique {section.label} ↗
+              Voir toute la rubrique {section.kicker ? `${section.kicker} ` : ''}{section.label} ↗
             </Link>
           </div>
         )
