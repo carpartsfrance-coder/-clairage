@@ -137,7 +137,7 @@ export default async function Page({
   const etat = etatsPaiement[order.paymentStatus] ?? { label: 'État inconnu', tone: 'neutral' as const }
 
   return (
-    <div className="container-page py-8 lg:py-12">
+    <div className="container-page pb-10 fiche:pb-14">
       <Breadcrumb
         items={[
           { label: 'Accueil', href: '/' },
@@ -146,7 +146,7 @@ export default async function Page({
         ]}
       />
 
-      <h1 className="mt-4 text-[1.75rem] leading-tight font-extrabold sm:text-[2.125rem]">
+      <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         Paiement de la commande {order.reference}
       </h1>
 
@@ -155,7 +155,7 @@ export default async function Page({
             État du paiement et seule action encore possible
             ----------------------------------------------------------------- */}
         <section aria-labelledby="paiement-etat" className="min-w-0 flex-1">
-          <h2 id="paiement-etat" className="text-lg font-bold">
+          <h2 id="paiement-etat" className="text-[14px] font-bold">
             État du paiement
           </h2>
 
@@ -287,7 +287,7 @@ export default async function Page({
               --------------------------------------------------------------- */}
           {paiementSimule ? (
             <section aria-labelledby="paiement-simulation" className="mt-8">
-              <h2 id="paiement-simulation" className="text-lg font-bold">
+              <h2 id="paiement-simulation" className="text-[14px] font-bold">
                 Vérifier le tunnel en paiement simulé
               </h2>
 
@@ -345,13 +345,13 @@ export default async function Page({
         >
           <Card className="p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 id="paiement-recapitulatif" className="text-lg font-bold">
+              <h2 id="paiement-recapitulatif" className="text-[14px] font-bold">
                 Récapitulatif
               </h2>
               <Badge tone={etat.tone}>{etat.label}</Badge>
             </div>
 
-            <dl className="mt-4 flex flex-col gap-3 text-sm">
+            <dl className="mt-4 flex flex-col gap-2.5 text-[12px]">
               <div className="flex items-baseline justify-between gap-4">
                 <dt>Articles</dt>
                 <dd className="font-semibold">

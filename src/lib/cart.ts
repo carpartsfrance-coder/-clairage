@@ -8,7 +8,12 @@ import {
   availabilityForVariant,
   type Availability,
 } from './stock'
-import { findCartConflicts, type CartConflict } from './fitment'
+import {
+  findCartConflicts,
+  findMissingCartAccessories,
+  type CartConflict,
+  type MissingCartAccessory,
+} from './fitment'
 
 /**
  * Lecture du panier.
@@ -63,6 +68,14 @@ export type CartView = {
   stockIssues: Array<{ lineId: string; productName: string; sellable: number }>
   /** Conflits avec le véhicule sélectionné. On signale, on ne retire rien. */
   conflicts: CartConflict[]
+  /**
+   * Accessoires indispensables au montage qu'aucune ligne n'apporte.
+   *
+   * On signale, on n'ajoute rien : c'est au client de dire s'il les possède
+   * déjà. Vide tant qu'aucun véhicule n'est sélectionné — sans montage connu,
+   * rien ne peut être déclaré nécessaire.
+   */
+  missingAccessories: MissingCartAccessory[]
 }
 
 export const EMPTY_CART: CartView = {
@@ -74,6 +87,7 @@ export const EMPTY_CART: CartView = {
   vatCents: 0,
   stockIssues: [],
   conflicts: [],
+  missingAccessories: [],
 }
 
 export function newCartToken(): string {
@@ -178,14 +192,29 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
         sellable: line.availability.sellable ?? 0,
       }))
 
-    const conflicts = await findCartConflicts(
-      configurationId,
-      lines.map((line) => ({
-        variantId: line.variantId,
-        productName: line.productName,
-        variantName: line.variantName,
-      })),
-    )
+    const [conflicts, missingAccessories] = await Promise.all([
+      findCartConflicts(
+        configurationId,
+        lines.map((line) => ({
+          variantId: line.variantId,
+          productName: line.productName,
+          variantName: line.variantName,
+        })),
+      ),
+      findMissingCartAccessories(
+        configurationId,
+        lines.map((line) => ({
+          variantId: line.variantId,
+          productName: line.productName,
+          variantName: line.variantName,
+          quantity: line.quantity,
+          componentSkus: line.components.map((component) => ({
+            sku: component.sku,
+            quantity: component.quantity,
+          })),
+        })),
+      ),
+    ])
 
     return {
       id: cart.id,
@@ -196,6 +225,7 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
       vatCents,
       stockIssues,
       conflicts,
+      missingAccessories,
     }
   } catch (error) {
     console.error('[panier] lecture impossible', error)

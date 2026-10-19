@@ -9,13 +9,18 @@ import { IconChevronDown } from './icons'
    aria-describedby et aria-invalid, de sorte qu'il soit annoncé.
    -------------------------------------------------------------------------- */
 
+/*
+  `.form-field` du code de référence : fond blanc, filet #d5d9cf, rayon 7 px,
+  12 px de retrait et texte à 13 px. La taille `md` est celle-là ; `sm` et
+  `lg` restent pour les écrans qui s'en servent (back-office, filtres).
+*/
 const controlBase =
-  'w-full rounded-sm border bg-white text-slate-ink placeholder:text-muted ' +
+  'w-full rounded-[7px] border bg-white text-[#31372c] placeholder:text-muted ' +
   'transition-colors disabled:bg-surface-muted disabled:text-muted'
 
 const controlSizes = {
-  sm: 'h-9 px-3 text-sm',
-  md: 'h-11 px-3.5 text-[0.95rem]',
+  sm: 'h-9 px-3 text-[12px]',
+  md: 'h-[46px] px-3 text-[13px]',
   lg: 'h-14 px-4 text-base',
 } as const
 
@@ -42,21 +47,21 @@ function FieldShell({
   labelClassName?: string
 }) {
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
+    <div className={cn('flex flex-col gap-[7px]', className)}>
       <label
         htmlFor={id}
-        className={cn(labelClassName ?? 'text-sm font-semibold', hideLabel && 'sr-only')}
+        className={cn(labelClassName ?? 'text-[11px] font-bold', hideLabel && 'sr-only')}
       >
         {label}
       </label>
       {children}
       {hint && !error ? (
-        <p id={`${id}-hint`} className="text-xs text-muted">
+        <p id={`${id}-hint`} className="text-[10px] font-normal text-muted">
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p id={`${id}-error`} className="text-xs font-medium text-danger">
+        <p id={`${id}-error`} className="text-[10px] font-medium text-danger">
           {error}
         </p>
       ) : null}
@@ -104,7 +109,7 @@ export function TextField({
         className={cn(
           controlBase,
           controlSizes[fieldSize],
-          error ? 'border-danger' : 'border-line-strong hover:border-muted',
+          error ? 'border-danger' : 'border-[#d5d9cf] hover:border-muted',
           className,
         )}
         {...rest}
@@ -165,7 +170,7 @@ export function SelectField({
             controlSizes[fieldSize],
             'appearance-none pr-10',
             Boolean(adornment) && 'pl-11',
-            error ? 'border-danger' : 'border-line-strong hover:border-muted',
+            error ? 'border-danger' : 'border-[#d5d9cf] hover:border-muted',
             className,
           )}
           {...rest}

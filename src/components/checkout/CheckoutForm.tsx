@@ -5,7 +5,7 @@ import { useActionState, useState } from 'react'
 import { submitOrder, type CheckoutState } from '@/lib/actions/checkout'
 import { formatPrice } from '@/lib/identity'
 import { Button } from '@/components/ui/Button'
-import { Alert, Card } from '@/components/ui/Surface'
+import { Alert } from '@/components/ui/Surface'
 import { SelectField, TextField } from '@/components/ui/Field'
 import { cn } from '@/lib/cn'
 
@@ -68,7 +68,11 @@ function delayLabel(option: CheckoutShippingOption): string | null {
     : `Estimation ${option.minDays} à ${option.maxDays} jours ouvrés`
 }
 
-const legendClass = 'text-lg font-bold'
+/*
+  Intitulés et retraits repris du code de référence : titre de section à 14 px,
+  texte d'accompagnement à 11 px, et les champs de `.form-field`.
+*/
+const legendClass = 'text-[14px] font-bold'
 const fieldsetClass = 'border-0 p-0'
 
 /**
@@ -198,7 +202,7 @@ export function CheckoutForm({
   const noShipping = shippingOptions.length === 0
 
   return (
-    <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+    <div className="flex flex-col gap-8 fiche:flex-row fiche:items-start fiche:gap-[49px]">
       {/* -------------------------------------------------------------------
           Saisie
           ------------------------------------------------------------------- */}
@@ -207,7 +211,7 @@ export function CheckoutForm({
           Vos informations
         </h2>
 
-        <form action={formAction} className="flex flex-col gap-8">
+        <form action={formAction} className="flex flex-col gap-7">
           {/*
             Pas de titre en dur dans ce bandeau. Il a longtemps affirmé « Votre
             commande n'a pas été enregistrée », y compris quand le message juste
@@ -232,7 +236,7 @@ export function CheckoutForm({
               que rien ne le signale.
             */}
             {account ? (
-              <p className="mt-2 text-sm text-muted-strong">
+              <p className="mt-2 text-[11px] leading-[1.7] text-muted-strong">
                 Connecté avec <strong className="text-slate-ink">{account.email}</strong> : cette
                 commande sera rattachée à ce compte et visible dans votre espace client. Vous
                 pouvez indiquer une autre adresse de contact ci-dessous si la confirmation doit
@@ -278,7 +282,7 @@ export function CheckoutForm({
 
             <label
               htmlFor="billingSameAsShipping"
-              className="mt-4 flex min-h-11 cursor-pointer items-center gap-3 text-[0.95rem]"
+              className="mt-3 flex min-h-11 cursor-pointer items-center gap-3 text-[11px]"
             >
               <input
                 id="billingSameAsShipping"
@@ -326,11 +330,13 @@ export function CheckoutForm({
                   return (
                     <label
                       key={option.code}
+                      /* `.pack-option` de la fiche produit : 1,5 px de rouge
+                         sur #fdf6f5 quand il est retenu, filet #ddddda sinon. */
                       className={cn(
-                        'flex min-h-14 cursor-pointer items-start gap-3 rounded-md border px-4 py-3 transition-colors',
+                        'flex cursor-pointer items-center gap-2.5 rounded-lg transition-colors',
                         active
-                          ? 'border-brand bg-brand-soft'
-                          : 'border-line-strong bg-white hover:border-slate-ink',
+                          ? 'border-[1.5px] border-brand bg-[#fdf6f5] px-[12.5px] py-[12.5px]'
+                          : 'border border-[#ddddda] px-[13px] py-[13px] hover:border-slate-ink',
                       )}
                     >
                       <input
@@ -339,19 +345,19 @@ export function CheckoutForm({
                         value={option.code}
                         checked={active}
                         onChange={() => setMethodCode(option.code)}
-                        className="mt-1 size-5 shrink-0 accent-brand"
+                        className="size-[15px] shrink-0 accent-brand"
                       />
-                      <span className="flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-4 gap-y-1">
                         <span className="min-w-0">
-                          <span className="block font-semibold">{option.label}</span>
+                          <span className="block text-[12px] font-bold">{option.label}</span>
                           {option.carrier ? (
-                            <span className="block text-sm text-muted">{option.carrier}</span>
+                            <span className="block text-[10px] text-[#777974]">{option.carrier}</span>
                           ) : null}
                           {delay ? (
-                            <span className="block text-sm text-muted-strong">{delay}</span>
+                            <span className="block text-[10px] text-[#777974]">{delay}</span>
                           ) : null}
                         </span>
-                        <span className="font-semibold">
+                        <span className="text-[13px] font-bold whitespace-nowrap">
                           {option.effectivePriceCents === 0
                             ? 'Offerte'
                             : formatPrice(option.effectivePriceCents)}
@@ -374,7 +380,7 @@ export function CheckoutForm({
           <div className="flex flex-col gap-3">
             <label
               htmlFor="acceptTerms"
-              className="flex min-h-11 cursor-pointer items-start gap-3 py-1 text-[0.95rem]"
+              className="flex min-h-11 cursor-pointer items-start gap-3 py-1 text-[11px] leading-[1.7]"
             >
               <input
                 id="acceptTerms"
@@ -408,7 +414,7 @@ export function CheckoutForm({
 
             <label
               htmlFor="acceptNewsletter"
-              className="flex min-h-11 cursor-pointer items-start gap-3 py-1 text-[0.95rem]"
+              className="flex min-h-11 cursor-pointer items-start gap-3 py-1 text-[11px] leading-[1.7]"
             >
               <input
                 id="acceptNewsletter"
@@ -428,7 +434,12 @@ export function CheckoutForm({
             </Alert>
           ) : null}
 
-          <Button type="submit" size="lg" block disabled={pending || noShipping}>
+          <Button
+            type="submit"
+            block
+            disabled={pending || noShipping}
+            className="min-h-[51px] gap-3 rounded-[7px] text-[13px]"
+          >
             {pending ? 'Enregistrement…' : `Payer ${formatPrice(totalCents)}`}
           </Button>
         </form>
@@ -439,40 +450,53 @@ export function CheckoutForm({
           ------------------------------------------------------------------- */}
       <section
         aria-labelledby="commande-recapitulatif"
-        className="lg:sticky lg:top-6 lg:w-96 lg:shrink-0"
+        className="fiche:sticky fiche:top-6 fiche:w-[370px] fiche:shrink-0"
       >
-        <Card className="p-5">
-          <h2 id="commande-recapitulatif" className="text-lg font-bold">
+        {/* `.price-details` : lignes séparées par un filet, montants à droite. */}
+        <div className="rounded-[9px] border border-[#e2e3dc] p-5">
+          <h2 id="commande-recapitulatif" className="text-[14px] font-bold">
             Récapitulatif
           </h2>
 
-          <ul className="mt-4 flex flex-col gap-3 border-b border-line pb-4">
+          <ul className="mt-3">
             {lines.map((line) => (
-              <li key={line.id} className="flex items-baseline justify-between gap-4 text-sm">
+              <li
+                key={line.id}
+                className="flex items-baseline justify-between gap-4 border-b border-line py-3 text-[12px]"
+              >
                 <span className="min-w-0">
                   <span className="block font-semibold">{line.productName}</span>
-                  <span className="block text-muted">{line.variantName}</span>
-                  <span className="block text-xs text-muted">Quantité : {line.quantity}</span>
+                  <span className="block text-[10px] text-[#818775]">{line.variantName}</span>
+                  <span className="block text-[10px] text-[#818775]">
+                    Quantité : {line.quantity}
+                  </span>
                 </span>
-                <span className="shrink-0 font-semibold">{formatPrice(line.lineTotalCents)}</span>
+                <span className="shrink-0 font-semibold whitespace-nowrap">
+                  {formatPrice(line.lineTotalCents)}
+                </span>
               </li>
             ))}
           </ul>
 
-          <dl className="mt-4 flex flex-col gap-3 text-sm">
-            <div className="flex items-baseline justify-between gap-4">
+          <dl>
+            <div className="flex items-baseline justify-between gap-4 py-3 text-[12px]">
               <dt>Sous-total TTC</dt>
               <dd className="font-semibold">{formatPrice(subtotalCents)}</dd>
             </div>
 
-            <div className="flex items-baseline justify-between gap-4 text-muted">
+            <div className="flex items-baseline justify-between gap-4 pb-3 text-[10px] text-muted">
               <dt>dont TVA sur les articles</dt>
               <dd>{formatPrice(vatCents)}</dd>
             </div>
 
-            <div className="flex items-baseline justify-between gap-4">
+            <div className="flex items-baseline justify-between gap-4 pb-3 text-[12px]">
               <dt>Livraison</dt>
-              <dd className="text-right font-semibold">
+              <dd
+                className={cn(
+                  'text-right font-semibold',
+                  selected && shippingCents === 0 && 'text-[11px] text-ok',
+                )}
+              >
                 {selected
                   ? shippingCents === 0
                     ? 'Offerte'
@@ -481,20 +505,20 @@ export function CheckoutForm({
               </dd>
             </div>
 
-            <div className="mt-1 flex items-baseline justify-between gap-4 border-t border-line pt-4">
-              <dt className="font-semibold">Total</dt>
-              <dd className="text-xl font-bold">{formatPrice(totalCents)}</dd>
+            <div className="mt-[18px] flex items-baseline justify-between gap-4 border-t border-line pt-[17px] text-[18px] font-bold">
+              <dt>Total</dt>
+              <dd>{formatPrice(totalCents)}</dd>
             </div>
           </dl>
 
           {/* Le contrôle serveur des montants existe toujours (voir
               `placeOrder`) ; il n'a simplement rien à faire sur cet écran. Ce
               que le client a besoin de lire, c'est ce qu'il va payer. */}
-          <p className="mt-3 text-xs text-muted">
+          <p className="mt-3 text-[9px] leading-[1.8] text-[#8d9483]">
             Montant TTC, livraison comprise. C&apos;est la somme qui sera débitée, et rien ne s&apos;y
             ajoute après validation.
           </p>
-        </Card>
+        </div>
       </section>
     </div>
   )

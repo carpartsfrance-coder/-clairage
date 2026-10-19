@@ -180,7 +180,9 @@ export async function generateMetadata({
    Page
    -------------------------------------------------------------------------- */
 
-const h1Class = 'text-[1.75rem] leading-tight font-extrabold sm:text-[2.125rem]'
+/* Même registre que le panier et le tunnel : titre de page à 25/29 px. */
+const h1Class =
+  'text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]'
 const rowClass = 'flex items-baseline justify-between gap-4'
 
 export default async function Page({
@@ -202,7 +204,7 @@ export default async function Page({
 
   if (loaded === 'unavailable') {
     return (
-      <div className="container-page py-8 lg:py-12">
+      <div className="container-page pb-10 fiche:pb-14">
         <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Commande' }]} />
         <h1 className={`mt-4 ${h1Class}`}>Votre commande n&apos;a pas pu être affichée.</h1>
         <Alert
@@ -265,7 +267,7 @@ export default async function Page({
   /* --- c) Commande non aboutie -------------------------------------------- */
   if (failed) {
     return (
-      <div className="container-page py-8 lg:py-12">
+      <div className="container-page pb-10 fiche:pb-14">
         <Breadcrumb
           items={[{ label: 'Accueil', href: '/' }, { label: `Commande ${order.reference}` }]}
         />
@@ -311,7 +313,7 @@ export default async function Page({
   const parentLines = order.lines.filter((line) => line.parentLineId === null)
 
   return (
-    <div className="container-page py-8 lg:py-12">
+    <div className="container-page pb-10 fiche:pb-14">
       {awaitingPayment ? (
         /*
           Rafraîchissement sans JavaScript : le statut est écrit par le webhook
@@ -402,12 +404,12 @@ export default async function Page({
             ----------------------------------------------------------------- */}
         <div className="min-w-0 flex-1 flex flex-col gap-8">
           <section aria-labelledby="confirmation-commande">
-            <h2 id="confirmation-commande" className="text-lg font-bold">
+            <h2 id="confirmation-commande" className="text-[14px] font-bold">
               Votre commande
             </h2>
 
             <Card className="mt-4 p-5">
-              <dl className="flex flex-col gap-3 text-sm">
+              <dl className="flex flex-col gap-2.5 text-[12px]">
                 <div className={rowClass}>
                   <dt className="text-muted-strong">Référence</dt>
                   <dd className="font-semibold">{order.reference}</dd>
@@ -457,7 +459,7 @@ export default async function Page({
           </section>
 
           <section aria-labelledby="confirmation-articles">
-            <h2 id="confirmation-articles" className="text-lg font-bold">
+            <h2 id="confirmation-articles" className="text-[14px] font-bold">
               Articles
             </h2>
 
@@ -491,7 +493,7 @@ export default async function Page({
 
           {cancelledAfterPayment ? null : (
             <section aria-labelledby="confirmation-suite">
-              <h2 id="confirmation-suite" className="text-lg font-bold">
+              <h2 id="confirmation-suite" className="text-[14px] font-bold">
                 Et ensuite ?
               </h2>
 
@@ -531,11 +533,11 @@ export default async function Page({
           className="lg:sticky lg:top-6 lg:w-96 lg:shrink-0"
         >
           <Card className="p-5">
-            <h2 id="confirmation-totaux" className="text-lg font-bold">
+            <h2 id="confirmation-totaux" className="text-[14px] font-bold">
               Totaux
             </h2>
 
-            <dl className="mt-4 flex flex-col gap-3 text-sm">
+            <dl className="mt-4 flex flex-col gap-2.5 text-[12px]">
               <div className={rowClass}>
                 <dt>Sous-total TTC</dt>
                 <dd className="font-semibold">{formatPrice(order.subtotalCents)}</dd>

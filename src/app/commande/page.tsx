@@ -29,15 +29,15 @@ export default async function CommandePage() {
 
   if (cart.lines.length === 0) {
     return (
-      <div className="container-page py-8 lg:py-12">
+      <div className="container-page pb-10 fiche:pb-14">
         <Breadcrumb
           items={[{ label: 'Accueil', href: '/' }, { label: 'Panier', href: '/panier' }, { label: 'Commande' }]}
         />
-        <h1 className="mt-4 text-[1.75rem] leading-tight font-extrabold sm:text-[2.125rem]">
+        <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
           Votre commande
         </h1>
         <EmptyState
-          className="mt-8"
+          className="mt-6"
           title="Votre panier est vide."
           description="Ajoutez un article avant de passer commande."
           action={{ label: 'Voir le catalogue', href: '/c' }}
@@ -59,16 +59,16 @@ export default async function CommandePage() {
   }))
 
   return (
-    <div className="container-page py-8 lg:py-12">
+    <div className="container-page pb-10 fiche:pb-14">
       <Breadcrumb
         items={[{ label: 'Accueil', href: '/' }, { label: 'Panier', href: '/panier' }, { label: 'Commande' }]}
       />
 
-      <h1 className="mt-4 text-[1.75rem] leading-tight font-extrabold sm:text-[2.125rem]">
+      <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         Votre commande
       </h1>
 
-      <div className="mt-8">
+      <div className="mt-6">
         <CheckoutForm
           account={
             user
