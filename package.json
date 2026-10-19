@@ -27,7 +27,8 @@
     "seed:taxonomy": "tsx scripts/seed-taxonomy.ts",
     "import:brand-logos": "tsx scripts/import-brand-logos.ts",
     "seed:vehicles-motos": "tsx scripts/seed-vehicles-motos.ts",
-    "import:vehicles-cars": "tsx scripts/import-vehicles-cars.ts"
+    "import:vehicles-cars": "tsx scripts/import-vehicles-cars.ts",
+    "import:vehicle-photos": "tsx scripts/import-vehicle-photos.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",
