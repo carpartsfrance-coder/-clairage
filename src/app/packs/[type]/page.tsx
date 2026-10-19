@@ -61,7 +61,20 @@ export default async function PacksTypePage({ params }: PageProps) {
         affichés sont ceux documentés pour ce véhicule.
       </p>
 
-      {makes.length === 0 ? (
+      {makes === null ? (
+        /*
+          Lecture en échec. Ce cas doit se distinguer du catalogue vide : dire
+          « aucune marque n'est référencée » quand on n'a simplement pas pu
+          lire, c'est affirmer une absence qu'on n'a pas constatée — et
+          renvoyer un client dont le véhicule est au catalogue.
+        */
+        <EmptyState
+          className="mt-6"
+          title="La liste des marques est momentanément indisponible."
+          description="Nous n'avons pas pu lire le référentiel véhicule. Cela ne veut pas dire que votre véhicule est absent du catalogue : réessayez dans un instant, ou parcourez le catalogue en attendant."
+          action={{ label: 'Voir le catalogue', href: '/c' }}
+        />
+      ) : makes.length === 0 ? (
         /*
           Aucune marque de ce type au catalogue. On le dit plutôt que de
           laisser une page vide, et on propose les deux autres chemins qui,

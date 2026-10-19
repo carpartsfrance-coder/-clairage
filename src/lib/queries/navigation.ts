@@ -70,38 +70,27 @@ const MAX_PAR_COLONNE = 10
  * Marques actives d'un type de véhicule, avec leur logo et leur nombre de
  * modèles.
  *
- * Le logo est résolu par une seconde lecture plutôt que par une jointure :
- * `VehicleMake.logoMediaId` porte un identifiant de média mais aucune
- * relation n'est déclarée côté schéma. La déclarer demanderait une migration,
- * et deux migrations écrites en parallèle sur la même table se marchent
- * dessus. Une lecture de plus sur une poignée d'identifiants coûte moins cher
- * que ce risque, et la jointure pourra remplacer ceci sans toucher à l'appel.
+ * Le logo arrive par jointure : `VehicleMake.logo` est une relation depuis
+ * que le référentiel véhicule est éditable en back-office. Elle est en
+ * `SET NULL` — supprimer un média détache le logo sans emporter la marque, et
+ * l'affichage retombe alors sur le monogramme.
  */
 async function lireMarques(type: 'CAR' | 'MOTORCYCLE') {
   const makes = await prisma.vehicleMake.findMany({
     where: { type, active: true, models: { some: { active: true } } },
     orderBy: [{ position: 'asc' }, { name: 'asc' }],
-    include: { _count: { select: { models: { where: { active: true } } } } },
+    include: {
+      _count: { select: { models: { where: { active: true } } } },
+      logo: { select: { url: true, alt: true } },
+    },
   })
 
-  const logoIds = [...new Set(makes.map((make) => make.logoMediaId).filter((id): id is string => Boolean(id)))]
-  const medias = logoIds.length
-    ? await prisma.media.findMany({
-        where: { id: { in: logoIds } },
-        select: { id: true, url: true, alt: true },
-      })
-    : []
-  const parId = new Map(medias.map((media) => [media.id, media]))
-
-  return makes.map((make) => {
-    const media = make.logoMediaId ? parId.get(make.logoMediaId) : undefined
-    return {
-      slug: make.slug,
-      name: make.name,
-      models: make._count.models,
-      logo: media ? { url: media.url, alt: media.alt ?? make.name } : null,
-    }
-  })
+  return makes.map((make) => ({
+    slug: make.slug,
+    name: make.name,
+    models: make._count.models,
+    logo: make.logo ? { url: make.logo.url, alt: make.logo.alt ?? make.name } : null,
+  }))
 }
 
 function colonneMarques(

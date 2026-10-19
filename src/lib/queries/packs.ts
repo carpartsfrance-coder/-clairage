@@ -75,44 +75,38 @@ export function yearsLabel(yearFrom: number, yearTo: number | null): string {
 
 /* -------------------------------------------------------------------------- */
 
-/** Marques d'un type donné, avec au moins un modèle actif. */
-export async function listPackMakes(type: PackVehicleType): Promise<PackMake[]> {
+/**
+ * Marques d'un type donné, avec au moins un modèle actif.
+ *
+ * Renvoie `null` si la lecture échoue — et c'est tout l'intérêt de la
+ * distinction. Cette fonction rendait `[]` dans les deux cas, si bien qu'une
+ * base injoignable affichait « Aucune marque auto & utilitaires n'est encore
+ * référencée » à un client dont le véhicule était, lui, bien au catalogue.
+ * Une panne de lecture n'est pas un catalogue vide, et l'écrire revenait à
+ * affirmer une absence qu'on n'avait pas constatée.
+ */
+export async function listPackMakes(type: PackVehicleType): Promise<PackMake[] | null> {
   try {
     const makes = await prisma.vehicleMake.findMany({
       where: { type, active: true, models: { some: { active: true } } },
       orderBy: [{ position: 'asc' }, { name: 'asc' }],
-      include: { _count: { select: { models: { where: { active: true } } } } },
+      include: {
+        _count: { select: { models: { where: { active: true } } } },
+        // Relation en `SET NULL` : supprimer un média détache le logo, il ne
+        // fait pas disparaître la marque, et l'affichage reprend le monogramme.
+        logo: { select: { url: true, alt: true } },
+      },
     })
 
-    /*
-      Les logos sont relus séparément : `logoMediaId` porte un identifiant de
-      média sans relation déclarée côté schéma. Ajouter la relation demande
-      une migration sur `VehicleMake` — à faire quand la table n'est plus en
-      cours de modification ailleurs. L'appelant ne verra pas la différence.
-    */
-    const logoIds = [
-      ...new Set(makes.map((make) => make.logoMediaId).filter((id): id is string => Boolean(id))),
-    ]
-    const medias = logoIds.length
-      ? await prisma.media.findMany({
-          where: { id: { in: logoIds } },
-          select: { id: true, url: true, alt: true },
-        })
-      : []
-    const parId = new Map(medias.map((media) => [media.id, media]))
-
-    return makes.map((make) => {
-      const media = make.logoMediaId ? parId.get(make.logoMediaId) : undefined
-      return {
-        slug: make.slug,
-        name: make.name,
-        modelCount: make._count.models,
-        logo: media ? { url: media.url, alt: media.alt ?? make.name } : null,
-      }
-    })
+    return makes.map((make) => ({
+      slug: make.slug,
+      name: make.name,
+      modelCount: make._count.models,
+      logo: make.logo ? { url: make.logo.url, alt: make.logo.alt ?? make.name } : null,
+    }))
   } catch (error) {
     console.error('[packs] marques indisponibles', error)
-    return []
+    return null
   }
 }
 
