@@ -22,78 +22,48 @@ export const topNav: Array<NavItem & { icon: 'return' | 'help' }> = [
   { label: 'Aide & contact', href: '/aide', icon: 'help' },
 ]
 
+/**
+ * Repli statique, utilisé uniquement par la page 404.
+ *
+ * La navigation du site vient désormais du catalogue
+ * (`lib/queries/navigation.ts`). Cette liste ne sert qu'à proposer des
+ * sorties sur une page d'erreur, où une requête supplémentaire serait mal
+ * venue : on y est déjà parce que quelque chose n'a pas marché.
+ *
+ * **Les sous-entrées ont été retirées.** Elles étaient écrites à la main —
+ * « Feux de croisement », « Plafonniers », « Adaptateurs »… — et pointaient
+ * sur des catégories qui n'existent pas : les sept liens du menu mobile
+ * répondaient 404. Ce qui se déplie aujourd'hui vient de la base, et ne peut
+ * donc pas désigner une page absente.
+ */
 export const mainNav: NavItem[] = [
-  {
-    label: 'Phares LED',
-    href: '/c/phares-led',
-    description: 'Feux de croisement, de route et antibrouillards.',
-    children: [
-      { label: 'Feux de croisement', href: '/c/phares-led/croisement' },
-      { label: 'Feux de route', href: '/c/phares-led/route' },
-      { label: 'Antibrouillards', href: '/c/phares-led/antibrouillard' },
-    ],
-  },
-  {
-    label: 'Intérieur',
-    href: '/c/interieur',
-    description: 'Habitacle, plafonnier, coffre et boîte à gants.',
-    children: [
-      { label: 'Plafonniers', href: '/c/interieur/plafonnier' },
-      { label: 'Coffre et boîte à gants', href: '/c/interieur/coffre' },
-      { label: 'Seuils de porte', href: '/c/interieur/seuils' },
-    ],
-  },
-  {
-    label: 'Plaque & recul',
-    href: '/c/plaque-recul',
-    description: "Éclairage de plaque, feux de recul et veilleuses.",
-    children: [
-      { label: 'Éclairage de plaque', href: '/c/plaque-recul/plaque' },
-      { label: 'Feux de recul', href: '/c/plaque-recul/recul' },
-      { label: 'Veilleuses', href: '/c/plaque-recul/veilleuses' },
-    ],
-  },
-  {
-    label: 'Clignotants',
-    href: '/c/clignotants',
-    description: 'Clignotants avant, arrière et répétiteurs.',
-    children: [
-      { label: 'Clignotants avant', href: '/c/clignotants/avant' },
-      { label: 'Clignotants arrière', href: '/c/clignotants/arriere' },
-      { label: 'Répétiteurs', href: '/c/clignotants/repetiteurs' },
-    ],
-  },
-  {
-    label: 'Xénon',
-    href: '/c/xenon',
-    description: "Ampoules xénon de remplacement.",
-  },
-  {
-    label: 'Moto',
-    href: '/c/moto',
-    description: 'Éclairage avant, arrière et clignotants deux-roues.',
-  },
-  {
-    label: 'Packs par véhicule',
-    href: '/vehicule',
-    highlight: true,
-    description: 'Partez de votre véhicule plutôt que du culot.',
-  },
+  { label: 'Packs Auto & Utilitaires', href: '/packs/auto', highlight: true },
+  { label: 'Packs Moto & Scooter', href: '/packs/moto' },
+  { label: 'Ampoules & Kits LED', href: '/c/phares-led' },
+  { label: 'LED au détail', href: '/c/interieur' },
+  { label: 'Xénon & Halogène', href: '/c/xenon' },
+  { label: 'Accessoires', href: '/c/accessoires' },
+  { label: 'Toutes les catégories', href: '/c' },
 ]
-
-/** Accessoires : accessibles depuis les fiches et le pied de page. */
-export const accessoryNav: NavItem[] = [
-  { label: 'Adaptateurs', href: '/c/accessoires/adaptateurs' },
-  { label: 'Décodeurs anti-erreur', href: '/c/accessoires/decodeurs' },
-  { label: 'Supports et entretoises', href: '/c/accessoires/supports' },
-]
-
 export const footerNav: Array<{ title: string; items: NavItem[] }> = [
   {
+    /*
+      Colonne écrite en propre, et non dérivée de `mainNav`.
+
+      Elle l'était, et `mainNav` ayant gagné son entrée « Accessoires », la
+      colonne en portait deux : même href, même clé React, un lien affiché en
+      double. Les deux listes n'ont pas le même rôle — le pied de page n'a pas
+      à suivre l'ordre du menu — et les coupler n'apportait rien.
+    */
     title: 'Acheter',
     items: [
-      ...mainNav.map(({ label, href }) => ({ label, href })),
+      { label: 'Packs Auto & Utilitaires', href: '/packs/auto' },
+      { label: 'Packs Moto & Scooter', href: '/packs/moto' },
+      { label: 'Ampoules & Kits LED', href: '/c/phares-led' },
+      { label: 'LED au détail', href: '/c/interieur' },
+      { label: 'Xénon & Halogène', href: '/c/xenon' },
       { label: 'Accessoires', href: '/c/accessoires' },
+      { label: 'Toutes les catégories', href: '/c' },
     ],
   },
   {

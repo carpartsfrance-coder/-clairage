@@ -2,7 +2,9 @@ import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
 import { commercialTerms, formatPrice, identity, siteConfig } from '@/lib/identity'
 import { getCartSummary, getSelectedVehicle } from '@/lib/session'
-import { mainNav, topNav } from '@/lib/navigation'
+import { topNav } from '@/lib/navigation'
+import { getNavigation } from '@/lib/queries/navigation'
+import { MainNav } from './MainNav'
 import { IconHeadset, IconReturn, IconTruck } from '@/components/ui/icons'
 import { HeaderSearch } from './HeaderSearch'
 import { VehicleMenu } from './VehicleMenu'
@@ -33,7 +35,13 @@ import { HeaderShell } from './HeaderShell'
  * (cookie + base). Aucun des deux n'est décoratif.
  */
 export async function Header() {
-  const [vehicle, cart] = await Promise.all([getSelectedVehicle(), getCartSummary()])
+  const [vehicle, cart, sections] = await Promise.all([
+    getSelectedVehicle(),
+    getCartSummary(),
+    // L'arborescence vient du catalogue : le menu ne peut pas promettre une
+    // famille, une marque ou un culot que la base n'a pas.
+    getNavigation(),
+  ])
 
   return (
     <HeaderShell>
@@ -97,7 +105,7 @@ export async function Header() {
             'h-14 lg:h-[89px] lg:gap-9 group-data-scrolled/header:lg:h-[64px]'
           }
         >
-          <MobileNav vehicle={vehicle} />
+          <MobileNav vehicle={vehicle} sections={sections} />
 
           {/* Le logotype se resserre au défilement, sans jamais devenir illisible. */}
           <Logo className="shrink-0 transition-transform duration-200 motion-reduce:transition-none group-data-scrolled/header:lg:origin-left group-data-scrolled/header:lg:scale-90" />
@@ -150,21 +158,7 @@ export async function Header() {
             'h-[46px] group-data-scrolled/header:h-10'
           }
         >
-          <ul className="flex items-center">
-            {mainNav.map((item, index) => (
-              <li key={item.href} className="flex items-center">
-                {index > 0 ? <span aria-hidden className="h-4 w-px bg-[#e6eadd]" /> : null}
-                <Link
-                  href={item.href}
-                  className={`px-[14px] text-[12px] font-medium whitespace-nowrap transition-colors first:pl-0 ${
-                    item.highlight ? 'font-semibold text-brand' : 'hover:text-brand'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <MainNav sections={sections} />
 
           <Link
             href="/guides"

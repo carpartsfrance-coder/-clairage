@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { SelectedVehicle } from '@/lib/session'
-import { accessoryNav, mainNav, topNav } from '@/lib/navigation'
+import type { NavSection } from '@/lib/queries/navigation'
+import { topNav } from '@/lib/navigation'
 import { Logo } from '@/components/brand/Logo'
 import { cn } from '@/lib/cn'
 import {
-  IconChevronDown,
+  IconChevronRight,
   IconClose,
   IconHeadset,
   IconMenu,
@@ -19,23 +20,64 @@ import {
 /**
  * Menu compact pour mobile et tablette.
  *
- * Ce n'est pas la navigation ordinateur rétrécie : les sept familles sont
- * dépliables une par une, les liens d'aide et de compte sont remontés en bas de
- * panneau, et chaque cible fait au moins 44 px de haut.
+ * Ce n'est pas la navigation ordinateur rétrécie, et ce n'est plus un
+ * accordéon : les rubriques s'ouvrent **en niveaux**, avec un retour explicite
+ * au niveau précédent. Un accordéon fait grandir la liste sous le doigt et
+ * repousse hors écran ce qu'on vient de déplier ; avec une marque par ligne,
+ * c'est impraticable.
  *
- * Clavier : Échap ferme, Tab tourne à l'intérieur du panneau, le focus revient
- * sur le bouton d'ouverture à la fermeture. Un changement de page ferme aussi.
+ * La position de défilement du premier niveau est mémorisée et restituée au
+ * retour : revenir d'une rubrique ne doit pas renvoyer en haut d'une liste
+ * qu'on avait parcourue.
+ *
+ * Clavier : Échap ferme (ou remonte d'un niveau), Tab tourne à l'intérieur du
+ * panneau, le focus revient sur le bouton d'ouverture à la fermeture. Un
+ * changement de page ferme aussi.
  */
-export function MobileNav({ vehicle }: { vehicle: SelectedVehicle | null }) {
+export function MobileNav({
+  vehicle,
+  sections,
+}: {
+  vehicle: SelectedVehicle | null
+  sections: NavSection[]
+}) {
   const [open, setOpen] = useState(false)
-  const [expanded, setExpanded] = useState<string | null>(null)
+  /** Rubrique ouverte : `null` = premier niveau. */
+  const [niveau, setNiveau] = useState<string | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const defilementRef = useRef<HTMLDivElement>(null)
+  /** Position de défilement du premier niveau, restituée au retour. */
+  const positionNiveau0 = useRef(0)
+
+  const ouverte = niveau ? (sections.find((section) => section.key === niveau) ?? null) : null
+
+  /** Descend d'un niveau en mémorisant où l'on en était. */
+  function ouvrir(key: string) {
+    positionNiveau0.current = defilementRef.current?.scrollTop ?? 0
+    setNiveau(key)
+    // Le niveau suivant commence en haut : c'est une nouvelle liste.
+    requestAnimationFrame(() => defilementRef.current?.scrollTo({ top: 0 }))
+  }
+
+  /** Remonte, et rend au premier niveau la position qu'il avait. */
+  function revenir() {
+    setNiveau(null)
+    requestAnimationFrame(() =>
+      defilementRef.current?.scrollTo({ top: positionNiveau0.current }),
+    )
+  }
   const triggerRef = useRef<HTMLButtonElement>(null)
   const pathname = usePathname()
 
   useEffect(() => {
     setOpen(false)
   }, [pathname])
+
+  // Une réouverture repart du premier niveau : rouvrir sur une rubrique
+  // quittée il y a dix minutes désoriente plus que cela n'aide.
+  useEffect(() => {
+    if (!open) setNiveau(null)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -52,7 +94,10 @@ export function MobileNav({ vehicle }: { vehicle: SelectedVehicle | null }) {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault()
-        setOpen(false)
+        // Échap remonte d'abord d'un niveau : fermer tout alors qu'on est
+        // descendu dans une rubrique ferait perdre deux gestes au lieu d'un.
+        if (niveau) revenir()
+        else setOpen(false)
         return
       }
       if (event.key !== 'Tab') return
@@ -128,68 +173,104 @@ export function MobileNav({ vehicle }: { vehicle: SelectedVehicle | null }) {
               </p>
             ) : null}
 
-            <nav aria-label="Catégories" className="flex-1 px-2 py-2">
-              <ul>
-                {mainNav.map((item) => {
-                  const hasChildren = Boolean(item.children?.length)
-                  const isExpanded = expanded === item.href
-                  return (
-                    <li key={item.href} className="border-b border-line last:border-b-0">
-                      <div className="flex items-stretch">
+            {/*
+              Navigation à niveaux.
+
+              Niveau 0 : les rubriques. Niveau 1 : les colonnes d'une rubrique,
+              précédées d'un retour explicite et d'un accès direct à la page de
+              la rubrique — une rubrique est toujours une destination, pas
+              seulement un tiroir.
+            */}
+            <nav
+              aria-label="Catégories"
+              ref={defilementRef}
+              className="flex-1 overflow-y-auto px-2 py-2"
+            >
+              {ouverte ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={revenir}
+                    className="flex min-h-12 w-full items-center gap-2 px-3 text-left text-sm font-semibold text-muted-strong"
+                  >
+                    <IconChevronRight className="size-4 shrink-0 rotate-180" />
+                    Toutes les rubriques
+                  </button>
+
+                  <p className="px-3 pt-2 pb-1 text-base font-bold">{ouverte.label}</p>
+
+                  <Link
+                    href={ouverte.href}
+                    className="mx-3 mb-2 flex min-h-11 items-center text-sm font-semibold text-brand underline underline-offset-4"
+                  >
+                    Voir toute la rubrique
+                  </Link>
+
+                  {ouverte.columns.map((colonne) => (
+                    <div key={colonne.title} className="border-t border-line pt-2">
+                      <p className="px-3 pb-1 text-xs font-semibold tracking-wide text-muted uppercase">
+                        {colonne.title}
+                      </p>
+                      <ul>
+                        {colonne.links.map((lien) => (
+                          <li key={lien.href}>
+                            <Link
+                              href={lien.href}
+                              className="flex min-h-12 items-center justify-between gap-3 px-3 text-sm"
+                            >
+                              <span className="font-medium">{lien.label}</span>
+                              <span className="shrink-0 text-xs text-muted">
+                                {lien.hint ?? lien.count}
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                      {colonne.more ? (
                         <Link
-                          href={item.href}
-                          className={cn(
-                            'flex min-h-12 flex-1 items-center px-3 text-base font-semibold',
-                            item.highlight && 'text-brand',
-                          )}
+                          href={colonne.more.href}
+                          className="mx-3 mb-2 flex min-h-11 items-center text-sm underline underline-offset-4"
                         >
-                          {item.label}
+                          {colonne.more.label}
                         </Link>
-                        {hasChildren ? (
+                      ) : null}
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <ul>
+                  {sections.map((section) => {
+                    const deployable = section.columns.length > 0
+                    return (
+                      <li key={section.key} className="border-b border-line last:border-b-0">
+                        {deployable ? (
                           <button
                             type="button"
-                            onClick={() => setExpanded(isExpanded ? null : item.href)}
-                            aria-expanded={isExpanded}
-                            aria-label={`${isExpanded ? 'Replier' : 'Déplier'} ${item.label}`}
-                            className="flex w-12 shrink-0 items-center justify-center text-muted-strong"
+                            onClick={() => ouvrir(section.key)}
+                            className={cn(
+                              'flex min-h-12 w-full items-center justify-between gap-3 px-3 text-left text-base font-semibold',
+                              section.highlight && 'text-brand',
+                            )}
                           >
-                            <IconChevronDown
-                              className={cn('size-5 transition-transform', isExpanded && 'rotate-180')}
-                            />
+                            {section.label}
+                            <IconChevronRight className="size-5 shrink-0 text-muted-strong" />
                           </button>
-                        ) : null}
-                      </div>
-                      {hasChildren && isExpanded ? (
-                        <ul className="pb-2">
-                          {item.children!.map((child) => (
-                            <li key={child.href}>
-                              <Link
-                                href={child.href}
-                                className="flex min-h-11 items-center px-6 text-sm text-muted-strong"
-                              >
-                                {child.label}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </li>
-                  )
-                })}
-              </ul>
-
-              <p className="px-3 pb-1 pt-5 text-xs font-semibold uppercase tracking-wide text-muted">
-                Accessoires
-              </p>
-              <ul>
-                {accessoryNav.map((item) => (
-                  <li key={item.href}>
-                    <Link href={item.href} className="flex min-h-11 items-center px-3 text-sm">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                        ) : (
+                          <Link
+                            href={section.href}
+                            className={cn(
+                              'flex min-h-12 items-center px-3 text-base font-semibold',
+                              section.highlight && 'text-brand',
+                            )}
+                          >
+                            {section.label}
+                          </Link>
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
             </nav>
 
             <div className="border-t border-line px-2 py-2">

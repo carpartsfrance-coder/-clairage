@@ -46,6 +46,13 @@ const ENTRIES: Entry[] = [
   { href: '/admin/commandes', label: 'Commandes', permission: 'orders.view', Icon: IconCart },
   { href: '/admin/preparation', label: 'Préparation', permission: 'orders.fulfil', Icon: IconTruck },
   { href: '/admin/catalogue', label: 'Catalogue', permission: 'catalog.view', Icon: IconWrench },
+  // Ordre et visibilité des catégories : c'est ce qui pilote le menu du site.
+  {
+    href: '/admin/catalogue/categories',
+    label: 'Catégories',
+    permission: 'catalog.view',
+    Icon: IconSliders,
+  },
   { href: '/admin/medias', label: 'Médias', permission: 'catalog.view', Icon: IconImage },
   { href: '/admin/vehicules', label: 'Véhicules', permission: 'vehicles.view', Icon: IconCar },
   { href: '/admin/imports', label: 'Imports', permission: 'imports.run', Icon: IconImport },
