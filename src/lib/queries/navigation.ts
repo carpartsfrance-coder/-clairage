@@ -33,6 +33,15 @@ export type NavLink = {
   href: string
   count: number
   hint?: string
+  /**
+   * Logo de la marque, quand un média lui a été rattaché.
+   *
+   * Rien n'est livré avec le projet : un logo de constructeur est une marque
+   * déposée, et c'est à l'exploitant de téléverser ceux qu'il est en droit
+   * d'afficher. Sans logo, le menu pose un monogramme neutre — jamais une
+   * image d'emprunt.
+   */
+  logo?: { url: string; alt: string } | null
 }
 
 export type NavColumn = {
@@ -57,18 +66,51 @@ const MAX_PAR_COLONNE = 10
 
 /* -------------------------------------------------------------------------- */
 
-/** Marques actives d'un type de véhicule, avec le nombre de modèles. */
+/**
+ * Marques actives d'un type de véhicule, avec leur logo et leur nombre de
+ * modèles.
+ *
+ * Le logo est résolu par une seconde lecture plutôt que par une jointure :
+ * `VehicleMake.logoMediaId` porte un identifiant de média mais aucune
+ * relation n'est déclarée côté schéma. La déclarer demanderait une migration,
+ * et deux migrations écrites en parallèle sur la même table se marchent
+ * dessus. Une lecture de plus sur une poignée d'identifiants coûte moins cher
+ * que ce risque, et la jointure pourra remplacer ceci sans toucher à l'appel.
+ */
 async function lireMarques(type: 'CAR' | 'MOTORCYCLE') {
   const makes = await prisma.vehicleMake.findMany({
     where: { type, active: true, models: { some: { active: true } } },
     orderBy: [{ position: 'asc' }, { name: 'asc' }],
     include: { _count: { select: { models: { where: { active: true } } } } },
   })
-  return makes.map((make) => ({ slug: make.slug, name: make.name, models: make._count.models }))
+
+  const logoIds = [...new Set(makes.map((make) => make.logoMediaId).filter((id): id is string => Boolean(id)))]
+  const medias = logoIds.length
+    ? await prisma.media.findMany({
+        where: { id: { in: logoIds } },
+        select: { id: true, url: true, alt: true },
+      })
+    : []
+  const parId = new Map(medias.map((media) => [media.id, media]))
+
+  return makes.map((make) => {
+    const media = make.logoMediaId ? parId.get(make.logoMediaId) : undefined
+    return {
+      slug: make.slug,
+      name: make.name,
+      models: make._count.models,
+      logo: media ? { url: media.url, alt: media.alt ?? make.name } : null,
+    }
+  })
 }
 
 function colonneMarques(
-  marques: Array<{ slug: string; name: string; models: number }>,
+  marques: Array<{
+    slug: string
+    name: string
+    models: number
+    logo: { url: string; alt: string } | null
+  }>,
   typePath: string,
 ): NavColumn[] {
   if (marques.length === 0) return []
@@ -80,6 +122,7 @@ function colonneMarques(
         href: `/packs/${typePath}/${marque.slug}`,
         count: marque.models,
         hint: marque.models > 1 ? `${marque.models} modèles` : '1 modèle',
+        logo: marque.logo,
       })),
       more: { label: 'Voir toutes les marques', href: `/packs/${typePath}` },
     },

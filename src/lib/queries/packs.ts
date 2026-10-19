@@ -42,6 +42,14 @@ export type PackMake = {
   name: string
   /** Modèles actifs : ce que la page de la marque ouvrira. */
   modelCount: number
+  /**
+   * Logo rattaché à la marque, s'il y en a un.
+   *
+   * Aucun n'est livré avec le projet : un logo de constructeur est une marque
+   * déposée, et c'est à l'exploitant de téléverser ceux qu'il peut afficher.
+   * Sans logo, l'affichage pose un monogramme.
+   */
+  logo: { url: string; alt: string } | null
 }
 
 export type PackModel = {
@@ -75,11 +83,33 @@ export async function listPackMakes(type: PackVehicleType): Promise<PackMake[]> 
       orderBy: [{ position: 'asc' }, { name: 'asc' }],
       include: { _count: { select: { models: { where: { active: true } } } } },
     })
-    return makes.map((make) => ({
-      slug: make.slug,
-      name: make.name,
-      modelCount: make._count.models,
-    }))
+
+    /*
+      Les logos sont relus séparément : `logoMediaId` porte un identifiant de
+      média sans relation déclarée côté schéma. Ajouter la relation demande
+      une migration sur `VehicleMake` — à faire quand la table n'est plus en
+      cours de modification ailleurs. L'appelant ne verra pas la différence.
+    */
+    const logoIds = [
+      ...new Set(makes.map((make) => make.logoMediaId).filter((id): id is string => Boolean(id))),
+    ]
+    const medias = logoIds.length
+      ? await prisma.media.findMany({
+          where: { id: { in: logoIds } },
+          select: { id: true, url: true, alt: true },
+        })
+      : []
+    const parId = new Map(medias.map((media) => [media.id, media]))
+
+    return makes.map((make) => {
+      const media = make.logoMediaId ? parId.get(make.logoMediaId) : undefined
+      return {
+        slug: make.slug,
+        name: make.name,
+        modelCount: make._count.models,
+        logo: media ? { url: media.url, alt: media.alt ?? make.name } : null,
+      }
+    })
   } catch (error) {
     console.error('[packs] marques indisponibles', error)
     return []

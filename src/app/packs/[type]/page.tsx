@@ -9,6 +9,7 @@ import {
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { EmptyState } from '@/components/ui/Surface'
 import { MakeSearch } from '@/components/packs/MakeSearch'
+import { BrandMark } from '@/components/packs/BrandMark'
 
 type PageProps = { params: Promise<{ type: string }> }
 
@@ -90,11 +91,14 @@ export default async function PacksTypePage({ params }: PageProps) {
               <li key={make.slug}>
                 <Link
                   href={`/packs/${type}/${make.slug}`}
-                  className="flex h-full min-h-[72px] flex-col justify-center rounded-[9px] border border-[#e3e6dc] px-3 py-3 transition-colors hover:border-slate-ink"
+                  className="flex h-full min-h-[72px] items-center gap-3 rounded-[9px] border border-[#e3e6dc] px-3 py-3 transition-colors hover:border-slate-ink"
                 >
-                  <span className="text-[13px] font-bold">{make.name}</span>
-                  <span className="mt-0.5 text-[9px] text-[#838c77]">
-                    {make.modelCount > 1 ? `${make.modelCount} modèles` : '1 modèle'}
+                  <BrandMark name={make.name} logo={make.logo} />
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] font-bold">{make.name}</span>
+                    <span className="mt-0.5 block text-[9px] text-[#838c77]">
+                      {make.modelCount > 1 ? `${make.modelCount} modèles` : '1 modèle'}
+                    </span>
                   </span>
                 </Link>
               </li>

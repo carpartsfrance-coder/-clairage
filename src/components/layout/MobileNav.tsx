@@ -7,6 +7,7 @@ import type { SelectedVehicle } from '@/lib/session'
 import type { NavSection } from '@/lib/queries/navigation'
 import { topNav } from '@/lib/navigation'
 import { Logo } from '@/components/brand/Logo'
+import { BrandMark } from '@/components/packs/BrandMark'
 import { cn } from '@/lib/cn'
 import {
   IconChevronRight,
@@ -225,7 +226,12 @@ export function MobileNav({
                               href={lien.href}
                               className="flex min-h-12 items-center justify-between gap-3 px-3 text-sm"
                             >
-                              <span className="font-medium">{lien.label}</span>
+                              <span className="flex min-w-0 items-center gap-2.5">
+                                {'logo' in lien ? (
+                                  <BrandMark name={lien.label} logo={lien.logo} size="sm" />
+                                ) : null}
+                                <span className="truncate font-medium">{lien.label}</span>
+                              </span>
                               <span className="shrink-0 text-xs text-muted">
                                 {lien.hint ?? lien.count}
                               </span>

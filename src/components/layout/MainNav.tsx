@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { NavSection } from '@/lib/queries/navigation'
 import { IconChevronDown } from '@/components/ui/icons'
+import { BrandMark } from '@/components/packs/BrandMark'
 import { cn } from '@/lib/cn'
 
 /**
@@ -173,9 +174,16 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
                         <Link
                           href={lien.href}
                           onClick={() => setOuverte(null)}
-                          className="flex min-h-9 items-baseline justify-between gap-3 rounded-xs py-1 text-[11px] hover:text-brand"
+                          className="flex min-h-9 items-center justify-between gap-3 rounded-xs py-1 text-[11px] hover:text-brand"
                         >
-                          <span className="font-medium">{lien.label}</span>
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            {/* Pastille seulement pour les marques : un culot
+                                ou une famille n'en a pas. */}
+                            {'logo' in lien ? (
+                              <BrandMark name={lien.label} logo={lien.logo} size="sm" />
+                            ) : null}
+                            <span className="truncate font-medium">{lien.label}</span>
+                          </span>
                           <span className="shrink-0 text-[9px] text-[#a4a49d]">
                             {lien.hint ?? lien.count}
                           </span>
