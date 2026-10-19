@@ -17,9 +17,10 @@ Paramètres › *État de l'installation*, également exposé par `/api/health`)
 4. **les données de démonstration sont encore en base** — 6 produits, 13 médias.
 
 S'y ajoute ce qui n'est pas écrit : le back-office reste **en lecture seule sur
-le catalogue, les véhicules et le SAV**, aucune facture n'est émise, les
-adresses e-mail ne sont pas vérifiées et les codes promotionnels ne sont pas
-appliqués au panier. Ce document dit où en est chaque fonction, sans arrondi.
+le catalogue produits et le SAV**, aucune facture n'est émise, les adresses
+e-mail ne sont pas vérifiées et les codes promotionnels ne sont pas appliqués au
+panier. Le référentiel véhicule, lui, s'écrit désormais à l'écran. Ce document
+dit où en est chaque fonction, sans arrondi.
 
 ## Légende
 
@@ -207,8 +208,9 @@ appliqués au panier. Ce document dit où en est chaque fonction, sans arrondi.
 | Fiche produit (lecture) | ✅ | Variantes, TVA, stocks, composition des kits, compatibilités avec source et date, visuels avec leur nature, caractéristiques. Les visuels sans texte alternatif sont signalés |
 | Création / modification du catalogue | ⬜ | **Aucune écriture.** Le catalogue se peuple par le script d'amorçage. L'écran le dit |
 | Médiathèque | 🔸 | `/admin/medias` : dépôt d'un fichier, texte alternatif, nature du visuel, légende, suppression. L'état du stockage est affiché **avant** le formulaire, et le dépôt est désactivé quand il n'est pas opérationnel. Les médias sans texte alternatif sont comptés et signalés. **Le rattachement d'un média à une fiche n'existe pas encore depuis cet écran** |
-| Véhicules | 🔸 | Marques, modèles, générations et nombre de configurations consultables ; les générations sans configuration sont signalées. **Aucune saisie** |
-| Compatibilités | 🔸 | Visibles depuis la fiche produit. **Aucune saisie ni modification en série** |
+| Véhicules | ✅ | Marques, modèles et générations : création, renommage, activation, ordre du menu. Suppression offerte seulement sur une ligne vide ; sinon l'écran dit de désactiver. Le slug ne suit pas le renommage — le changer est une opération à part, sous confirmation, qui annonce la rupture des anciens liens |
+| Configurations | ✅ | Équipement d'origine rattaché à une génération, finition et référence de bloc optique facultatives. Une génération sans configuration est signalée, à l'endroit où l'on y remédie |
+| Compatibilités | ✅ | Saisie, modification et retrait par configuration : emplacement, référence, statut, quantité, restrictions, homologation, source et date ; accessoires exigés ajoutés et retirés. **Statut par défaut « à vérifier » ; « confirmée » refusée sans source ni date**, et aucune des deux n'est pré-remplie. **Pas de modification en série** : les chargements en nombre restent à l'import |
 | Clients | ✅ | Recherche, fiche avec coordonnées, adresses, commandes, véhicules, demandes SAV et notes internes |
 | Ajout de note client | ⬜ | Les notes existantes s'affichent ; l'ajout n'est pas implémenté, et l'écran le dit |
 | SAV | 🔸 | File et dossier consultables, échanges affichés, notes internes distinguées. **Lecture seule** : ni réponse, ni changement de statut |
@@ -286,7 +288,7 @@ appliqués au panier. Ce document dit où en est chaque fonction, sans arrondi.
 
 ## Vérifications effectuées
 
-### Automatisées — `npm test` (223 tests, base PostgreSQL dédiée)
+### Automatisées — `npm test` (307 tests, base PostgreSQL dédiée)
 
 | Fichier | Ce qui est couvert |
 | --- | --- |
@@ -297,6 +299,7 @@ appliqués au panier. Ce document dit où en est chaque fonction, sans arrondi.
 | `tests/order-access.test.ts` (9) | Jeton d'accès : bon jeton accepté, jeton absent, faux jeton de même longueur, préfixe correct, commande sans jeton, propriétaire connecté ; lecture du paramètre, paramètre répété, valeur vide |
 | `tests/csv.test.ts` (25) | Délimiteur deviné (point-virgule, virgule, tabulation), délimiteur protégé par des guillemets, BOM retiré, saut de ligne et guillemet doublé dans un champ, fins de ligne Windows, lignes vides comptées ; nombres français et anglais, **« vide » distingué de « zéro »**, prix en centimes sans erreur de virgule flottante |
 | `tests/imports.test.ts` (19) | Correspondance automatique sur intitulés accentués, aucun champ associé deux fois ; produits créés en brouillon et prix « 69,90 » lu 6990 ; erreurs par ligne sans arrêter l'import ; **doublon signalé, première ligne conservée** ; détail du changement lors d'une mise à jour ; mode création seule ; **reprise : 120 lignes, un lot puis reprise jusqu'au bout** ; compatibilité sans statut → « à vérifier », date posée seulement si confirmée ; véhicule ou référence inconnus refusés ; mouvement de stock tracé ; stock d'un kit refusé ; correspondance corrigée à la main. **Ajoutés à l'étape 11** : deux lots concurrents → un seul écrit (verrou vérifié : 2 lignes écrites une fois, pas deux), verrou relâché en fin de lot, correspondance modifiée → chiffrage et verdicts effacés, refus de modifier la correspondance d'un import terminé, plafond de 20 000 lignes refusé avant toute écriture |
+| `tests/vehicles-admin.test.ts` (47) | Écriture du référentiel véhicule, sans base. Adresses : accents retirés, séparateurs écrasés, adresse dérivée du nom ou imposée, refus quand le nom n'en donne aucune ; **le chemin public s'arrête au premier niveau manquant** plutôt que de décaler la génération à la place du modèle. Périodes : fin vide = « toujours produite », fin antérieure au début refusée sans inversion, futur borné à deux ans. Compatibilités : **statut par défaut « à vérifier » et statut illisible qui y retombe**, **« confirmée » refusée sans source ni date**, **aucune date inventée**, source et date conservées sur une incompatibilité, date future ou impossible (31 février) refusée, quantité bornée, homologation jamais déduite de la compatibilité, marché par défaut FR. Suppressions : refus motivé dès qu'une compatibilité ou un enfant existe, avec le bon niveau et le bon accord |
 | `tests/storage.test.ts` (16) | Formats reconnus **sur les octets d'entête** ; un PNG annoncé JPEG est reconnu PNG ; **un script renommé `.png` est refusé** ; fichier vide, fichier trop lourd (avec la taille dans le message), fichier trop court ; pilote `local` accepté hors production et **refusé en production** ; variables `MEDIA_*` manquantes nommées une à une, valeur blanche tenue pour absente ; pilote S3 jamais choisi implicitement ; écriture, URL servable, **deux dépôts du même fichier ne partagent jamais une clé** ; suppression, et suppression rejouée sans erreur |
 | `tests/mollie.test.ts` (40) | Montants : deux décimales, pas de dérive flottante, aller-retour fidèle sur 2 000 valeurs, **`null` plutôt qu'une approximation** sur une forme illisible. Statuts : les quatre définitifs appliqués, `open`/`pending`/`authorized` **sans effet**, `authorized` jamais tenu pour payé, `cancelled` (deux « l ») non reconnu. Webhook : relecture par l'API, aucun appel pour un corps non exploitable, aucune signature exigée. Relecture : montant capturé retenu, 404 ignoré, 503 levé. Choix du prestataire : préfixe inconnu refusé, deux clés sans arbitrage refusées, **simulation refusée en production** |
 | `tests/email-templates.test.ts` (9) | Les dix modèles rendus, sujet + HTML + texte, **aucune variable non remplacée**, HTML des valeurs échappé, montants en euros, **aucun délai garanti**, pas de bouton de suivi sans URL, message de bienvenue identique dans les deux cas |

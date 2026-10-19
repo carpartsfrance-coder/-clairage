@@ -368,18 +368,32 @@ export async function getAdminProduct(productId: string) {
 /* Véhicules et compatibilités                                                */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Référentiel véhicule complet, pour l'écran d'administration.
+ *
+ * Les compatibilités sont comptées à chaque étage, et pas seulement les
+ * configurations : c'est ce décompte qui décide si une marque, un modèle ou
+ * une génération peut être supprimée ou seulement désactivée. Le faire ici,
+ * en une requête, évite que l'écran pose la question ligne par ligne.
+ */
 export async function listVehicleMakes() {
   try {
     return await prisma.vehicleMake.findMany({
-      orderBy: [{ type: 'asc' }, { name: 'asc' }],
+      orderBy: [{ type: 'asc' }, { position: 'asc' }, { name: 'asc' }],
       include: {
         _count: { select: { models: true } },
         models: {
           orderBy: { name: 'asc' },
           include: {
+            _count: { select: { generations: true } },
             generations: {
               orderBy: { yearFrom: 'desc' },
-              include: { _count: { select: { configurations: true } } },
+              include: {
+                _count: { select: { configurations: true } },
+                configurations: {
+                  select: { active: true, _count: { select: { fitments: true } } },
+                },
+              },
             },
           },
         },
@@ -391,22 +405,91 @@ export async function listVehicleMakes() {
   }
 }
 
-/** Compatibilités d'une configuration, pour l'écran de saisie. */
-export async function listFitments(configurationId: string) {
+/**
+ * Une génération avec ses configurations et leurs compatibilités.
+ *
+ * Tout l'écran de saisie tient dans cette lecture : la génération et son
+ * contexte (pour afficher l'adresse publique exacte), les configurations avec
+ * leur équipement d'origine et leur finition, puis chaque compatibilité avec
+ * son emplacement, sa référence et ses accessoires exigés.
+ */
+export async function getAdminGeneration(generationId: string) {
   try {
-    return await prisma.fitment.findMany({
-      where: { configurationId },
-      orderBy: [{ position: { position: 'asc' } }],
+    return await prisma.vehicleGeneration.findUnique({
+      where: { id: generationId },
       include: {
-        position: true,
-        variant: { include: { product: { select: { name: true, slug: true } } } },
-        accessories: {
-          include: { variant: { include: { product: { select: { name: true } } } } },
+        model: { include: { make: true } },
+        configurations: {
+          orderBy: [{ equipment: { position: 'asc' } }],
+          include: {
+            equipment: true,
+            trim: true,
+            _count: { select: { savedVehicles: true, carts: true, orders: true } },
+            fitments: {
+              orderBy: [{ position: { position: 'asc' } }],
+              include: {
+                position: true,
+                variant: {
+                  include: { product: { select: { name: true, slug: true, status: true } } },
+                },
+                accessories: {
+                  orderBy: { required: 'desc' },
+                  include: { variant: { include: { product: { select: { name: true } } } } },
+                },
+              },
+            },
+          },
         },
       },
     })
   } catch (error) {
-    console.error('[admin] compatibilités indisponibles', error)
+    console.error('[admin] génération indisponible', error)
+    return null
+  }
+}
+
+/** Équipements d'origine disponibles, pour les listes déroulantes. */
+export async function listLightingEquipments() {
+  try {
+    return await prisma.lightingEquipment.findMany({ orderBy: { position: 'asc' } })
+  } catch (error) {
+    console.error('[admin] équipements indisponibles', error)
+    return []
+  }
+}
+
+/** Emplacements lumineux disponibles, pour les listes déroulantes. */
+export async function listLightPositions() {
+  try {
+    return await prisma.lightPosition.findMany({ orderBy: { position: 'asc' } })
+  } catch (error) {
+    console.error('[admin] emplacements indisponibles', error)
+    return []
+  }
+}
+
+/**
+ * Références sélectionnables dans une compatibilité.
+ *
+ * Les brouillons sont inclus, avec leur statut : documenter la compatibilité
+ * d'un produit avant de le publier est l'ordre normal du travail. Les
+ * variantes désactivées sont écartées — les rattacher créerait une ligne que
+ * le site public ignore de toute façon.
+ */
+export async function listVariantOptions() {
+  try {
+    return await prisma.productVariant.findMany({
+      where: { active: true, product: { status: { not: 'ARCHIVED' } } },
+      orderBy: [{ product: { name: 'asc' } }, { position: 'asc' }],
+      select: {
+        id: true,
+        sku: true,
+        name: true,
+        product: { select: { name: true, status: true } },
+      },
+    })
+  } catch (error) {
+    console.error('[admin] références indisponibles', error)
     return []
   }
 }

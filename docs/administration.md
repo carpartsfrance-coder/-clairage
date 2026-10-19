@@ -76,10 +76,11 @@ public : elle est atteignable sans jamais avoir vu la page qui l'affiche.
 
 Toute tentative d'accès hors droits est inscrite dans `AuditLog`.
 
-> **État.** Le back-office est opérationnel sur les commandes et la préparation.
-> Le catalogue, les véhicules, le SAV, les promotions et les paramètres sont
-> **consultables mais non modifiables** depuis l'écran. Voir la matrice de
-> réception.
+> **État.** Le back-office est opérationnel sur les commandes, la préparation,
+> les catégories et le référentiel véhicule (marques, modèles, générations,
+> configurations et compatibilités). Le catalogue produits, le SAV, les
+> promotions et les paramètres restent **consultables mais non modifiables**
+> depuis l'écran. Voir la matrice de réception.
 
 ## Exploitation courante
 
@@ -95,6 +96,40 @@ médias, le véhicule de démonstration et les blocs d'accueil. Les référentie
 
 Ensuite seulement, passer `NEXT_PUBLIC_DEMO_MODE` à `off` : le bandeau de
 préproduction disparaît et le `noindex` est levé.
+
+### Enregistrer un véhicule et ses compatibilités
+
+*Administration › Véhicules.* Tout se saisit à l'écran, sans ligne de commande :
+
+1. **Marque** (nom, type voiture ou moto, adresse publique), puis **modèle**,
+   puis **génération** (nom, phase, années).
+2. **Configuration** sur la page de la génération : l'équipement d'origine, avec
+   finition et référence de bloc optique facultatives. Sans configuration, une
+   génération n'affiche aucune pièce — l'écran le signale.
+3. **Compatibilité** : emplacement, référence, statut, quantité, restrictions,
+   homologation routière, source et date de vérification ; puis les accessoires
+   exigés par ce montage.
+
+Trois règles tenues par le code, et non par la discipline de l'opérateur :
+
+- le statut par défaut est **« à vérifier »**, jamais « confirmée » ; une valeur
+  illisible y retombe aussi ;
+- **« confirmée » exige une source et une date de vérification**, saisies à la
+  main. Rien n'est pré-rempli : une vérification non faite ne doit pas
+  s'inscrire comme faite ;
+- **rien ne se supprime dès qu'une compatibilité est en jeu.** Le bouton laisse
+  place à une phrase qui dit de désactiver — ce qui retire du site sans rien
+  perdre, et se défait.
+
+L'**adresse publique** (le slug) ne bouge pas quand on renomme : elle est dans
+les URL `/packs/...` déjà partagées et indexées. La changer est une opération à
+part, sous confirmation explicite, et l'écran annonce que les anciens liens
+cesseront de répondre — ce projet ne tient aucune table de redirections.
+
+**Ce qui reste à l'import CSV** : les chargements en nombre. L'écran est fait
+pour quelques véhicules à la fois, pas pour un catalogue constructeur entier.
+Les emplacements lumineux et les équipements d'origine ne se créent pas non
+plus ici : ce sont des référentiels, posés par le script d'amorçage.
 
 ### Identité commerciale
 
