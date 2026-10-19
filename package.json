@@ -26,8 +26,8 @@
     "test:db:setup": "createdb lumera_test || true && DATABASE_URL=\"postgresql://$USER@localhost:5432/lumera_test?schema=public\" prisma migrate deploy",
     "seed:taxonomy": "tsx scripts/seed-taxonomy.ts",
     "import:brand-logos": "tsx scripts/import-brand-logos.ts",
-    "seed:vehicles-motos": "tsx scripts/seed-vehicles-motos.ts",
-    "import:vehicles-cars": "tsx scripts/import-vehicles-cars.ts",
+    "import:vehicles-cars": "tsx scripts/import-vehicles.ts car",
+    "import:vehicles-motos": "tsx scripts/import-vehicles.ts moto",
     "import:vehicle-photos": "tsx scripts/import-vehicle-photos.ts"
   },
   "dependencies": {

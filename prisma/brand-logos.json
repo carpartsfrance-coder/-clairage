@@ -1,8 +1,20 @@
 {
  "_source": "Wikimedia Commons, fichier designe par la propriete P154 (logo image) de Wikidata",
  "_releve": "2026-10-19",
- "_avertissement": "Les 45 fichiers sont dans le domaine public sur Commons : ils sont sous le seuil d'originalite, donc non proteges par le droit d'auteur. La plupart portent neanmoins la mention « trademarked » : ce sont des marques deposees. Les afficher pour designer la compatibilite d'un produit releve de l'usage nominatif ; ce fichier ne tranche pas cette question, il enregistre d'ou vient chaque image et sous quel statut. Renault porte le fichier nomme « Renault Group » : c'est le losange du rebranding 2021, celui qu'affiche la marque. Deux marques n'ont aucun logo libre sur Commons et gardent leur monogramme : Alfa Romeo et Lotus.",
+ "_avertissement": "Les 45 fichiers sont dans le domaine public sur Commons : ils sont sous le seuil d'originalite, donc non proteges par le droit d'auteur. La plupart portent neanmoins la mention « trademarked » : ce sont des marques deposees. Les afficher pour designer la compatibilite d'un produit releve de l'usage nominatif ; ce fichier ne tranche pas cette question, il enregistre d'ou vient chaque image et sous quel statut. Renault porte le fichier nomme « Renault Group » : c'est le losange du rebranding 2021, celui qu'affiche la marque. Six marques n'ont aucun logo libre sur Commons et gardent leur monogramme : Alfa Romeo et Lotus cote auto, Buell, Can-Am, MBK et Polaris cote deux-roues.",
  "logos": [
+  {
+   "slug": "aprilia",
+   "name": "Aprilia",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/9/99/Aprilia-logo.svg",
+   "fichier": "Aprilia-logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 3587,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Aprilia-logo.svg",
+   "wikidata": "Q622062"
+  },
   {
    "slug": "audi",
    "name": "Audi",
@@ -26,6 +38,30 @@
    "restriction": "trademarked",
    "page": "https://commons.wikimedia.org/wiki/File:BMW_logo_(gray).svg",
    "wikidata": "Q26678"
+  },
+  {
+   "slug": "bmw-motorrad",
+   "name": "BMW",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/BMW_logo_%28gray%29.svg",
+   "fichier": "BMW logo (gray).svg",
+   "mime": "image/svg+xml",
+   "octets": 6044,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:BMW_logo_(gray).svg",
+   "wikidata": "Q26678"
+  },
+  {
+   "slug": "cfmoto",
+   "name": "CFMOTO",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/CFMOTO_Logo.svg",
+   "fichier": "CFMOTO Logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 3960,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:CFMOTO_Logo.svg",
+   "wikidata": null
   },
   {
    "slug": "chevrolet",
@@ -88,6 +124,18 @@
    "wikidata": "Q27460"
   },
   {
+   "slug": "derbi",
+   "name": "Derbi",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Derbi_logo.jpg",
+   "fichier": "Derbi logo.jpg",
+   "mime": "image/jpeg",
+   "octets": 81083,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Derbi_logo.jpg",
+   "wikidata": "Q1199957"
+  },
+  {
    "slug": "dodge",
    "name": "Dodge",
    "url": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Dodge_2022_logo.svg",
@@ -110,6 +158,18 @@
    "restriction": "trademarked",
    "page": "https://commons.wikimedia.org/wiki/File:DS_Automobiles_2009_logo.svg",
    "wikidata": "Q16040593"
+  },
+  {
+   "slug": "ducati",
+   "name": "Ducati",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Ducati_red_logo.svg",
+   "fichier": "Ducati red logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 3552,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Ducati_red_logo.svg",
+   "wikidata": "Q271812"
   },
   {
    "slug": "ferrari",
@@ -148,6 +208,30 @@
    "wikidata": "Q44294"
   },
   {
+   "slug": "gilera",
+   "name": "Gilera",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/a/af/Gilera_Logo.svg",
+   "fichier": "Gilera Logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 12161,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Gilera_Logo.svg",
+   "wikidata": "Q745394"
+  },
+  {
+   "slug": "harley-davidson",
+   "name": "Harley-Davidson",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Harley_Davidson_orange_logo.svg",
+   "fichier": "Harley Davidson orange logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 10225,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Harley_Davidson_orange_logo.svg",
+   "wikidata": "Q192814"
+  },
+  {
    "slug": "honda",
    "name": "Honda",
    "url": "https://upload.wikimedia.org/wikipedia/commons/7/76/Honda_logo.svg",
@@ -160,6 +244,30 @@
    "wikidata": "Q9584"
   },
   {
+   "slug": "honda-moto",
+   "name": "Honda",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/7/76/Honda_logo.svg",
+   "fichier": "Honda logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 2744,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Honda_logo.svg",
+   "wikidata": "Q9584"
+  },
+  {
+   "slug": "husqvarna",
+   "name": "Husqvarna",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Husqvarna_Logo.png",
+   "fichier": "Husqvarna Logo.png",
+   "mime": "image/png",
+   "octets": 104151,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Husqvarna_Logo.png",
+   "wikidata": "Q5493297"
+  },
+  {
    "slug": "hyundai",
    "name": "Hyundai",
    "url": "https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg",
@@ -170,6 +278,18 @@
    "restriction": "trademarked",
    "page": "https://commons.wikimedia.org/wiki/File:Hyundai_Motor_Company_logo.svg",
    "wikidata": "Q55931"
+  },
+  {
+   "slug": "indian-motorcycle",
+   "name": "Indian Motorcycle",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Indian_Motorcycle_tank_logo.svg",
+   "fichier": "Indian Motorcycle tank logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 10324,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Indian_Motorcycle_tank_logo.svg",
+   "wikidata": "Q1091034"
   },
   {
    "slug": "infiniti",
@@ -232,6 +352,18 @@
    "wikidata": "Q30113"
   },
   {
+   "slug": "kawasaki",
+   "name": "Kawasaki",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/d/da/Kawasaki-logo.svg",
+   "fichier": "Kawasaki-logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 3798,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Kawasaki-logo.svg",
+   "wikidata": "Q6379855"
+  },
+  {
    "slug": "kia",
    "name": "Kia",
    "url": "https://upload.wikimedia.org/wikipedia/commons/b/b6/KIA_logo3.svg",
@@ -242,6 +374,30 @@
    "restriction": "trademarked",
    "page": "https://commons.wikimedia.org/wiki/File:KIA_logo3.svg",
    "wikidata": "Q35349"
+  },
+  {
+   "slug": "ktm",
+   "name": "KTM",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/a/a9/KTM-Logo.svg",
+   "fichier": "KTM-Logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 1657,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:KTM-Logo.svg",
+   "wikidata": null
+  },
+  {
+   "slug": "kymco",
+   "name": "Kymco",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/5/55/KYMCO_logo.svg",
+   "fichier": "KYMCO logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 29253,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:KYMCO_logo.svg",
+   "wikidata": "Q696338"
   },
   {
    "slug": "lancia",
@@ -352,6 +508,31 @@
    "wikidata": "Q183275"
   },
   {
+   "slug": "moto-guzzi",
+   "name": "Moto-Guzzi",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/6/67/Moto_Guzzi_Symbol_noBG.png",
+   "fichier": "Moto Guzzi Symbol noBG.png",
+   "mime": "image/png",
+   "octets": 1488367,
+   "licence": "CC BY-SA 4.0",
+   "restriction": "",
+   "page": "https://commons.wikimedia.org/wiki/File:Moto_Guzzi_Symbol_noBG.png",
+   "wikidata": "Q1149018",
+   "auteur": "Quelle: \tHp.Baumeler       /   Freisteller, Bildbearbeitung & Retusche von Auge=mit"
+  },
+  {
+   "slug": "mv-agusta",
+   "name": "MV-Agusta",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/7/71/MV_Agusta_Logo.svg",
+   "fichier": "MV Agusta Logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 14218,
+   "licence": "Public domain",
+   "restriction": "",
+   "page": "https://commons.wikimedia.org/wiki/File:MV_Agusta_Logo.svg",
+   "wikidata": "Q1139995"
+  },
+  {
    "slug": "nissan",
    "name": "Nissan",
    "url": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Nissan_brand_wordmark.svg",
@@ -388,6 +569,30 @@
    "wikidata": "Q6742"
   },
   {
+   "slug": "peugeot-moto",
+   "name": "Peugeot",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/c/c1/Wordmark_Peugeot_2021.svg",
+   "fichier": "Wordmark Peugeot 2021.svg",
+   "mime": "image/svg+xml",
+   "octets": 1174,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Wordmark_Peugeot_2021.svg",
+   "wikidata": "Q6742"
+  },
+  {
+   "slug": "piaggio",
+   "name": "Piaggio",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/7/70/Piaggio-logo.svg",
+   "fichier": "Piaggio-logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 3745,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Piaggio-logo.svg",
+   "wikidata": "Q841263"
+  },
+  {
    "slug": "porsche",
    "name": "Porsche",
    "url": "https://upload.wikimedia.org/wikipedia/commons/0/05/Porsche_Schriftzug.svg",
@@ -422,6 +627,18 @@
    "restriction": "trademarked",
    "page": "https://commons.wikimedia.org/wiki/File:Roverlogotipo.jpg",
    "wikidata": "Q17017137"
+  },
+  {
+   "slug": "royal-enfield",
+   "name": "Royal Enfield",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/f/fd/Royal_Enfield_logo_new.svg",
+   "fichier": "Royal Enfield logo new.svg",
+   "mime": "image/svg+xml",
+   "octets": 3533,
+   "licence": "Public domain",
+   "restriction": "",
+   "page": "https://commons.wikimedia.org/wiki/File:Royal_Enfield_logo_new.svg",
+   "wikidata": null
   },
   {
    "slug": "saab",
@@ -497,6 +714,18 @@
    "wikidata": "Q181642"
   },
   {
+   "slug": "suzuki-moto",
+   "name": "Suzuki",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/b/b9/Suzuki_logo_2025.svg",
+   "fichier": "Suzuki logo 2025.svg",
+   "mime": "image/svg+xml",
+   "octets": 2875,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Suzuki_logo_2025.svg",
+   "wikidata": "Q181642"
+  },
+  {
    "slug": "tesla",
    "name": "Tesla",
    "url": "https://upload.wikimedia.org/wikipedia/commons/b/bd/Tesla_Motors.svg",
@@ -521,6 +750,30 @@
    "wikidata": "Q53268"
   },
   {
+   "slug": "triumph",
+   "name": "Triumph",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Triumph_Motorcycles_logo_and_claim_2015.svg",
+   "fichier": "Triumph Motorcycles logo and claim 2015.svg",
+   "mime": "image/svg+xml",
+   "octets": 11570,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Triumph_Motorcycles_logo_and_claim_2015.svg",
+   "wikidata": "Q1140383"
+  },
+  {
+   "slug": "vespa",
+   "name": "Vespa",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Vespa-logo.svg",
+   "fichier": "Vespa-logo.svg",
+   "mime": "image/svg+xml",
+   "octets": 3032,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Vespa-logo.svg",
+   "wikidata": "Q217673"
+  },
+  {
    "slug": "volkswagen",
    "name": "Volkswagen",
    "url": "https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg",
@@ -543,6 +796,18 @@
    "restriction": "trademarked",
    "page": "https://commons.wikimedia.org/wiki/File:Volvo-Spread-Word-Mark-Black.svg",
    "wikidata": "Q163810"
+  },
+  {
+   "slug": "yamaha",
+   "name": "Yamaha",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Yamaha_Motor_2025.svg",
+   "fichier": "Yamaha Motor 2025.svg",
+   "mime": "image/svg+xml",
+   "octets": 22185,
+   "licence": "Public domain",
+   "restriction": "trademarked",
+   "page": "https://commons.wikimedia.org/wiki/File:Yamaha_Motor_2025.svg",
+   "wikidata": "Q158888"
   }
  ]
 }
