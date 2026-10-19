@@ -20,6 +20,26 @@ const nextConfig: NextConfig = {
     remotePatterns: process.env.MEDIA_PUBLIC_HOST
       ? [{ protocol: 'https', hostname: process.env.MEDIA_PUBLIC_HOST }]
       : [],
+    /*
+      Les logos de marque sont des SVG : 44 des 45 fichiers importés par
+      `npm run import:brand-logos` en sont. Sans ce drapeau, l'optimiseur
+      d'images refuse le type `image/svg+xml` et la pastille de marque reste
+      vide dans le menu.
+
+      Un SVG est du XML, et peut donc porter du script. Trois choses le
+      neutralisent ici, et aucune ne doit sauter sans y repenser :
+
+      1. La CSP ci-dessous est celle que Next documente pour ce drapeau. Elle
+         interdit tout script et met la ressource en bac à sable.
+      2. Les médias ne sont pas servis par le site mais par le domaine du
+         stockage objet (`MEDIA_PUBLIC_HOST`) : un script qui s'y exécuterait
+         ne serait pas dans l'origine de la boutique.
+      3. Le dépôt vérifie le contenu, pas l'extension (`inspectUpload`), et
+         seul le back-office ou un script de l'exploitant dépose un fichier.
+    */
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; frame-src 'none'; sandbox;",
   },
   async headers() {
     return [
