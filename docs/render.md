@@ -35,6 +35,16 @@ travaux vit dans PostgreSQL, ce qui évite un Redis et un worker permanent.
    développement — 66 paquets, dont `prisma`, `typescript` et `tailwindcss`.
    Or ce sont exactement ceux dont les deux commandes suivantes ont besoin.
    Sans lui, la construction échoue avant même le premier déploiement.
+   **Le cron échoue tant que `EMAIL_FROM` est vide.** Constaté au premier
+   déploiement réel : la base et le service web se créent, `lumera-jobs` non,
+   avec `environment variable not found: 'EMAIL_FROM' for lumera-web`. Le cron
+   reprend plusieurs variables du service web par `fromService`, et une
+   variable `sync: false` laissée vide n'existe pas — il n'y a donc rien à
+   reprendre. Ce n'est pas bloquant pour le site, qui tourne sans lui ; le
+   cron se crée à la synchronisation suivante, une fois `EMAIL_FROM`
+   renseignée. Rien ne se perd entre-temps : la file de travaux vit en base et
+   sera dépilée dès que le cron existera.
+
 5. Vérifier `https://<service>.onrender.com/api/health` : la réponse doit être
    `{"status":"ok","database":"up",…}`. Un `503` signifie que l'application
    répond mais que PostgreSQL est injoignable — c'est volontairement un échec,
