@@ -5,13 +5,18 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 /**
- * Référentiel véhicule — voitures.
+ * Référentiel véhicule.
  *
- * Les marques, modèles et générations automobiles viennent de
- * `prisma/vehicles-cars.json`, relevé sur les pages de marque de ledperf.com.
- * Les deux-roues restent écrits à la main dans `scripts/seed-vehicles.ts` :
- * les deux sources ne se recouvrent pas, et ce script ne touche **jamais** une
- * marque de type `MOTORCYCLE`.
+ * Marques, modèles et générations, relevés sur les pages de marque de
+ * ledperf.com. Deux jeux de données, un par type de véhicule, et **le script
+ * ne touche jamais qu'un type à la fois** — celui qu'on lui demande :
+ *
+ *   `prisma/vehicles-cars.json`  → 47 marques automobiles
+ *   `prisma/vehicles-motos.json` → 26 marques de deux-roues
+ *
+ * Les tenir séparés n'est pas qu'une commodité : une erreur sur un jeu ne peut
+ * pas emporter l'autre, et le garde-fou du type empêche qu'un slug partagé
+ * fasse basculer une marque d'un parcours à l'autre.
  *
  * **Ce script n'écrit aucune compatibilité**, pour la même raison que
  * `seed-vehicles.ts` : qu'une Golf VII existe est un fait, qu'une ampoule
@@ -42,8 +47,8 @@ const prisma = new PrismaClient()
  * `active` et `logoMediaId` ne sont jamais touchés : la visibilité et le logo
  * appartiennent au back-office.
  *
- *   npm run import:vehicles-cars              → additif, ne supprime rien
- *   npm run import:vehicles-cars -- --remplacer → remplace l'arborescence auto
+ *   npm run import:vehicles-cars                 → additif, ne supprime rien
+ *   npm run import:vehicles-motos -- --remplacer → remplace l'arborescence moto
  */
 
 type Generation = {
@@ -60,11 +65,32 @@ type Jeu = { _source: string; _releve: string; _avertissement: string; makes: Ma
 
 const remplacer = process.argv.includes('--remplacer')
 
+/*
+  Le type est obligatoire et sans valeur par défaut. Un défaut ferait qu'une
+  faute de frappe dans la commande écrirait silencieusement le mauvais
+  référentiel — et, avec `--remplacer`, viderait celui qu'on ne visait pas.
+*/
+const TYPES = {
+  car: { prisma: 'CAR', fichier: 'vehicles-cars.json', libelle: 'voitures' },
+  moto: { prisma: 'MOTORCYCLE', fichier: 'vehicles-motos.json', libelle: 'deux-roues' },
+} as const
+
+const demande = process.argv.find((a) => a === 'car' || a === 'moto') as keyof typeof TYPES | undefined
+
 async function main() {
-  const fichier = path.join(process.cwd(), 'prisma', 'vehicles-cars.json')
+  if (!demande) {
+    console.error(
+      `Type attendu : ${Object.keys(TYPES).join(' ou ')}.\n` +
+        '  npm run import:vehicles-cars\n  npm run import:vehicles-motos',
+    )
+    process.exitCode = 1
+    return
+  }
+  const cible = TYPES[demande]
+  const fichier = path.join(process.cwd(), 'prisma', cible.fichier)
   const jeu: Jeu = JSON.parse(await readFile(fichier, 'utf8'))
 
-  console.log(`→ Référentiel voitures — relevé du ${jeu._releve}`)
+  console.log(`→ Référentiel ${cible.libelle} — relevé du ${jeu._releve}`)
   console.log(`  source : ${jeu._source}`)
   console.log(`  ${jeu.makes.length} marques au jeu de données`)
 
@@ -82,9 +108,9 @@ async function main() {
       select: { id: true, type: true },
     })
 
-    if (existante && existante.type !== 'CAR') {
+    if (existante && existante.type !== cible.prisma) {
       // Un slug de marque est unique tous types confondus. Écraser le type
-      // d'une marque moto ferait disparaître un parcours deux-roues entier.
+      // d'une marque ferait disparaître un parcours entier.
       console.warn(`  ! ${make.slug} : déjà en base en ${existante.type}, ignorée`)
       continue
     }
@@ -96,7 +122,7 @@ async function main() {
           data: { name: make.name },
         })
       : await prisma.vehicleMake.create({
-          data: { slug: make.slug, name: make.name, type: 'CAR' },
+          data: { slug: make.slug, name: make.name, type: cible.prisma },
         })
     if (!existante) marquesCreees += 1
 
@@ -145,17 +171,17 @@ async function main() {
   /* ---------------------------------------------------------------------- */
   /* Ce que le jeu de données ne couvre plus.                               */
 
-  const modelesAuto = await prisma.vehicleModel.findMany({
-    where: { make: { type: 'CAR' } },
+  const modelesDuType = await prisma.vehicleModel.findMany({
+    where: { make: { type: cible.prisma } },
     select: { id: true, slug: true, make: { select: { slug: true } } },
   })
-  const generationsAuto = await prisma.vehicleGeneration.findMany({
-    where: { model: { make: { type: 'CAR' } } },
+  const generationsDuType = await prisma.vehicleGeneration.findMany({
+    where: { model: { make: { type: cible.prisma } } },
     select: { id: true, slug: true, model: { select: { slug: true } } },
   })
 
-  const modelesCaducs = modelesAuto.filter((m) => !modelesTenus.has(m.id))
-  const generationsCaduques = generationsAuto.filter((g) => !generationsTenues.has(g.id))
+  const modelesCaducs = modelesDuType.filter((m) => !modelesTenus.has(m.id))
+  const generationsCaduques = generationsDuType.filter((g) => !generationsTenues.has(g.id))
 
   console.log(
     `  ${marquesCreees} marque(s), ${modelesCrees} modèle(s) et ` +
@@ -200,13 +226,13 @@ async function main() {
   }
 
   const [marques, modeles, generations, fitments] = await Promise.all([
-    prisma.vehicleMake.count({ where: { type: 'CAR' } }),
-    prisma.vehicleModel.count({ where: { make: { type: 'CAR' } } }),
-    prisma.vehicleGeneration.count({ where: { model: { make: { type: 'CAR' } } } }),
+    prisma.vehicleMake.count({ where: { type: cible.prisma } }),
+    prisma.vehicleModel.count({ where: { make: { type: cible.prisma } } }),
+    prisma.vehicleGeneration.count({ where: { model: { make: { type: cible.prisma } } } }),
     prisma.fitment.count(),
   ])
   console.log(
-    `  En base (voitures) : ${marques} marques, ${modeles} modèles, ` +
+    `  En base (${cible.libelle}) : ${marques} marques, ${modeles} modèles, ` +
       `${generations} générations. ${fitments} compatibilité(s) — inchangé.`,
   )
 }
