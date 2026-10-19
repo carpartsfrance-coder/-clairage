@@ -28,7 +28,13 @@ travaux vit dans PostgreSQL, ce qui évite un Redis et un worker permanent.
 3. Renseigner les variables marquées `sync: false` (liste ci-dessous). Les
    autres sont générées ou câblées automatiquement.
 4. Lancer le déploiement. Le build exécute, dans cet ordre :
-   `npm ci` → `npx prisma migrate deploy` → `npm run build`.
+   `npm ci --include=dev` → `npx prisma migrate deploy` → `npm run build`.
+
+   Le drapeau `--include=dev` n'est pas décoratif. Le service pose
+   `NODE_ENV=production`, et `npm ci` retire alors les dépendances de
+   développement — 66 paquets, dont `prisma`, `typescript` et `tailwindcss`.
+   Or ce sont exactement ceux dont les deux commandes suivantes ont besoin.
+   Sans lui, la construction échoue avant même le premier déploiement.
 5. Vérifier `https://<service>.onrender.com/api/health` : la réponse doit être
    `{"status":"ok","database":"up",…}`. Un `503` signifie que l'application
    répond mais que PostgreSQL est injoignable — c'est volontairement un échec,
@@ -43,13 +49,42 @@ jamais de colonne de son propre chef. Une migration oubliée en local ne partira
 donc pas en production par accident : le déploiement échouera, ce qui est le bon
 comportement.
 
+### Mettre en ligne à côté d'un site existant
+
+Quand un autre service tourne déjà sur le compte, le blueprint ne le touche
+pas : il crée ses propres ressources, nommées `lumera-db`, `lumera-web` et
+`lumera-jobs`. Rien n'est partagé — ni la base, ni les variables, ni le
+domaine. Les deux sites cohabitent.
+
+Trois précautions, le temps de la cohabitation :
+
+1. **Garder `NEXT_PUBLIC_DEMO_MODE` à `on`.** Le nouveau site reste alors en
+   `noindex`, par deux mécanismes qui se complètent : `robots.txt` interdit
+   tout, et la mise en page racine pose l'en-tête. Il ne viendra donc pas
+   concurrencer l'ancien dans les moteurs de recherche.
+2. **Ne pas rattacher le domaine définitif tout de suite.** L'adresse
+   `https://<service>.onrender.com` suffit pour tout vérifier. Renseigner
+   `NEXT_PUBLIC_SITE_URL` avec cette adresse-là, exactement : c'est elle qui
+   construit les URL de webhook et les liens d'e-mail.
+3. **Ne rien supprimer avant la bascule.** Tant que l'ancien service existe, le
+   retour en arrière est immédiat.
+
+La bascule proprement dite — rattacher le domaine, passer `DEMO_MODE` à `off`,
+puis seulement ensuite retirer l'ancien service — ne se fait qu'une fois
+`configuration.readyToOpen` à `true` **et** une commande réelle passée de bout
+en bout : paiement encaissé, e-mail de confirmation reçu. Le contrôle
+automatique vérifie que les fonctions sont configurées, pas qu'elles
+aboutissent ; seule une vraie commande le montre.
+
 ## 2. Variables à renseigner
 
 | Variable | Où la trouver | Sans elle |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | Le domaine définitif, avec `https://` | URL canoniques et liens d'e-mail faux |
 | `MEDIA_ENDPOINT`, `MEDIA_REGION`, `MEDIA_BUCKET`, `MEDIA_ACCESS_KEY_ID`, `MEDIA_SECRET_ACCESS_KEY`, `MEDIA_PUBLIC_HOST` | Console du stockage objet | Aucun envoi de média possible |
+| `MOLLIE_API_KEY` | Mollie › Développeurs › Clés d'API (**mode test** d'abord) | Paiement indisponible en production, simulé en développement |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe › Développeurs › Clés d'API (**mode test** d'abord) | Paiement indisponible en production, simulé en développement |
+| `PAYMENT_PROVIDER` | `mollie` ou `stripe` | Nécessaire **uniquement** si les clés des deux prestataires sont renseignées : l'application refuse alors de choisir seule |
 | `EMAIL_FROM`, `EMAIL_API_KEY` | Prestataire e-mail | Les envois restent simulés et tracés comme tels |
 
 Générées par Render : `JOB_RUNNER_TOKEN`, `DATABASE_URL`.

@@ -41,7 +41,16 @@ services:
     # `prisma migrate deploy` applique les migrations déjà écrites et versionnées.
     # Il n'en génère aucune : une migration non committée ne partira jamais en
     # production par accident.
-    buildCommand: npm ci && npx prisma migrate deploy && npm run build
+    # `--include=dev` n'est pas un confort : NODE_ENV vaut `production` ci-dessous,
+    # et `npm ci` retire alors les dépendances de développement — 66 paquets, dont
+    # `prisma`, `typescript` et `tailwindcss`. Les trois servent précisément à
+    # cette ligne : `prisma migrate deploy`, puis `prisma generate && next build`.
+    # Sans le drapeau, la construction échoue avant le premier déploiement.
+    #
+    # On garde NODE_ENV=production plutôt que de le retirer : le code s'en sert
+    # pour refuser le stockage local et une clé de paiement de test. Ce garde-fou
+    # ne doit pas dépendre de ce que `next start` positionne tout seul.
+    buildCommand: npm ci --include=dev && npx prisma migrate deploy && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
@@ -154,7 +163,12 @@ services:
     # Toutes les 10 minutes : suffisant pour les imports et les relances,
     # sans facturer une instance qui tourne en permanence.
     schedule: '*/10 * * * *'
-    buildCommand: npm ci && npx prisma generate
+    # Même raison que pour le service web, avec un enjeu de plus : `tsx` est une
+    # dépendance de développement et c'est lui qui EXÉCUTE le script ci-dessous.
+    # S'il manque, le cron ne dépile plus rien — donc plus d'e-mail envoyé, plus
+    # d'import traité — et un cron qui ne trouve pas son interpréteur échoue
+    # sans que le site, lui, ne montre quoi que ce soit.
+    buildCommand: npm ci --include=dev && npx prisma generate
     startCommand: npx tsx scripts/run-jobs.ts
     envVars:
       - key: NODE_VERSION
