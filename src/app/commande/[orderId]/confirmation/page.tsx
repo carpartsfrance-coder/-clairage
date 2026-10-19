@@ -30,6 +30,18 @@ import { formatPrice } from '@/lib/identity'
 // alors que le paiement est confirmé depuis longtemps.
 export const revalidate = 0
 
+/**
+ * Lien vers la prise de contact, sujet et référence déjà posés.
+ *
+ * Le formulaire de /contact rattache la demande à la commande quand il
+ * retrouve la référence ET l'adresse. Le client la lit ici : la lui faire
+ * recopier dans la page suivante ne sert personne. La référence reste
+ * vérifiée côté serveur avant tout rattachement — l'URL ne prouve rien.
+ */
+function lienContact(reference: string): string {
+  return `/contact?sujet=commande&commande=${encodeURIComponent(reference)}`
+}
+
 /* --------------------------------------------------------------------------
    Lecture
    -------------------------------------------------------------------------- */
@@ -292,7 +304,10 @@ export default async function Page({
           <Link href="/" className="text-sm font-semibold underline underline-offset-4">
             Retour à l&apos;accueil
           </Link>
-          <Link href="/contact" className="text-sm font-semibold underline underline-offset-4">
+          <Link
+            href={lienContact(order.reference)}
+            className="text-sm font-semibold underline underline-offset-4"
+          >
             Nous contacter
           </Link>
         </div>
@@ -369,7 +384,10 @@ export default async function Page({
             <p className="mt-2">
               Cette commande a été annulée alors que le montant avait été encaissé, et aucun
               remboursement n&apos;est encore enregistré ici. Si vous n&apos;avez rien reçu,{' '}
-              <Link href="/contact" className="font-semibold underline underline-offset-4">
+              <Link
+                href={lienContact(order.reference)}
+                className="font-semibold underline underline-offset-4"
+              >
                 écrivez-nous
               </Link>{' '}
               en indiquant la référence {order.reference}.
@@ -390,7 +408,10 @@ export default async function Page({
           </p>
           <p className="mt-2">
             Si rien ne change au bout de quelques minutes,{' '}
-            <Link href="/contact" className="font-semibold underline underline-offset-4">
+            <Link
+              href={lienContact(order.reference)}
+              className="font-semibold underline underline-offset-4"
+            >
               écrivez-nous
             </Link>{' '}
             en indiquant la référence {order.reference}.
@@ -595,7 +616,10 @@ export default async function Page({
               </ButtonLink>
               <p className="text-xs text-muted">
                 Une question sur cette commande ?{' '}
-                <Link href="/contact" className="font-semibold underline underline-offset-4">
+                <Link
+                  href={lienContact(order.reference)}
+                  className="font-semibold underline underline-offset-4"
+                >
                   Nous contacter
                 </Link>
                 .

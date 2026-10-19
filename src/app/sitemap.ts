@@ -26,8 +26,10 @@ const STATIC_PAGES: Array<{ path: string; priority: number; changeFrequency: Met
   { path: '/', priority: 1, changeFrequency: 'daily' },
   { path: '/vehicule', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/guides', priority: 0.7, changeFrequency: 'weekly' },
+  // /faq n'y figure plus : l'adresse redirige vers /aide, qui porte les
+  // questions. Déclarer une redirection dans un plan de site est une erreur
+  // que Google signale.
   { path: '/aide', priority: 0.4, changeFrequency: 'monthly' },
-  { path: '/faq', priority: 0.4, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.4, changeFrequency: 'yearly' },
   { path: '/livraison-retours', priority: 0.4, changeFrequency: 'yearly' },
   { path: '/garanties', priority: 0.3, changeFrequency: 'yearly' },

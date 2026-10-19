@@ -32,9 +32,10 @@ const HELP_TITLE_ID = 'accueil-aide-titre'
  * réimplémenter ni à hydrater.
  *
  * **Écart assumé** : le lien « Toutes les questions » n'existe pas dans la
- * référence, dont la FAQ est un cul-de-sac. L'application a une page dédiée ;
- * le lien est placé sous le titre, dans la colonne de gauche, qui est plus
- * courte que la liste — il ne coûte donc aucune hauteur.
+ * référence, dont la FAQ est un cul-de-sac. L'application a une page dédiée —
+ * /aide, qui porte les questions publiées en entier — et le lien est placé
+ * sous le titre, dans la colonne de gauche, qui est plus courte que la liste :
+ * il ne coûte donc aucune hauteur.
  */
 export function FaqHelpSection({ faq, help }: FaqHelpSectionProps) {
   const hasFaq = faq.length > 0
@@ -62,7 +63,7 @@ export function FaqHelpSection({ faq, help }: FaqHelpSectionProps) {
               </h2>
 
               <Link
-                href="/faq"
+                href="/aide#questions"
                 className="mt-2 inline-flex min-h-11 items-center gap-2 text-[10px] font-bold text-slate-ink hover:underline lg:mt-3.5 lg:min-h-0"
               >
                 Toutes les questions

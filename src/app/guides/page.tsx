@@ -12,7 +12,7 @@ export default function Page() {
       title={'Conseils & montage'}
       purpose={'Guides de montage par emplacement et par véhicule, avec niveau de difficulté.'}
       step={'Contenus et paramètres'}
-      related={[{ label: 'Questions fréquentes', href: '/faq' }]}
+      related={[{ label: 'Aide & contact', href: '/aide' }]}
     />
   )
 }

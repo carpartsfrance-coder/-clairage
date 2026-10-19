@@ -41,6 +41,15 @@ export const RULES = {
   */
   fitmentCheck: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
   /*
+    Prise de contact depuis /contact.
+
+    Même porte que la vérification de compatibilité — un visiteur anonyme qui
+    écrit en base — donc le même plafond. Le compteur reste distinct : les deux
+    formulaires sont sur des pages différentes, et quelqu'un qui fait vérifier
+    une référence puis écrit au SAV n'a rien fait d'anormal.
+  */
+  contactRequest: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
+  /*
     Webhook de paiement.
 
     L'URL est publique et devinable, et le webhook de Mollie n'est pas signé :

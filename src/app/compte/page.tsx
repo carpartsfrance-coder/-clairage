@@ -115,7 +115,9 @@ export default async function ComptePage() {
               }
               className="mb-6"
             >
-              <Link href="/contact" className="underline underline-offset-4">
+              {/* Sujet « autre » : la demande porte sur un dossier déjà ouvert,
+                  pas sur le choix d'un produit. */}
+              <Link href="/contact?sujet=autre" className="underline underline-offset-4">
                 Nous écrire à ce sujet
               </Link>
             </Alert>

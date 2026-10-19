@@ -5,6 +5,7 @@ import { prisma } from '../db'
 import { getCurrentUser } from '../auth/session'
 import { throttle, throttleMessage } from '../auth/throttle'
 import { nextOrderReference } from '../stock-reservation'
+import { buildContactDescription, contactSchema, contactSubjectLabel } from '../support'
 
 /**
  * Demande de vérification de compatibilité.
@@ -157,6 +158,148 @@ export async function requestFitmentCheck(
     return { reference, withoutEmail: true }
   } catch (error) {
     console.error('[sav] demande de vérification impossible', error)
+    return { error: "La demande n'a pas pu être enregistrée. Réessayez dans un instant." }
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Prise de contact                                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Demande de contact ouverte depuis /contact.
+ *
+ * Même mécanique que la vérification de compatibilité, et c'est voulu : une
+ * seule file de demandes, un seul format de référence, un seul écran de
+ * traitement. Ce qui change, c'est le point de départ — ici le client n'arrive
+ * pas d'une fiche produit, il n'y a donc aucun contexte à reprendre, et c'est
+ * lui qui dit de quoi il veut parler.
+ *
+ * **Le formulaire ne dicte aucun libellé.** Le sujet circule par clé et son
+ * intitulé est relu dans `CONTACT_SUBJECTS` ; la commande n'est nommée dans la
+ * demande que si elle a été retrouvée en base. Le client choisit ce dont il
+ * parle, pas ce qui sera écrit.
+ */
+export type ContactState = {
+  error?: string
+  /** Référence de la demande ouverte, quand elle a abouti. */
+  reference?: string
+  /** Vrai quand aucun envoi d'e-mail n'est configuré : il faut le dire. */
+  withoutEmail?: boolean
+}
+
+export async function requestContact(
+  _state: ContactState,
+  formData: FormData,
+): Promise<ContactState> {
+  const parsed = contactSchema.safeParse({
+    subject: formData.get('subject'),
+    email: formData.get('email'),
+    orderReference: formData.get('orderReference') ?? '',
+    message: formData.get('message') ?? '',
+  })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Demande incomplète.' }
+  }
+
+  const { subject, email, orderReference, message } = parsed.data
+
+  const limite = await throttle('contactRequest', email)
+  if (!limite.allowed) return { error: throttleMessage(limite.retryAfterSeconds) }
+
+  try {
+    const user = await getCurrentUser()
+
+    /*
+      Rattachement de la commande.
+
+      Référence ET adresse, comme le suivi invité : les références sont
+      séquentielles, donc devinables, et une référence seule suffirait à relier
+      n'importe qui à la commande d'un autre. Un client connecté est reconnu à
+      son compte — il arrive qu'on commande avec une adresse et qu'on écrive
+      depuis une autre.
+
+      La recherche passe par le compteur `orderLookup`, celui du suivi : c'est
+      la même capacité, elle doit coûter le même nombre d'essais. Sans cela, ce
+      formulaire deviendrait le moyen de tester des références sans limite.
+    */
+    let order: { id: string; reference: string; placedAt: Date } | null = null
+    if (orderReference) {
+      const essai = await throttle('orderLookup', orderReference)
+      if (!essai.allowed) return { error: throttleMessage(essai.retryAfterSeconds) }
+
+      const trouvee = await prisma.order.findFirst({
+        where: {
+          reference: { equals: orderReference, mode: 'insensitive' },
+          OR: [
+            { email: { equals: email, mode: 'insensitive' } },
+            ...(user ? [{ userId: user.id }] : []),
+          ],
+        },
+        select: { id: true, reference: true, placedAt: true, createdAt: true },
+      })
+
+      /*
+        Pas de rattachement silencieux : la demande partirait en disant porter
+        sur une commande que le SAV ne pourrait pas ouvrir. Le client corrige
+        sa référence, ou vide le champ et l'écrit dans son message.
+      */
+      if (!trouvee) {
+        return {
+          error:
+            'Aucune commande ne correspond à cette référence et à cette adresse e-mail. Corrigez-la, ou laissez le champ vide.',
+        }
+      }
+
+      // `placedAt` reste vide tant que la commande n'est pas payée : la date de
+      // création situe quand même la demande dans le temps.
+      order = {
+        id: trouvee.id,
+        reference: trouvee.reference,
+        placedAt: trouvee.placedAt ?? trouvee.createdAt,
+      }
+    }
+
+    const description = buildContactDescription({
+      subject,
+      message,
+      order: order ? { reference: order.reference, placedAt: order.placedAt } : null,
+      account: user ? { email: user.email } : null,
+    })
+
+    const reference = await prisma.$transaction(async (tx) => {
+      const numero = await nextOrderReference(tx, 'SAV')
+      await tx.supportTicket.create({
+        data: {
+          reference: numero,
+          email,
+          userId: user?.id ?? null,
+          orderId: order?.id ?? null,
+          type: 'QUESTION',
+          reason: contactSubjectLabel(subject),
+          description,
+          // Les identifiants restent à côté du texte : l'équipe retrouve la
+          // commande sans la relire dans la description.
+          lines: {
+            subject,
+            orderId: order?.id ?? null,
+            orderReference: order?.reference ?? null,
+          },
+        },
+      })
+      return numero
+    })
+
+    /*
+      Aucun e-mail n'est expédié ici — ni au client, ni à l'équipe. L'envoi réel
+      n'est pas activé sur cet environnement, et annoncer un accusé de réception
+      qui n'existe pas serait un mensonge de plus à réparer plus tard. La
+      demande, elle, est bien enregistrée : le retour le dit et donne sa
+      référence.
+    */
+    return { reference, withoutEmail: true }
+  } catch (error) {
+    console.error('[sav] prise de contact impossible', error)
     return { error: "La demande n'a pas pu être enregistrée. Réessayez dans un instant." }
   }
 }

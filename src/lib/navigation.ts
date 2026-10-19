@@ -17,7 +17,9 @@ export type NavItem = {
 
 export const topNav: Array<NavItem & { icon: 'return' | 'help' }> = [
   { label: 'Livraison & retours', href: '/livraison-retours', icon: 'return' },
-  { label: 'Aide & contact', href: '/contact', icon: 'help' },
+  // Vers /aide et non /contact : l'entrée porte les deux mots, et la page
+  // d'aide réunit le suivi, les questions publiées et le formulaire.
+  { label: 'Aide & contact', href: '/aide', icon: 'help' },
 ]
 
 export const mainNav: NavItem[] = [
@@ -95,10 +97,18 @@ export const footerNav: Array<{ title: string; items: NavItem[] }> = [
     ],
   },
   {
+    /*
+      « Questions fréquentes » menait à /faq, un gabarit « page non encore
+      construite ». Les questions publiées sont désormais sur /aide, avec le
+      suivi et le formulaire autour : l'entrée pointe là, et /faq y redirige.
+
+      « Conseils & montage » reste sur /guides, qui attend toujours ses guides
+      et le dit : c'est une page de contenu à écrire, pas un doublon.
+    */
     title: 'Aide',
     items: [
       { label: 'Conseils & montage', href: '/guides' },
-      { label: 'Questions fréquentes', href: '/faq' },
+      { label: 'Aide & contact', href: '/aide' },
       { label: 'Nous contacter', href: '/contact' },
       { label: 'Suivre ma commande', href: '/suivi' },
     ],

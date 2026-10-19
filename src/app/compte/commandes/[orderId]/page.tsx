@@ -518,12 +518,12 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
 
             <Card className="mt-4 p-5">
               <p className="text-sm text-muted-strong">
-                Indiquez la référence {order.reference} dans votre message, elle suffit à retrouver
-                cette commande.
+                Le formulaire s&apos;ouvre avec la référence {order.reference} : votre demande sera
+                rattachée à cette commande.
               </p>
               <p className="mt-2 text-sm">
                 <Link
-                  href="/contact"
+                  href={`/contact?sujet=commande&commande=${encodeURIComponent(order.reference)}`}
                   className="font-semibold underline underline-offset-4 hover:text-brand"
                 >
                   Nous contacter
