@@ -11,6 +11,7 @@ import { getSelectedVehicle } from '@/lib/session'
 import { formatPrice } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { EmptyState } from '@/components/ui/Surface'
+import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { FitmentBadge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { IconArrowRight, IconInfo } from '@/components/ui/icons'
@@ -39,9 +40,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const vehicleType = TYPE_PAR_CHEMIN[type]
   if (!vehicleType) return { title: 'Packs par véhicule' }
 
-  const data = await getPackGeneration(vehicleType, marque, modele, generation)
-  if (!data) return { title: 'Véhicule introuvable' }
+  const lecture = await getPackGeneration(vehicleType, marque, modele, generation)
+  // Une lecture en échec ne titre pas « introuvable » : on ne l'a pas constaté.
+  if (lecture.state !== 'found') {
+    return { title: lecture.state === 'absent' ? 'Véhicule introuvable' : 'Packs par véhicule' }
+  }
 
+  const data = lecture.data
   return {
     title: `Éclairage ${data.makeName} ${data.generationName} ${data.years}`,
     description: `Les éclairages documentés pour ${data.makeName} ${data.generationName} (${data.years}).`,
@@ -55,12 +60,22 @@ export default async function PacksGenerationPage({ params }: PageProps) {
   const libelle = LIBELLE_PAR_CHEMIN[type]
   if (!vehicleType || !libelle) notFound()
 
-  const [data, vehicle] = await Promise.all([
+  const [lecture, vehicle] = await Promise.all([
     getPackGeneration(vehicleType, marque, modele, generation),
     getSelectedVehicle(),
   ])
-  if (!data) notFound()
 
+  /*
+    Une génération absente du référentiel reste un 404. Une lecture en échec
+    sort ici, avant tout rendu : c'est ce qui l'empêche de passer pour une
+    génération inconnue, puis — plus bas — pour une génération dépourvue de
+    compatibilités. Rien de ce qui suit n'affirme quoi que ce soit sur un
+    véhicule dont la fiche n'a pas été lue.
+  */
+  if (lecture.state === 'unavailable') return <PackReadFailure type={type} libelle={libelle} />
+  if (lecture.state === 'absent') notFound()
+
+  const data = lecture.data
   const totalProduits = data.groups.reduce((somme, groupe) => somme + groupe.products.length, 0)
   const plusieursEquipements = data.equipments.length > 1
 

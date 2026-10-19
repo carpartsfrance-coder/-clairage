@@ -68,6 +68,31 @@ export type PackModel = {
   }>
 }
 
+/**
+ * Issue d'une lecture du référentiel véhicule : trois cas, et non deux.
+ *
+ * `absent` est une absence constatée — rien de ce nom au référentiel.
+ * `unavailable` est une lecture qui n'a pas abouti, et dont on ne peut rien
+ * conclure : ni que le véhicule existe, ni qu'il n'existe pas.
+ *
+ * Les deux rendaient `null`, que les pages traduisaient par un `notFound()`.
+ * Une base injoignable affirmait donc au client que sa marque, son modèle ou
+ * sa génération n'était pas référencé, alors que personne n'avait pu le
+ * constater. Le tag ne force pas l'exhaustivité, mais il nomme les cas :
+ * confondre la panne et l'absence devient un choix écrit, et non l'effet d'un
+ * `null` qui voulait dire les deux.
+ */
+export type PackLookup<T> =
+  | { state: 'found'; data: T }
+  | { state: 'absent' }
+  | { state: 'unavailable' }
+
+/** Une marque et ses modèles, tels que la page de la marque les affiche. */
+export type PackMakeDetail = {
+  name: string
+  models: PackModel[]
+}
+
 /** « 2012–2016 » ou « depuis 2020 » — même formulation partout. */
 export function yearsLabel(yearFrom: number, yearTo: number | null): string {
   return yearTo ? `${yearFrom}–${yearTo}` : `depuis ${yearFrom}`
@@ -110,11 +135,16 @@ export async function listPackMakes(type: PackVehicleType): Promise<PackMake[] |
   }
 }
 
-/** Une marque et ses modèles, avec les générations de chacun. */
+/**
+ * Une marque et ses modèles, avec les générations de chacun.
+ *
+ * `absent` quand la marque n'est pas au référentiel, `unavailable` quand la
+ * lecture échoue : la page n'a pas de quoi les confondre.
+ */
 export async function getPackMake(
   type: PackVehicleType,
   slug: string,
-): Promise<{ name: string; models: PackModel[] } | null> {
+): Promise<PackLookup<PackMakeDetail>> {
   try {
     const make = await prisma.vehicleMake.findFirst({
       where: { slug, type, active: true },
@@ -138,29 +168,32 @@ export async function getPackMake(
         },
       },
     })
-    if (!make) return null
+    if (!make) return { state: 'absent' }
 
     return {
-      name: make.name,
-      models: make.models
-        .map((model) => ({
-          slug: model.slug,
-          name: model.name,
-          generations: model.generations.map((generation) => ({
-            slug: generation.slug,
-            name: generation.name,
-            years: yearsLabel(generation.yearFrom, generation.yearTo),
-            phase: generation.phase,
-            configurationCount: generation._count.configurations,
-            hasFitments: generation.configurations.some((config) => config._count.fitments > 0),
-          })),
-        }))
-        // Un modèle sans génération active n'ouvre sur rien.
-        .filter((model) => model.generations.length > 0),
+      state: 'found',
+      data: {
+        name: make.name,
+        models: make.models
+          .map((model) => ({
+            slug: model.slug,
+            name: model.name,
+            generations: model.generations.map((generation) => ({
+              slug: generation.slug,
+              name: generation.name,
+              years: yearsLabel(generation.yearFrom, generation.yearTo),
+              phase: generation.phase,
+              configurationCount: generation._count.configurations,
+              hasFitments: generation.configurations.some((config) => config._count.fitments > 0),
+            })),
+          }))
+          // Un modèle sans génération active n'ouvre sur rien.
+          .filter((model) => model.generations.length > 0),
+      },
     }
   } catch (error) {
     console.error('[packs] marque indisponible', error)
-    return null
+    return { state: 'unavailable' }
   }
 }
 
@@ -208,13 +241,17 @@ export type PackGeneration = {
  * choix de l'équipement reste à faire quand il y en a plusieurs. Afficher
  * « compatible » ici sans cette réserve ferait passer une documentation pour
  * une confirmation.
+ *
+ * Et une lecture en échec ne dit rien non plus : `unavailable` est tenu à part
+ * de `absent` pour qu'une panne ne puisse passer ni pour une génération
+ * inconnue, ni pour une génération sans compatibilité relevée.
  */
 export async function getPackGeneration(
   type: PackVehicleType,
   makeSlug: string,
   modelSlug: string,
   generationSlug: string,
-): Promise<PackGeneration | null> {
+): Promise<PackLookup<PackGeneration>> {
   try {
     const generation = await prisma.vehicleGeneration.findFirst({
       where: {
@@ -253,7 +290,7 @@ export async function getPackGeneration(
         },
       },
     })
-    if (!generation) return null
+    if (!generation) return { state: 'absent' }
 
     /*
       Un produit peut être documenté sur plusieurs configurations et plusieurs
@@ -384,21 +421,24 @@ export async function getPackGeneration(
       }))
 
     return {
-      makeName: generation.model.make.name,
-      modelName: generation.model.name,
-      generationName: generation.name,
-      years: yearsLabel(generation.yearFrom, generation.yearTo),
-      phase: generation.phase,
-      equipments: generation.configurations.map((configuration) => ({
-        configurationId: configuration.id,
-        code: configuration.equipment.code,
-        label: configuration.equipment.label,
-        hint: configuration.equipment.hint,
-      })),
-      groups,
+      state: 'found',
+      data: {
+        makeName: generation.model.make.name,
+        modelName: generation.model.name,
+        generationName: generation.name,
+        years: yearsLabel(generation.yearFrom, generation.yearTo),
+        phase: generation.phase,
+        equipments: generation.configurations.map((configuration) => ({
+          configurationId: configuration.id,
+          code: configuration.equipment.code,
+          label: configuration.equipment.label,
+          hint: configuration.equipment.hint,
+        })),
+        groups,
+      },
     }
   } catch (error) {
     console.error('[packs] génération indisponible', error)
-    return null
+    return { state: 'unavailable' }
   }
 }

@@ -1,8 +1,15 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { LIBELLE_PAR_CHEMIN, TYPE_PAR_CHEMIN, getPackMake } from '@/lib/queries/packs'
+import {
+  LIBELLE_PAR_CHEMIN,
+  TYPE_PAR_CHEMIN,
+  getPackMake,
+  type PackLookup,
+  type PackModel,
+} from '@/lib/queries/packs'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
+import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { IconChevronRight } from '@/components/ui/icons'
 
 type PageProps = { params: Promise<{ type: string; marque: string; modele: string }> }
@@ -15,25 +22,36 @@ type PageProps = { params: Promise<{ type: string; marque: string; modele: strin
  * page existe pour qu'une adresse désigne le modèle : elle se partage, se met
  * en favori et sert de point d'entrée depuis un moteur de recherche.
  */
-async function lireModele(type: string, marqueSlug: string, modeleSlug: string) {
+async function lireModele(
+  type: string,
+  marqueSlug: string,
+  modeleSlug: string,
+): Promise<PackLookup<{ makeName: string; model: PackModel }>> {
   const vehicleType = TYPE_PAR_CHEMIN[type]
-  if (!vehicleType) return null
+  if (!vehicleType) return { state: 'absent' }
 
+  // L'échec de lecture de la marque remonte tel quel : le modèle se lit dans
+  // la marque, et ne pas avoir lu la marque ne dit rien du modèle.
   const make = await getPackMake(vehicleType, marqueSlug)
-  if (!make) return null
+  if (make.state !== 'found') return make
 
-  const model = make.models.find((entry) => entry.slug === modeleSlug)
-  return model ? { makeName: make.name, model } : null
+  const model = make.data.models.find((entry) => entry.slug === modeleSlug)
+  return model
+    ? { state: 'found', data: { makeName: make.data.name, model } }
+    : { state: 'absent' }
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { type, marque, modele } = await params
   const read = await lireModele(type, marque, modele)
-  if (!read) return { title: 'Modèle introuvable' }
+  // Une lecture en échec ne titre pas « introuvable » : on ne l'a pas constaté.
+  if (read.state !== 'found') {
+    return { title: read.state === 'absent' ? 'Modèle introuvable' : 'Packs par véhicule' }
+  }
 
   return {
-    title: `Éclairage ${read.makeName} ${read.model.name}`,
-    description: `Les générations de ${read.makeName} ${read.model.name} et leurs éclairages documentés.`,
+    title: `Éclairage ${read.data.makeName} ${read.data.model.name}`,
+    description: `Les générations de ${read.data.makeName} ${read.data.model.name} et leurs éclairages documentés.`,
     alternates: { canonical: `/packs/${type}/${marque}/${modele}` },
   }
 }
@@ -41,10 +59,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PacksModelePage({ params }: PageProps) {
   const { type, marque, modele } = await params
   const libelle = LIBELLE_PAR_CHEMIN[type]
-  const read = await lireModele(type, marque, modele)
-  if (!libelle || !read) notFound()
+  if (!libelle) notFound()
 
-  const { makeName, model } = read
+  /*
+    Un modèle absent du référentiel reste un 404. Une lecture en échec, non :
+    elle rendait le même 404, qui affirmait au client que son modèle n'était
+    pas référencé sans que personne ait pu le vérifier.
+  */
+  const read = await lireModele(type, marque, modele)
+  if (read.state === 'unavailable') return <PackReadFailure type={type} libelle={libelle} />
+  if (read.state === 'absent') notFound()
+
+  const { makeName, model } = read.data
 
   return (
     <div className="container-page pb-10 fiche:pb-14">
