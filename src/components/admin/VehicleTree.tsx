@@ -10,6 +10,7 @@ import {
   vehiclePackPath,
   type VehicleTypeValue,
 } from '@/lib/admin/vehicles'
+import { BrandMark } from '@/components/packs/BrandMark'
 import { Alert, Card } from '@/components/ui/Surface'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -58,6 +59,12 @@ export type ModelRow = {
   generations: GenerationRow[]
 }
 
+export type MediaOption = {
+  id: string
+  /** Ce qui permet de reconnaître le visuel dans la liste. */
+  label: string
+}
+
 export type MakeRow = {
   id: string
   slug: string
@@ -66,6 +73,8 @@ export type MakeRow = {
   position: number
   active: boolean
   fitments: number
+  /** Logo rattaché, tel que le site public l'affiche. */
+  logo: { id: string; url: string; alt: string } | null
   models: ModelRow[]
 }
 
@@ -555,7 +564,53 @@ function ChampType({
   )
 }
 
-function BlocMarque({ make, dispatch }: { make: MakeRow; dispatch: Dispatch }) {
+/**
+ * Choix du logo d'une marque, parmi les médias déjà déposés.
+ *
+ * Pas de téléversement ici : les médias se gèrent dans `/admin/medias`, et
+ * dupliquer ce dépôt donnerait deux chemins à maintenir pour un seul geste.
+ * « Aucun » est une option de plein droit — un logo de constructeur est une
+ * marque déposée, que l'exploitant n'a pas forcément le droit d'afficher.
+ */
+function ChampLogo({
+  id,
+  medias,
+  defaultValue,
+}: {
+  id: string
+  medias: MediaOption[]
+  defaultValue?: string | null
+}) {
+  return (
+    <SelectField
+      id={id}
+      name="logoMediaId"
+      label="Logo"
+      defaultValue={defaultValue ?? ''}
+      fieldSize="sm"
+      wrapperClassName="min-w-0 basis-[190px]"
+      hint={medias.length === 0 ? 'Aucun visuel déposé' : 'Déposé dans Médias'}
+      disabled={medias.length === 0}
+    >
+      <option value="">Aucun — monogramme</option>
+      {medias.map((media) => (
+        <option key={media.id} value={media.id}>
+          {media.label}
+        </option>
+      ))}
+    </SelectField>
+  )
+}
+
+function BlocMarque({
+  make,
+  medias,
+  dispatch,
+}: {
+  make: MakeRow
+  medias: MediaOption[]
+  dispatch: Dispatch
+}) {
   const chemin = typePath(make.type)
   const makePath = chemin ? vehiclePackPath(chemin, make.slug) : null
   const modelesActifs = make.models.filter((model) => model.active).length
@@ -569,6 +624,11 @@ function BlocMarque({ make, dispatch }: { make: MakeRow; dispatch: Dispatch }) {
   return (
     <details className="border-b border-line last:border-b-0" open={false}>
       <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-[13px] hover:bg-surface-soft">
+        {/*
+          La pastille publique elle-même, monogramme de repli compris : ce que
+          l'administrateur voit ici est exactement ce que le menu affichera.
+        */}
+        <BrandMark name={make.name} logo={make.logo} size="sm" />
         {make.type === 'MOTORCYCLE' ? (
           <IconMotorcycle className="size-4 shrink-0 text-muted-strong" />
         ) : (
@@ -618,6 +678,11 @@ function BlocMarque({ make, dispatch }: { make: MakeRow; dispatch: Dispatch }) {
             id={`make-type-${make.id}`}
             defaultValue={make.type}
             includeBoth={make.type === 'BOTH'}
+          />
+          <ChampLogo
+            id={`make-logo-${make.id}`}
+            medias={medias}
+            defaultValue={make.logo?.id ?? null}
           />
           <TextField
             id={`make-position-${make.id}`}
@@ -726,7 +791,13 @@ function BlocMarque({ make, dispatch }: { make: MakeRow; dispatch: Dispatch }) {
 /* Écran                                                                      */
 /* -------------------------------------------------------------------------- */
 
-export function VehicleTree({ makes }: { makes: MakeRow[] }) {
+export function VehicleTree({
+  makes,
+  medias,
+}: {
+  makes: MakeRow[]
+  medias: MediaOption[]
+}) {
   const [state, action, pending] = useActionState<VehicleAdminState, FormData>(manageVehicle, {})
   const dispatch: Dispatch = { action, pending }
 
@@ -758,6 +829,7 @@ export function VehicleTree({ makes }: { makes: MakeRow[] }) {
             required
           />
           <ChampType id="new-make-type" defaultValue="CAR" includeBoth={false} />
+          <ChampLogo id="new-make-logo" medias={medias} />
           <TextField
             id="new-make-slug"
             name="slug"
@@ -774,14 +846,19 @@ export function VehicleTree({ makes }: { makes: MakeRow[] }) {
         <p className="mt-2 text-[10px] leading-[1.7] text-muted">
           Le type décide du parcours qui la listera : <code>/packs/auto</code> ou{' '}
           <code>/packs/moto</code>. L&apos;adresse entre dans les URL publiques et ne change plus
-          d&apos;elle-même ensuite : <code>/packs/moto/yamaha</code>.
+          d&apos;elle-même ensuite : <code>/packs/moto/yamaha</code>. Le logo se choisit parmi
+          les visuels déposés dans{' '}
+          <Link href="/admin/medias" className="font-semibold underline underline-offset-4">
+            Médias
+          </Link>{' '}
+          ; sans lui, le menu affiche le monogramme de la marque.
         </p>
       </Card>
 
       {makes.length === 0 ? null : (
         <Card className="overflow-hidden p-0">
           {makes.map((make) => (
-            <BlocMarque key={make.id} make={make} dispatch={dispatch} />
+            <BlocMarque key={make.id} make={make} medias={medias} dispatch={dispatch} />
           ))}
         </Card>
       )}

@@ -129,6 +129,31 @@ function lireType(formData: FormData, autoriseBoth = true): VehicleType | null {
   return brut as VehicleType
 }
 
+/**
+ * Logo choisi pour une marque.
+ *
+ * Le champ vaut l'identifiant d'un média déjà déposé dans `/admin/medias` :
+ * cet écran choisit, il ne téléverse pas. Un champ vide retire le logo, ce qui
+ * n'est pas une perte — l'affichage public retombe sur le monogramme de la
+ * marque.
+ *
+ * L'existence du média est vérifiée avant l'écriture, pour que le refus
+ * explique le problème au lieu de laisser remonter une violation de clé
+ * étrangère.
+ */
+async function lireLogo(
+  formData: FormData,
+): Promise<{ ok: true; value: string | null } | { ok: false; error: string }> {
+  const id = champ(formData, 'logoMediaId')
+  if (!id) return { ok: true, value: null }
+
+  const media = await prisma.media.findUnique({ where: { id }, select: { id: true } })
+  if (!media) {
+    return { ok: false, error: 'Le visuel choisi est introuvable : il a pu être supprimé.' }
+  }
+  return { ok: true, value: id }
+}
+
 /* ========================================================================== */
 /* Les deux points d'entrée                                                   */
 /* ========================================================================== */
@@ -224,13 +249,17 @@ async function créerMarque(staff: StaffUser, formData: FormData): Promise<Vehic
       }
     }
 
+    const logo = await lireLogo(formData)
+    if (!logo.ok) return { error: logo.error }
+
     const make = await prisma.vehicleMake.create({
-      data: { name, slug: slug.value, type, position: 0 },
+      data: { name, slug: slug.value, type, position: 0, logoMediaId: logo.value },
     })
     await audit(staff, 'vehicle.make.create', 'VehicleMake', make.id, null, {
       name,
       slug: slug.value,
       type,
+      logoMediaId: logo.value,
     })
     revalidateVehicle({ type, makeSlug: slug.value })
 
@@ -260,21 +289,35 @@ async function modifierMarque(staff: StaffUser, formData: FormData): Promise<Veh
     const avant = await prisma.vehicleMake.findUnique({ where: { id } })
     if (!avant) return { error: 'Marque introuvable.' }
 
-    await prisma.vehicleMake.update({ where: { id }, data: { name, type, position } })
+    const logo = await lireLogo(formData)
+    if (!logo.ok) return { error: logo.error }
+
+    await prisma.vehicleMake.update({
+      where: { id },
+      data: { name, type, position, logoMediaId: logo.value },
+    })
     await audit(
       staff,
       'vehicle.make.update',
       'VehicleMake',
       id,
-      { name: avant.name, type: avant.type, position: avant.position },
-      { name, type, position },
+      {
+        name: avant.name,
+        type: avant.type,
+        position: avant.position,
+        logoMediaId: avant.logoMediaId,
+      },
+      { name, type, position, logoMediaId: logo.value },
     )
     // Le type a pu changer : on invalide l'ancien parcours comme le nouveau.
     revalidateVehicle({ type: avant.type, makeSlug: avant.slug })
     revalidateVehicle({ type, makeSlug: avant.slug })
 
+    const logoRetire = avant.logoMediaId !== null && logo.value === null
     return {
-      notice: `« ${name} » est enregistrée. Son adresse publique reste « ${avant.slug} » : renommer ne déplace pas les liens déjà partagés.`,
+      notice:
+        `« ${name} » est enregistrée. Son adresse publique reste « ${avant.slug} » : renommer ne déplace pas les liens déjà partagés.` +
+        (logoRetire ? ' Son logo est détaché : le menu affichera son monogramme.' : ''),
     }
   } catch (cause) {
     return erreur('modification de marque', cause)

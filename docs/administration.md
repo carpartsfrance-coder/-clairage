@@ -101,8 +101,12 @@ préproduction disparaît et le `noindex` est levé.
 
 *Administration › Véhicules.* Tout se saisit à l'écran, sans ligne de commande :
 
-1. **Marque** (nom, type voiture ou moto, adresse publique), puis **modèle**,
-   puis **génération** (nom, phase, années).
+1. **Marque** (nom, type voiture ou moto, adresse publique, logo), puis
+   **modèle**, puis **génération** (nom, phase, années). Le logo se choisit
+   parmi les médias déjà déposés dans `/admin/medias` — cet écran ne téléverse
+   pas. Sans logo, le menu affiche le monogramme de la marque : un logo de
+   constructeur est une marque déposée, que l'exploitant n'a pas
+   nécessairement le droit d'afficher.
 2. **Configuration** sur la page de la génération : l'équipement d'origine, avec
    finition et référence de bloc optique facultatives. Sans configuration, une
    génération n'affiche aucune pièce — l'écran le signale.

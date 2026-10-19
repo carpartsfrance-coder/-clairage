@@ -381,6 +381,9 @@ export async function listVehicleMakes() {
     return await prisma.vehicleMake.findMany({
       orderBy: [{ type: 'asc' }, { position: 'asc' }, { name: 'asc' }],
       include: {
+        // Le logo tel que le site public l'affichera : l'écran en montre
+        // l'aperçu, monogramme de repli compris.
+        logo: { select: { id: true, url: true, alt: true } },
         _count: { select: { models: true } },
         models: {
           orderBy: { name: 'asc' },
@@ -445,6 +448,26 @@ export async function getAdminGeneration(generationId: string) {
   } catch (error) {
     console.error('[admin] génération indisponible', error)
     return null
+  }
+}
+
+/**
+ * Médias sélectionnables comme logo de marque.
+ *
+ * Aucun téléversement ici : les médias se déposent dans `/admin/medias`, et
+ * cet écran ne fait que choisir parmi ceux qui existent. Les deux écrans
+ * resteraient à maintenir pour un seul geste.
+ */
+export async function listMediaOptions() {
+  try {
+    return await prisma.media.findMany({
+      where: { mimeType: { startsWith: 'image/' } },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, url: true, alt: true, caption: true, storageKey: true },
+    })
+  } catch (error) {
+    console.error('[admin] médias indisponibles', error)
+    return []
   }
 }
 

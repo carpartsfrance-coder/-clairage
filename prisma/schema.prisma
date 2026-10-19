@@ -404,6 +404,7 @@ model Media {
   products        ProductMedia[]
   categoryHeroes  Category[]     @relation("CategoryHero")
   equipmentIllustrations LightingEquipment[] @relation("EquipmentIllustration")
+  vehicleMakeLogos VehicleMake[] @relation("VehicleMakeLogo")
 
   @@index([nature])
 }
@@ -498,7 +499,12 @@ model VehicleMake {
   slug        String        @unique
   name        String
   type        VehicleType   @default(CAR)
+  /// Logo de la marque, choisi parmi les médias. Facultatif : un logo de
+  /// constructeur est une marque déposée, et l'exploitant n'a pas
+  /// nécessairement le droit de l'afficher. Sans lui, l'affichage public pose
+  /// un monogramme plutôt qu'une pastille vide.
   logoMediaId String?
+  logo        Media?        @relation("VehicleMakeLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   position    Int           @default(0)
   active      Boolean       @default(true)
 

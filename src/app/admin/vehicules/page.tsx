@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireStaff } from '@/lib/admin/guard'
 import { can } from '@/lib/admin/permissions'
-import { listVehicleMakes } from '@/lib/queries/admin'
+import { listMediaOptions, listVehicleMakes } from '@/lib/queries/admin'
 import {
   VEHICLE_TYPE_LABELS,
   periodLabel,
@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/components/ui/Badge'
 import { Alert, Card, EmptyState } from '@/components/ui/Surface'
 import { IconCar, IconMotorcycle } from '@/components/ui/icons'
+import { BrandMark } from '@/components/packs/BrandMark'
 import { VehicleTree, type MakeRow } from '@/components/admin/VehicleTree'
 
 /**
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
 export default async function AdminVehiculesPage() {
   const staff = await requireStaff('vehicles.view')
   const canEdit = can(staff.role, 'vehicles.edit')
-  const makes = await listVehicleMakes()
+  const [makes, medias] = await Promise.all([listVehicleMakes(), listMediaOptions()])
 
   // Les compatibilités sont comptées à chaque étage : c'est ce qui décide
   // qu'une ligne se supprime sans perte, ou qu'elle doit seulement se
@@ -78,6 +79,9 @@ export default async function AdminVehiculesPage() {
       position: make.position,
       active: make.active,
       fitments: models.reduce((total, model) => total + model.fitments, 0),
+      logo: make.logo
+        ? { id: make.logo.id, url: make.logo.url, alt: make.logo.alt ?? make.name }
+        : null,
       models,
     }
   })
@@ -123,7 +127,16 @@ export default async function AdminVehiculesPage() {
       ) : null}
 
       {canEdit ? (
-        <VehicleTree makes={rows} />
+        <VehicleTree
+          makes={rows}
+          medias={medias.map((media) => ({
+            id: media.id,
+            // Ce qui permet de reconnaître le visuel : son texte alternatif,
+            // sa légende, ou à défaut sa clé de stockage. Jamais un libellé
+            // inventé — un visuel sans texte alternatif doit se voir.
+            label: media.alt || media.caption || media.storageKey,
+          }))}
+        />
       ) : (
         <ReferentielEnLecture rows={rows} />
       )}
@@ -162,6 +175,7 @@ function ReferentielEnLecture({ rows }: { rows: MakeRow[] }) {
           return (
             <details key={make.id} open={rows.length === 1}>
               <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-[13px] hover:bg-surface-soft">
+                <BrandMark name={make.name} logo={make.logo} size="sm" />
                 {make.type === 'MOTORCYCLE' ? (
                   <IconMotorcycle className="size-4 shrink-0 text-muted-strong" />
                 ) : (

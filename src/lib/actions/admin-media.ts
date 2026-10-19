@@ -145,15 +145,23 @@ export async function removeMedia(_previous: MediaState, formData: FormData): Pr
   try {
     const media = await prisma.media.findUnique({
       where: { id },
-      include: { _count: { select: { products: true, categoryHeroes: true } } },
+      include: {
+        _count: {
+          select: { products: true, categoryHeroes: true, vehicleMakeLogos: true },
+        },
+      },
     })
     if (!media) return { error: 'Média introuvable.' }
 
-    const uses = media._count.products + media._count.categoryHeroes
+    // Les logos de marque comptent depuis qu'ils sont rattachables depuis
+    // l'écran des véhicules : une garde qui n'en couvre que deux sur trois
+    // laisse disparaître un logo sans prévenir.
+    const uses =
+      media._count.products + media._count.categoryHeroes + media._count.vehicleMakeLogos
     if (uses > 0) {
       return {
         error:
-          `Ce média est utilisé à ${uses} endroit${uses > 1 ? 's' : ''} (fiches, catégories). ` +
+          `Ce média est utilisé à ${uses} endroit${uses > 1 ? 's' : ''} (fiches, catégories, logos de marque). ` +
           'Détachez-le d’abord : le supprimer laisserait un visuel manquant en ligne.',
       }
     }
