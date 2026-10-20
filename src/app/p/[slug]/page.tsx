@@ -143,12 +143,19 @@ export default async function ProductPage({ params }: PageProps) {
   */
   const aDescription = (product.body ?? '').trim().length > 0
 
+  /*
+    L'ordre est celui de la V2, et il suit la décision d'achat : ce qu'on
+    reçoit, puis ce que ça change, puis ce que ça suppose, puis comment on le
+    monte. Le rédactionnel long n'a pas de section dans la maquette ; il reste
+    avec les caractéristiques, dont il est le développement, plutôt que
+    d'ouvrir la page sur un pavé de texte.
+  */
   const sections = [
-    ...(aDescription ? [{ href: '#description', label: 'La référence' }] : []),
-    ...(rendu ? [{ href: '#rendu', label: 'Le changement' }] : []),
     ...(aContenuKit
-      ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans votre kit' : 'Caractéristiques' }]
+      ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans votre pack' : 'Caractéristiques' }]
       : []),
+    ...(rendu ? [{ href: '#rendu', label: 'Le rendu' }] : []),
+    ...(aDescription ? [{ href: '#description', label: 'La référence' }] : []),
     ...(aContenuMontage ? [{ href: '#montage', label: 'Installation' }] : []),
     ...(aContenuQuestions ? [{ href: '#questions', label: 'Vos questions' }] : []),
   ]
@@ -290,36 +297,6 @@ export default async function ProductPage({ params }: PageProps) {
         {/* ---------------- .section-nav ---------------- */}
         {sections.length > 0 ? <SectionNav items={sections} /> : null}
 
-        {/* ---------------- #description ---------------- */}
-        {aDescription ? (
-          <section
-            id="description"
-            aria-labelledby="titre-description"
-            className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
-          >
-            <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
-              La référence
-            </p>
-            <h2
-              id="titre-description"
-              className="mb-[22px] text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:mb-[25px] fiche:text-[29px] fiche:tracking-[-1px]"
-            >
-              {product.name}
-            </h2>
-            <Prose className="max-w-[680px]">{product.body ?? ''}</Prose>
-          </section>
-        ) : null}
-
-        {/* ---------------- #rendu ---------------- */}
-        {rendu ? (
-          <ToneComparison
-            title={'Votre voiture.\nUn autre regard.'}
-            subtitle={product.description}
-            image={rendu.url}
-            imageAlt={rendu.alt}
-          />
-        ) : null}
-
         {/* ---------------- #dans-votre-kit ---------------- */}
         {aContenuKit ? (
         <>
@@ -380,6 +357,36 @@ export default async function ProductPage({ params }: PageProps) {
           ) : null}
         </section>
         </>
+        ) : null}
+
+        {/* ---------------- #rendu ---------------- */}
+        {rendu ? (
+          <ToneComparison
+            title={'Votre voiture.\nUn autre regard.'}
+            subtitle={product.description}
+            image={rendu.url}
+            imageAlt={rendu.alt}
+          />
+        ) : null}
+
+        {/* ---------------- #description ---------------- */}
+        {aDescription ? (
+          <section
+            id="description"
+            aria-labelledby="titre-description"
+            className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
+          >
+            <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
+              La référence
+            </p>
+            <h2
+              id="titre-description"
+              className="mb-[22px] text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:mb-[25px] fiche:text-[29px] fiche:tracking-[-1px]"
+            >
+              {product.name}
+            </h2>
+            <Prose className="max-w-[680px]">{product.body ?? ''}</Prose>
+          </section>
         ) : null}
 
         {/* ---------------- #montage ---------------- */}
