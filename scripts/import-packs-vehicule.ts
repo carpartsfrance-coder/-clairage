@@ -304,16 +304,31 @@ async function main() {
     }
 
     /*
-      `UNKNOWN` : la position est attestée pour ce véhicule, le contenu du pack
-      ne l'est pas. Le site affichera donc le pack sans affirmer qu'il convient.
+      `CONFIRMED`, sur décision de l'exploitant.
+
+      Ce qui fonde l'affirmation : le pack porte le nom d'un véhicule précis et
+      c'est l'exploitant qui le compose pour lui, comme le fait le revendeur
+      partenaire dont la gamme a servi à établir la liste. Ce n'est pas une
+      déduction du script — c'est un engagement commercial, pris en connaissance
+      de cause après que le statut `UNKNOWN` ait été posé puis discuté.
+
+      Conséquence à l'écran : le client qui a renseigné son véhicule voit le
+      bandeau « la configuration pour votre … » et l'ajout au panier en action
+      principale, au lieu de « faire vérifier mon véhicule ».
+
+      Un pack dont le contenu se révélerait inadapté se corrige ici ou au
+      back-office, en repassant la ligne à `UNKNOWN` ou `INCOMPATIBLE`.
     */
     const fitment = await prisma.fitment.findFirst({
       where: { configurationId, positionId: position.id, variantId },
       select: { id: true, status: true },
     })
+    if (fitment && remplacer && fitment.status !== 'CONFIRMED') {
+      await prisma.fitment.update({ where: { id: fitment.id }, data: { status: 'CONFIRMED' } })
+    }
     if (!fitment) {
       await prisma.fitment.create({
-        data: { configurationId, positionId: position.id, variantId, status: 'UNKNOWN', quantity: 1 },
+        data: { configurationId, positionId: position.id, variantId, status: 'CONFIRMED', quantity: 1 },
       })
     }
   }

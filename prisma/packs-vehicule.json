@@ -1,7 +1,7 @@
 {
  "_source": "Positions relevees sur les pages de generation de ledperf.com, partenaire : un produit nommant a la fois ce vehicule et cette position atteste que la position existe sur ce vehicule.",
  "_releve": "2026-10-19",
- "_avertissement": "Ces packs sont crees avec un Fitment en statut UNKNOWN, et c'est volontaire : le schema reserve CONFIRMED a une compatibilite « verifiee et datee », ce qu'aucune de ces lignes n'est. Le site les affiche donc sur la page du vehicule en indiquant que la compatibilite n'est pas etablie. A l'exploitant de basculer en CONFIRMED les packs qu'il a verifies et dont il connait le contenu. Les PRIX sont la mediane d'un echantillon de huit packs du revendeur par position : indicatifs, a revoir. Ceux des antibrouillards et des feux de route sont peu fiables, l'echantillon y etant tres disperse.",
+ "_avertissement": "Les compatibilites sont posees en CONFIRMED sur DECISION DE L'EXPLOITANT. Ce qui la fonde : le pack porte le nom d'un vehicule precis et l'exploitant le compose pour lui, comme le fait le revendeur partenaire dont la gamme a servi a etablir la liste. Ce n'est pas une verification technique piece par piece, c'est un engagement commercial, pris apres que le statut UNKNOWN ait ete pose puis discute. Un pack dont le contenu se revelerait inadapte se repasse en UNKNOWN ou INCOMPATIBLE au back-office. Les PRIX sont ceux du revendeur diminues de 5 % et arrondis a ,90 ; priceSourceCents conserve le prix releve.",
  "tarifParPosition": {
   "DRL": 7.9,
   "FOG": 14.9,
