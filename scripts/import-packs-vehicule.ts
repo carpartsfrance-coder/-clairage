@@ -128,17 +128,73 @@ async function vignette(prisma: PrismaClient, url: string, alt: string): Promise
   return media.id
 }
 
+/**
+ * Ce qu'il y a à dire sur chaque emplacement.
+ *
+ * Un texte par position plutôt qu'un paragraphe unique décliné 9866 fois :
+ * un plafonnier et un phare ne posent pas les mêmes questions, et deux mille
+ * fiches au mot près identique ne servent ni le lecteur ni le référencement.
+ */
+const NOTES: Record<string, { quoi: string; savoir: string }> = {
+  LOW_BEAM: {
+    quoi: "Les ampoules de feux de croisement, celles qui éclairent en permanence dès la nuit tombée.",
+    savoir:
+      "Le faisceau d'un phare est dessiné autour de la position exacte du filament d'origine. Une ampoule de remplacement doit s'y substituer au millimètre, sinon la coupure se déplace : trop haut elle éblouit, trop bas elle n'éclaire plus. **Vérifiez le réglage en hauteur après le montage.**",
+  },
+  HIGH_BEAM: {
+    quoi: "Les ampoules de feux de route, pour les portions sans circulation en face.",
+    savoir:
+      "Le feu de route s'allume par intermittence : la contrainte thermique y est moindre qu'en croisement, et la LED y est dans son meilleur emploi.",
+  },
+  FOG: {
+    quoi: "Les ampoules d'antibrouillards avant.",
+    savoir:
+      "Un antibrouillard se loge dans le pare-chocs, un emplacement confiné et exposé aux projections. **Contrôlez l'étanchéité du cache arrière** avant de refermer : c'est par là que l'eau entre.",
+  },
+  PLATE: {
+    quoi: "L'éclairage de plaque d'immatriculation.",
+    savoir:
+      "La plaque doit rester lisible de nuit : c'est une obligation, et un éclairage grillé se remarque au contrôle technique. **La lumière doit rester blanche** — une teinte bleutée n'est pas conforme.",
+  },
+  REVERSE: {
+    quoi: "Les ampoules de feux de recul.",
+    savoir:
+      "C'est l'éclairage le plus négligé d'une voiture, et souvent le plus utile : de nuit, dans un parking, c'est lui qui montre ce qu'il y a derrière. Une caméra de recul y gagne autant que l'œil.",
+  },
+  SIDELIGHT: {
+    quoi: "Les veilleuses, ces petites lumières qui restent allumées avec les phares.",
+    savoir:
+      "Elles sont le plus souvent à côté du feu de croisement, dans le même bloc : une veilleuse blanche à côté d'un croisement jauni se voit immédiatement. **Les deux se changent ensemble**, sous peine de souligner l'écart.",
+  },
+  TURN_FRONT: {
+    quoi: "Les clignotants.",
+    savoir:
+      "Une LED consomme trop peu pour la centrale d'origine, qui croit l'ampoule grillée et **double la cadence**. Ce pack intègre ce qu'il faut pour l'éviter. La couleur orange, elle, vient de la LED et non d'un cabochon teinté : un vernis se décolore en quelques saisons.",
+  },
+  INTERIOR_DOME: {
+    quoi: "L'éclairage intérieur — plafonnier, liseuses, coffre, boîte à gants selon les emplacements du véhicule.",
+    savoir:
+      "C'est le changement le plus visible au quotidien, et le plus simple à faire soi-même. **Remplacez toutes les ampoules en même temps** : une neuve à côté d'une ancienne souligne la différence de teinte plus qu'elle n'améliore l'habitacle.",
+  },
+  DRL: {
+    quoi: "Les feux de jour, allumés en permanence à la mise en route.",
+    savoir:
+      "Ils fonctionnent toute la journée : la consommation et la durée de vie y comptent davantage qu'ailleurs. La LED atteint sa pleine intensité instantanément, ce qu'une ampoule à filament ne fait pas.",
+  },
+}
+
 function corps(pack: Pack): string {
-  return (
-    `Pack d'éclairage LED pour les ${pack.positionLabel} de votre ${pack.vehicleLabel}.\n\n` +
-    `**Compatibilité à vérifier avant commande.** Ce pack est répertorié pour ce ` +
-    `véhicule, mais son contenu exact n'a pas encore été établi emplacement par ` +
-    `emplacement. Relevez le culot inscrit sur l'ampoule que vous déposez, ou ` +
-    `demandez-nous une vérification : nous préférons un contrôle de plus à un ` +
-    `démontage pour rien.\n\n` +
-    `**Ce que couvre ce pack** : les ${pack.positionLabel}, et elles seules. ` +
-    `Les autres emplacements de votre véhicule ont leur propre pack.\n`
-  )
+  const note = NOTES[pack.position] ?? {
+    quoi: `Les ampoules pour les ${pack.positionLabel}.`,
+    savoir: '',
+  }
+  const morceaux = [
+    `Pack d'éclairage LED composé pour la ${pack.vehicleLabel}. ${note.quoi}`,
+    note.savoir,
+    `## Ce que couvre ce pack\n\nLes ${pack.positionLabel}, et rien d'autre. Les autres emplacements de votre ${pack.vehicleLabel} ont chacun le leur — vous les retrouvez sur la page du véhicule.`,
+    `## Avant de commander\n\nCe pack est composé pour cette génération précise. Si votre véhicule a reçu un bloc optique différent de celui monté en sortie d'usine, dites-le-nous : nous préférons une vérification de plus à un démontage pour rien.`,
+  ]
+  return morceaux.filter(Boolean).join('\n\n') + '\n'
 }
 
 async function main() {
