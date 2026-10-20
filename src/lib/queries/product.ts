@@ -144,10 +144,21 @@ const ROLE_ORDER: GalleryItem['role'][] = ['PRODUCT', 'RESULT', 'KIT_CONTENT', '
 export async function getProduct(
   slug: string,
   configurationId: string | null = null,
+  /**
+   * Aperçu : autorise un brouillon.
+   *
+   * Réservé au back-office, et la page publique ne le passe que pour un membre
+   * de l'équipe connecté — un brouillon reste introuvable pour tout le monde
+   * d'autre. C'est ce qui permet de relire une fiche telle qu'elle sera, avant
+   * de la publier, sans dupliquer le gabarit dans l'administration : une
+   * seconde version de la fiche finirait par diverger de la vraie, et
+   * l'aperçu cesserait de valoir preuve.
+   */
+  { brouillon = false }: { brouillon?: boolean } = {},
 ): Promise<ProductView | null> {
   try {
     const product = await prisma.product.findFirst({
-      where: { slug, status: 'PUBLISHED' },
+      where: { slug, status: brouillon ? { in: ['PUBLISHED', 'DRAFT'] } : 'PUBLISHED' },
       include: {
         categories: { include: { category: true }, orderBy: { position: 'asc' }, take: 1 },
         media: { include: { media: true }, orderBy: { position: 'asc' } },

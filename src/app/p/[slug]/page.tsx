@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getProduct } from '@/lib/queries/product'
 import { getSelectedVehicle } from '@/lib/session'
+import { getStaffUser } from '@/lib/admin/guard'
 import { getShippingOffers } from '@/lib/shipping'
 import { commercialTerms, siteConfig } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
@@ -50,7 +51,10 @@ import { cn } from '@/lib/cn'
  * JavaScript échoue, et « Voir le contenu » devient un lien qui marche.
  */
 
-type PageProps = { params: Promise<{ slug: string }> }
+type PageProps = {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   EASY: 'Niveau accessible',
@@ -61,10 +65,16 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 /** Nombre de barres allumées dans la pastille de niveau. */
 const DIFFICULTY_BARS: Record<string, number> = { EASY: 1, MEDIUM: 2, HARD: 3 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const product = await getProduct(slug)
+  const apercu = (await searchParams).apercu !== undefined && (await getStaffUser()) !== null
+  const product = await getProduct(slug, null, { brouillon: apercu })
   if (!product) return { title: 'Produit introuvable' }
+
+  // Un aperçu est une page de travail : jamais indexée, jamais canonique.
+  if (apercu) {
+    return { title: `Aperçu — ${product.name}`, robots: { index: false, follow: false } }
+  }
 
   return {
     title: product.metaTitle ?? product.name,
@@ -78,10 +88,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function ProductPage({ params }: PageProps) {
+export default async function ProductPage({ params, searchParams }: PageProps) {
   const { slug } = await params
   const vehicle = await getSelectedVehicle()
-  const product = await getProduct(slug, vehicle?.configurationId ?? null)
+
+  /*
+    Aperçu avant publication.
+
+    Le back-office ne savait pas montrer une fiche en brouillon : il affichait
+    « Aucune page publique », et l'administrateur publiait sans avoir vu. Le
+    paramètre ouvre la vraie fiche, avec le vrai gabarit — une seconde version
+    dans l'administration aurait fini par diverger, et l'aperçu aurait cessé de
+    valoir preuve.
+
+    Il n'ouvre rien à personne d'autre : seul un membre de l'équipe connecté
+    obtient le brouillon, et la page reste désindexée dans ce mode.
+  */
+  const parametres = await searchParams
+  const apercuDemande = parametres.apercu !== undefined
+  const staff = apercuDemande ? await getStaffUser() : null
+  const apercu = apercuDemande && staff !== null
+
+  const product = await getProduct(slug, vehicle?.configurationId ?? null, { brouillon: apercu })
 
   if (!product) notFound()
 
@@ -185,6 +213,26 @@ export default async function ProductPage({ params }: PageProps) {
         <ProductStructuredData product={product} />
         <BreadcrumbStructuredData items={breadcrumbItems} />
         <FaqStructuredData items={product.faq} />
+
+        {/*
+          Bandeau d'aperçu : il dit ce qu'on regarde et ce qu'il reste à faire.
+          Sans lui, une fiche en brouillon est indiscernable d'une fiche en
+          ligne, et on finit par croire qu'elle est publiée.
+        */}
+        {apercu ? (
+          <div className="border-b border-warn-border bg-warn-soft">
+            <div className="container-page flex flex-wrap items-center gap-3 py-2.5 text-[11px] text-warn">
+              <strong className="font-bold">Aperçu — fiche non publiée</strong>
+              <span>Cette page n’est visible que par l’équipe, et n’est pas indexée.</span>
+              <Link
+                href={`/admin/catalogue`}
+                className="ml-auto font-semibold underline underline-offset-4"
+              >
+                Retour au catalogue
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         <div className="container-page">
           <Breadcrumb items={breadcrumbItems} />
