@@ -37,6 +37,21 @@ export function monogramme(nom: string): string {
   return (mots[0][0] + mots[1][0]).toUpperCase()
 }
 
+/**
+ * Trois tailles, et une seule décision par taille.
+ *
+ * `sm` est la pastille d'une ligne de liste, `md` celle d'une ligne de
+ * tableau, `lg` celle d'une grille où le logo est ce qu'on regarde en
+ * premier — le nom n'arrive qu'en dessous. Le carré de 60 px laisse un logo
+ * large (Mercedes-Benz, Land Rover) atteindre une taille lisible là où 40 px
+ * le réduisaient à une tache.
+ */
+const TAILLES = {
+  sm: { boite: 'size-7 rounded-md', texte: 'text-[9px]', marge: 'p-0.5', sizes: '28px' },
+  md: { boite: 'size-10 rounded-md', texte: 'text-[11px]', marge: 'p-0.5', sizes: '40px' },
+  lg: { boite: 'size-[60px] rounded-lg', texte: 'text-[15px]', marge: 'p-[7px]', sizes: '60px' },
+} as const
+
 export function BrandMark({
   name,
   logo,
@@ -45,40 +60,47 @@ export function BrandMark({
 }: {
   name: string
   logo?: { url: string; alt: string } | null
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
   className?: string
 }) {
-  const dimension = size === 'sm' ? 'size-7' : 'size-10'
+  const taille = TAILLES[size]
 
   /*
-    Le monogramme est TOUJOURS rendu, et le logo se pose par-dessus.
+    Le monogramme OU le logo, jamais les deux superposés.
 
-    Entre la première peinture et le décodage de l'image, la pastille restait
-    vide : un trou dans la grille des marques, le temps qu'un PNG lourd
-    arrive. Un logo introuvable ou supprimé des médias laissait le même trou,
-    définitivement. En gardant le monogramme dessous, la place est toujours
-    occupée par quelque chose de lisible.
+    Les deux étaient empilés, le logo par-dessus, pour que la pastille ne
+    reste pas vide le temps qu'un PNG arrive. Mais un logo de constructeur
+    est presque toujours transparent : le monogramme se lisait au travers, et
+    « CF » barrait CFMOTO, « DS » barrait DS Automobiles, « DA » barrait
+    Dacia. Deux marques pour une seule voiture, sur la moitié de la grille.
+
+    Le blanc du cadre tient maintenant le rôle que l'empilement cherchait à
+    jouer : pendant le chargement, la pastille est un carré blanc bordé — une
+    place tenue, et rien à lire de faux. Sans logo, c'est le monogramme qui
+    occupe le cadre, sur fond papier pour qu'on voie au premier coup d'œil
+    qu'il n'y a pas d'image.
   */
   return (
     <span
       className={cn(
-        'relative grid shrink-0 place-items-center overflow-hidden rounded-md border border-[#e3e6dc] bg-surface-paper font-bold tracking-[0.5px] text-[#8c9481]',
-        dimension,
-        size === 'sm' ? 'text-[9px]' : 'text-[11px]',
+        'relative grid shrink-0 place-items-center overflow-hidden border border-[#e3e6dc] font-bold tracking-[0.5px] text-[#8c9481]',
+        logo ? 'bg-white' : 'bg-surface-paper',
+        taille.boite,
+        taille.texte,
         className,
       )}
     >
-      <span aria-hidden="true">{monogramme(name)}</span>
-
       {logo ? (
         <Image
           src={logo.url}
           alt=""
           fill
-          sizes={size === 'sm' ? '28px' : '40px'}
-          className="bg-white object-contain p-0.5"
+          sizes={taille.sizes}
+          className={cn('object-contain', taille.marge)}
         />
-      ) : null}
+      ) : (
+        <span aria-hidden="true">{monogramme(name)}</span>
+      )}
     </span>
   )
 }

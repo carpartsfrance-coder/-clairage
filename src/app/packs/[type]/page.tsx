@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
   LIBELLE_PAR_CHEMIN,
@@ -9,7 +8,7 @@ import {
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { EmptyState } from '@/components/ui/Surface'
 import { MakeSearch } from '@/components/packs/MakeSearch'
-import { BrandMark } from '@/components/packs/BrandMark'
+import { BrandGrid } from '@/components/layout/BrandGrid'
 
 type PageProps = { params: Promise<{ type: string }> }
 
@@ -99,24 +98,21 @@ export default async function PacksTypePage({ params }: PageProps) {
             label="Rechercher une marque"
           />
 
-          <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 fiche:grid-cols-4 min-[1101px]:grid-cols-6">
-            {makes.map((make) => (
-              <li key={make.slug}>
-                <Link
-                  href={`/packs/${type}/${make.slug}`}
-                  className="flex h-full min-h-[72px] items-center gap-3 rounded-[9px] border border-[#e3e6dc] px-3 py-3 transition-colors hover:border-slate-ink"
-                >
-                  <BrandMark name={make.name} logo={make.logo} />
-                  <span className="min-w-0">
-                    <span className="block truncate text-[13px] font-bold">{make.name}</span>
-                    <span className="mt-0.5 block text-[9px] text-[#838c77]">
-                      {make.modelCount > 1 ? `${make.modelCount} modèles` : '1 modèle'}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {/*
+            Même grille que le menu, en plus large : le client qui arrive ici
+            depuis « Voir les 47 marques » retrouve les pastilles qu'il vient
+            de quitter, à la même taille.
+          */}
+          <BrandGrid
+            className="mt-5 grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8"
+            tone="page"
+            entries={makes.map((make) => ({
+              label: make.name,
+              href: `/packs/${type}/${make.slug}`,
+              hint: make.modelCount > 1 ? `${make.modelCount} modèles` : '1 modèle',
+              logo: make.logo,
+            }))}
+          />
         </>
       )}
     </div>
