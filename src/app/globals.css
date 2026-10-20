@@ -205,6 +205,21 @@
   }
 }
 
+/*
+  Piste qui défile sans montrer sa barre de défilement.
+
+  Réservée aux bandes horizontales dont le débordement est déjà signalé
+  autrement — la barre de rubriques pose un dégradé à chaque extrémité quand il
+  reste quelque chose à atteindre. Masquer l'indicateur sans le remplacer
+  cacherait du contenu ; c'est pour cela que cette classe ne se pose pas seule.
+*/
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility eyebrow {
   font-size: var(--text-eyebrow);
   line-height: var(--text-eyebrow--line-height);

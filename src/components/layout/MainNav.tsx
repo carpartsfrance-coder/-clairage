@@ -26,7 +26,10 @@ import { cn } from '@/lib/cn'
 export function MainNav({ sections }: { sections: NavSection[] }) {
   const [ouverte, setOuverte] = useState<string | null>(null)
   const conteneur = useRef<HTMLDivElement>(null)
+  const piste = useRef<HTMLUListElement>(null)
   const fermeture = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Ce qui reste hors écran de chaque côté de la piste, pour les dégradés. */
+  const [debord, setDebord] = useState({ gauche: false, droite: false })
 
   // Échap ferme, et le clic hors de la barre aussi.
   useEffect(() => {
@@ -54,6 +57,31 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
     [],
   )
 
+  /*
+    Dégradés d'extrémité : ils ne s'affichent que s'il reste vraiment quelque
+    chose à atteindre. Une barre qui tient en entier ne doit pas suggérer le
+    contraire, et une barre qui déborde ne doit pas laisser croire qu'elle est
+    complète — c'est tout ce que ces deux booléens décident.
+  */
+  useEffect(() => {
+    const element = piste.current
+    if (!element) return
+
+    const mesurer = () => {
+      const reste = element.scrollWidth - element.clientWidth - element.scrollLeft
+      setDebord({ gauche: element.scrollLeft > 1, droite: reste > 1 })
+    }
+
+    mesurer()
+    element.addEventListener('scroll', mesurer, { passive: true })
+    const observateur = new ResizeObserver(mesurer)
+    observateur.observe(element)
+    return () => {
+      element.removeEventListener('scroll', mesurer)
+      observateur.disconnect()
+    }
+  }, [sections])
+
   function programmerFermeture() {
     if (fermeture.current) clearTimeout(fermeture.current)
     fermeture.current = setTimeout(() => setOuverte(null), 180)
@@ -67,8 +95,39 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
   }
 
   return (
-    <div ref={conteneur} className="relative">
-      <ul className="flex items-center">
+    /*
+      `min-w-0` : sans lui, la barre impose sa largeur naturelle à l'en-tête.
+      Douze rubriques en `nowrap` font 1 579 px pour un conteneur de 1 280, et
+      c'est la PAGE entière qui se mettait à défiler latéralement — à 1 366 px,
+      le document mesurait 1 767 px de large. Le débordement est désormais
+      contenu dans la piste ci-dessous : la page ne bouge plus.
+
+      Le défilement ne remplace pas une barre qui tiendrait d'elle-même. Le
+      nombre de rubriques est une donnée, pas du code : elles viennent des
+      catégories racines publiées, et se règlent en back-office.
+    */
+    <div ref={conteneur} className="relative min-w-0 flex-1">
+      {/*
+        Les dégradés sont posés sur le conteneur, pas sur la piste : dans la
+        piste ils défileraient avec elle. `pointer-events-none` pour qu'ils
+        n'avalent pas le clic sur la première ou la dernière rubrique.
+      */}
+      <span
+        aria-hidden
+        className={cn(
+          'pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-white to-transparent transition-opacity',
+          debord.gauche ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+      <span
+        aria-hidden
+        className={cn(
+          'pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-white to-transparent transition-opacity',
+          debord.droite ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+
+      <ul ref={piste} className="no-scrollbar flex items-center overflow-x-auto">
         {sections.map((section, index) => {
           const deployable = section.columns.length > 0
           const active = ouverte === section.key
