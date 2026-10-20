@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { GalleryItem } from '@/lib/queries/product'
@@ -75,6 +75,35 @@ export function ProductGallery({
     (composant) => composant.required,
   )
   const avecPack = composition.length > 0
+
+  /*
+    Le visuel suit le conditionnement retenu.
+
+    Choisir « les ampoules seules » pendant que la galerie continue de montrer
+    le kit complet et ses accessoires, c'est donner à voir autre chose que ce
+    qu'on s'apprête à acheter. Au changement, on présente donc la vue qui
+    correspond : le contenu du pack pour un kit, le produit seul sinon.
+
+    Seul un VRAI changement de conditionnement déclenche ce saut — pas le
+    premier rendu, et pas un re-rendu quelconque. Sans cette garde, la galerie
+    reviendrait sur sa vue par défaut dès que le client a choisi une autre
+    vignette, ce qui reprendrait son geste.
+  */
+  const conditionnementVu = useRef<string | null>(null)
+  useEffect(() => {
+    const id = configuration?.selectedId ?? null
+    if (id === null) return
+    const premier = conditionnementVu.current === null
+    const change = conditionnementVu.current !== id
+    conditionnementVu.current = id
+    if (premier || !change) return
+
+    const estKit = (configuration?.selected?.components.length ?? 0) > 0
+    const cible = items.findIndex((item) =>
+      estKit ? item.role === 'KIT_CONTENT' : item.role === 'PRODUCT',
+    )
+    if (cible >= 0) setVue(cible)
+  }, [configuration?.selectedId, configuration?.selected, items])
 
   if (items.length === 0) {
     return (

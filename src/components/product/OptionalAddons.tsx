@@ -11,7 +11,9 @@ import { availabilityLabel, isPurchasable } from '@/lib/stock'
 import { Alert } from '@/components/ui/Surface'
 import { FitmentBadge } from '@/components/ui/Badge'
 import { IconCheck } from '@/components/ui/icons'
+import { addonsProposables } from '@/lib/addons'
 import { cn } from '@/lib/cn'
+import { useProductConfiguration } from './ProductConfiguration'
 
 type Addon = ProductView['optionalAddons'][number]
 
@@ -55,13 +57,29 @@ export function OptionalAddons({
   vehicleSelected: boolean
 }) {
   const router = useRouter()
+  const configuration = useProductConfiguration()
   const [pending, startTransition] = useTransition()
   const [selection, setSelection] = useState<string[]>([])
   const [feedback, setFeedback] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null)
 
-  if (addons.length === 0) return null
+  /*
+    Un complément déjà fourni par le conditionnement retenu n'est pas un
+    complément : le proposer à l'achat ferait payer deux fois la même pièce au
+    client qui vient précisément de choisir le pack qui la contient. La liste
+    suit donc le choix du bloc d'achat, et l'accessoire réapparaît dès qu'on
+    bascule sur un conditionnement qui ne le fournit pas.
 
-  const selectionnables = addons.filter(
+    Le rapprochement se fait par produit, pas par variante : le pack peut
+    inclure l'adaptateur en paire quand la fiche complément le vend à l'unité.
+  */
+  const proposables = addonsProposables(
+    addons,
+    (configuration?.selected?.components ?? []).map((composant) => composant.productSlug),
+  )
+
+  if (proposables.length === 0) return null
+
+  const selectionnables = proposables.filter(
     (addon) => addon.fitment !== 'INCOMPATIBLE' && isPurchasable(addon.availability),
   )
   const retenus = selectionnables.filter((addon) => selection.includes(addon.slug))
@@ -126,7 +144,7 @@ export function OptionalAddons({
     <>
       {/* .extra-grid : deux colonnes au-delà du basculement. */}
       <ul className="grid grid-cols-1 gap-3 fiche:grid-cols-2 fiche:gap-5">
-        {addons.map((addon) => {
+        {proposables.map((addon) => {
           const incompatible = addon.fitment === 'INCOMPATIBLE'
           const disponible = isPurchasable(addon.availability)
           const selectionnable = disponible && !incompatible
