@@ -1,0 +1,38 @@
+{
+  "_objet": "Logos des marques que Wikimedia Commons n'heberge pas, releves chez l'ayant droit.",
+  "_releve": "2026-10-20",
+  "_avertissement": "Un logo de constructeur est une marque deposee. L'afficher pour designer la compatibilite d'un produit releve de l'usage nominatif, et cette decision appartient a l'exploitant. Le depot garde la provenance de chaque fichier pour que ce choix reste verifiable ; il ne le tranche pas.",
+  "_transformations": "Trois de ces logos ne sont publies qu'en version blanche ou monochrome, invisible sur une pastille claire. Ils ont ete inverses ou recolores : meme trace, polarite opposee. La transformation est ecrite dans la provenance du fichier concerne.",
+  "logos": [
+    {
+      "slug": "alfa-romeo",
+      "fichier": "prisma/logos-marques/alfa-romeo.svg",
+      "provenance": "Site officiel Alfa Romeo — alfaromeo.fr/content/dam/alfa/2022/header/logoFooterWhite.svg (relevé via Internet Archive, le site refuse les requêtes automatisées ; version monochrome blanche recolorée en noir pour fond clair), 2026-10-20. Marque déposée, usage nominatif."
+    },
+    {
+      "slug": "lotus",
+      "fichier": "prisma/logos-marques/lotus.svg",
+      "provenance": "Site officiel Lotus Cars — logo d'en-tête de lotuscars.com, 2026-10-20. Marque déposée, usage nominatif."
+    },
+    {
+      "slug": "buell",
+      "fichier": "prisma/logos-marques/buell.png",
+      "provenance": "Site officiel Buell Motorcycle Co. — buellmotorcycle.com (fichier Buell_WHT, version blanche inversée en noir pour fond clair, réduite à 600 px), 2026-10-20. Marque déposée, usage nominatif."
+    },
+    {
+      "slug": "can-am",
+      "fichier": "prisma/logos-marques/can-am.svg",
+      "provenance": "Site officiel Can-Am (BRP) — can-am.brp.com/content/dam/global/logos/brands/logo-can-am.svg, 2026-10-20. Marque déposée, usage nominatif."
+    },
+    {
+      "slug": "mbk",
+      "fichier": "prisma/logos-marques/mbk.png",
+      "provenance": "Site officiel MBK — www2.mbk.fr/mbk-prod.png (relevé via Internet Archive, snapshot du 2017-12-31 ; mbk.fr ne répond plus), 2026-10-20. Marque déposée, usage nominatif."
+    },
+    {
+      "slug": "polaris",
+      "fichier": "prisma/logos-marques/polaris.png",
+      "provenance": "Site officiel Polaris — cdn1.polaris.com/globalassets/library/vault/ab-testing/crp/2023/june/intl-country-select-pop-up/polaris-logo-black.png, 2026-10-20. Marque déposée, usage nominatif."
+    }
+  ]
+}

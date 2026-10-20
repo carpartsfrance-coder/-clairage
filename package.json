@@ -27,6 +27,7 @@
     "seed:taxonomy": "tsx scripts/seed-taxonomy.ts",
     "import:brand-logos": "tsx scripts/import-brand-logos.ts",
     "logo:marque": "tsx scripts/attach-brand-logo.ts",
+    "logos:fournis": "tsx scripts/import-logos-fournis.ts",
     "import:vehicles-cars": "tsx scripts/import-vehicles.ts car",
     "import:vehicles-motos": "tsx scripts/import-vehicles.ts moto",
     "import:vehicle-photos": "tsx scripts/import-vehicle-photos.ts",
