@@ -76,12 +76,24 @@ c'est ce qu'il faut pour partir d'un catalogue vide.
 | `npm run seed` | Référentiels seuls |
 | `npm run seed:demo` | Référentiels + démonstration |
 | `npm run seed -- --purge-demo` | Retire tout ce qui porte `isDemo` |
+| `npm run seed:taxonomy` | Rubriques et familles du catalogue |
+| `npm run import:vehicles-cars` / `-motos` | Référentiel véhicule, un type à la fois |
+| `npm run import:brand-logos` | Logos de marque du domaine public (Wikimedia Commons) |
+| `npm run logos:fournis` | Les six logos que Commons n'héberge pas (`prisma/logos-marques/`) |
+| `npm run logo:marque -- <slug> <fichier>` | Rattache un logo à une marque, à l'unité |
+| `npm run import:vehicle-photos` | Visuels des générations de véhicule |
+| `npm run import:produits` | Catalogue initial |
+| `npm run import:packs-vehicule` | Packs par véhicule |
 | `npx tsx scripts/run-jobs.ts` | Dépile `JobQueue` une fois (le cron Render fait la même chose) |
 | `npm run admin:create` | Crée un compte de l'équipe (aucun identifiant par défaut n'existe) |
-| `npm test` | 171 tests sur une base PostgreSQL dédiée |
+| `npm test` | 307 tests sur une base PostgreSQL dédiée |
 | `npm run test:db:setup` | Crée et migre `lumera_test`, à faire une fois |
 | `./scripts/backup.sh sauvegarder` | Dump horodaté de la base |
 | `./scripts/backup.sh verifier <dump>` | Restaure le dump dans une base jetable et compte les lignes |
+
+Les commandes de données sont toutes rejouables, et leur **ordre** pour un
+environnement neuf — chacune a besoin de la précédente — est dans
+[render.md § 1.1](docs/render.md#11-données-de-référence).
 
 ### Données de démonstration
 

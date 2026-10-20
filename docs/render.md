@@ -49,7 +49,49 @@ travaux vit dans PostgreSQL, ce qui évite un Redis et un worker permanent.
    `{"status":"ok","database":"up",…}`. Un `503` signifie que l'application
    répond mais que PostgreSQL est injoignable — c'est volontairement un échec,
    pour que Render ne déclare pas saine une instance incapable de servir.
-6. Créer le premier administrateur : voir [administration.md](administration.md).
+6. Peupler les données de référence : voir [§ 1.1](#11-données-de-référence) ci-dessous.
+   La migration crée les tables, pas leur contenu — un environnement neuf répond
+   `ok` avec un catalogue vide.
+7. Créer le premier administrateur : voir [administration.md](administration.md).
+
+### 1.1 Données de référence
+
+Elles **ne se déploient pas avec le code** : elles vivent en base et dans le
+stockage objet, donc par environnement. Une fusion n'en porte aucune, et un
+environnement neuf — préproduction, base repartie de zéro — démarre vide.
+
+Ces commandes se lancent depuis **Render › `lumera-web` › Shell**, et pas depuis
+un poste : la base n'accepte que le réseau interne Render (`ipAllowList: []`
+dans `render.yaml`), et les variables `MEDIA_*` n'ont aucune raison de quitter
+le tableau de bord. Dans la console, tout est déjà en place.
+
+Dans cet ordre, parce que chacune a besoin de la précédente :
+
+```bash
+npm run seed                   # TVA, positions d'éclairage, équipements, livraison
+npm run seed:taxonomy          # rubriques et familles du catalogue
+npm run import:vehicles-cars   # 47 marques automobiles
+npm run import:vehicles-motos  # 26 marques de deux-roues
+npm run import:brand-logos     # logos du domaine public (Wikimedia Commons)
+npm run logos:fournis          # les six que Commons n'héberge pas
+npm run import:vehicle-photos  # visuels des générations
+npm run import:produits        # catalogue initial — exige la TVA et les rubriques
+npm run import:packs-vehicule  # packs par véhicule — exige les positions d'éclairage
+```
+
+Chacune est **rejouable sans dégât** : elle crée ou met à jour ce qui manque et
+ne supprime rien. Une coupure en cours de route se rattrape en relançant la
+commande, pas en repartant de zéro. Celles qui déposent un média refusent de
+tourner si le stockage n'est pas opérationnel, plutôt que d'enregistrer des
+fichiers introuvables ; `logos:fournis` finit en disant ce qui reste au
+monogramme.
+
+**Pourquoi pas dans le `buildCommand`.** Parce qu'une construction construit :
+lui faire écrire des données à chaque déploiement ajouterait un effet de bord
+permanent pour un besoin qui se présente à la création d'un environnement, et
+un logo qui échoue retiendrait une mise en ligne qui corrige peut-être autre
+chose. `prisma migrate deploy` y est pour une raison inverse : un schéma en
+retard rend l'application fausse, donc le déploiement doit échouer.
 
 ### Pourquoi `migrate deploy` et pas `db push`
 
