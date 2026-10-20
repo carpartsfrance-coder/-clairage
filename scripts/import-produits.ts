@@ -136,7 +136,9 @@ async function visuel(fait: Fait, red: Redaction, produitId: string): Promise<'p
         mimeType: depose.mimeType,
         sizeBytes: depose.sizeBytes,
         alt: red.name,
-        caption: fait.sourcePage[0] ? `Visuel source : ${fait.sourcePage[0]}` : null,
+        // Voir `import-vehicle-photos.ts` : pas d'URL source en légende, la
+        // fiche produit les affiche. Elle reste dans le jeu de données.
+        caption: null,
         nature: 'UNSPECIFIED',
       },
     })

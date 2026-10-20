@@ -123,8 +123,14 @@ async function importer(photo: Photo): Promise<{ etat: Etat; raison?: string }> 
         mimeType: depose.mimeType,
         sizeBytes: depose.sizeBytes,
         alt: photo.label,
-        // D'où vient le visuel, pour que l'origine reste retrouvable.
-        caption: `ledperf.com — ${photo.page}`,
+        /*
+          Pas d'URL source ici. La fiche produit AFFICHE les légendes : y
+          mettre l'adresse d'où vient l'image revenait à l'imprimer sous la
+          photo, et à envoyer le client chez le fournisseur du visuel. La
+          traçabilité vit dans `prisma/vehicle-photos.json`, qui porte la page
+          d'origine de chaque entrée — c'est un registre, pas de l'affichage.
+        */
+        caption: null,
         /*
           `nature` reste UNSPECIFIED : ce n'est ni une photo du produit vendu,
           ni un rendu d'éclairage. L'écran des médias s'en sert pour dire au

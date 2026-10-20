@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { PrismaClient } from '@prisma/client'
+import { inspectUpload, putFile, storageStatus } from '../src/lib/storage/driver'
 
 const prisma = new PrismaClient()
 
@@ -55,6 +57,8 @@ type Pack = {
   vehicleLabel: string
   positionLabel: string
   sourcePage: string
+  /** Vignette du pack correspondant chez le revendeur partenaire. */
+  image: string | null
 }
 type Jeu = { _source: string; _releve: string; _avertissement: string; packs: Pack[] }
 
@@ -69,6 +73,59 @@ const EQUIPEMENT_NEUTRE = {
   code: 'NON_PRECISE',
   label: "Équipement d'origine non précisé",
   hint: "L'équipement de ce véhicule n'a pas été relevé : les packs ci-dessous ne distinguent pas halogène, xénon ou LED d'origine.",
+}
+
+const AGENT = 'LumeraPackImport/1.0 (+https://lumera-web.onrender.com)'
+const pause = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Dépose la vignette du pack et la rattache au produit.
+ *
+ * Même chaîne que pour les logos et les visuels de génération : vérification
+ * du contenu par `inspectUpload`, dépôt par la couche de stockage, et
+ * réutilisation d'un dépôt identique grâce à l'empreinte portée par la clé —
+ * beaucoup de packs partagent le même visuel d'un véhicule à l'autre.
+ */
+async function vignette(prisma: PrismaClient, url: string, alt: string): Promise<string | null> {
+  let bytes: Buffer
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': AGENT } })
+    if (!r.ok) return null
+    bytes = Buffer.from(await r.arrayBuffer())
+  } catch {
+    return null
+  }
+  if (bytes.length === 0 || bytes.length > 2 * 1024 * 1024) return null
+
+  const controle = await inspectUpload(new File([new Uint8Array(bytes)], path.basename(url)))
+  if (!controle.ok) return null
+
+  const empreinte = createHash('sha256').update(controle.bytes).digest('hex').slice(0, 12)
+  const existant = await prisma.media.findFirst({
+    where: { storageKey: { endsWith: `-${empreinte}.${controle.extension}` } },
+  })
+  if (existant) return existant.id
+
+  const depose = await putFile({
+    bytes: controle.bytes,
+    mimeType: controle.mimeType,
+    extension: controle.extension,
+    prefix: 'packs',
+  })
+  const media = await prisma.media.create({
+    data: {
+      storageKey: depose.key,
+      url: depose.url,
+      mimeType: depose.mimeType,
+      sizeBytes: depose.sizeBytes,
+      alt,
+      // Voir `import-vehicle-photos.ts` : la fiche affiche les légendes, la
+      // traçabilité reste dans `prisma/packs-vehicule.json`.
+      caption: null,
+      nature: 'UNSPECIFIED',
+    },
+  })
+  return media.id
 }
 
 function corps(pack: Pack): string {
@@ -88,6 +145,13 @@ async function main() {
   const jeu: Jeu = JSON.parse(
     await readFile(path.join(process.cwd(), 'prisma', 'packs-vehicule.json'), 'utf8'),
   )
+
+  const stock = storageStatus()
+  if (!stock.ok) {
+    console.error(`Stockage « ${stock.driver} » inutilisable : ${stock.problem}`)
+    process.exitCode = 1
+    return
+  }
 
   const tva = await prisma.vatRate.findUnique({ where: { code: 'FR_STANDARD' } })
   if (!tva) {
@@ -140,7 +204,7 @@ async function main() {
         slug: pack.generation,
         model: { slug: pack.model, make: { slug: pack.make } },
       },
-      select: { id: true },
+      select: { id: true, photoMediaId: true },
     })
     if (!generation) {
       soucis.push(`${pack.name} — génération absente du référentiel`)
@@ -205,6 +269,41 @@ async function main() {
         ).id
 
     /*
+      Vignette : la photo de la génération.
+
+      Le vocabulaire des rôles n'en a pas pour « photo du véhicule », et
+      l'affichage ne lit que `PRODUCT` : on prend donc celui-là. Montrer la
+      voiture plutôt qu'un carré vide est d'autant plus juste ici que le
+      contenu du carton n'est pas encore figé — il n'y a pas de photo du
+      produit à montrer. Le média garde en texte alternatif le nom du véhicule,
+      pour que personne ne prenne la voiture pour l'article vendu.
+    */
+    const deja = await prisma.productMedia.count({ where: { productId: produit.id } })
+    if (deja === 0 || remplacer) {
+      // La vignette du pack d'abord, la photo du vehicule ensuite : l'une
+      // montre l'article, l'autre dit pour quelle voiture il est.
+      const visuels: Array<{ mediaId: string; position: number }> = []
+      if (pack.image) {
+        const id = await vignette(prisma, pack.image, pack.name)
+        if (id) visuels.push({ mediaId: id, position: 0 })
+        else soucis.push(`${pack.name} — vignette inaccessible`)
+      }
+      if (generation.photoMediaId) {
+        visuels.push({ mediaId: generation.photoMediaId, position: visuels.length })
+      }
+      for (const v of visuels) {
+        await prisma.productMedia.upsert({
+          where: {
+            productId_mediaId_role: { productId: produit.id, mediaId: v.mediaId, role: 'PRODUCT' },
+          },
+          update: { position: v.position },
+          create: { productId: produit.id, mediaId: v.mediaId, role: 'PRODUCT', position: v.position },
+        })
+      }
+      if (pack.image) await pause(120)
+    }
+
+    /*
       `UNKNOWN` : la position est attestée pour ce véhicule, le contenu du pack
       ne l'est pas. Le site affichera donc le pack sans affirmer qu'il convient.
     */
@@ -223,13 +322,15 @@ async function main() {
   for (const s of soucis.slice(0, 15)) console.log(`  ! ${s}`)
   if (soucis.length > 15) console.log(`  … et ${soucis.length - 15} autres.`)
 
-  const [packs, compat, confirmes] = await Promise.all([
+  const [packs, compat, confirmes, sansVisuel] = await Promise.all([
     prisma.product.count({ where: { slug: { startsWith: 'pack-led-' } } }),
     prisma.fitment.count(),
     prisma.fitment.count({ where: { status: 'CONFIRMED' } }),
+    prisma.product.count({ where: { slug: { startsWith: 'pack-led-' }, media: { none: {} } } }),
   ])
   console.log(
-    `  En base : ${packs} pack(s), ${compat} compatibilité(s) dont ${confirmes} confirmée(s).`,
+    `  En base : ${packs} pack(s) dont ${sansVisuel} sans visuel, ` +
+      `${compat} compatibilité(s) dont ${confirmes} confirmée(s).`,
   )
 }
 
