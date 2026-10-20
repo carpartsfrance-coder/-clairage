@@ -10,6 +10,12 @@ import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Alert } from '@/components/ui/Surface'
 import { releverManques, type Manque } from '@/lib/admin/completeness'
+import { prisma } from '@/lib/db'
+import {
+  MediaAltForm,
+  ProductInfoForm,
+  ProductStatusForm,
+} from '@/components/admin/ProductEditor'
 
 /**
  * Fiche produit du back-office — lecture seule.
@@ -108,7 +114,25 @@ export default async function AdminProductPage({ params }: PageProps) {
   if (!product) notFound()
 
   const manques = releverManques(product)
+  const bloquants = manques
+    .filter((manque) => manque.niveau === 'bloquant')
+    .map((manque) => manque.champ)
   const categoryNames = product.categories.map((entry) => entry.category.name)
+
+  /*
+    Rubriques proposées à l'édition : toutes celles du catalogue, avec leur
+    chemin complet. Une liste à plat de noms rendrait « Phares LED » et
+    « Phares LED » (sous deux parents différents) indiscernables.
+  */
+  const categories = await prisma.category.findMany({
+    orderBy: [{ position: 'asc' }, { name: 'asc' }],
+    select: { id: true, name: true, parent: { select: { name: true } } },
+  })
+  const categoriesOptions = categories.map((categorie) => ({
+    id: categorie.id,
+    name: categorie.name,
+    path: categorie.parent ? `${categorie.parent.name} › ${categorie.name}` : categorie.name,
+  }))
   const missingAltCount = product.media.filter((entry) => !entry.media.alt).length
 
   return (
@@ -160,6 +184,22 @@ export default async function AdminProductPage({ params }: PageProps) {
 
       {/* --- Ce qui manque ------------------------------------------------ */}
       <ReleveDesManques manques={manques} status={product.status} />
+
+      {/* --- Édition ------------------------------------------------------ */}
+      <section aria-labelledby="produit-edition" className="mt-6">
+        <h2 id="produit-edition" className="text-base font-bold">
+          Modifier
+        </h2>
+        <ProductStatusForm productId={product.id} status={product.status} bloquants={bloquants} />
+        <ProductInfoForm
+          productId={product.id}
+          tagline={product.tagline}
+          metaTitle={product.metaTitle}
+          metaDescription={product.metaDescription}
+          categories={categoriesOptions}
+          selectedCategoryIds={product.categories.map((entry) => entry.categoryId)}
+        />
+      </section>
 
       {/* --- Informations ------------------------------------------------- */}
       <section aria-labelledby="produit-infos" className="mt-5">
@@ -410,7 +450,7 @@ export default async function AdminProductPage({ params }: PageProps) {
                     height={64}
                     className="size-16 shrink-0 rounded-sm border border-line bg-surface-muted object-contain"
                   />
-                  <div className="min-w-0 text-sm">
+                  <div className="min-w-0 flex-1 text-sm">
                     <p className="font-medium">
                       {MEDIA_ROLE_LABELS[entry.role] ?? entry.role}
                       <span className="text-xs font-normal text-muted">
@@ -418,11 +458,18 @@ export default async function AdminProductPage({ params }: PageProps) {
                         · {MEDIA_NATURE_LABELS[entry.media.nature] ?? entry.media.nature}
                       </span>
                     </p>
-                    {entry.media.alt ? (
-                      <p className="text-xs text-muted-strong break-words">{entry.media.alt}</p>
-                    ) : (
-                      <p className="text-xs font-medium text-warn">Texte alternatif manquant</p>
-                    )}
+                    {/*
+                      Le texte alternatif s'édite là où son absence est
+                      signalée. Le constater dans un écran et le corriger dans
+                      un autre, c'est ce qui fait qu'on ne le corrige jamais.
+                    */}
+                    <div className="mt-1">
+                      <MediaAltForm
+                        productId={product.id}
+                        mediaId={entry.media.id}
+                        alt={entry.media.alt}
+                      />
+                    </div>
                   </div>
                 </li>
               ))}
