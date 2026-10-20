@@ -14,6 +14,8 @@ import { Alert } from '@/components/ui/Surface'
 import { RoadApprovalNote } from '@/components/ui/Badge'
 import {
   IconCart,
+  IconMinus,
+  IconPlus,
   IconCheck,
   IconInfo,
   IconShield,
@@ -90,9 +92,25 @@ export function BuyBox({
     defaultVariantId(variants, recommendedVariantId),
   )
   const selectedId = configuration?.selectedId ?? fallbackId
-  const setSelectedId = configuration?.setSelectedId ?? setFallbackId
+  const choisirConditionnement = configuration?.setSelectedId ?? setFallbackId
+  const setSelectedId = (id: string) => {
+    choisirConditionnement(id)
+    setQuantite(1)
+  }
 
   const [acceptedAccessories, setAcceptedAccessories] = useState<string[]>([])
+
+  /*
+    Quantité demandée. Elle était figée à 1 : le bouton envoyait toujours une
+    unité, quel que soit l'écran. La maquette V2 pose un sélecteur à gauche du
+    bouton, et le serveur, lui, savait déjà recevoir une quantité, la borner au
+    stock vendable et le dire quand il en accorde moins.
+
+    Elle revient à 1 dès que le conditionnement change : une quantité de cinq
+    retenue sur un conditionnement en stock n'a aucune raison d'être reportée
+    sur un autre qui n'en a que deux.
+  */
+  const [quantite, setQuantite] = useState(1)
 
   /*
     Apparition de la barre fixe sur grand écran.
@@ -189,7 +207,7 @@ export function BuyBox({
     startTransition(async () => {
       const result = await addToCart({
         variantId: selected.id,
-        quantity: 1,
+        quantity: quantite,
         extraVariantIds: acceptedAccessories,
       })
       if (result.ok) {
@@ -429,16 +447,27 @@ export function BuyBox({
         </fieldset>
       ) : null}
 
-      {/* ---- .price-line ---- */}
-      <div className="mb-3.5 flex items-center justify-between gap-4">
+      {/* ---- .price-row ---- */}
+      <div className="mb-[15px] flex items-center justify-between gap-5">
         <div>
-          <strong className="block text-[34px] leading-none font-extrabold tracking-[-1.2px] fiche:text-[32px]">
+          <strong className="block text-[33px] leading-[1.1] font-bold tracking-[-1.5px] fiche:text-[35px]">
             {formatPrice(total)}
           </strong>
-          <span className="mt-[7px] block text-[10px] text-muted fiche:text-[9px]">
+          <span className="mt-[5px] block text-[10px] text-[#8e9686] min-[1450px]:text-[11px]">
             TTC · {selected.name.toLowerCase()}
             {accessoriesTotal > 0 ? ' et accessoires cochés' : null}
           </span>
+          {/*
+            Le prix affiché reste celui d'UN conditionnement. Multiplier le
+            grand chiffre par la quantité ferait lire « 299,70 € » comme le
+            prix du pack, ce qu'il n'est pas ; le total part donc sur sa propre
+            ligne, nommé.
+          */}
+          {quantite > 1 ? (
+            <span className="mt-[3px] block text-[10px] font-semibold text-ink">
+              {quantite} × {formatPrice(total)} = {formatPrice(total * quantite)}
+            </span>
+          ) : null}
         </div>
         <span
           className={cn(
@@ -474,29 +503,46 @@ export function BuyBox({
             <IconChevronRight className="ml-auto size-[17px] shrink-0" />
           </Link>
 
+          <div className="flex gap-[9px]">
+            <SelecteurQuantite
+              valeur={quantite}
+              onChange={setQuantite}
+              maximum={selected.availability.sellable}
+              disabled={!purchasable || pending}
+            />
+            <button
+              ref={boutonRef}
+              type="button"
+              disabled={!purchasable || pending}
+              onClick={submit}
+              className="flex min-h-[50px] flex-1 items-center justify-center gap-3 rounded-md border border-[#c7c9c0] bg-white px-[17px] py-2.5 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <IconCart className="size-4 shrink-0" />
+              {pending ? 'Ajout en cours…' : 'Commander sans attendre la vérification'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* .buy-actions : la quantité à gauche, le bouton occupe le reste. */
+        <div className="flex gap-[9px] fiche:gap-[10px]">
+          <SelecteurQuantite
+            valeur={quantite}
+            onChange={setQuantite}
+            maximum={selected.availability.sellable}
+            disabled={!purchasable || pending}
+          />
           <button
             ref={boutonRef}
             type="button"
             disabled={!purchasable || pending}
             onClick={submit}
-            className="flex min-h-[42px] w-full items-center justify-center gap-3 rounded-md border border-[#c7c9c0] bg-white px-[17px] py-2.5 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex min-h-[50px] flex-1 items-center justify-center gap-3 rounded-md bg-brand px-4 py-3 text-[13px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[51px] fiche:px-5"
           >
-            <IconCart className="size-4 shrink-0" />
-            {pending ? 'Ajout en cours…' : 'Commander sans attendre la vérification'}
+            <IconCart className="size-[18px] shrink-0" />
+            <span className="flex-1 text-center">{libelleBouton}</span>
+            <IconChevronRight className="size-[17px] shrink-0" />
           </button>
         </div>
-      ) : (
-        <button
-          ref={boutonRef}
-          type="button"
-          disabled={!purchasable || pending}
-          onClick={submit}
-          className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-[7px] bg-brand px-[22px] py-3 text-[13px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[51px]"
-        >
-          <IconCart className="size-[19px] shrink-0" />
-          <span className="flex-1">{libelleBouton}</span>
-          <IconChevronRight className="ml-auto size-[17px] shrink-0" />
-        </button>
       )}
 
       {feedback ? (
@@ -620,6 +666,67 @@ export function BuyBox({
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Sélecteur de quantité — `.quantity` de la maquette V2 : 100 × 51 px, filet
+ * à 6 px de rayon, moins / valeur / plus.
+ *
+ * Le maximum vient du stock réellement vendable. `null` signifie que la vente
+ * à découvert est ouverte : il n'y a alors pas de borne à poser côté client,
+ * et c'est le serveur qui tranchera de toute façon — il borne déjà la quantité
+ * demandée et dit quand il en accorde moins.
+ */
+function SelecteurQuantite({
+  valeur,
+  onChange,
+  maximum,
+  disabled,
+}: {
+  valeur: number
+  onChange: (valeur: number) => void
+  maximum: number | null
+  disabled: boolean
+}) {
+  // Garde-fou d'interface, pas de règle commerciale : au-delà, on passe par le
+  // devis plutôt que par un champ.
+  const plafond = Math.min(maximum ?? 99, 99)
+
+  return (
+    <div
+      role="group"
+      aria-label="Quantité"
+      className="flex h-[50px] w-[87px] shrink-0 items-center justify-between rounded-md border border-[#dfe4d9] fiche:h-[51px] fiche:w-[100px]"
+    >
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(1, valeur - 1))}
+        disabled={disabled || valeur <= 1}
+        aria-label="Diminuer la quantité"
+        className="grid h-full w-[33px] place-items-center text-muted-strong transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <IconMinus className="size-[13px]" strokeWidth={2} />
+      </button>
+
+      {/*
+        `output` avec `aria-live` : la valeur change sans que le focus bouge,
+        et un lecteur d'écran doit l'entendre sans avoir à relire la ligne.
+      */}
+      <output aria-live="polite" className="min-w-[17px] text-center text-[12px] font-bold">
+        {valeur}
+      </output>
+
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(plafond, valeur + 1))}
+        disabled={disabled || valeur >= plafond}
+        aria-label="Augmenter la quantité"
+        className="grid h-full w-[33px] place-items-center text-muted-strong transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <IconPlus className="size-[13px]" strokeWidth={2} />
+      </button>
     </div>
   )
 }
