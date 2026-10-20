@@ -144,6 +144,13 @@ export default async function ProductPage({ params }: PageProps) {
   const aDescription = (product.body ?? '').trim().length > 0
 
   /*
+    Aucun visuel : la galerie disparaît au lieu d'afficher un cadre vide, et le
+    hero passe sur une colonne. C'est fréquent sur les accessoires, dont la
+    fiche n'a parfois qu'un prix et trois caractéristiques à donner.
+  */
+  const aVisuel = product.gallery.length > 0
+
+  /*
     L'ordre est celui de la V2, et il suit la décision d'achat : ce qu'on
     reçoit, puis ce que ça change, puis ce que ça suppose, puis comment on le
     monte. Le rédactionnel long n'a pas de section dans la maquette ; il reste
@@ -192,19 +199,32 @@ export default async function ProductPage({ params }: PageProps) {
           <VehicleBar vehicle={vehicle} className="mb-[27px] max-fiche:hidden" />
 
           {/*
-            .hero — galerie à gauche (1.13fr), titre et achat à droite (1fr),
-            58 px d'écart. Sous 800 px la référence passe en colonne unique avec
-            `display:contents` : le titre vient AVANT la galerie, puis le bloc
-            d'achat. Même résultat ici par placement explicite en grille.
+            .product-hero — galerie à gauche (1,07fr), titre et achat à droite
+            (1fr), 62 px d'écart. Sous 800 px la maquette passe en colonne
+            unique : le titre vient AVANT la galerie, puis le bloc d'achat.
+            Même résultat ici par placement explicite en grille.
+
+            Sans aucun visuel, la grille se réduit à une colonne. Le cadre
+            affichait « Aucun visuel disponible » sur 435 px de haut : une
+            moitié d'écran pour annoncer une absence, sur une fiche
+            d'accessoire qui n'a souvent rien à montrer. Un visuel manquant est
+            une tâche d'administration, pas une information pour le client.
           */}
           <section
             aria-label={product.name}
-            className="flex flex-col pt-[6px] pb-[27px] fiche:grid fiche:grid-cols-[minmax(0,1.07fr)_minmax(0,1fr)] fiche:items-start fiche:gap-x-[36px] fiche:pt-[9px] fiche:pb-10 min-[1101px]:gap-x-[62px] min-[1450px]:gap-x-[74px]"
+            className={cn(
+              'flex flex-col pt-[6px] pb-[27px] fiche:items-start fiche:pt-[9px] fiche:pb-10',
+              aVisuel
+                ? 'fiche:grid fiche:grid-cols-[minmax(0,1.07fr)_minmax(0,1fr)] fiche:gap-x-[36px] min-[1101px]:gap-x-[62px] min-[1450px]:gap-x-[74px]'
+                : 'fiche:max-w-[620px]',
+            )}
           >
             {/* .gallery */}
-            <div className="order-2 mt-1 fiche:order-none fiche:mt-0">
-              <ProductGallery items={product.gallery} productName={product.name} />
-            </div>
+            {aVisuel ? (
+              <div className="order-2 mt-1 fiche:order-none fiche:mt-0">
+                <ProductGallery items={product.gallery} productName={product.name} />
+              </div>
+            ) : null}
 
             {/*
               .purchase — un seul enfant de grille sur grand écran, pour que le
