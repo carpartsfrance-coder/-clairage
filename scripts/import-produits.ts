@@ -70,6 +70,23 @@ type Redaction = {
 }
 
 const remplacer = process.argv.includes('--remplacer')
+
+/*
+  `--sans-media` : n'ouvre aucun dépôt de fichier.
+
+  Les visuels vivent dans un stockage objet dont les identifiants ne sont
+  connus que de l'instance Render. Lancé depuis un poste, ce script écrirait
+  donc les fichiers sur le disque local et enregistrerait des URL `/uploads/…`
+  dans la base de production — des médias pointant vers des fichiers que le
+  site ne sert pas. C'est arrivé une fois, ça ne doit pas se reproduire par
+  distraction.
+
+  Avec ce drapeau, le script ne touche qu'au texte et aux prix. Les visuels
+  déjà rattachés restent en place. C'est ce qui permet de régénérer un
+  rédactionnel depuis un poste sans détenir la clé du stockage.
+*/
+const sansMedia = process.argv.includes('--sans-media')
+
 const AGENT = 'LumeraCatalogImport/1.0 (+https://lumera-web.onrender.com)'
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -154,7 +171,7 @@ async function visuel(fait: Fait, red: Redaction, produitId: string): Promise<'p
 
 async function main() {
   const etat = storageStatus()
-  if (!etat.ok) {
+  if (!etat.ok && !sansMedia) {
     console.error(`Stockage « ${etat.driver} » inutilisable : ${etat.problem}`)
     process.exitCode = 1
     return
@@ -251,8 +268,10 @@ async function main() {
       create: { productId: produit.id, categoryId: categorie.id },
     })
 
-    const vis = await visuel(fait, red, produit.id)
-    if (!['posé', 'déjà posé', 'aucun'].includes(vis)) soucis.push(`${fait.name} — ${vis}`)
+    if (!sansMedia) {
+      const vis = await visuel(fait, red, produit.id)
+      if (!['posé', 'déjà posé', 'aucun'].includes(vis)) soucis.push(`${fait.name} — ${vis}`)
+    }
 
     console.log(`  ${existant ? '·' : '+'} ${red.sku.padEnd(14)} ${red.name}`)
     await pause(150)

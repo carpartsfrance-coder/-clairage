@@ -63,6 +63,23 @@ type Pack = {
 type Jeu = { _source: string; _releve: string; _avertissement: string; packs: Pack[] }
 
 const remplacer = process.argv.includes('--remplacer')
+
+/*
+  `--sans-media` : n'ouvre aucun dépôt de fichier.
+
+  Les visuels vivent dans un stockage objet dont les identifiants ne sont
+  connus que de l'instance Render. Lancé depuis un poste, ce script écrirait
+  donc les fichiers sur le disque local et enregistrerait des URL `/uploads/…`
+  dans la base de production — des médias pointant vers des fichiers que le
+  site ne sert pas. C'est arrivé une fois, ça ne doit pas se reproduire par
+  distraction.
+
+  Avec ce drapeau, le script ne touche qu'au texte et aux prix. Les visuels
+  déjà rattachés restent en place. C'est ce qui permet de régénérer un
+  rédactionnel depuis un poste sans détenir la clé du stockage.
+*/
+const sansMedia = process.argv.includes('--sans-media')
+
 const filtre = (() => {
   const i = process.argv.indexOf('--vehicule')
   return i >= 0 ? process.argv[i + 1] : null
@@ -203,7 +220,7 @@ async function main() {
   )
 
   const stock = storageStatus()
-  if (!stock.ok) {
+  if (!stock.ok && !sansMedia) {
     console.error(`Stockage « ${stock.driver} » inutilisable : ${stock.problem}`)
     process.exitCode = 1
     return
@@ -225,7 +242,9 @@ async function main() {
   const retenus = filtre
     ? jeu.packs.filter((p) => `${p.make}/${p.generation}` === filtre)
     : jeu.packs
-  console.log(`→ Packs par véhicule — relevé du ${jeu._releve}`)
+  console.log(
+    `→ Packs par véhicule — relevé du ${jeu._releve}` + (sansMedia ? ' · sans dépôt de média' : ''),
+  )
   console.log(`  ${retenus.length} pack(s)${filtre ? ` pour ${filtre}` : ''} sur ${jeu.packs.length}`)
   if (retenus.length === 0) {
     console.error('  Aucun pack ne correspond — vérifiez le filtre.')
@@ -335,7 +354,7 @@ async function main() {
       pour que personne ne prenne la voiture pour l'article vendu.
     */
     const deja = await prisma.productMedia.count({ where: { productId: produit.id } })
-    if (deja === 0 || remplacer) {
+    if (!sansMedia && (deja === 0 || remplacer)) {
       // La vignette du pack d'abord, la photo du vehicule ensuite : l'une
       // montre l'article, l'autre dit pour quelle voiture il est.
       const visuels: Array<{ mediaId: string; position: number }> = []
