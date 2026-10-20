@@ -10,6 +10,7 @@ import { addToCart } from '@/lib/actions/cart'
 import { formatPrice } from '@/lib/identity'
 import { availabilityLabel, isPurchasable } from '@/lib/stock'
 import { defaultVariantId, useProductConfiguration } from './ProductConfiguration'
+import { StockAlertForm } from './StockAlertForm'
 import { cn } from '@/lib/cn'
 import { Alert } from '@/components/ui/Surface'
 import { RoadApprovalNote } from '@/components/ui/Badge'
@@ -189,6 +190,12 @@ export function BuyBox({
   */
   const inconnu = Boolean(vehicleLabel) && selected.fitment.status === 'UNKNOWN'
   const purchasable = isPurchasable(selected.availability) && !incompatible
+  /*
+    Rupture au sens strict : ni stock, ni vente à découvert. Une pièce
+    incompatible n'est pas une rupture — proposer d'être prévenu du retour
+    d'une pièce qui ne se monte pas serait absurde.
+  */
+  const rupture = selected.availability.state === 'OUT_OF_STOCK' && !incompatible
   const lienVerification = `/verification?variante=${encodeURIComponent(selected.id)}`
 
   /** « 2 × Ampoules LED H7 + 2 × Adaptateur… », construit depuis la vraie composition. */
@@ -496,7 +503,19 @@ export function BuyBox({
         au client. L'achat reste possible juste en dessous, nommé pour ce
         qu'il est.
       */}
-      {inconnu ? (
+      {/*
+        L'ordre de ces trois cas est une décision, pas une commodité.
+
+        La rupture passe AVANT la compatibilité non établie : quand il n'y a
+        rien à vendre, proposer « Faire vérifier mon véhicule » puis
+        « Commander sans attendre la vérification » conduit le client vers un
+        bouton qui ne peut rien faire. L'alerte de retour est la seule action
+        utile des deux côtés, et la vérification reste joignable par le bloc
+        d'avertissement au-dessus.
+      */}
+      {rupture ? (
+        <StockAlertForm variantId={selected.id} />
+      ) : inconnu ? (
         <div className="flex flex-col gap-2">
           <Link
             href={lienVerification}

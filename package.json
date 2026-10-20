@@ -22,7 +22,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "admin:create": "tsx scripts/create-admin.ts",
-    "jobs:run": "tsx scripts/run-jobs.ts",
+    "jobs:run": "tsx --conditions=react-server scripts/run-jobs.ts",
     "test:db:setup": "createdb lumera_test || true && DATABASE_URL=\"postgresql://$USER@localhost:5432/lumera_test?schema=public\" prisma migrate deploy",
     "seed:taxonomy": "tsx scripts/seed-taxonomy.ts",
     "import:brand-logos": "tsx scripts/import-brand-logos.ts",

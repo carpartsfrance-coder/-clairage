@@ -71,8 +71,8 @@ model FaqItem {
 }
 
 model Guide {
-  id              String    @id @default(cuid())
-  slug            String    @unique
+  id              String     @id @default(cuid())
+  slug            String     @unique
   title           String
   summary         String?
   body            String
@@ -81,22 +81,22 @@ model Guide {
   metaTitle       String?
   metaDescription String?
   publishedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   products ProductGuide[]
 }
 
 model MenuEntry {
-  id       String      @id @default(cuid())
-  menu     String // header-main | header-top | footer-col1 ...
-  label    String
-  href     String
-  position Int         @default(0)
-  highlight Boolean    @default(false)
-  parentId String?
-  parent   MenuEntry?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children MenuEntry[] @relation("MenuTree")
+  id        String      @id @default(cuid())
+  menu      String // header-main | header-top | footer-col1 ...
+  label     String
+  href      String
+  position  Int         @default(0)
+  highlight Boolean     @default(false)
+  parentId  String?
+  parent    MenuEntry?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  MenuEntry[] @relation("MenuTree")
 
   @@index([menu, position])
 }
@@ -118,25 +118,25 @@ model HomeBlock {
 // ---------------------------------------------------------------------------
 
 model Category {
-  id              String     @id @default(cuid())
-  slug            String     @unique
+  id              String            @id @default(cuid())
+  slug            String            @unique
   name            String
   shortName       String?
   description     String?
   metaTitle       String?
   metaDescription String?
-  position        Int        @default(0)
-  published       Boolean    @default(true)
+  position        Int               @default(0)
+  published       Boolean           @default(true)
   /// Famille fonctionnelle, sert aux filtres et aux emplacements lumineux.
-  family          PartFamily @default(OTHER)
+  family          PartFamily        @default(OTHER)
   heroMediaId     String?
-  heroMedia       Media?     @relation("CategoryHero", fields: [heroMediaId], references: [id])
+  heroMedia       Media?            @relation("CategoryHero", fields: [heroMediaId], references: [id])
   parentId        String?
-  parent          Category?  @relation("CategoryTree", fields: [parentId], references: [id])
-  children        Category[] @relation("CategoryTree")
+  parent          Category?         @relation("CategoryTree", fields: [parentId], references: [id])
+  children        Category[]        @relation("CategoryTree")
   products        ProductCategory[]
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@index([parentId, position])
   @@index([family])
@@ -156,44 +156,44 @@ enum PartFamily {
 }
 
 model Product {
-  id              String        @id @default(cuid())
-  slug            String        @unique
-  name            String
+  id               String        @id @default(cuid())
+  slug             String        @unique
+  name             String
   /// Bénéfice court affiché sous le titre de la fiche.
-  tagline         String?
-  description     String?
+  tagline          String?
+  description      String?
   /// Rédactionnel long, markdown.
-  body            String?
-  brand           String?
-  status          ProductStatus @default(DRAFT)
-  kind            ProductKind   @default(SIMPLE)
-  vehicleType     VehicleType   @default(CAR)
-  difficulty      Difficulty    @default(UNKNOWN)
+  body             String?
+  brand            String?
+  status           ProductStatus @default(DRAFT)
+  kind             ProductKind   @default(SIMPLE)
+  vehicleType      VehicleType   @default(CAR)
+  difficulty       Difficulty    @default(UNKNOWN)
   /// Température de couleur annoncée (Kelvin), nulle si non applicable.
   colorTemperature Int?
   /// Culot (H7, D1S, W5W, BA15S...). Indexé pour la recherche par culot.
-  bulbBase        String?
-  metaTitle       String?
-  metaDescription String?
+  bulbBase         String?
+  metaTitle        String?
+  metaDescription  String?
   /// Mis en avant sur la page d'accueil. C'est un choix éditorial explicite,
   /// pas une déduction depuis les ventes — rien ici ne prétend mesurer un succès.
-  featured        Boolean       @default(false)
+  featured         Boolean       @default(false)
   /// Marque les contenus de démonstration : un filtre les retire en un passage.
-  isDemo          Boolean       @default(false)
-  publishedAt     DateTime?
-  archivedAt      DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  isDemo           Boolean       @default(false)
+  publishedAt      DateTime?
+  archivedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  variants        ProductVariant[]
-  categories      ProductCategory[]
-  media           ProductMedia[]
-  specs           ProductSpec[]
-  guides          ProductGuide[]
-  faqItems        ProductFaq[]
-  reviews         Review[]
-  relatedFrom     ProductRelation[] @relation("RelationSource")
-  relatedTo       ProductRelation[] @relation("RelationTarget")
+  variants    ProductVariant[]
+  categories  ProductCategory[]
+  media       ProductMedia[]
+  specs       ProductSpec[]
+  guides      ProductGuide[]
+  faqItems    ProductFaq[]
+  reviews     Review[]
+  relatedFrom ProductRelation[] @relation("RelationSource")
+  relatedTo   ProductRelation[] @relation("RelationTarget")
 
   @@index([status, publishedAt])
   @@index([featured, status])
@@ -241,39 +241,40 @@ model ProductCategory {
 /// Variante achetable. Le stock vit ICI, jamais sur Product : un kit n'a pas de
 /// stock propre, sa disponibilité se calcule à partir de ses composants.
 model ProductVariant {
-  id            String      @id @default(cuid())
-  productId     String
-  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sku           String      @unique
-  name          String
+  id                String    @id @default(cuid())
+  productId         String
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku               String    @unique
+  name              String
   /// Conditionnement annoncé au client.
-  packaging     Packaging   @default(UNIT)
+  packaging         Packaging @default(UNIT)
   /// Prix TTC en centimes. Le HT est dérivé via le taux de TVA.
-  priceCents    Int
-  compareAtCents Int?
-  vatRateId     String?
-  vatRate       VatRate?    @relation(fields: [vatRateId], references: [id])
+  priceCents        Int
+  compareAtCents    Int?
+  vatRateId         String?
+  vatRate           VatRate?  @relation(fields: [vatRateId], references: [id])
   /// Stock physique détenu pour CETTE référence.
-  stockOnHand   Int         @default(0)
+  stockOnHand       Int       @default(0)
   /// Stock réservé par des paniers/commandes non encore expédiés.
-  stockReserved Int         @default(0)
-  lowStockThreshold Int     @default(0)
+  stockReserved     Int       @default(0)
+  lowStockThreshold Int       @default(0)
   /// Autorise la vente à découvert (sur commande).
-  backorder     Boolean     @default(false)
-  weightGrams   Int?
-  position      Int         @default(0)
-  active        Boolean     @default(true)
-  isDemo        Boolean     @default(false)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  backorder         Boolean   @default(false)
+  weightGrams       Int?
+  position          Int       @default(0)
+  active            Boolean   @default(true)
+  isDemo            Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  components    KitComponent[] @relation("KitParent")
-  partOfKits    KitComponent[] @relation("KitChild")
-  fitments      Fitment[]
-  cartLines     CartLine[]
-  orderLines    OrderLine[]
-  stockMoves    StockMovement[]
-  accessoryFor  FitmentAccessory[]
+  components   KitComponent[]     @relation("KitParent")
+  partOfKits   KitComponent[]     @relation("KitChild")
+  fitments     Fitment[]
+  cartLines    CartLine[]
+  orderLines   OrderLine[]
+  stockMoves   StockMovement[]
+  accessoryFor FitmentAccessory[]
+  stockAlerts  StockAlert[]
 
   @@index([productId, position])
   @@index([sku])
@@ -289,15 +290,15 @@ enum Packaging {
 /// Composition d'un kit : quantité de chaque composant.
 /// Un kit ajouté au panier doit contenir exactement ces lignes.
 model KitComponent {
-  id         String         @id @default(cuid())
-  kitId      String
-  kit        ProductVariant @relation("KitParent", fields: [kitId], references: [id], onDelete: Cascade)
+  id          String         @id @default(cuid())
+  kitId       String
+  kit         ProductVariant @relation("KitParent", fields: [kitId], references: [id], onDelete: Cascade)
   componentId String
-  component  ProductVariant @relation("KitChild", fields: [componentId], references: [id], onDelete: Restrict)
-  quantity   Int            @default(1)
+  component   ProductVariant @relation("KitChild", fields: [componentId], references: [id], onDelete: Restrict)
+  quantity    Int            @default(1)
   /// Composant indispensable au fonctionnement, par opposition à un complément.
-  required   Boolean        @default(true)
-  position   Int            @default(0)
+  required    Boolean        @default(true)
+  position    Int            @default(0)
 
   @@unique([kitId, componentId])
   @@index([componentId])
@@ -305,13 +306,13 @@ model KitComponent {
 
 /// Produits liés : complément facultatif, accessoire recommandé, alternative.
 model ProductRelation {
-  id        String       @id @default(cuid())
-  sourceId  String
-  source    Product      @relation("RelationSource", fields: [sourceId], references: [id], onDelete: Cascade)
-  targetId  String
-  target    Product      @relation("RelationTarget", fields: [targetId], references: [id], onDelete: Cascade)
-  type      RelationType
-  position  Int          @default(0)
+  id       String       @id @default(cuid())
+  sourceId String
+  source   Product      @relation("RelationSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId String
+  target   Product      @relation("RelationTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  type     RelationType
+  position Int          @default(0)
 
   @@unique([sourceId, targetId, type])
 }
@@ -357,19 +358,19 @@ model ProductFaq {
 /// Avis client. Aucun avis n'est créé par le code : la table reste vide tant
 /// qu'aucun avis réel n'a été collecté et modéré.
 model Review {
-  id          String       @id @default(cuid())
-  productId   String
-  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
-  orderId     String?
-  authorName  String
-  rating      Int
-  title       String?
-  body        String
-  status      ReviewStatus @default(PENDING)
+  id               String       @id @default(cuid())
+  productId        String
+  product          Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderId          String?
+  authorName       String
+  rating           Int
+  title            String?
+  body             String
+  status           ReviewStatus @default(PENDING)
   /// Vrai si l'avis est rattaché à une commande payée.
-  verifiedPurchase Boolean @default(false)
-  createdAt   DateTime     @default(now())
-  publishedAt DateTime?
+  verifiedPurchase Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  publishedAt      DateTime?
 
   @@index([productId, status])
 }
@@ -385,26 +386,26 @@ enum ReviewStatus {
 /// Fichier stocké durablement (stockage objet S3-compatible), jamais sur le
 /// disque éphémère du serveur Render.
 model Media {
-  id          String      @id @default(cuid())
-  storageKey  String      @unique
-  url         String
-  mimeType    String
-  width       Int?
-  height      Int?
-  sizeBytes   Int?
+  id         String      @id @default(cuid())
+  storageKey String      @unique
+  url        String
+  mimeType   String
+  width      Int?
+  height     Int?
+  sizeBytes  Int?
   /// Texte alternatif, obligatoire côté admin pour les visuels de contenu.
-  alt         String?
+  alt        String?
   /// Distingue une photo réelle d'une illustration ou d'un rendu simulé.
-  nature      MediaNature @default(UNSPECIFIED)
-  caption     String?
-  isDemo      Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  createdBy   String?
+  nature     MediaNature @default(UNSPECIFIED)
+  caption    String?
+  isDemo     Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  createdBy  String?
 
-  products        ProductMedia[]
-  categoryHeroes  Category[]     @relation("CategoryHero")
-  equipmentIllustrations LightingEquipment[] @relation("EquipmentIllustration")
-  vehicleMakeLogos VehicleMake[] @relation("VehicleMakeLogo")
+  products                ProductMedia[]
+  categoryHeroes          Category[]          @relation("CategoryHero")
+  equipmentIllustrations  LightingEquipment[] @relation("EquipmentIllustration")
+  vehicleMakeLogos        VehicleMake[]       @relation("VehicleMakeLogo")
   vehicleGenerationPhotos VehicleGeneration[] @relation("VehicleGenerationPhoto")
 
   @@index([nature])
@@ -422,13 +423,13 @@ enum MediaNature {
 }
 
 model ProductMedia {
-  id        String       @id @default(cuid())
+  id        String    @id @default(cuid())
   productId String
-  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   mediaId   String
-  media     Media        @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-  role      MediaRole    @default(PRODUCT)
-  position  Int          @default(0)
+  media     Media     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  role      MediaRole @default(PRODUCT)
+  position  Int       @default(0)
 
   @@unique([productId, mediaId, role])
   @@index([productId, position])
@@ -456,29 +457,29 @@ model VatRate {
 }
 
 model Promotion {
-  id               String        @id @default(cuid())
-  code             String        @unique
-  label            String
-  type             PromotionType
+  id                  String        @id @default(cuid())
+  code                String        @unique
+  label               String
+  type                PromotionType
   /// Montant en centimes si FIXED, points de base si PERCENT.
-  value            Int
-  startsAt         DateTime?
-  endsAt           DateTime?
-  minOrderCents    Int?
+  value               Int
+  startsAt            DateTime?
+  endsAt              DateTime?
+  minOrderCents       Int?
   /// Limite globale d'utilisation, nulle si illimitée.
-  maxRedemptions   Int?
+  maxRedemptions      Int?
   /// Limite par client.
-  maxPerCustomer   Int?
-  redemptions      Int           @default(0)
+  maxPerCustomer      Int?
+  redemptions         Int           @default(0)
   /// Cumul avec d'autres codes.
-  stackable        Boolean       @default(false)
+  stackable           Boolean       @default(false)
   /// Offre la livraison si les conditions sont remplies.
-  freeShipping     Boolean       @default(false)
-  active           Boolean       @default(true)
-  eligibleCategoryIds String[]   @default([])
-  eligibleProductIds  String[]   @default([])
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  freeShipping        Boolean       @default(false)
+  active              Boolean       @default(true)
+  eligibleCategoryIds String[]      @default([])
+  eligibleProductIds  String[]      @default([])
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   orders Order[]
 
@@ -496,18 +497,18 @@ enum PromotionType {
 // ---------------------------------------------------------------------------
 
 model VehicleMake {
-  id          String        @id @default(cuid())
-  slug        String        @unique
+  id          String      @id @default(cuid())
+  slug        String      @unique
   name        String
-  type        VehicleType   @default(CAR)
+  type        VehicleType @default(CAR)
   /// Logo de la marque, choisi parmi les médias. Facultatif : un logo de
   /// constructeur est une marque déposée, et l'exploitant n'a pas
   /// nécessairement le droit de l'afficher. Sans lui, l'affichage public pose
   /// un monogramme plutôt qu'une pastille vide.
   logoMediaId String?
-  logo        Media?        @relation("VehicleMakeLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
-  position    Int           @default(0)
-  active      Boolean       @default(true)
+  logo        Media?      @relation("VehicleMakeLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+  position    Int         @default(0)
+  active      Boolean     @default(true)
 
   models VehicleModel[]
 
@@ -515,12 +516,12 @@ model VehicleMake {
 }
 
 model VehicleModel {
-  id       String      @id @default(cuid())
-  makeId   String
-  make     VehicleMake @relation(fields: [makeId], references: [id], onDelete: Cascade)
-  slug     String
-  name     String
-  active   Boolean     @default(true)
+  id     String      @id @default(cuid())
+  makeId String
+  make   VehicleMake @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  slug   String
+  name   String
+  active Boolean     @default(true)
 
   generations VehicleGeneration[]
 
@@ -546,7 +547,7 @@ model VehicleGeneration {
   photo        Media?       @relation("VehicleGenerationPhoto", fields: [photoMediaId], references: [id], onDelete: SetNull)
   active       Boolean      @default(true)
 
-  trims        VehicleTrim[]
+  trims          VehicleTrim[]
   configurations VehicleConfiguration[]
 
   @@unique([modelId, slug])
@@ -569,18 +570,18 @@ model VehicleTrim {
 /// Équipement lumineux d'origine : halogène, xénon d'origine, LED d'origine...
 /// Détermine seul si un kit est posable — jamais le culot à lui tout seul.
 model LightingEquipment {
-  id          String  @id @default(cuid())
-  code        String  @unique // HALOGEN | XENON_OEM | LED_OEM | ...
-  label       String
-  description String?
+  id             String  @id @default(cuid())
+  code           String  @unique // HALOGEN | XENON_OEM | LED_OEM | ...
+  label          String
+  description    String?
   /// Repère visuel court : « ampoule à filament », « lumière bleutée »…
   /// Sert à reconnaître son propre phare sans jargon.
-  hint        String?
+  hint           String?
   /// Illustration explicative (photo d'un phare halogène, d'un xénon…).
   /// Facultative : sans visuel vérifié, on n'en invente pas.
   illustrationId String?
   illustration   Media?  @relation("EquipmentIllustration", fields: [illustrationId], references: [id])
-  position    Int     @default(0)
+  position       Int     @default(0)
 
   configurations VehicleConfiguration[]
 }
@@ -601,17 +602,17 @@ model LightPosition {
 /// Le triplet réellement identifiant d'un véhicule côté compatibilité :
 /// génération + version + équipement d'origine.
 model VehicleConfiguration {
-  id           String             @id @default(cuid())
+  id           String            @id @default(cuid())
   generationId String
-  generation   VehicleGeneration  @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  generation   VehicleGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
   trimId       String?
-  trim         VehicleTrim?       @relation(fields: [trimId], references: [id])
+  trim         VehicleTrim?      @relation(fields: [trimId], references: [id])
   equipmentId  String
-  equipment    LightingEquipment  @relation(fields: [equipmentId], references: [id])
+  equipment    LightingEquipment @relation(fields: [equipmentId], references: [id])
   /// Référence du bloc optique quand elle discrimine (ex. "Valeo 89010552").
   headlampRef  String?
   label        String?
-  active       Boolean            @default(true)
+  active       Boolean           @default(true)
 
   fitments      Fitment[]
   savedVehicles SavedVehicle[]
@@ -633,21 +634,21 @@ model Fitment {
   variantId       String
   variant         ProductVariant       @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  status          FitmentStatus        @default(UNKNOWN)
+  status         FitmentStatus      @default(UNKNOWN)
   /// Quantité de cette variante nécessaire pour équiper l'emplacement.
-  quantity        Int                  @default(1)
+  quantity       Int                @default(1)
   /// Restrictions de montage en texte libre (démontage de pare-chocs, cache...).
-  restrictions    String?
+  restrictions   String?
   /// Homologation routière : indépendante de la compatibilité de montage.
-  roadApproval    RoadApprovalStatus   @default(UNKNOWN)
-  approvalMarket  String               @default("FR")
-  approvalNote    String?
+  roadApproval   RoadApprovalStatus @default(UNKNOWN)
+  approvalMarket String             @default("FR")
+  approvalNote   String?
   /// Provenance de l'information et date de la dernière vérification.
-  source          String?
-  verifiedAt      DateTime?
-  verifiedBy      String?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  source         String?
+  verifiedAt     DateTime?
+  verifiedBy     String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   accessories FitmentAccessory[]
 
@@ -690,23 +691,23 @@ model FitmentAccessory {
 // ---------------------------------------------------------------------------
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id              String     @id @default(cuid())
+  email           String     @unique
   emailVerifiedAt DateTime?
-  passwordHash  String?
-  firstName     String?
-  lastName      String?
-  phone         String?
+  passwordHash    String?
+  firstName       String?
+  lastName        String?
+  phone           String?
   /// Rôle null = client. Les rôles staff ouvrent le back-office.
-  staffRole     StaffRole?
-  active        Boolean   @default(true)
-  lastLoginAt   DateTime?
+  staffRole       StaffRole?
+  active          Boolean    @default(true)
+  lastLoginAt     DateTime?
   /// Essais de connexion infructueux consécutifs. Remis à zéro au succès.
-  failedLogins  Int       @default(0)
+  failedLogins    Int        @default(0)
   /// Verrouillage temporaire après trop d'essais. Null = compte ouvert.
-  lockedUntil   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  lockedUntil     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   addresses      Address[]
   savedVehicles  SavedVehicle[]
@@ -730,14 +731,14 @@ enum StaffRole {
 }
 
 model Session {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String   @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
   userAgent String?
   ip        String?
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   revokedAt DateTime?
 
   @@index([userId])
@@ -745,32 +746,32 @@ model Session {
 }
 
 model PasswordReset {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String   @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 }
 
 model Address {
-  id         String      @id @default(cuid())
-  userId     String?
-  user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  label      String?
-  firstName  String
-  lastName   String
-  company    String?
-  line1      String
-  line2      String?
-  postalCode String
-  city       String
-  country    String      @default("FR")
-  phone      String?
-  isDefaultShipping Boolean @default(false)
-  isDefaultBilling  Boolean @default(false)
-  createdAt  DateTime    @default(now())
+  id                String   @id @default(cuid())
+  userId            String?
+  user              User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label             String?
+  firstName         String
+  lastName          String
+  company           String?
+  line1             String
+  line2             String?
+  postalCode        String
+  city              String
+  country           String   @default("FR")
+  phone             String?
+  isDefaultShipping Boolean  @default(false)
+  isDefaultBilling  Boolean  @default(false)
+  createdAt         DateTime @default(now())
 
   @@index([userId])
 }
@@ -809,18 +810,18 @@ model Cart {
 }
 
 model CartLine {
-  id         String         @id @default(cuid())
-  cartId     String
-  cart       Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  variantId  String
-  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
-  quantity   Int            @default(1)
+  id                      String         @id @default(cuid())
+  cartId                  String
+  cart                    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId               String
+  variant                 ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity                Int            @default(1)
   /// Ligne ajoutée parce qu'un fitment la rend nécessaire (accessoire).
-  requiredBy String?
+  requiredBy              String?
   /// Configuration véhicule au moment de l'ajout, pour détecter les conflits
   /// quand le client change de véhicule en cours de navigation.
   addedForConfigurationId String?
-  createdAt  DateTime       @default(now())
+  createdAt               DateTime       @default(now())
 
   @@unique([cartId, variantId])
 }
@@ -837,46 +838,46 @@ model Order {
   configurationId String?
   configuration   VehicleConfiguration? @relation(fields: [configurationId], references: [id], onDelete: SetNull)
 
-  status          OrderStatus           @default(PENDING)
-  paymentStatus   PaymentStatus         @default(PENDING)
-  fulfillmentStatus FulfillmentStatus   @default(UNFULFILLED)
+  status            OrderStatus       @default(PENDING)
+  paymentStatus     PaymentStatus     @default(PENDING)
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
 
-  currency        String                @default("EUR")
-  subtotalCents   Int
-  discountCents   Int                   @default(0)
-  shippingCents   Int                   @default(0)
-  taxCents        Int                   @default(0)
-  totalCents      Int
+  currency      String @default("EUR")
+  subtotalCents Int
+  discountCents Int    @default(0)
+  shippingCents Int    @default(0)
+  taxCents      Int    @default(0)
+  totalCents    Int
 
-  promotionId     String?
-  promotion       Promotion?            @relation(fields: [promotionId], references: [id])
-  promotionCode   String?
+  promotionId   String?
+  promotion     Promotion? @relation(fields: [promotionId], references: [id])
+  promotionCode String?
 
   /// Panier d'origine. Sert à vider CE panier une fois le paiement confirmé,
   /// et seulement celui-là.
-  cartToken       String?
+  cartToken String?
 
-  shippingAddress Json
-  billingAddress  Json
-  shippingMethodCode String?
+  shippingAddress     Json
+  billingAddress      Json
+  shippingMethodCode  String?
   shippingMethodLabel String?
 
   /// Consentements recueillis à la commande, horodatés.
-  consents        Json?
-  customerNote    String?
+  consents     Json?
+  customerNote String?
 
-  placedAt        DateTime?
-  cancelledAt     DateTime?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  placedAt    DateTime?
+  cancelledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  lines       OrderLine[]
-  payments    Payment[]
-  refunds     Refund[]
-  shipments   Shipment[]
-  documents   Document[]
-  events      OrderEvent[]
-  tickets     SupportTicket[]
+  lines     OrderLine[]
+  payments  Payment[]
+  refunds   Refund[]
+  shipments Shipment[]
+  documents Document[]
+  events    OrderEvent[]
+  tickets   SupportTicket[]
 
   @@index([status, createdAt])
   @@index([email])
@@ -911,24 +912,24 @@ enum FulfillmentStatus {
 /// Ligne de commande : copie figée de ce qui a été acheté. Modifier un produit
 /// ou une compatibilité plus tard ne doit jamais réécrire l'historique.
 model OrderLine {
-  id          String         @id @default(cuid())
-  orderId     String
-  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  variantId   String?
-  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  id        String          @id @default(cuid())
+  orderId   String
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
-  sku         String
-  productName String
-  variantName String
-  packaging   Packaging
-  quantity    Int
+  sku            String
+  productName    String
+  variantName    String
+  packaging      Packaging
+  quantity       Int
   unitPriceCents Int
   lineTotalCents Int
-  vatRateBp   Int
+  vatRateBp      Int
   /// Composition du kit au moment de l'achat, et configuration véhicule visée.
-  snapshot    Json
+  snapshot       Json
   /// Ligne composant d'un kit acheté.
-  parentLineId String?
+  parentLineId   String?
 
   @@index([orderId])
 }
@@ -948,22 +949,22 @@ model OrderEvent {
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  orderId       String
-  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  provider      String // stripe | mollie
+  id             String        @id @default(cuid())
+  orderId        String
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider       String // stripe | mollie
   /// Identifiant côté prestataire, unique pour rendre les webhooks idempotents.
-  providerRef   String        @unique
+  providerRef    String        @unique
   /// Clé d'idempotence côté boutique, empêche les commandes en double.
-  idempotencyKey String?      @unique
-  status        PaymentStatus @default(PENDING)
-  amountCents   Int
-  currency      String        @default("EUR")
+  idempotencyKey String?       @unique
+  status         PaymentStatus @default(PENDING)
+  amountCents    Int
+  currency       String        @default("EUR")
   /// Vrai tant que le prestataire est en mode test.
-  isTestMode    Boolean       @default(true)
-  rawPayload    Json?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  isTestMode     Boolean       @default(true)
+  rawPayload     Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([orderId, status])
 }
@@ -1013,32 +1014,32 @@ model ShippingMethod {
 }
 
 model Shipment {
-  id            String    @id @default(cuid())
-  orderId       String
-  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  carrier       String?
+  id             String    @id @default(cuid())
+  orderId        String
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  carrier        String?
   trackingNumber String?
-  trackingUrl   String?
-  shippedAt     DateTime?
-  deliveredAt   DateTime?
+  trackingUrl    String?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
   /// Lignes couvertes par cette expédition (expéditions multiples).
-  lines         Json
-  createdAt     DateTime  @default(now())
+  lines          Json
+  createdAt      DateTime  @default(now())
 
   @@index([orderId])
 }
 
 /// Facture, avoir, bon de retour. Le PDF est un média durable.
 model Document {
-  id        String       @id @default(cuid())
-  orderId   String
-  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  type      DocumentType
+  id         String       @id @default(cuid())
+  orderId    String
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type       DocumentType
   /// Numérotation continue, format configurable.
-  number    String       @unique
-  mediaId   String?
+  number     String       @unique
+  mediaId    String?
   totalCents Int?
-  issuedAt  DateTime     @default(now())
+  issuedAt   DateTime     @default(now())
 
   @@index([orderId, type])
 }
@@ -1049,8 +1050,34 @@ enum DocumentType {
   RETURN_SLIP
 }
 
+/// Demande d'alerte de retour en stock, posée par un client sur une rupture.
+///
+/// Le couple (variante, adresse) est unique : redemander une alerte qu'on a
+/// déjà posée ne crée pas de seconde ligne et ne fera pas partir deux
+/// messages. C'est la contrainte qui tient la promesse, pas le formulaire.
+///
+/// `notifiedAt` marque l'envoi, et sert de garde : un retour de stock ne
+/// prévient qu'une fois. Une alerte notifiée reste en base — elle dit qu'une
+/// demande a existé, ce qui se voit en administration.
+model StockAlert {
+  id              String         @id @default(cuid())
+  variantId       String
+  variant         ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  email           String
+  /// Configuration véhicule retenue au moment de la demande, s'il y en avait
+  /// une : le conseil qui suivra n'a pas à la redemander.
+  configurationId String?
+  createdAt       DateTime       @default(now())
+  notifiedAt      DateTime?
+  /// Désinscription : on ne supprime pas la ligne, on cesse de l'utiliser.
+  cancelledAt     DateTime?
+
+  @@unique([variantId, email])
+  @@index([variantId, notifiedAt])
+}
+
 model StockMovement {
-  id        String   @id @default(cuid())
+  id        String         @id @default(cuid())
   variantId String
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   /// Positif = entrée, négatif = sortie.
@@ -1058,7 +1085,7 @@ model StockMovement {
   reason    String // order | refund | manual | import | return
   reference String?
   actorId   String?
-  createdAt DateTime @default(now())
+  createdAt DateTime       @default(now())
 
   @@index([variantId, createdAt])
 }
@@ -1068,24 +1095,24 @@ model StockMovement {
 // ---------------------------------------------------------------------------
 
 model SupportTicket {
-  id          String        @id @default(cuid())
-  reference   String        @unique
+  id          String            @id @default(cuid())
+  reference   String            @unique
   orderId     String?
-  order       Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  order       Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
   userId      String?
-  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user        User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   email       String
   type        TicketType
   reason      String
   description String?
-  status      TicketStatus  @default(OPEN)
+  status      TicketStatus      @default(OPEN)
   resolution  TicketResolution?
   /// Lignes de commande concernées.
   lines       Json?
   assignedTo  String?
   closedAt    DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   messages TicketMessage[]
 
@@ -1118,16 +1145,16 @@ enum TicketResolution {
 }
 
 model TicketMessage {
-  id        String        @id @default(cuid())
-  ticketId  String
-  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   /// Un message interne n'est jamais rendu au client.
-  internal  Boolean       @default(false)
-  authorKind String       @default("staff") // staff | customer | system
-  authorId  String?
-  body      String
-  mediaIds  String[]      @default([])
-  createdAt DateTime      @default(now())
+  internal   Boolean       @default(false)
+  authorKind String        @default("staff") // staff | customer | system
+  authorId   String?
+  body       String
+  mediaIds   String[]      @default([])
+  createdAt  DateTime      @default(now())
 
   @@index([ticketId, createdAt])
 }
@@ -1196,13 +1223,13 @@ enum ImportStatus {
 }
 
 model ImportRow {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   jobId     String
   job       ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
   rowNumber Int
   raw       Json
   /// ok | created | updated | skipped | error | duplicate
-  outcome   String   @default("pending")
+  outcome   String    @default("pending")
   message   String?
   targetId  String?
 
@@ -1235,9 +1262,9 @@ model AuditLog {
 /// elle est dépassée.
 model RateLimit {
   /// Clé composite, par exemple « login:ip:203.0.113.4 » ou « login:email:… ».
-  key         String   @id
-  count       Int      @default(0)
-  windowStart DateTime @default(now())
+  key          String    @id
+  count        Int       @default(0)
+  windowStart  DateTime  @default(now())
   /// Bloqué jusqu'à cette date quand le plafond est atteint.
   blockedUntil DateTime?
 
@@ -1246,36 +1273,36 @@ model RateLimit {
 
 /// File de travaux de fond, servie par un cron Render : pas de service Redis.
 model JobQueue {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   kind        String
   payload     Json
-  status      String   @default("queued") // queued | running | done | failed
-  attempts    Int      @default(0)
-  maxAttempts Int      @default(5)
-  runAfter    DateTime @default(now())
+  status      String    @default("queued") // queued | running | done | failed
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  runAfter    DateTime  @default(now())
   lastError   String?
   lockedAt    DateTime?
   lockedBy    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([status, runAfter])
 }
 
 /// Trace des e-mails transactionnels, y compris les envois simulés.
 model EmailLog {
-  id         String   @id @default(cuid())
-  template   String
-  toEmail    String
-  subject    String
+  id          String   @id @default(cuid())
+  template    String
+  toEmail     String
+  subject     String
   /// Vrai quand aucun envoi réel n'a eu lieu (prestataire non configuré).
-  simulated  Boolean  @default(false)
-  provider   String?
+  simulated   Boolean  @default(false)
+  provider    String?
   providerRef String?
-  status     String   @default("queued")
-  error      String?
-  payload    Json?
-  createdAt  DateTime @default(now())
+  status      String   @default("queued")
+  error       String?
+  payload     Json?
+  createdAt   DateTime @default(now())
 
   @@index([toEmail, createdAt])
   @@index([template, createdAt])

@@ -50,6 +50,15 @@ export const RULES = {
   */
   contactRequest: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
   /*
+    Alerte de retour en stock.
+
+    Plus permissif que les deux précédents : poser une alerte n'écrit à
+    personne et ne crée aucune demande à traiter. Le risque n'est pas la
+    charge, c'est l'inscription d'une adresse qu'on ne possède pas — et là,
+    c'est la limite par adresse visée qui compte, pas celle par IP.
+  */
+  stockAlert: { max: 20, windowSeconds: 60 * 60, blockSeconds: 30 * 60 },
+  /*
     Webhook de paiement.
 
     L'URL est publique et devinable, et le webhook de Mollie n'est pas signé :
