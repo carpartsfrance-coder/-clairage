@@ -299,6 +299,18 @@ export function IconImport(p: IconProps) {
 }
 
 /** Média : un cadre, un horizon et un soleil. */
+/** Carton d'expédition : désigne un conditionnement et son contenu. */
+export function IconPack(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="m3 6 9-4 9 4v12l-9 4-9-4V6Z" />
+      <path d="m3 6 9 4 9-4" />
+      <path d="M12 10v12" />
+      <path d="m7 4 10 4v5" />
+    </Svg>
+  )
+}
+
 export function IconImage(p: IconProps) {
   return (
     <Svg {...p}>

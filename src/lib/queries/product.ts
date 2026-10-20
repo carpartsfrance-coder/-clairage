@@ -33,6 +33,15 @@ export type GalleryItem = {
   role: 'PRODUCT' | 'RESULT' | 'KIT_CONTENT' | 'INSTALL'
   /** Libellé de la vignette, repris de la maquette. */
   thumbLabel: string
+  /**
+   * Nature du visuel, telle qu'elle est enregistrée dans la médiathèque.
+   *
+   * Elle remonte jusqu'à la fiche parce que le schéma l'exige : une
+   * illustration ou un rendu simulé « doit être signalé au client »
+   * (`MediaNature`). La galerie ne peut pas tenir cette promesse si elle ne
+   * sait pas ce qu'elle affiche.
+   */
+  nature: 'UNSPECIFIED' | 'PRODUCT_PHOTO' | 'ILLUSTRATION' | 'TEST_PHOTO' | 'DIAGRAM'
 }
 
 export type VariantView = {
@@ -274,6 +283,7 @@ export async function getProduct(
         caption: entry.media.caption,
         role: entry.role as GalleryItem['role'],
         thumbLabel: THUMB_LABELS[entry.role as GalleryItem['role']] ?? 'Visuel',
+        nature: entry.media.nature as GalleryItem['nature'],
       }))
       .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
 

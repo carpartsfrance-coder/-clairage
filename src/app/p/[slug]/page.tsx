@@ -104,7 +104,6 @@ export default async function ProductPage({ params }: PageProps) {
     culot, qui n'est écrit nulle part ailleurs à cet endroit. Elle disparaît
     donc complètement sur un produit sans culot.
   */
-  const badge = product.bulbBase ? `Culot ${product.bulbBase}` : null
 
   // Même liste pour le fil d'Ariane affiché et pour son balisage : deux
   // sources finiraient par diverger, et c'est le balisage qu'on ne relit pas.
@@ -197,7 +196,7 @@ export default async function ProductPage({ params }: PageProps) {
           >
             {/* .gallery */}
             <div className="order-2 mt-1 fiche:order-none fiche:mt-0">
-              <ProductGallery items={product.gallery} badge={badge} productName={product.name} />
+              <ProductGallery items={product.gallery} productName={product.name} />
             </div>
 
             {/*
