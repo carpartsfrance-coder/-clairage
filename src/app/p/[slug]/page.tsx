@@ -13,6 +13,7 @@ import {
 } from '@/components/seo/StructuredData'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { ProductGallery } from '@/components/product/ProductGallery'
+import { ProductTitle } from '@/components/product/ProductTitle'
 import { BuyBox } from '@/components/product/BuyBox'
 import { ConfigurationContents } from '@/components/product/ConfigurationContents'
 import { KitContents } from '@/components/product/KitContents'
@@ -90,7 +91,9 @@ export default async function ProductPage({ params }: PageProps) {
   const position = product.variants.find((variant) => variant.fitment.positionLabel)?.fitment
     .positionLabel
 
-  const eyebrow = [product.category?.name, position].filter(Boolean)
+  const eyebrow = [product.category?.name, position].filter(
+    (partie): partie is string => Boolean(partie),
+  )
 
   /*
     Pastille posée sur le visuel.
@@ -190,7 +193,7 @@ export default async function ProductPage({ params }: PageProps) {
           */}
           <section
             aria-label={product.name}
-            className="flex flex-col pb-7 fiche:grid fiche:grid-cols-[minmax(0,1.13fr)_minmax(0,1fr)] fiche:items-start fiche:gap-[30px] fiche:pb-[41px] min-[1101px]:gap-[58px] min-[1450px]:gap-[70px]"
+            className="flex flex-col pt-[6px] pb-[27px] fiche:grid fiche:grid-cols-[minmax(0,1.07fr)_minmax(0,1fr)] fiche:items-start fiche:gap-x-[36px] fiche:pt-[9px] fiche:pb-10 min-[1101px]:gap-x-[62px] min-[1450px]:gap-x-[74px]"
           >
             {/* .gallery */}
             <div className="order-2 mt-1 fiche:order-none fiche:mt-0">
@@ -205,39 +208,24 @@ export default async function ProductPage({ params }: PageProps) {
               ordre place le titre avant la galerie, comme dans la référence.
             */}
             <div className="contents fiche:block">
-            {/* .titlebox */}
-            <div className="order-1">
-              {eyebrow.length > 0 ? (
-                <p className="mb-[9px] text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:mb-3 fiche:text-[9px] fiche:tracking-[1.6px]">
-                  {eyebrow.map((part, index) => (
-                    <span key={part}>
-                      {index > 0 ? (
-                        <span aria-hidden="true" className="mx-[5px] text-[#bbb]">
-                          /
-                        </span>
-                      ) : null}
-                      {part}
-                    </span>
-                  ))}
-                </p>
-              ) : null}
-
-              {/* h1 : 38 px / 800 / -1.5 px, seconde ligne en 31 px normale. */}
-              <h1 className="mb-3 text-[31px] leading-[1.1] font-extrabold tracking-[-1px] fiche:mb-[13px] fiche:text-[38px] fiche:leading-[1.12] fiche:tracking-[-1.5px] min-[1450px]:text-[42px]">
-                {product.name}
-                {product.colorTemperature ? (
-                  <span className="block text-[25px] font-normal tracking-[-0.7px] fiche:text-[31px] fiche:tracking-[-1px] min-[1450px]:text-[34px]">
-                    Blanc pur {product.colorTemperature.toLocaleString('fr-FR')} K
-                  </span>
-                ) : null}
-              </h1>
-
-              {product.tagline ? (
-                <p className="mb-[17px] max-w-[340px] text-[12px] leading-[1.6] text-[#666a6c] fiche:mb-[18px] fiche:text-[13px] fiche:leading-[1.65] min-[1450px]:text-[14px]">
-                  {product.tagline}
-                </p>
-              ) : null}
-            </div>
+            {/*
+              .product-title-block — la V2 remonte la température de couleur du
+              titre vers la ligne de caractéristiques, où elle voisine le
+              conditionnement et la présence des accessoires. Le titre reprend
+              le nom tel qu'il est au catalogue : le découper en deux lignes
+              comme la maquette supposerait d'y deviner une césure, et un nom
+              de produit n'en porte pas.
+            */}
+            <ProductTitle
+              eyebrow={eyebrow}
+              name={product.name}
+              secondLine={
+                product.colorTemperature
+                  ? `Blanc ${product.colorTemperature.toLocaleString('fr-FR')} K`
+                  : null
+              }
+              tagline={product.tagline}
+            />
 
             {/* .buybox */}
             <div className="order-3 mt-6 fiche:mt-0">
