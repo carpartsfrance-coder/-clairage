@@ -48,6 +48,15 @@ export type NavColumn = {
   title: string
   links: NavLink[]
   more?: { label: string; href: string }
+  /**
+   * Présentation de la colonne.
+   *
+   * `liste` par défaut : un libellé par ligne, c'est ce que demandent des
+   * familles et des culots, qui se lisent. `marques` demande la grille de
+   * pastilles carrées : une marque se reconnaît à son logo avant de se lire,
+   * et une grille en montre trois fois plus dans la même hauteur.
+   */
+  variant?: 'liste' | 'marques'
 }
 
 export type NavSection = {
@@ -63,6 +72,17 @@ export type NavSection = {
 
 /** Au-delà, la colonne renvoie vers la page de la rubrique. */
 const MAX_PAR_COLONNE = 10
+
+/**
+ * Marques montrées dans le menu, bien au-delà d'une colonne de texte.
+ *
+ * Le menu s'arrêtait à dix marques, par ordre alphabétique : un client en
+ * Peugeot, en Renault ou en Volkswagen — les trois marques les plus répandues
+ * du parc français — ne voyait jamais la sienne et devait passer par « Voir
+ * toutes les marques ». Une grille de pastilles carrées en loge vingt-quatre
+ * dans la hauteur que dix lignes occupaient, et le reste garde son lien.
+ */
+const MAX_MARQUES = 24
 
 /* -------------------------------------------------------------------------- */
 
@@ -103,17 +123,30 @@ function colonneMarques(
   typePath: string,
 ): NavColumn[] {
   if (marques.length === 0) return []
+
+  const montrees = marques.slice(0, MAX_MARQUES)
+  const reste = marques.length - montrees.length
+
   return [
     {
       title: 'Par marque',
-      links: marques.slice(0, MAX_PAR_COLONNE).map((marque) => ({
+      variant: 'marques',
+      links: montrees.map((marque) => ({
         label: marque.name,
         href: `/packs/${typePath}/${marque.slug}`,
         count: marque.models,
         hint: marque.models > 1 ? `${marque.models} modèles` : '1 modèle',
         logo: marque.logo,
       })),
-      more: { label: 'Voir toutes les marques', href: `/packs/${typePath}` },
+      /*
+        Le lien dit combien de marques attendent derrière, plutôt que
+        « toutes » : le client qui ne voit pas la sienne sait s'il reste
+        vingt-trois marques à parcourir ou aucune.
+      */
+      more:
+        reste > 0
+          ? { label: `Voir les ${marques.length} marques`, href: `/packs/${typePath}` }
+          : { label: 'Voir toutes les marques', href: `/packs/${typePath}` },
     },
   ]
 }

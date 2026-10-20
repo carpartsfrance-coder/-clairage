@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { NavSection } from '@/lib/queries/navigation'
 import { IconChevronDown } from '@/components/ui/icons'
-import { BrandMark } from '@/components/packs/BrandMark'
+import { BrandGrid } from './BrandGrid'
 import { cn } from '@/lib/cn'
 
 /**
@@ -151,7 +151,20 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
             id={`panneau-${section.key}`}
             onMouseEnter={annulerFermeture}
             onMouseLeave={programmerFermeture}
-            className="absolute top-full left-0 z-30 mt-px w-full min-w-[520px] rounded-b-lg border border-t-0 border-line bg-white p-5 shadow-pop"
+            /*
+              Largeur fixée, et non `w-full`. La barre de rubriques déborde la
+              largeur du conteneur — dix libellés en `nowrap` font 1 578 px là
+              où la page en fait 1 232 : un panneau en `w-full` héritait de ce
+              débordement, et sa dernière colonne de marques tombait hors de
+              la fenêtre. On reprend donc la largeur de la page, plafonnée à
+              celle de la fenêtre.
+
+              `max-h` + défilement : vingt-quatre marques tiennent en trois
+              rangées au-delà de 1 280 px, en quatre en dessous. Sans plafond,
+              la dernière rangée passerait sous le bord de la fenêtre sur les
+              écrans courts, et le lien « Voir les 47 marques » avec elle.
+            */
+            className="absolute top-full left-0 z-30 mt-px max-h-[78vh] w-[min(1232px,calc(100vw-3rem))] overflow-y-auto overscroll-contain rounded-b-lg border border-t-0 border-line bg-white p-5 shadow-pop"
           >
             {section.description ? (
               <p className="mb-3 text-[10px] text-muted-strong">{section.description}</p>
@@ -168,29 +181,37 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
                   <p className="mb-2 text-[8px] font-bold tracking-[1.2px] text-[#8c9481] uppercase">
                     {colonne.title}
                   </p>
-                  <ul className="flex flex-col">
-                    {colonne.links.map((lien) => (
-                      <li key={lien.href}>
-                        <Link
-                          href={lien.href}
-                          onClick={() => setOuverte(null)}
-                          className="flex min-h-9 items-center justify-between gap-3 rounded-xs py-1 text-[11px] hover:text-brand"
-                        >
-                          <span className="flex min-w-0 items-center gap-2.5">
-                            {/* Pastille seulement pour les marques : un culot
-                                ou une famille n'en a pas. */}
-                            {'logo' in lien ? (
-                              <BrandMark name={lien.label} logo={lien.logo} size="sm" />
-                            ) : null}
-                            <span className="truncate font-medium">{lien.label}</span>
-                          </span>
-                          <span className="shrink-0 text-[9px] text-[#a4a49d]">
-                            {lien.hint ?? lien.count}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
+
+                  {colonne.variant === 'marques' ? (
+                    /*
+                      Six colonnes dès 1024 px, huit au-delà de 1280 : la
+                      pastille fait 60 px, le nom tient sous elle, et les
+                      vingt-quatre marques s'affichent dans une hauteur
+                      comparable à celle que dix lignes occupaient.
+                    */
+                    <BrandGrid
+                      entries={colonne.links}
+                      className="grid-cols-6 gap-1 xl:grid-cols-8"
+                      onNavigate={() => setOuverte(null)}
+                    />
+                  ) : (
+                    <ul className="flex flex-col">
+                      {colonne.links.map((lien) => (
+                        <li key={lien.href}>
+                          <Link
+                            href={lien.href}
+                            onClick={() => setOuverte(null)}
+                            className="flex min-h-9 items-center justify-between gap-3 rounded-xs py-1 text-[11px] hover:text-brand"
+                          >
+                            <span className="min-w-0 truncate font-medium">{lien.label}</span>
+                            <span className="shrink-0 text-[9px] text-[#a4a49d]">
+                              {lien.hint ?? lien.count}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
                   {colonne.more ? (
                     <Link

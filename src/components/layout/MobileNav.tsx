@@ -7,7 +7,7 @@ import type { SelectedVehicle } from '@/lib/session'
 import type { NavSection } from '@/lib/queries/navigation'
 import { topNav } from '@/lib/navigation'
 import { Logo } from '@/components/brand/Logo'
-import { BrandMark } from '@/components/packs/BrandMark'
+import { BrandGrid } from './BrandGrid'
 import { cn } from '@/lib/cn'
 import {
   IconChevronRight,
@@ -219,26 +219,30 @@ export function MobileNav({
                       <p className="px-3 pb-1 text-xs font-semibold tracking-wide text-muted uppercase">
                         {colonne.title}
                       </p>
-                      <ul>
-                        {colonne.links.map((lien) => (
-                          <li key={lien.href}>
-                            <Link
-                              href={lien.href}
-                              className="flex min-h-12 items-center justify-between gap-3 px-3 text-sm"
-                            >
-                              <span className="flex min-w-0 items-center gap-2.5">
-                                {'logo' in lien ? (
-                                  <BrandMark name={lien.label} logo={lien.logo} size="sm" />
-                                ) : null}
-                                <span className="truncate font-medium">{lien.label}</span>
-                              </span>
-                              <span className="shrink-0 text-xs text-muted">
-                                {lien.hint ?? lien.count}
-                              </span>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
+                      {colonne.variant === 'marques' ? (
+                        /*
+                          Trois colonnes dans un tiroir : la pastille garde ses
+                          60 px, et la grille se parcourt du pouce au lieu de
+                          dérouler vingt-quatre lignes.
+                        */
+                        <BrandGrid entries={colonne.links} className="grid-cols-3 gap-1 px-2 pb-1" />
+                      ) : (
+                        <ul>
+                          {colonne.links.map((lien) => (
+                            <li key={lien.href}>
+                              <Link
+                                href={lien.href}
+                                className="flex min-h-12 items-center justify-between gap-3 px-3 text-sm"
+                              >
+                                <span className="min-w-0 truncate font-medium">{lien.label}</span>
+                                <span className="shrink-0 text-xs text-muted">
+                                  {lien.hint ?? lien.count}
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                       {colonne.more ? (
                         <Link
                           href={colonne.more.href}
