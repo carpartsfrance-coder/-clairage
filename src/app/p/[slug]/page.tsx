@@ -19,6 +19,7 @@ import { KitContents } from '@/components/product/KitContents'
 import { OptionalAddons } from '@/components/product/OptionalAddons'
 import { ProductConfigurationProvider } from '@/components/product/ProductConfiguration'
 import { SectionNav } from '@/components/product/SectionNav'
+import { Prose } from '@/components/ui/Prose'
 import { ToneComparison } from '@/components/product/ToneComparison'
 import { Card, EmptyState } from '@/components/ui/Surface'
 import { ButtonLink } from '@/components/ui/Button'
@@ -133,7 +134,15 @@ export default async function ProductPage({ params }: PageProps) {
   const aContenuMontage = product.guides.length > 0 || product.difficulty !== 'UNKNOWN'
   const aContenuQuestions = product.faq.length > 0 || product.reviews.length > 0
 
+  /*
+    Le rédactionnel long existait en base sans être rendu nulle part : les
+    fiches portaient leur description et n'en montraient rien. Une section lui
+    est donc rendue, et elle n'apparaît que s'il y a du texte.
+  */
+  const aDescription = (product.body ?? '').trim().length > 0
+
   const sections = [
+    ...(aDescription ? [{ href: '#description', label: 'La référence' }] : []),
     ...(rendu ? [{ href: '#rendu', label: 'Le changement' }] : []),
     ...(aContenuKit
       ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans votre kit' : 'Caractéristiques' }]
@@ -283,6 +292,26 @@ export default async function ProductPage({ params }: PageProps) {
 
         {/* ---------------- .section-nav ---------------- */}
         {sections.length > 0 ? <SectionNav items={sections} /> : null}
+
+        {/* ---------------- #description ---------------- */}
+        {aDescription ? (
+          <section
+            id="description"
+            aria-labelledby="titre-description"
+            className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
+          >
+            <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
+              La référence
+            </p>
+            <h2
+              id="titre-description"
+              className="mb-[22px] text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:mb-[25px] fiche:text-[29px] fiche:tracking-[-1px]"
+            >
+              {product.name}
+            </h2>
+            <Prose className="max-w-[680px]">{product.body ?? ''}</Prose>
+          </section>
+        ) : null}
 
         {/* ---------------- #rendu ---------------- */}
         {rendu ? (
