@@ -33,6 +33,15 @@ export type GalleryItem = {
   role: 'PRODUCT' | 'RESULT' | 'KIT_CONTENT' | 'INSTALL'
   /** Libellé de la vignette, repris de la maquette. */
   thumbLabel: string
+  /**
+   * Nature du visuel, telle qu'elle est enregistrée dans la médiathèque.
+   *
+   * Elle remonte jusqu'à la fiche parce que le schéma l'exige : une
+   * illustration ou un rendu simulé « doit être signalé au client »
+   * (`MediaNature`). La galerie ne peut pas tenir cette promesse si elle ne
+   * sait pas ce qu'elle affiche.
+   */
+  nature: 'UNSPECIFIED' | 'PRODUCT_PHOTO' | 'ILLUSTRATION' | 'TEST_PHOTO' | 'DIAGRAM'
 }
 
 export type VariantView = {
@@ -135,10 +144,21 @@ const ROLE_ORDER: GalleryItem['role'][] = ['PRODUCT', 'RESULT', 'KIT_CONTENT', '
 export async function getProduct(
   slug: string,
   configurationId: string | null = null,
+  /**
+   * Aperçu : autorise un brouillon.
+   *
+   * Réservé au back-office, et la page publique ne le passe que pour un membre
+   * de l'équipe connecté — un brouillon reste introuvable pour tout le monde
+   * d'autre. C'est ce qui permet de relire une fiche telle qu'elle sera, avant
+   * de la publier, sans dupliquer le gabarit dans l'administration : une
+   * seconde version de la fiche finirait par diverger de la vraie, et
+   * l'aperçu cesserait de valoir preuve.
+   */
+  { brouillon = false }: { brouillon?: boolean } = {},
 ): Promise<ProductView | null> {
   try {
     const product = await prisma.product.findFirst({
-      where: { slug, status: 'PUBLISHED' },
+      where: { slug, status: brouillon ? { in: ['PUBLISHED', 'DRAFT'] } : 'PUBLISHED' },
       include: {
         categories: { include: { category: true }, orderBy: { position: 'asc' }, take: 1 },
         media: { include: { media: true }, orderBy: { position: 'asc' } },
@@ -274,6 +294,7 @@ export async function getProduct(
         caption: entry.media.caption,
         role: entry.role as GalleryItem['role'],
         thumbLabel: THUMB_LABELS[entry.role as GalleryItem['role']] ?? 'Visuel',
+        nature: entry.media.nature as GalleryItem['nature'],
       }))
       .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
 

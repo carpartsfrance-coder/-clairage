@@ -1,29 +1,39 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { GalleryItem } from '@/lib/queries/product'
 import { cn } from '@/lib/cn'
-import { IconClose, IconZoom } from '@/components/ui/icons'
+import { IconCheck, IconClose, IconHeadset, IconInfo, IconPack, IconZoom } from '@/components/ui/icons'
+import { useProductConfiguration } from './ProductConfiguration'
 
 /**
- * Galerie de la fiche produit — `.gallery` du code de référence.
+ * Galerie de la fiche produit — `.gallery` de la maquette V2.
  *
- * Valeurs reprises de `styles.css` : visuel de 439 px (480 au-delà de 1450 px,
- * 405 sous 1100, 340 sous 800), rayon 13 px sur fond #f2f2ef, pastille et
- * bouton d'agrandissement posés dessus, légende en bas, puis quatre vignettes
- * de 87 px avec leur intitulé incrusté. Le projet affichait un cadre en 4/3 et
- * des vignettes carrées légendées en dessous.
+ * Valeurs reprises : visuel de 435 px (480 au-delà de 1 450, 380 sous 1 100,
+ * 290 sous 800, 265 sous 370), rayon 12 px sur fond #f3f4ef, pastille de vue
+ * en haut à gauche, bouton d'agrandissement de 32 px, légende en bas, puis
+ * trois vignettes de 77 px à intitulé incrusté.
  *
- * **Le fondu multiplié n'est pas décoratif** : la référence détoure ses
- * packshots en les multipliant sur le panneau clair, ce qui ne marche que pour
- * un visuel sur fond blanc. Une photographie en situation y deviendrait
- * illisible. Le mode est donc choisi par rôle de visuel, pas appliqué à tout.
+ * **Le visuel est contenu, pas recadré.** La V1 l'affichait en `cover` : un
+ * packshot carré dans un cadre large perdait ses extrémités — les culots des
+ * ampoules, précisément ce que le client cherche à reconnaître. La V2 le pose
+ * en `contain` avec une marge, et le cadre ne ment plus sur la forme du
+ * produit.
+ *
+ * **Le fondu multiplié n'est pas décoratif** : il détoure un packshot sur fond
+ * blanc en le multipliant sur le panneau clair. Une photographie en situation y
+ * deviendrait illisible, donc le mode suit le rôle du visuel.
+ *
+ * **La mention des visuels illustratifs vient de la base, pas d'une constante.**
+ * Le schéma dit d'une illustration ou d'un rendu simulé qu'il « doit être
+ * signalé au client » (`MediaNature`) : la ligne apparaît quand le visuel
+ * affiché est de cette nature, et seulement là. La maquette l'écrit en dur
+ * parce que tous ses visuels en sont.
  *
  * Les vignettes restent un groupe d'onglets : flèches gauche/droite pour
- * circuler, Entrée pour choisir. La légende de chaque visuel est affichée
- * telle qu'elle est enregistrée — quand un visuel est une illustration, c'est
- * sa légende qui le dit.
+ * circuler, Entrée pour choisir.
  */
 
 /** Vrai pour un packshot sur fond clair, qui supporte le fondu multiplié. */
@@ -31,140 +41,231 @@ function estPackshot(role: GalleryItem['role']) {
   return role === 'PRODUCT' || role === 'KIT_CONTENT'
 }
 
+/** Autant de colonnes que de vignettes, jusqu'à quatre. */
+const COLONNES: Record<number, string> = {
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+}
+
+/** Vue « Dans le pack » : la composition, à la place du visuel. */
+const VUE_PACK: 'pack' = 'pack'
+
+/** Ce qu'affiche le grand cadre : un visuel par son rang, ou la composition. */
+type Vue = number | typeof VUE_PACK
+
 export function ProductGallery({
   items,
-  badge,
   productName,
 }: {
   items: GalleryItem[]
-  /** Pastille en haut à gauche : « Culot H7 ». */
-  badge?: string | null
   productName: string
 }) {
-  const [index, setIndex] = useState(0)
+  const [vue, setVue] = useState<Vue>(0)
   const [zoomed, setZoomed] = useState(false)
+  const configuration = useProductConfiguration()
+
+  /*
+    La vue « Dans le pack » n'existe que s'il y a un pack : un produit simple
+    n'a pas de composition à prévisualiser, et un onglet vide serait une
+    promesse en l'air. Elle suit le conditionnement choisi, comme le reste de
+    la fiche.
+  */
+  const composition = (configuration?.selected?.components ?? []).filter(
+    (composant) => composant.required,
+  )
+  const avecPack = composition.length > 0
+
+  /*
+    Le visuel suit le conditionnement retenu.
+
+    Choisir « les ampoules seules » pendant que la galerie continue de montrer
+    le kit complet et ses accessoires, c'est donner à voir autre chose que ce
+    qu'on s'apprête à acheter. Au changement, on présente donc la vue qui
+    correspond : le contenu du pack pour un kit, le produit seul sinon.
+
+    Seul un VRAI changement de conditionnement déclenche ce saut — pas le
+    premier rendu, et pas un re-rendu quelconque. Sans cette garde, la galerie
+    reviendrait sur sa vue par défaut dès que le client a choisi une autre
+    vignette, ce qui reprendrait son geste.
+  */
+  const conditionnementVu = useRef<string | null>(null)
+  useEffect(() => {
+    const id = configuration?.selectedId ?? null
+    if (id === null) return
+    const premier = conditionnementVu.current === null
+    const change = conditionnementVu.current !== id
+    conditionnementVu.current = id
+    if (premier || !change) return
+
+    const estKit = (configuration?.selected?.components.length ?? 0) > 0
+    const cible = items.findIndex((item) =>
+      estKit ? item.role === 'KIT_CONTENT' : item.role === 'PRODUCT',
+    )
+    if (cible >= 0) setVue(cible)
+  }, [configuration?.selectedId, configuration?.selected, items])
 
   if (items.length === 0) {
     return (
-      <div className="flex h-[340px] items-center justify-center rounded-[13px] border border-line bg-surface-muted text-sm text-muted fiche:h-[405px] min-[1101px]:h-[439px]">
+      <div className="grid h-[290px] place-items-center rounded-[9px] border border-line bg-surface-muted text-sm text-muted fiche:h-[380px] fiche:rounded-xl min-[1101px]:h-[435px] min-[1450px]:h-[480px]">
         Aucun visuel disponible
       </div>
     )
   }
 
-  const current = items[Math.min(index, items.length - 1)]
+  const index = vue === VUE_PACK ? 0 : Math.min(vue, items.length - 1)
+  const current = items[index]
   const packshot = estPackshot(current.role)
+  const packAffiche = vue === VUE_PACK && avecPack
 
-  function onThumbKeyDown(event: React.KeyboardEvent) {
+  /** Onglets : les visuels, puis la composition quand il y en a une. */
+  const onglets: Array<{ cle: string; libelle: string; vue: Vue }> = [
+    ...items.map((item, itemIndex) => ({
+      cle: `${item.url}-${itemIndex}`,
+      libelle: item.thumbLabel,
+      vue: itemIndex,
+    })),
+    ...(avecPack ? [{ cle: VUE_PACK, libelle: 'Dans le pack', vue: VUE_PACK }] : []),
+  ]
+
+  function surTouche(event: React.KeyboardEvent, position: number) {
     if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
     event.preventDefault()
-    const next =
+    const suivant =
       event.key === 'ArrowRight'
-        ? (index + 1) % items.length
-        : (index - 1 + items.length) % items.length
-    setIndex(next)
-    document.getElementById(`galerie-vignette-${next}`)?.focus()
+        ? (position + 1) % onglets.length
+        : (position - 1 + onglets.length) % onglets.length
+    setVue(onglets[suivant].vue)
+    document.getElementById(`galerie-vignette-${suivant}`)?.focus()
   }
 
   return (
-    /* .gallery : collée à 25 px du haut, mais seulement là où elle fait face
-       au bloc d'achat. Sous 800 px la référence la remet dans le flux. */
-    <div className="fiche:sticky fiche:top-[25px]">
-      {/* .main-image : 439 px, rayon 13 px, fond #f2f2ef. */}
-      <div className="relative h-[340px] overflow-hidden rounded-[13px] bg-[#f2f2ef] fiche:h-[405px] min-[1101px]:h-[439px] min-[1450px]:h-[480px]">
-        <Image
-          key={current.url}
-          src={current.url}
-          alt={current.alt}
-          fill
-          priority
-          sizes="(min-width: 1024px) 50vw, 100vw"
-          className={cn('object-cover', packshot && 'mix-blend-multiply')}
-        />
-
-        {/* .image-pill : filet clair, fond translucide, point d'encre. */}
-        {badge ? (
-          <span className="absolute top-[15px] left-[15px] z-[1] flex items-center gap-[7px] rounded-full border border-[#dedfda] bg-white/60 px-2.5 py-1.5 text-[7px] font-bold tracking-[1px] uppercase fiche:top-5 fiche:left-5 fiche:text-[8px]">
-            <span aria-hidden="true" className="size-[5px] rounded-full bg-ink" />
-            {badge}
-          </span>
-        ) : null}
-
-        {/* .expand-image : pastille blanche de 30 px. */}
-        <button
-          type="button"
-          onClick={() => setZoomed(true)}
-          aria-label="Agrandir le visuel"
-          className="absolute top-[17px] right-4 z-[1] grid size-[30px] place-items-center rounded-full bg-white"
-        >
-          <IconZoom className="size-[17px]" />
-        </button>
-
-        {/*
-          .photo-caption — deux lignes dans la référence : ce qu'on regarde,
-          puis la nature du visuel. La seconde est la légende enregistrée ;
-          la première est l'intitulé de la vue, pas une accroche inventée.
-        */}
-        <div
-          className={cn(
-            'absolute right-[18px] bottom-[17px] left-[18px] z-[1] flex flex-col gap-px fiche:right-[23px] fiche:bottom-5 fiche:left-[23px]',
-            !packshot && 'text-white',
-          )}
-        >
-          <strong className="text-[13px] tracking-[-0.2px] fiche:text-[14px]">
-            {current.thumbLabel}
-          </strong>
-          {current.caption ? (
-            <span className={cn('text-[8px] fiche:text-[9px]', packshot ? 'text-muted' : 'text-[#ddd]')}>
-              {current.caption}
+    /* .gallery : collée sous l'en-tête, et seulement face au bloc d'achat.
+       Sous 800 px la maquette la remet dans le flux (`position:static`). */
+    <div className="fiche:sticky fiche:top-[150px]">
+      {/* .main-visual */}
+      <div className="relative h-[290px] overflow-hidden rounded-[9px] bg-[#f3f4ef] max-[370px]:h-[265px] fiche:h-[380px] fiche:rounded-xl min-[1101px]:h-[435px] min-[1450px]:h-[480px]">
+        {packAffiche ? (
+          /* .gallery-pack — la composition, dans le cadre du visuel. */
+          <div className="flex h-full flex-col justify-center bg-[linear-gradient(120deg,#eff2e7,#f8f9f5)] px-6 py-[22px] fiche:px-[35px] fiche:pt-12 fiche:pb-[25px]">
+            <span className="mb-[14px] grid size-[45px] place-items-center rounded-xl border border-[#e2e8d9] bg-white text-[#788a66]">
+              <IconPack className="size-[19px]" />
             </span>
-          ) : null}
-        </div>
+            <h3 className="mb-[13px] text-[22px] leading-[1.15] tracking-[-0.8px] fiche:mb-6 fiche:text-[26px] fiche:leading-[1.2]">
+              Tout votre montage,
+              <br />
+              dans un seul pack.
+            </h3>
+            <ul>
+              {composition.map((composant, rang) => (
+                <li
+                  key={composant.sku}
+                  className="flex items-center gap-[11px] border-b border-[#dde5d4] py-2 text-[10px] fiche:gap-[14px] fiche:py-[10px] fiche:text-[12px]"
+                >
+                  <span className="text-[9px] text-[#849975]">
+                    {String(rang + 1).padStart(2, '0')}
+                  </span>
+                  <strong>
+                    {composant.quantity > 1 ? `${composant.quantity} ` : ''}
+                    {composant.productName}
+                  </strong>
+                  <IconCheck className="ml-auto size-[15px] shrink-0 text-ok" />
+                </li>
+              ))}
+            </ul>
+            <small className="mt-[9px] text-[7px] text-[#89967d] fiche:mt-[13px] fiche:text-[8px]">
+              Composition du conditionnement retenu, détaillée plus bas.
+            </small>
+          </div>
+        ) : (
+          <>
+            <Image
+              key={current.url}
+              src={current.url}
+              alt={current.alt}
+              fill
+              priority
+              sizes="(min-width: 801px) 50vw, 100vw"
+              className={cn(
+                'object-contain p-[8px_5px_18px] fiche:p-[16px_12px_26px]',
+                packshot && 'mix-blend-multiply',
+              )}
+            />
+
+            {/* .visual-label : l'intitulé de la vue qu'on regarde. */}
+            <span className="absolute top-[13px] left-[14px] z-[2] rounded-3xl border border-[#e5e8df] bg-white/80 px-2 py-1 text-[7px] font-bold tracking-[1px] text-[#626b57] uppercase fiche:top-[17px] fiche:left-[18px] fiche:px-[9px] fiche:py-[5px] fiche:text-[8px]">
+              {current.thumbLabel}
+            </span>
+
+            {/* .visual-corner : la légende enregistrée du visuel. */}
+            {current.caption ? (
+              <span className="absolute bottom-[14px] left-[15px] z-[2] max-w-[75%] text-[6.5px] tracking-[0.8px] text-[#75816b] uppercase fiche:bottom-[19px] fiche:left-5 fiche:text-[8px] fiche:tracking-[1.05px]">
+                {current.caption}
+              </span>
+            ) : null}
+
+            {/* .zoom-button */}
+            <button
+              type="button"
+              onClick={() => setZoomed(true)}
+              aria-label="Agrandir le visuel"
+              className="absolute top-4 right-[17px] z-[2] grid size-8 place-items-center rounded-full bg-white shadow-soft"
+            >
+              <IconZoom className="size-[14px] fiche:size-4" />
+            </button>
+          </>
+        )}
       </div>
 
-      {/* .thumbnails : quatre colonnes, 87 px, intitulé incrusté en bas. */}
-      {items.length > 1 ? (
+      {/* .gallery-tabs : trois colonnes, intitulé incrusté en bas. */}
+      {onglets.length > 1 ? (
         <div
           role="tablist"
-          aria-label="Visuels du produit"
+          aria-label="Vues du produit"
           className={cn(
-            'mt-[9px] grid gap-2 fiche:mt-3 fiche:gap-2.5',
-            // La référence en aligne quatre ; on suit le nombre réel de vues
-            // plutôt que de laisser une case vide.
-            items.length >= 4 ? 'grid-cols-4' : items.length === 3 ? 'grid-cols-3' : 'grid-cols-2',
+            'mt-2 grid gap-2 fiche:mt-[10px] fiche:gap-[10px]',
+            /*
+              La maquette en aligne trois. On suit le nombre réel de vues,
+              parce qu'une quatrième — la composition — passerait sinon à la
+              ligne et laisserait deux cases vides à côté d'elle.
+            */
+            COLONNES[Math.min(onglets.length, 4)] ?? 'grid-cols-3',
           )}
         >
-          {items.map((item, itemIndex) => {
-            const active = itemIndex === index
+          {onglets.map((onglet, position) => {
+            const actif = onglet.vue === vue
+            const visuel = onglet.vue === VUE_PACK ? null : items[onglet.vue as number]
             return (
               <button
-                key={`${item.url}-${itemIndex}`}
-                id={`galerie-vignette-${itemIndex}`}
+                key={onglet.cle}
+                id={`galerie-vignette-${position}`}
                 type="button"
                 role="tab"
-                aria-selected={active}
-                tabIndex={active ? 0 : -1}
-                onKeyDown={onThumbKeyDown}
-                onClick={() => setIndex(itemIndex)}
+                aria-selected={actif}
+                tabIndex={actif ? 0 : -1}
+                onKeyDown={(event) => surTouche(event, position)}
+                onClick={() => setVue(onglet.vue)}
                 className={cn(
-                  'relative block h-[70px] overflow-hidden rounded-[7px] bg-[#f5f5f2] transition-colors fiche:h-[87px]',
-                  active
-                    ? 'border-[1.7px] border-brand'
-                    : 'border border-line hover:border-line-strong',
+                  'relative grid h-16 place-items-center overflow-hidden rounded-[5px] bg-[#f3f4ef] transition-colors fiche:h-[77px] fiche:rounded-md min-[1450px]:h-[84px]',
+                  actif ? 'border-[1.7px] border-brand' : 'border border-[#e3e7db] hover:border-line-strong',
                 )}
               >
-                <Image
-                  src={item.url}
-                  alt=""
-                  fill
-                  sizes="160px"
-                  className={cn(
-                    'object-cover',
-                    estPackshot(item.role) ? 'mix-blend-multiply' : 'brightness-[0.8]',
-                  )}
-                />
-                <span className="absolute inset-x-0 bottom-0 bg-white/92 p-[3px] text-center text-[8px] text-ink fiche:text-[9px]">
-                  {item.thumbLabel}
+                {visuel ? (
+                  <Image
+                    src={visuel.url}
+                    alt=""
+                    fill
+                    sizes="160px"
+                    className={cn(
+                      'object-cover',
+                      estPackshot(visuel.role) ? 'mix-blend-multiply' : 'brightness-[0.85]',
+                    )}
+                  />
+                ) : (
+                  <IconPack className="size-6 text-[#788a66]" />
+                )}
+                <span className="absolute inset-x-0 bottom-0 bg-white/95 p-[2px] text-center text-[8px] text-ink fiche:p-[3px_4px] fiche:text-[9px]">
+                  {onglet.libelle}
                 </span>
               </button>
             )
@@ -172,11 +273,34 @@ export function ProductGallery({
         </div>
       ) : null}
 
-      {/* .gallery-note : une ligne centrée sous les vignettes. */}
-      <p className="flex items-center justify-center gap-2 pt-3 text-[9px] text-[#71736d] fiche:pt-[17px] fiche:text-[11px]">
-        <IconZoom className="size-[13px] shrink-0 text-brand fiche:size-[14px]" />
-        La bonne teinte. Les bons accessoires. Un seul kit.
-      </p>
+      {/*
+        .visual-note — uniquement si le visuel affiché est une illustration ou
+        un rendu simulé. Le dire d'une photographie du produit réel serait
+        s'excuser d'une vraie photo.
+      */}
+      {!packAffiche && (current.nature === 'ILLUSTRATION' || current.nature === 'DIAGRAM') ? (
+        <p className="mt-[9px] flex items-center justify-center gap-[5px] text-center text-[8px] leading-[1.5] text-[#92998a] fiche:mt-3 fiche:gap-[6px] fiche:text-[9px]">
+          <IconInfo className="size-[11px] shrink-0 fiche:size-3" />
+          {current.nature === 'DIAGRAM'
+            ? 'Schéma de principe — il situe le montage, il ne le représente pas.'
+            : 'Visuel d’illustration — il ne montre pas un montage réalisé.'}
+        </p>
+      ) : null}
+
+      {/* .gallery-promise — masquée sous 800 px par la maquette. */}
+      <div className="mt-[21px] hidden items-center gap-[13px] border-t border-line pt-[23px] text-[11px] text-[#737b6b] fiche:flex">
+        <IconHeadset className="size-[25px] shrink-0 text-[#667b57]" strokeWidth={1.5} />
+        <span>
+          Un doute sur votre montage ?
+          <br />
+          <Link
+            href="/contact"
+            className="mt-[2px] inline-block text-[11px] font-bold text-[#3f5035] underline-offset-[3px] hover:underline"
+          >
+            On vous accompagne, avant et après.<span className="ml-[7px]">↗</span>
+          </Link>
+        </span>
+      </div>
 
       {zoomed ? (
         <div

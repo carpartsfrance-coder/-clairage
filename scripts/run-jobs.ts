@@ -91,6 +91,22 @@ async function main() {
     console.error('[jobs] rattrapage des commandes en attente impossible', error)
   }
 
+  /*
+    Alertes de retour en stock. Même raison que ci-dessus : le stock remonte
+    par plusieurs chemins (réception, annulation, réservation expirée,
+    correction manuelle), et accrocher l'envoi à l'un d'eux reviendrait à
+    prévenir dans un cas sur quatre, en silence.
+  */
+  try {
+    const { notifierRetoursEnStock } = await import('../src/lib/stock-alerts')
+    const envoyees = await notifierRetoursEnStock()
+    if (envoyees > 0) {
+      console.log(`[jobs] ${envoyees} alerte(s) de retour en stock mise(s) en file`)
+    }
+  } catch (error) {
+    console.error('[jobs] balayage des alertes de retour en stock impossible', error)
+  }
+
   const ids = await claimBatch()
   if (ids.length === 0) {
     console.log('[jobs] rien à traiter')

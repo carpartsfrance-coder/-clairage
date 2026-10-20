@@ -169,7 +169,21 @@ services:
     # d'import traité — et un cron qui ne trouve pas son interpréteur échoue
     # sans que le site, lui, ne montre quoi que ce soit.
     buildCommand: npm ci --include=dev && npx prisma generate
-    startCommand: npx tsx scripts/run-jobs.ts
+    # `--conditions=react-server` n'est pas un détail : sans lui, le cron ne
+    # fait RIEN depuis sa mise en service, et le dit à peine.
+    #
+    # Les modules métier commencent par `import 'server-only'`, un garde-fou
+    # qui empêche de les embarquer par erreur dans un composant client. Sous
+    # Next, ce paquet se résout vers un module vide ; sous `tsx`, il se résout
+    # vers celui qui LÈVE. Chaque passage du cron échouait donc à l'import,
+    # était rattrapé par son `try`, et laissait une ligne de journal au milieu
+    # des autres : « rattrapage des commandes en attente impossible ».
+    #
+    # Ce que ça emportait : les commandes impayées n'expiraient jamais — leur
+    # stock restait réservé indéfiniment — et le filet de rattrapage des
+    # webhooks Mollie perdus ne ramassait rien. Le drapeau rend au cron la
+    # résolution que Next lui donne.
+    startCommand: npx tsx --conditions=react-server scripts/run-jobs.ts
     envVars:
       - key: NODE_VERSION
         value: '22'

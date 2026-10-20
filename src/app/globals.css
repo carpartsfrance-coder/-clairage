@@ -205,6 +205,36 @@
   }
 }
 
+/*
+  Piste qui défile sans montrer sa barre de défilement.
+
+  Réservée aux bandes horizontales dont le débordement est déjà signalé
+  autrement — la barre de rubriques pose un dégradé à chaque extrémité quand il
+  reste quelque chose à atteindre. Masquer l'indicateur sans le remplacer
+  cacherait du contenu ; c'est pour cela que cette classe ne se pose pas seule.
+*/
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/*
+  Choix du conditionnement : l'étiquette porte le focus du bouton radio.
+
+  Le bouton lui-même est masqué (`absolute size-px opacity-0`) et c'est
+  l'étiquette qui porte tout le dessin. Sans cette règle, elle ne portait pas
+  le focus : un client au clavier traversait le choix du conditionnement sans
+  jamais voir où il se trouvait. Le contour est celui de la maquette V2.
+*/
+@utility choix-conditionnement {
+  &:has(input:focus-visible) {
+    outline: 3px solid #aa6c2d;
+    outline-offset: 3px;
+  }
+}
+
 @utility eyebrow {
   font-size: var(--text-eyebrow);
   line-height: var(--text-eyebrow--line-height);

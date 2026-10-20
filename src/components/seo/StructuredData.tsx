@@ -1,4 +1,5 @@
 import { identity, siteConfig } from '@/lib/identity'
+import type { AvailabilityState } from '@/lib/stock'
 import type { ProductView } from '@/lib/queries/product'
 
 /**
@@ -45,7 +46,16 @@ function JsonLd({ data }: { data: unknown }) {
 /* -------------------------------------------------------------------------- */
 
 /** Correspondance stock réel → vocabulaire schema.org. */
-const AVAILABILITY_URLS: Record<string, string> = {
+/**
+ * Disponibilité déclarée aux moteurs.
+ *
+ * Le type est `Record<AvailabilityState, string>` et non `Record<string, …>` :
+ * ajouter un état au catalogue sans lui donner de correspondance ferait
+ * échouer la compilation, au lieu de déclarer silencieusement « en rupture »
+ * un produit qui ne l'est pas. Un repli discret sur OutOfStock coûterait du
+ * référencement sans que personne ne s'en aperçoive.
+ */
+export const AVAILABILITY_URLS: Record<AvailabilityState, string> = {
   IN_STOCK: 'https://schema.org/InStock',
   LOW_STOCK: 'https://schema.org/LimitedAvailability',
   BACKORDER: 'https://schema.org/BackOrder',
@@ -71,7 +81,7 @@ export function ProductStructuredData({ product }: { product: ProductView }) {
     name: variant.name,
     priceCurrency: identity.locale.currency,
     price: (variant.priceCents / 100).toFixed(2),
-    availability: AVAILABILITY_URLS[variant.availability.state] ?? 'https://schema.org/OutOfStock',
+    availability: AVAILABILITY_URLS[variant.availability.state],
     itemCondition: 'https://schema.org/NewCondition',
     seller: { '@type': 'Organization', name: identity.name },
   }))

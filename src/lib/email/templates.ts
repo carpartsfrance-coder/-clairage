@@ -27,6 +27,7 @@ export type TemplateKey =
   | 'sav.ouverture'
   | 'sav.reponse'
   | 'sav.retour'
+  | 'stock.retour'
 
 export type RenderedEmail = { subject: string; html: string; text: string }
 
@@ -315,6 +316,43 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
       reference: 'SAV-2026-0007',
       message:
         "Après vérification, le kit livré correspond bien à votre véhicule. Le voyant provient du décodeur, que nous vous remplaçons.",
+    },
+  },
+
+  'stock.retour': {
+    key: 'stock.retour',
+    label: 'Retour en stock',
+    trigger:
+      "Au retour en stock d'une référence pour laquelle un client avait demandé à être prévenu. Un seul envoi par demande.",
+    subject: (vars) => `${identity.name} — ${str(vars, 'productName')} est de nouveau disponible`,
+    preheader: () => 'La référence que vous attendiez est revenue.',
+    blocks: (vars) => [
+      { type: 'paragraph', text: 'Bonjour,' },
+      {
+        type: 'paragraph',
+        text: `Vous nous aviez demandé d'être prévenu du retour de ${str(vars, 'productName')} (${str(vars, 'variantName')}). C'est fait : la référence est de nouveau commandable.`,
+      },
+      {
+        type: 'button',
+        label: 'Voir la fiche',
+        href: str(vars, 'productUrl') || siteConfig.url,
+      },
+      {
+        /*
+          Rien n'est réservé. Le dire évite la déception du client qui arrive
+          deux jours plus tard sur une rupture : l'alerte prévient, elle ne
+          met pas de côté.
+        */
+        type: 'note',
+        text: "Nous n'avons rien mis de côté : le stock part dans l'ordre des commandes.",
+      },
+    ],
+    footerNote: () =>
+      "Vous recevez ce message parce que vous aviez demandé à être prévenu du retour de cette référence. C'est le seul message envoyé pour cette demande.",
+    sample: {
+      productName: 'Kit LED H7',
+      variantName: 'Le kit complet',
+      productUrl: `${siteConfig.url}/p/kit-led-h7-blanc-pur-6000k`,
     },
   },
 

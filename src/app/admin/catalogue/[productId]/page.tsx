@@ -8,6 +8,14 @@ import { getAdminProduct } from '@/lib/queries/admin'
 import { formatPrice } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
+import { Alert } from '@/components/ui/Surface'
+import { releverManques, type Manque } from '@/lib/admin/completeness'
+import { prisma } from '@/lib/db'
+import {
+  MediaAltForm,
+  ProductInfoForm,
+  ProductStatusForm,
+} from '@/components/admin/ProductEditor'
 
 /**
  * Fiche produit du back-office — lecture seule.
@@ -105,7 +113,26 @@ export default async function AdminProductPage({ params }: PageProps) {
   const product = await getAdminProduct(productId)
   if (!product) notFound()
 
+  const manques = releverManques(product)
+  const bloquants = manques
+    .filter((manque) => manque.niveau === 'bloquant')
+    .map((manque) => manque.champ)
   const categoryNames = product.categories.map((entry) => entry.category.name)
+
+  /*
+    Rubriques proposées à l'édition : toutes celles du catalogue, avec leur
+    chemin complet. Une liste à plat de noms rendrait « Phares LED » et
+    « Phares LED » (sous deux parents différents) indiscernables.
+  */
+  const categories = await prisma.category.findMany({
+    orderBy: [{ position: 'asc' }, { name: 'asc' }],
+    select: { id: true, name: true, parent: { select: { name: true } } },
+  })
+  const categoriesOptions = categories.map((categorie) => ({
+    id: categorie.id,
+    name: categorie.name,
+    path: categorie.parent ? `${categorie.parent.name} › ${categorie.name}` : categorie.name,
+  }))
   const missingAltCount = product.media.filter((entry) => !entry.media.alt).length
 
   return (
@@ -136,12 +163,43 @@ export default async function AdminProductPage({ params }: PageProps) {
           >
             Voir sur la boutique
           </Link>
+        ) : product.status === 'DRAFT' ? (
+          /*
+            Un brouillon n'a pas de page publique, mais il a désormais un
+            aperçu : la vraie fiche, avec le vrai gabarit, réservée à l'équipe.
+            On publiait jusqu'ici sans avoir vu.
+          */
+          <Link
+            href={`/p/${product.slug}?apercu=1`}
+            className="inline-flex min-h-9 items-center text-sm font-semibold text-brand underline underline-offset-4"
+          >
+            Aperçu avant publication
+          </Link>
         ) : (
           <span className="text-sm text-muted">
-            Aucune page publique : la boutique ne sert que les produits publiés.
+            Produit archivé : la boutique ne le sert plus.
           </span>
         )}
       </header>
+
+      {/* --- Ce qui manque ------------------------------------------------ */}
+      <ReleveDesManques manques={manques} status={product.status} />
+
+      {/* --- Édition ------------------------------------------------------ */}
+      <section aria-labelledby="produit-edition" className="mt-6">
+        <h2 id="produit-edition" className="text-base font-bold">
+          Modifier
+        </h2>
+        <ProductStatusForm productId={product.id} status={product.status} bloquants={bloquants} />
+        <ProductInfoForm
+          productId={product.id}
+          tagline={product.tagline}
+          metaTitle={product.metaTitle}
+          metaDescription={product.metaDescription}
+          categories={categoriesOptions}
+          selectedCategoryIds={product.categories.map((entry) => entry.categoryId)}
+        />
+      </section>
 
       {/* --- Informations ------------------------------------------------- */}
       <section aria-labelledby="produit-infos" className="mt-5">
@@ -392,7 +450,7 @@ export default async function AdminProductPage({ params }: PageProps) {
                     height={64}
                     className="size-16 shrink-0 rounded-sm border border-line bg-surface-muted object-contain"
                   />
-                  <div className="min-w-0 text-sm">
+                  <div className="min-w-0 flex-1 text-sm">
                     <p className="font-medium">
                       {MEDIA_ROLE_LABELS[entry.role] ?? entry.role}
                       <span className="text-xs font-normal text-muted">
@@ -400,11 +458,18 @@ export default async function AdminProductPage({ params }: PageProps) {
                         · {MEDIA_NATURE_LABELS[entry.media.nature] ?? entry.media.nature}
                       </span>
                     </p>
-                    {entry.media.alt ? (
-                      <p className="text-xs text-muted-strong break-words">{entry.media.alt}</p>
-                    ) : (
-                      <p className="text-xs font-medium text-warn">Texte alternatif manquant</p>
-                    )}
+                    {/*
+                      Le texte alternatif s'édite là où son absence est
+                      signalée. Le constater dans un écran et le corriger dans
+                      un autre, c'est ce qui fait qu'on ne le corrige jamais.
+                    */}
+                    <div className="mt-1">
+                      <MediaAltForm
+                        productId={product.id}
+                        mediaId={entry.media.id}
+                        alt={entry.media.alt}
+                      />
+                    </div>
                   </div>
                 </li>
               ))}
@@ -441,6 +506,70 @@ export default async function AdminProductPage({ params }: PageProps) {
           </div>
         )}
       </section>
+    </div>
+  )
+}
+
+/**
+ * Ce qui manque à la fiche, et ce qui interdit de la publier.
+ *
+ * L'écran disait déjà « non renseigné » champ par champ — utile quand on lit
+ * une fiche en entier, inutile quand il faut savoir laquelle est prête. Le
+ * relevé répond à la question de la publication : ce qui bloque d'abord, ce
+ * qui dessert ensuite, le confort en dernier.
+ *
+ * Il ne corrige rien et ne publie rien : c'est une liste de travail.
+ */
+function ReleveDesManques({ manques, status }: { manques: Manque[]; status: string }) {
+  if (manques.length === 0) {
+    return (
+      <Alert tone="ok" title="Rien ne manque" className="mt-5">
+        Prix, TVA, rubrique, visuels, caractéristiques et textes sont renseignés.
+      </Alert>
+    )
+  }
+
+  const bloquants = manques.filter((manque) => manque.niveau === 'bloquant')
+  const importants = manques.filter((manque) => manque.niveau === 'important')
+  const conforts = manques.filter((manque) => manque.niveau === 'confort')
+
+  const groupes = [
+    {
+      cle: 'bloquant',
+      titre:
+        status === 'PUBLISHED'
+          ? `${bloquants.length} problème${bloquants.length > 1 ? 's' : ''} à corriger — la fiche est en ligne`
+          : `${bloquants.length} point${bloquants.length > 1 ? 's' : ''} à régler avant publication`,
+      items: bloquants,
+      ton: 'danger' as const,
+    },
+    {
+      cle: 'important',
+      titre: `${importants.length} manque${importants.length > 1 ? 's' : ''} qui dessert${importants.length > 1 ? 'ent' : ''} la fiche`,
+      items: importants,
+      ton: 'warn' as const,
+    },
+    {
+      cle: 'confort',
+      titre: 'À compléter quand vous aurez le temps',
+      items: conforts,
+      ton: 'info' as const,
+    },
+  ].filter((groupe) => groupe.items.length > 0)
+
+  return (
+    <div className="mt-5 space-y-3">
+      {groupes.map((groupe) => (
+        <Alert key={groupe.cle} tone={groupe.ton} title={groupe.titre}>
+          <ul className="mt-1 space-y-1">
+            {groupe.items.map((manque) => (
+              <li key={manque.champ}>
+                <strong className="font-semibold">{manque.champ}</strong> — {manque.consequence}
+              </li>
+            ))}
+          </ul>
+        </Alert>
+      ))}
     </div>
   )
 }

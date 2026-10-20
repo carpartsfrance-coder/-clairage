@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getProduct } from '@/lib/queries/product'
 import { getSelectedVehicle } from '@/lib/session'
+import { getStaffUser } from '@/lib/admin/guard'
 import { getShippingOffers } from '@/lib/shipping'
 import { commercialTerms, siteConfig } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
@@ -13,6 +14,7 @@ import {
 } from '@/components/seo/StructuredData'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { ProductGallery } from '@/components/product/ProductGallery'
+import { ProductTitle } from '@/components/product/ProductTitle'
 import { BuyBox } from '@/components/product/BuyBox'
 import { ConfigurationContents } from '@/components/product/ConfigurationContents'
 import { KitContents } from '@/components/product/KitContents'
@@ -49,7 +51,10 @@ import { cn } from '@/lib/cn'
  * JavaScript échoue, et « Voir le contenu » devient un lien qui marche.
  */
 
-type PageProps = { params: Promise<{ slug: string }> }
+type PageProps = {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   EASY: 'Niveau accessible',
@@ -60,10 +65,16 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 /** Nombre de barres allumées dans la pastille de niveau. */
 const DIFFICULTY_BARS: Record<string, number> = { EASY: 1, MEDIUM: 2, HARD: 3 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const product = await getProduct(slug)
+  const apercu = (await searchParams).apercu !== undefined && (await getStaffUser()) !== null
+  const product = await getProduct(slug, null, { brouillon: apercu })
   if (!product) return { title: 'Produit introuvable' }
+
+  // Un aperçu est une page de travail : jamais indexée, jamais canonique.
+  if (apercu) {
+    return { title: `Aperçu — ${product.name}`, robots: { index: false, follow: false } }
+  }
 
   return {
     title: product.metaTitle ?? product.name,
@@ -77,10 +88,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function ProductPage({ params }: PageProps) {
+export default async function ProductPage({ params, searchParams }: PageProps) {
   const { slug } = await params
   const vehicle = await getSelectedVehicle()
-  const product = await getProduct(slug, vehicle?.configurationId ?? null)
+
+  /*
+    Aperçu avant publication.
+
+    Le back-office ne savait pas montrer une fiche en brouillon : il affichait
+    « Aucune page publique », et l'administrateur publiait sans avoir vu. Le
+    paramètre ouvre la vraie fiche, avec le vrai gabarit — une seconde version
+    dans l'administration aurait fini par diverger, et l'aperçu aurait cessé de
+    valoir preuve.
+
+    Il n'ouvre rien à personne d'autre : seul un membre de l'équipe connecté
+    obtient le brouillon, et la page reste désindexée dans ce mode.
+  */
+  const parametres = await searchParams
+  const apercuDemande = parametres.apercu !== undefined
+  const staff = apercuDemande ? await getStaffUser() : null
+  const apercu = apercuDemande && staff !== null
+
+  const product = await getProduct(slug, vehicle?.configurationId ?? null, { brouillon: apercu })
 
   if (!product) notFound()
 
@@ -90,7 +119,9 @@ export default async function ProductPage({ params }: PageProps) {
   const position = product.variants.find((variant) => variant.fitment.positionLabel)?.fitment
     .positionLabel
 
-  const eyebrow = [product.category?.name, position].filter(Boolean)
+  const eyebrow = [product.category?.name, position].filter(
+    (partie): partie is string => Boolean(partie),
+  )
 
   /*
     Pastille posée sur le visuel.
@@ -101,7 +132,6 @@ export default async function ProductPage({ params }: PageProps) {
     culot, qui n'est écrit nulle part ailleurs à cet endroit. Elle disparaît
     donc complètement sur un produit sans culot.
   */
-  const badge = product.bulbBase ? `Culot ${product.bulbBase}` : null
 
   // Même liste pour le fil d'Ariane affiché et pour son balisage : deux
   // sources finiraient par diverger, et c'est le balisage qu'on ne relit pas.
@@ -141,12 +171,26 @@ export default async function ProductPage({ params }: PageProps) {
   */
   const aDescription = (product.body ?? '').trim().length > 0
 
+  /*
+    Aucun visuel : la galerie disparaît au lieu d'afficher un cadre vide, et le
+    hero passe sur une colonne. C'est fréquent sur les accessoires, dont la
+    fiche n'a parfois qu'un prix et trois caractéristiques à donner.
+  */
+  const aVisuel = product.gallery.length > 0
+
+  /*
+    L'ordre est celui de la V2, et il suit la décision d'achat : ce qu'on
+    reçoit, puis ce que ça change, puis ce que ça suppose, puis comment on le
+    monte. Le rédactionnel long n'a pas de section dans la maquette ; il reste
+    avec les caractéristiques, dont il est le développement, plutôt que
+    d'ouvrir la page sur un pavé de texte.
+  */
   const sections = [
-    ...(aDescription ? [{ href: '#description', label: 'La référence' }] : []),
-    ...(rendu ? [{ href: '#rendu', label: 'Le changement' }] : []),
     ...(aContenuKit
-      ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans votre kit' : 'Caractéristiques' }]
+      ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans votre pack' : 'Caractéristiques' }]
       : []),
+    ...(rendu ? [{ href: '#rendu', label: 'Le rendu' }] : []),
+    ...(aDescription ? [{ href: '#description', label: 'La référence' }] : []),
     ...(aContenuMontage ? [{ href: '#montage', label: 'Installation' }] : []),
     ...(aContenuQuestions ? [{ href: '#questions', label: 'Vos questions' }] : []),
   ]
@@ -163,12 +207,42 @@ export default async function ProductPage({ params }: PageProps) {
         hauteur, plus la zone de sécurité des téléphones à encoche, pour
         qu'elle ne recouvre jamais la fin de la page.
       */}
-      <div className="pb-[calc(76px+env(safe-area-inset-bottom))] fiche:pb-[74px]">
-        {/* Données structurées : voir StructuredData.tsx — rien n'y est émis en
-            préproduction, et rien n'y est affirmé qui ne soit en base. */}
-        <ProductStructuredData product={product} />
-        <BreadcrumbStructuredData items={breadcrumbItems} />
-        <FaqStructuredData items={product.faq} />
+      <div className="pb-[calc(77px+env(safe-area-inset-bottom))] fiche:pb-[78px]">
+        {/*
+          Données structurées : voir StructuredData.tsx — rien n'y est émis en
+          préproduction, et rien n'y est affirmé qui ne soit en base.
+
+          Rien non plus en aperçu : une fiche en brouillon n'a ni prix ni
+          disponibilité à déclarer à un moteur, et le `noindex` de la page ne
+          suffit pas — un balisage reste lisible par tout ce qui lit la page.
+        */}
+        {apercu ? null : (
+          <>
+            <ProductStructuredData product={product} />
+            <BreadcrumbStructuredData items={breadcrumbItems} />
+            <FaqStructuredData items={product.faq} />
+          </>
+        )}
+
+        {/*
+          Bandeau d'aperçu : il dit ce qu'on regarde et ce qu'il reste à faire.
+          Sans lui, une fiche en brouillon est indiscernable d'une fiche en
+          ligne, et on finit par croire qu'elle est publiée.
+        */}
+        {apercu ? (
+          <div className="border-b border-warn-border bg-warn-soft">
+            <div className="container-page flex flex-wrap items-center gap-3 py-2.5 text-[11px] text-warn">
+              <strong className="font-bold">Aperçu — fiche non publiée</strong>
+              <span>Cette page n’est visible que par l’équipe, et n’est pas indexée.</span>
+              <Link
+                href={`/admin/catalogue`}
+                className="ml-auto font-semibold underline underline-offset-4"
+              >
+                Retour au catalogue
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         <div className="container-page">
           <Breadcrumb items={breadcrumbItems} />
@@ -183,19 +257,32 @@ export default async function ProductPage({ params }: PageProps) {
           <VehicleBar vehicle={vehicle} className="mb-[27px] max-fiche:hidden" />
 
           {/*
-            .hero — galerie à gauche (1.13fr), titre et achat à droite (1fr),
-            58 px d'écart. Sous 800 px la référence passe en colonne unique avec
-            `display:contents` : le titre vient AVANT la galerie, puis le bloc
-            d'achat. Même résultat ici par placement explicite en grille.
+            .product-hero — galerie à gauche (1,07fr), titre et achat à droite
+            (1fr), 62 px d'écart. Sous 800 px la maquette passe en colonne
+            unique : le titre vient AVANT la galerie, puis le bloc d'achat.
+            Même résultat ici par placement explicite en grille.
+
+            Sans aucun visuel, la grille se réduit à une colonne. Le cadre
+            affichait « Aucun visuel disponible » sur 435 px de haut : une
+            moitié d'écran pour annoncer une absence, sur une fiche
+            d'accessoire qui n'a souvent rien à montrer. Un visuel manquant est
+            une tâche d'administration, pas une information pour le client.
           */}
           <section
             aria-label={product.name}
-            className="flex flex-col pb-7 fiche:grid fiche:grid-cols-[minmax(0,1.13fr)_minmax(0,1fr)] fiche:items-start fiche:gap-[30px] fiche:pb-[41px] min-[1101px]:gap-[58px] min-[1450px]:gap-[70px]"
+            className={cn(
+              'flex flex-col pt-[6px] pb-[27px] fiche:items-start fiche:pt-[9px] fiche:pb-10',
+              aVisuel
+                ? 'fiche:grid fiche:grid-cols-[minmax(0,1.07fr)_minmax(0,1fr)] fiche:gap-x-[36px] min-[1101px]:gap-x-[62px] min-[1450px]:gap-x-[74px]'
+                : 'fiche:max-w-[620px]',
+            )}
           >
             {/* .gallery */}
-            <div className="order-2 mt-1 fiche:order-none fiche:mt-0">
-              <ProductGallery items={product.gallery} badge={badge} productName={product.name} />
-            </div>
+            {aVisuel ? (
+              <div className="order-2 mt-1 fiche:order-none fiche:mt-0">
+                <ProductGallery items={product.gallery} productName={product.name} />
+              </div>
+            ) : null}
 
             {/*
               .purchase — un seul enfant de grille sur grand écran, pour que le
@@ -205,44 +292,34 @@ export default async function ProductPage({ params }: PageProps) {
               ordre place le titre avant la galerie, comme dans la référence.
             */}
             <div className="contents fiche:block">
-            {/* .titlebox */}
-            <div className="order-1">
-              {eyebrow.length > 0 ? (
-                <p className="mb-[9px] text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:mb-3 fiche:text-[9px] fiche:tracking-[1.6px]">
-                  {eyebrow.map((part, index) => (
-                    <span key={part}>
-                      {index > 0 ? (
-                        <span aria-hidden="true" className="mx-[5px] text-[#bbb]">
-                          /
-                        </span>
-                      ) : null}
-                      {part}
-                    </span>
-                  ))}
-                </p>
-              ) : null}
-
-              {/* h1 : 38 px / 800 / -1.5 px, seconde ligne en 31 px normale. */}
-              <h1 className="mb-3 text-[31px] leading-[1.1] font-extrabold tracking-[-1px] fiche:mb-[13px] fiche:text-[38px] fiche:leading-[1.12] fiche:tracking-[-1.5px] min-[1450px]:text-[42px]">
-                {product.name}
-                {product.colorTemperature ? (
-                  <span className="block text-[25px] font-normal tracking-[-0.7px] fiche:text-[31px] fiche:tracking-[-1px] min-[1450px]:text-[34px]">
-                    Blanc pur {product.colorTemperature.toLocaleString('fr-FR')} K
-                  </span>
-                ) : null}
-              </h1>
-
-              {product.tagline ? (
-                <p className="mb-[17px] max-w-[340px] text-[12px] leading-[1.6] text-[#666a6c] fiche:mb-[18px] fiche:text-[13px] fiche:leading-[1.65] min-[1450px]:text-[14px]">
-                  {product.tagline}
-                </p>
-              ) : null}
-            </div>
+            {/*
+              .product-title-block — la V2 remonte la température de couleur du
+              titre vers la ligne de caractéristiques, où elle voisine le
+              conditionnement et la présence des accessoires. Le titre reprend
+              le nom tel qu'il est au catalogue : le découper en deux lignes
+              comme la maquette supposerait d'y deviner une césure, et un nom
+              de produit n'en porte pas.
+            */}
+            <ProductTitle
+              eyebrow={eyebrow}
+              name={product.name}
+              secondLine={
+                product.colorTemperature
+                  ? `Blanc ${product.colorTemperature.toLocaleString('fr-FR')} K`
+                  : null
+              }
+              tagline={product.tagline}
+            />
 
             {/* .buybox */}
             <div className="order-3 mt-6 fiche:mt-0">
               <BuyBox
                 productName={product.name}
+                thumbnail={
+                  product.gallery[0]
+                    ? { url: product.gallery[0].url, alt: product.gallery[0].alt }
+                    : null
+                }
                 variants={product.variants}
                 recommendedVariantId={product.recommendedVariantId}
                 vehicleLabel={vehicle?.label ?? null}
@@ -257,9 +334,9 @@ export default async function ProductPage({ params }: PageProps) {
         {/* ---------------- .assurance-strip ---------------- */}
         <section
           aria-label="Nos engagements"
-          className="border-y border-[#eeeee9] bg-[#fafaf8]"
+          className="border-t border-[#edf0e7] border-b-[#e9eee0] bg-[#f6f7f3]"
         >
-          <div className="container-page grid gap-3.5 py-[18px] fiche:flex fiche:justify-between fiche:gap-[15px] fiche:py-[22px] min-[1101px]:gap-5">
+          <div className="container-page grid gap-[17px] py-[21px] fiche:flex fiche:min-h-[87px] fiche:items-center fiche:justify-between fiche:gap-5 fiche:py-0 min-[1101px]:gap-[25px]">
             {[
               {
                 Icon: IconCar,
@@ -278,10 +355,15 @@ export default async function ProductPage({ params }: PageProps) {
               },
             ].map(({ Icon, title, text }) => (
               <div key={title} className="flex items-center gap-3 min-[1101px]:gap-3.5">
-                <Icon className="size-[21px] shrink-0 text-slate-ink min-[1101px]:size-[27px]" strokeWidth={1.2} />
+                <Icon
+                  className="size-[23px] shrink-0 text-[#647951] min-[1101px]:size-[25px]"
+                  strokeWidth={1.3}
+                />
                 <span className="min-w-0">
-                  <strong className="block text-[10px] fiche:text-[11px]">{title}</strong>
-                  <small className="mt-px block text-[9px] text-[#7a7b77] fiche:mt-[3px] min-[1101px]:text-[8px] min-[1281px]:text-[9px]">
+                  <strong className="block text-[11px] font-semibold min-[1450px]:text-[12px]">
+                    {title}
+                  </strong>
+                  <small className="mt-[2px] block text-[10px] text-[#8a957e] fiche:mt-[3px] min-[1101px]:text-[9px] min-[1281px]:text-[10px] min-[1450px]:text-[11px] min-[1450px]:text-[#7c8c6c]">
                     {text}
                   </small>
                 </span>
@@ -292,36 +374,6 @@ export default async function ProductPage({ params }: PageProps) {
 
         {/* ---------------- .section-nav ---------------- */}
         {sections.length > 0 ? <SectionNav items={sections} /> : null}
-
-        {/* ---------------- #description ---------------- */}
-        {aDescription ? (
-          <section
-            id="description"
-            aria-labelledby="titre-description"
-            className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
-          >
-            <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
-              La référence
-            </p>
-            <h2
-              id="titre-description"
-              className="mb-[22px] text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:mb-[25px] fiche:text-[29px] fiche:tracking-[-1px]"
-            >
-              {product.name}
-            </h2>
-            <Prose className="max-w-[680px]">{product.body ?? ''}</Prose>
-          </section>
-        ) : null}
-
-        {/* ---------------- #rendu ---------------- */}
-        {rendu ? (
-          <ToneComparison
-            title={'Votre voiture.\nUn autre regard.'}
-            subtitle={product.description}
-            image={rendu.url}
-            imageAlt={rendu.alt}
-          />
-        ) : null}
 
         {/* ---------------- #dans-votre-kit ---------------- */}
         {aContenuKit ? (
@@ -339,7 +391,7 @@ export default async function ProductPage({ params }: PageProps) {
           className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
         >
           {/* .section-heading : titre à gauche, précision à droite. */}
-          <div className="mb-[22px] block justify-between fiche:mb-[25px] fiche:flex fiche:items-end">
+          <div className="mb-[22px] block justify-between fiche:mb-[30px] fiche:flex fiche:items-end">
             <div>
               <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
                 Tout est prévu
@@ -383,6 +435,36 @@ export default async function ProductPage({ params }: PageProps) {
           ) : null}
         </section>
         </>
+        ) : null}
+
+        {/* ---------------- #rendu ---------------- */}
+        {rendu ? (
+          <ToneComparison
+            title={'Votre voiture.\nUn autre regard.'}
+            subtitle={product.description}
+            image={rendu.url}
+            imageAlt={rendu.alt}
+          />
+        ) : null}
+
+        {/* ---------------- #description ---------------- */}
+        {aDescription ? (
+          <section
+            id="description"
+            aria-labelledby="titre-description"
+            className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
+          >
+            <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
+              La référence
+            </p>
+            <h2
+              id="titre-description"
+              className="mb-[22px] text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:mb-[25px] fiche:text-[29px] fiche:tracking-[-1px]"
+            >
+              {product.name}
+            </h2>
+            <Prose className="max-w-[680px]">{product.body ?? ''}</Prose>
+          </section>
         ) : null}
 
         {/* ---------------- #montage ---------------- */}
@@ -508,7 +590,7 @@ export default async function ProductPage({ params }: PageProps) {
             aria-labelledby="titre-complements"
             className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
           >
-            <div className="mb-[22px] block justify-between fiche:mb-[25px] fiche:flex fiche:items-end">
+            <div className="mb-[22px] block justify-between fiche:mb-[30px] fiche:flex fiche:items-end">
               <div>
                 <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
                   Pour aller plus loin
