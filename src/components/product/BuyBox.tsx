@@ -334,6 +334,8 @@ export function BuyBox({
                   key={variant.id}
                   className={cn(
                     'flex cursor-pointer items-center gap-[11px] rounded-lg transition-colors fiche:gap-2.5',
+                    // Le contour de focus de l'étiquette : voir globals.css.
+                    'choix-conditionnement',
                     active
                       ? 'border-[1.5px] border-brand bg-[#fdf6f5] px-[12.5px] py-[14.5px] fiche:px-[9.5px] fiche:py-[12.5px] min-[1101px]:px-[13.5px]'
                       : 'border border-[#ddddda] px-[13px] py-[15px] fiche:px-2.5 fiche:py-[13px] min-[1101px]:px-3.5',

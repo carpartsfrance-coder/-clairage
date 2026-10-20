@@ -208,11 +208,21 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         qu'elle ne recouvre jamais la fin de la page.
       */}
       <div className="pb-[calc(77px+env(safe-area-inset-bottom))] fiche:pb-[78px]">
-        {/* Données structurées : voir StructuredData.tsx — rien n'y est émis en
-            préproduction, et rien n'y est affirmé qui ne soit en base. */}
-        <ProductStructuredData product={product} />
-        <BreadcrumbStructuredData items={breadcrumbItems} />
-        <FaqStructuredData items={product.faq} />
+        {/*
+          Données structurées : voir StructuredData.tsx — rien n'y est émis en
+          préproduction, et rien n'y est affirmé qui ne soit en base.
+
+          Rien non plus en aperçu : une fiche en brouillon n'a ni prix ni
+          disponibilité à déclarer à un moteur, et le `noindex` de la page ne
+          suffit pas — un balisage reste lisible par tout ce qui lit la page.
+        */}
+        {apercu ? null : (
+          <>
+            <ProductStructuredData product={product} />
+            <BreadcrumbStructuredData items={breadcrumbItems} />
+            <FaqStructuredData items={product.faq} />
+          </>
+        )}
 
         {/*
           Bandeau d'aperçu : il dit ce qu'on regarde et ce qu'il reste à faire.
