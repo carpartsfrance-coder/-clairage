@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { VariantView } from '@/lib/queries/product'
 import { buildDeliveryTeaser, type ShippingOffer } from '@/lib/delivery-teaser'
@@ -58,6 +59,7 @@ const PACKAGING_LABELS: Record<VariantView['packaging'], string> = {
  */
 export function BuyBox({
   productName,
+  thumbnail,
   variants,
   recommendedVariantId,
   vehicleLabel,
@@ -66,6 +68,8 @@ export function BuyBox({
   contentAnchor = '#dans-votre-kit',
 }: {
   productName: string
+  /** Premier visuel du produit : la barre fixe rappelle ce qu'on achète. */
+  thumbnail: { url: string; alt: string } | null
   variants: VariantView[]
   recommendedVariantId: string | null
   /** Null quand aucun véhicule n'est sélectionné. */
@@ -618,13 +622,32 @@ export function BuyBox({
           barreVisible ? 'translate-y-0' : 'max-fiche:translate-y-0 fiche:translate-y-[110%]',
         )}
       >
-        <div className="container-page flex min-h-[76px] items-center justify-between gap-3.5 pb-[env(safe-area-inset-bottom)] fiche:min-h-[74px]">
+        <div className="container-page flex min-h-[77px] items-center justify-between gap-3.5 pb-[env(safe-area-inset-bottom)] fiche:min-h-[78px] fiche:gap-[25px]">
           {/* .sticky-product : masqué en mobile, où la place manque. */}
           <div className="hidden items-center gap-3 fiche:flex">
-            <IconCart className="size-5 shrink-0 text-brand" />
+            {/*
+              .sticky-thumb — la barre rappelle ce qu'on achète. Une icône de
+              panier ne le disait pas : elle désignait l'action, pas l'article,
+              et deux fiches ouvertes côte à côte se ressemblaient.
+            */}
+            {thumbnail ? (
+              <span className="relative size-[46px] shrink-0 overflow-hidden rounded-[5px] bg-[#f1f4eb]">
+                <Image
+                  src={thumbnail.url}
+                  alt=""
+                  fill
+                  sizes="46px"
+                  className="object-cover mix-blend-multiply"
+                />
+              </span>
+            ) : (
+              <IconCart className="size-5 shrink-0 text-brand" />
+            )}
             <div className="min-w-0">
-              <strong className="block text-[12px]">{productName}</strong>
-              <span className="mt-0.5 block text-[9px] text-[#7a8076]">
+              <strong className="block text-[11px] leading-[1.3] min-[1101px]:text-[12px]">
+                {productName}
+              </strong>
+              <span className="mt-[3px] block text-[9px] text-[#99a48e]">
                 {selected.name}
                 {vehicleLabel ? ` · ${vehicleLabel}` : null}
               </span>
@@ -633,10 +656,10 @@ export function BuyBox({
 
           <div className="flex w-full items-center justify-between gap-3.5 fiche:w-auto fiche:gap-[25px]">
             <div className="shrink-0">
-              <strong className="block text-[23px] leading-none tracking-[-0.7px] fiche:text-[22px]">
+              <strong className="block text-[24px] leading-[1.2] tracking-[-0.9px] fiche:text-[25px] fiche:tracking-[-1px]">
                 {formatPrice(total)}
               </strong>
-              <span className="mt-1 block text-[7px] text-[#7a8076] fiche:mt-[5px] fiche:text-[8px]">
+              <span className="mt-[1px] block text-[7px] leading-[1.4] whitespace-nowrap text-[#94a387] fiche:text-[8px]">
                 TTC{delivery?.priceLabel ? ` · ${delivery.priceLabel.toLowerCase()}` : null}
               </span>
             </div>
@@ -647,7 +670,7 @@ export function BuyBox({
             {inconnu ? (
               <Link
                 href={lienVerification}
-                className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-[7px] bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-h-[44px] fiche:min-w-[255px] fiche:flex-none fiche:gap-3"
+                className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-md bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-h-[45px] fiche:min-w-[210px] fiche:flex-none fiche:gap-3 fiche:text-[12px] min-[1101px]:min-w-[236px]"
               >
                 <IconShield className="size-[17px] shrink-0" />
                 <span className="truncate">Faire vérifier mon véhicule</span>
@@ -657,7 +680,7 @@ export function BuyBox({
                 type="button"
                 disabled={!purchasable || pending}
                 onClick={submit}
-                className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-[7px] bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[44px] fiche:min-w-[255px] fiche:flex-none fiche:gap-3"
+                className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-md bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[45px] fiche:min-w-[210px] fiche:flex-none fiche:gap-3 fiche:text-[12px] min-[1101px]:min-w-[236px]"
               >
                 <IconCart className="size-[17px] shrink-0" />
                 <span className="truncate">{libelleBouton}</span>

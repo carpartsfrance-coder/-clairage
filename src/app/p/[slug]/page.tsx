@@ -165,7 +165,7 @@ export default async function ProductPage({ params }: PageProps) {
         hauteur, plus la zone de sécurité des téléphones à encoche, pour
         qu'elle ne recouvre jamais la fin de la page.
       */}
-      <div className="pb-[calc(76px+env(safe-area-inset-bottom))] fiche:pb-[74px]">
+      <div className="pb-[calc(77px+env(safe-area-inset-bottom))] fiche:pb-[78px]">
         {/* Données structurées : voir StructuredData.tsx — rien n'y est émis en
             préproduction, et rien n'y est affirmé qui ne soit en base. */}
         <ProductStructuredData product={product} />
@@ -230,6 +230,11 @@ export default async function ProductPage({ params }: PageProps) {
             <div className="order-3 mt-6 fiche:mt-0">
               <BuyBox
                 productName={product.name}
+                thumbnail={
+                  product.gallery[0]
+                    ? { url: product.gallery[0].url, alt: product.gallery[0].alt }
+                    : null
+                }
                 variants={product.variants}
                 recommendedVariantId={product.recommendedVariantId}
                 vehicleLabel={vehicle?.label ?? null}
