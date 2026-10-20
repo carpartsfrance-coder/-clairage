@@ -249,9 +249,9 @@ export default async function ProductPage({ params }: PageProps) {
         {/* ---------------- .assurance-strip ---------------- */}
         <section
           aria-label="Nos engagements"
-          className="border-y border-[#eeeee9] bg-[#fafaf8]"
+          className="border-t border-[#edf0e7] border-b-[#e9eee0] bg-[#f6f7f3]"
         >
-          <div className="container-page grid gap-3.5 py-[18px] fiche:flex fiche:justify-between fiche:gap-[15px] fiche:py-[22px] min-[1101px]:gap-5">
+          <div className="container-page grid gap-[17px] py-[21px] fiche:flex fiche:min-h-[87px] fiche:items-center fiche:justify-between fiche:gap-5 fiche:py-0 min-[1101px]:gap-[25px]">
             {[
               {
                 Icon: IconCar,
@@ -270,10 +270,15 @@ export default async function ProductPage({ params }: PageProps) {
               },
             ].map(({ Icon, title, text }) => (
               <div key={title} className="flex items-center gap-3 min-[1101px]:gap-3.5">
-                <Icon className="size-[21px] shrink-0 text-slate-ink min-[1101px]:size-[27px]" strokeWidth={1.2} />
+                <Icon
+                  className="size-[23px] shrink-0 text-[#647951] min-[1101px]:size-[25px]"
+                  strokeWidth={1.3}
+                />
                 <span className="min-w-0">
-                  <strong className="block text-[10px] fiche:text-[11px]">{title}</strong>
-                  <small className="mt-px block text-[9px] text-[#7a7b77] fiche:mt-[3px] min-[1101px]:text-[8px] min-[1281px]:text-[9px]">
+                  <strong className="block text-[11px] font-semibold min-[1450px]:text-[12px]">
+                    {title}
+                  </strong>
+                  <small className="mt-[2px] block text-[10px] text-[#8a957e] fiche:mt-[3px] min-[1101px]:text-[9px] min-[1281px]:text-[10px] min-[1450px]:text-[11px] min-[1450px]:text-[#7c8c6c]">
                     {text}
                   </small>
                 </span>
@@ -331,7 +336,7 @@ export default async function ProductPage({ params }: PageProps) {
           className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
         >
           {/* .section-heading : titre à gauche, précision à droite. */}
-          <div className="mb-[22px] block justify-between fiche:mb-[25px] fiche:flex fiche:items-end">
+          <div className="mb-[22px] block justify-between fiche:mb-[30px] fiche:flex fiche:items-end">
             <div>
               <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
                 Tout est prévu
@@ -500,7 +505,7 @@ export default async function ProductPage({ params }: PageProps) {
             aria-labelledby="titre-complements"
             className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
           >
-            <div className="mb-[22px] block justify-between fiche:mb-[25px] fiche:flex fiche:items-end">
+            <div className="mb-[22px] block justify-between fiche:mb-[30px] fiche:flex fiche:items-end">
               <div>
                 <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
                   Pour aller plus loin
