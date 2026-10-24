@@ -456,8 +456,17 @@ export const demoHomeBlocks = {
     eyebrow: 'Le détail qui change tout',
     title: 'Même voiture.\nUn autre regard.',
     subtitle: 'Un blanc pur pour moderniser le style de votre véhicule.',
-    ctaLabel: 'Découvrir le kit LED H7',
-    ctaHref: '/p/kit-led-h7-blanc-pur-6000k',
+    /*
+      La cible est une rubrique, pas un produit. Ce bloc fournit les valeurs
+      par DÉFAUT de la page d'accueil : elles servent partout où la table
+      `HomeBlock` est vide, donc sur tout environnement neuf. Le bouton
+      pointait sur un produit de démonstration, absent de la production
+      installée sans `--demo` : le visiteur qui cliquait tombait sur un 404,
+      depuis la page d'accueil. Une rubrique existe dès que la taxonomie est
+      semée.
+    */
+    ctaLabel: 'Voir les kits LED pour phares',
+    ctaHref: '/c/phares-led',
     image: 'car-night.png',
     caption: 'Simulation de rendu — illustration.',
     leftLabel: 'Jaune',
