@@ -174,7 +174,21 @@ async function echantillonParRubrique(limit: number) {
         where: {
           status: 'PUBLISHED',
           variants: { some: { active: true } },
-          categories: { some: { category: { slug: rubrique.slug, published: true } } },
+          /*
+            La rubrique OU l'une de ses sous-familles. Les produits ne sont pas
+            toujours rattachés à la racine : « Plaque & recul » n'en portait
+            aucun en propre, ses références vivant dans « Feux de recul ». La
+            vitrine n'affichait donc que trois cartes sur quatre en production.
+            La taxonomie a deux niveaux, un seul saut de parent suffit.
+          */
+          categories: {
+            some: {
+              category: {
+                published: true,
+                OR: [{ slug: rubrique.slug }, { parent: { slug: rubrique.slug } }],
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'asc' },
         include: CARTE_VITRINE,
