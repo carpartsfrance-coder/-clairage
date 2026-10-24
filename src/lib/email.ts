@@ -1,4 +1,5 @@
 import { prisma } from './db'
+import { identity } from './identity'
 import { TEMPLATES, renderEmail, type TemplateKey } from './email/templates'
 
 /**
@@ -106,8 +107,32 @@ export async function sendEmail(message: EmailMessage): Promise<{ simulated: boo
   }
 }
 
+/**
+ * Expéditeur : l'adresse, et le nom affiché dans la boîte du destinataire.
+ *
+ * Sans nom, le client voit l'adresse brute — « contact@… » là où il devrait
+ * lire la marque. Un message transactionnel qu'on n'identifie pas au premier
+ * coup d'œil se signale comme indésirable plus vite qu'il ne se lit.
+ *
+ * `EMAIL_FROM` accepte les deux écritures. Si elle porte déjà un nom, sous la
+ * forme `LUMERA <contact@exemple.fr>`, il est repris tel quel : en rajouter un
+ * second produirait un en-tête invalide, et c'est le genre de faute qui ne se
+ * voit qu'une fois le message parti.
+ */
+export function expediteur(): { email: string; name: string } {
+  const brut = (process.env.EMAIL_FROM ?? '').trim()
+  const avecNom = brut.match(/^\s*(.*?)\s*<([^>]+)>\s*$/)
+
+  if (avecNom) {
+    const nom = avecNom[1].replace(/^"(.*)"$/, '$1').trim()
+    return { email: avecNom[2].trim(), name: nom || identity.name }
+  }
+  return { email: brut, name: identity.name }
+}
+
 async function dispatch(driver: Driver, message: EmailMessage): Promise<string | null> {
-  const from = process.env.EMAIL_FROM!
+  const { email: fromEmail, name: fromName } = expediteur()
+  const from = `${fromName} <${fromEmail}>`
   const apiKey = process.env.EMAIL_API_KEY!
 
   if (driver === 'resend') {
@@ -132,7 +157,7 @@ async function dispatch(driver: Driver, message: EmailMessage): Promise<string |
       method: 'POST',
       headers: { 'api-key': apiKey, 'content-type': 'application/json' },
       body: JSON.stringify({
-        sender: { email: from },
+        sender: { email: fromEmail, name: fromName },
         to: [{ email: message.to }],
         subject: message.subject,
         htmlContent: message.html ?? message.text ?? '',
@@ -148,7 +173,7 @@ async function dispatch(driver: Driver, message: EmailMessage): Promise<string |
       method: 'POST',
       headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
       body: JSON.stringify({
-        from: { email: from },
+        from: { email: fromEmail, name: fromName },
         to: [{ email: message.to }],
         subject: message.subject,
         html: message.html ?? '',

@@ -136,11 +136,22 @@ services:
         sync: false
 
       # --- E-mails transactionnels -------------------------------------------
-      # `log` = aucun envoi réel, chaque message est tracé dans EmailLog et
-      # marqué « simulé ». Basculer sur un prestataire quand le domaine est
-      # authentifié (SPF, DKIM, DMARC).
+      # Prestataire : MailerSend. Le pilote est déclaré ici plutôt que dans le
+      # tableau de bord parce qu'il porte `value:` et non `sync: false` — une
+      # valeur modifiée à la main serait écrasée à la prochaine synchronisation
+      # du blueprint. Changer de prestataire est donc un commit, ce qui est
+      # cohérent : c'est une décision, pas un réglage.
+      #
+      # **Rien ne part tant que EMAIL_API_KEY et EMAIL_FROM sont vides.**
+      # `emailIsSimulated()` traite un pilote sans clé ni expéditeur comme une
+      # simulation, l'écrit dans EmailLog et le dit dans les journaux. Le jour
+      # où les deux variables sont renseignées, les envois deviennent réels
+      # sans autre manipulation — c'est voulu, et c'est pour cela que le
+      # domaine doit être authentifié AVANT (SPF, DKIM, DMARC) : un envoi
+      # depuis un domaine non authentifié part en indésirable et abîme sa
+      # réputation durablement.
       - key: EMAIL_DRIVER
-        value: log
+        value: mailersend
       - key: EMAIL_FROM
         sync: false
       - key: EMAIL_API_KEY

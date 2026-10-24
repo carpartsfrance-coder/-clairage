@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { PrismaClient } from '@prisma/client'
-import { sendEmail } from '../src/lib/email'
+import { expediteur, sendEmail } from '../src/lib/email'
 
 /**
  * Journal des e-mails.
@@ -66,5 +66,46 @@ describe('sendEmail', () => {
     const log = await prisma.emailLog.findFirstOrThrow()
     expect(log.simulated).toBe(true)
     expect(log.status).toBe('simulated')
+  })
+})
+
+/**
+ * Expéditeur.
+ *
+ * Ce que ces tests protègent : `EMAIL_FROM` s'écrit de deux façons, et un nom
+ * ajouté par-dessus un nom déjà présent produit un en-tête `From` invalide —
+ * une faute qui ne se constate qu'après l'envoi, chez le destinataire.
+ */
+describe('expediteur', () => {
+  const initial = process.env.EMAIL_FROM
+
+  afterAll(() => {
+    if (initial === undefined) delete process.env.EMAIL_FROM
+    else process.env.EMAIL_FROM = initial
+  })
+
+  it('ajoute le nom de la marque à une adresse nue', () => {
+    process.env.EMAIL_FROM = 'contact@exemple.fr'
+    expect(expediteur()).toEqual({ email: 'contact@exemple.fr', name: 'LUMERA' })
+  })
+
+  it('conserve le nom déjà écrit, sans le doubler', () => {
+    process.env.EMAIL_FROM = 'Service client <sav@exemple.fr>'
+    expect(expediteur()).toEqual({ email: 'sav@exemple.fr', name: 'Service client' })
+  })
+
+  it('retire les guillemets autour du nom', () => {
+    process.env.EMAIL_FROM = '"Service client" <sav@exemple.fr>'
+    expect(expediteur()).toEqual({ email: 'sav@exemple.fr', name: 'Service client' })
+  })
+
+  it('retombe sur la marque quand le nom est vide', () => {
+    process.env.EMAIL_FROM = '<contact@exemple.fr>'
+    expect(expediteur()).toEqual({ email: 'contact@exemple.fr', name: 'LUMERA' })
+  })
+
+  it('tolère les espaces superflus', () => {
+    process.env.EMAIL_FROM = '  contact@exemple.fr  '
+    expect(expediteur()).toEqual({ email: 'contact@exemple.fr', name: 'LUMERA' })
   })
 })
