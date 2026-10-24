@@ -18,13 +18,22 @@ const prisma = new PrismaClient()
  * atteste que la position existe sur ce véhicule. C'est tout ce qu'on en tire,
  * et c'est peu — mais c'est vérifiable et ça ne suppose rien.
  *
- * **Le statut des compatibilités est UNKNOWN, et c'est volontaire.** Le schéma
- * réserve `CONFIRMED` à une compatibilité « vérifiée et datée » ; aucune de ces
- * lignes ne l'est. Avec `UNKNOWN`, le site affiche bien le pack sur la page du
- * véhicule, mais sans le bandeau vert « la configuration pour votre A3 8V » et
- * en mettant la vérification en action principale plutôt que l'achat. C'est à
- * l'exploitant de basculer en `CONFIRMED` les packs qu'il a vérifiés et dont il
- * connaît le contenu.
+ * **Le statut des compatibilités est CONFIRMED, sur décision de l'exploitant**
+ * (commit 0f530bb). Les packs ont d'abord été posés en `UNKNOWN` ; le statut a
+ * été affiché, constaté — « compatibilité à vérifier » en face d'un client qui
+ * avait renseigné sa voiture — puis changé en connaissance de cause.
+ *
+ * Ce qui le fonde n'est pas une déduction de ce script : le pack porte le nom
+ * d'un véhicule précis et c'est l'exploitant qui le compose pour lui. C'est un
+ * engagement commercial, et non une vérification technique pièce par pièce.
+ *
+ * Ce que la fiche continue de dire, et qui reste exact : l'équipement d'origine
+ * n'est pas précisé, et l'homologation routière est à confirmer. Affirmer la
+ * compatibilité de montage n'est pas affirmer la conformité réglementaire — les
+ * deux champs restent distincts et ne se déduisent pas l'un de l'autre.
+ *
+ * Un pack dont le contenu se révélerait inadapté se repasse en `UNKNOWN` ou
+ * `INCOMPATIBLE` au back-office.
  *
  * **L'équipement d'origine n'est pas connu.** Une configuration exige un
  * équipement, et le vocabulaire en propose trois — halogène, xénon, LED. En
