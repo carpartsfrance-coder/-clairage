@@ -154,7 +154,7 @@ export function MobileNav({
             className="flex h-full w-[min(88vw,380px)] flex-col overflow-y-auto bg-white"
           >
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <Logo height={32} />
+              <Logo height={26} />
               <button
                 type="button"
                 onClick={() => setOpen(false)}

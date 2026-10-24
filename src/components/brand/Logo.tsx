@@ -16,18 +16,25 @@ import { cn } from '@/lib/cn'
  * de `showBaseline`, qui n'avait plus rien à commander. Les emplacements
  * compacts jouent sur la hauteur, pas sur le contenu.
  *
- * La hauteur pilote tout, la largeur suit le rapport 2000 × 669 du fichier.
- * `priority` sur l'en-tête : le logotype est au-dessus de la ligne de
- * flottaison, et le laisser arriver en différé fait sauter la mise en page au
- * premier affichage.
+ * La hauteur pilote tout, la largeur suit le rapport du fichier. `priority`
+ * sur l'en-tête : le logotype est au-dessus de la ligne de flottaison, et le
+ * laisser arriver en différé fait sauter la mise en page au premier affichage.
+ *
+ * **Les fichiers servis sont détourés.** Les originaux livrés mesuraient
+ * 2000 × 669 dont le contenu n'occupait que 43 % de la hauteur : près de 30 %
+ * de vide au-dessus, 27 % en dessous. Le logotype paraissait petit sans qu'on
+ * puisse y remédier en augmentant la hauteur, puisque l'air grandissait avec
+ * lui et poussait l'en-tête. Les marges sont donc retirées une fois pour
+ * toutes, au même cadre pour les deux variantes afin qu'elles rendent
+ * identiquement. Les fichiers d'origine sont archivés dans `design/marque/`.
  */
 
-/** Rapport du fichier source, à tenir pour que rien ne s'étire. */
-const RAPPORT = 2000 / 669
+/** Rapport des fichiers détourés (1868 × 312), à tenir pour que rien ne s'étire. */
+const RAPPORT = 1868 / 312
 
 export function Logo({
   tone = 'light',
-  height = 40,
+  height = 32,
   priority = false,
   className,
   href = '/',
