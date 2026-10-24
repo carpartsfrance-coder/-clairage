@@ -49,7 +49,7 @@ export function Footer() {
           {/* Sous 1024 px la référence met la marque et la baseline côte à côte
               sur toute la largeur. */}
           <div className="col-span-2 flex items-center gap-[22px] lg:col-span-1 lg:block">
-            <Logo tone="dark" />
+            <Logo tone="dark" height={38} />
             <p className="max-w-xs text-[10px] leading-[1.7] text-[#8a989e] lg:mt-[15px] lg:text-[11px] lg:leading-[1.8]">
               {identity.tagline}
             </p>

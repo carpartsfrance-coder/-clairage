@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { PrismaClient } from '@prisma/client'
 import { expediteur, sendEmail } from '../src/lib/email'
+import { identity } from '../src/lib/identity'
 
 /**
  * Journal des e-mails.
@@ -86,7 +87,7 @@ describe('expediteur', () => {
 
   it('ajoute le nom de la marque à une adresse nue', () => {
     process.env.EMAIL_FROM = 'contact@exemple.fr'
-    expect(expediteur()).toEqual({ email: 'contact@exemple.fr', name: 'LUMERA' })
+    expect(expediteur()).toEqual({ email: 'contact@exemple.fr', name: identity.name })
   })
 
   it('conserve le nom déjà écrit, sans le doubler', () => {
@@ -101,11 +102,11 @@ describe('expediteur', () => {
 
   it('retombe sur la marque quand le nom est vide', () => {
     process.env.EMAIL_FROM = '<contact@exemple.fr>'
-    expect(expediteur()).toEqual({ email: 'contact@exemple.fr', name: 'LUMERA' })
+    expect(expediteur()).toEqual({ email: 'contact@exemple.fr', name: identity.name })
   })
 
   it('tolère les espaces superflus', () => {
     process.env.EMAIL_FROM = '  contact@exemple.fr  '
-    expect(expediteur()).toEqual({ email: 'contact@exemple.fr', name: 'LUMERA' })
+    expect(expediteur()).toEqual({ email: 'contact@exemple.fr', name: identity.name })
   })
 })

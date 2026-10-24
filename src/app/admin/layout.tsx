@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { requireStaff, staffName } from '@/lib/admin/guard'
 import { ROLE_LABELS } from '@/lib/admin/permissions'
 import { logout } from '@/lib/actions/auth'
+import { identity } from '@/lib/identity'
 
 /**
  * Mise en page du back-office.
@@ -46,7 +47,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <div className="on-dark bg-ink text-white">
         <div className="flex min-h-14 flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <p className="flex items-center gap-2 text-sm">
-            <span className="font-wordmark text-base font-extrabold tracking-wide">LUMERA</span>
+            <span className="font-wordmark text-base font-extrabold tracking-wide">{identity.name}</span>
             <span aria-hidden className="text-white/40">
               ·
             </span>

@@ -115,7 +115,7 @@ export async function sendEmail(message: EmailMessage): Promise<{ simulated: boo
  * coup d'œil se signale comme indésirable plus vite qu'il ne se lit.
  *
  * `EMAIL_FROM` accepte les deux écritures. Si elle porte déjà un nom, sous la
- * forme `LUMERA <contact@exemple.fr>`, il est repris tel quel : en rajouter un
+ * forme `LEDVROOM <contact@exemple.fr>`, il est repris tel quel : en rajouter un
  * second produirait un en-tête invalide, et c'est le genre de faute qui ne se
  * voit qu'une fois le message parti.
  */

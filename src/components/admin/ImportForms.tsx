@@ -150,7 +150,7 @@ export function MappingForm({
                 Colonne du fichier
               </th>
               <th scope="col" className="px-3 py-2 text-left font-semibold">
-                Champ LUMERA
+                Champ de la boutique
               </th>
             </tr>
           </thead>

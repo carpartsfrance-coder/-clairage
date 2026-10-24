@@ -108,7 +108,7 @@ export async function Header() {
           <MobileNav vehicle={vehicle} sections={sections} />
 
           {/* Le logotype se resserre au défilement, sans jamais devenir illisible. */}
-          <Logo className="shrink-0 transition-transform duration-200 motion-reduce:transition-none group-data-scrolled/header:lg:origin-left group-data-scrolled/header:lg:scale-90" />
+          <Logo priority height={42} className="shrink-0 transition-transform duration-200 motion-reduce:transition-none group-data-scrolled/header:lg:origin-left group-data-scrolled/header:lg:scale-90" />
 
           {/* La grande recherche n'apparaît en ligne qu'à partir de lg. */}
           {/* .header-search : flex 1, plafonné à 550 px au-delà de 1450 px. */}

@@ -1,64 +1,62 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { identity } from '@/lib/identity'
 import { cn } from '@/lib/cn'
 
 /**
- * Logotype : trois barres obliques rouges, le mot-symbole, le point rouge,
- * et la baseline en petites capitales espacées.
+ * Logotype LEDVROOM.
  *
- * Le dessin est vectoriel et hérite des couleurs du thème : la même pièce sert
- * sur fond blanc (header) et sur fond anthracite (footer) via `tone`.
- * `showBaseline` suit les maquettes : baseline visible dans le header final,
- * masquée dans les contextes compacts (mobile, footer, e-mails).
+ * Deux fichiers pour un seul dessin : le mot-symbole est noir sur fond clair,
+ * blanc sur fond sombre, et « LED » reste rouge dans les deux cas. Ce n'est
+ * pas une recolorisation possible en CSS — il faut les deux images, et `tone`
+ * choisit laquelle.
+ *
+ * **La signature « Éclairage auto & moto » est dans l'image.** Elle n'est donc
+ * plus une ligne de texte qu'on affiche ou qu'on masque : d'où la disparition
+ * de `showBaseline`, qui n'avait plus rien à commander. Les emplacements
+ * compacts jouent sur la hauteur, pas sur le contenu.
+ *
+ * La hauteur pilote tout, la largeur suit le rapport 2000 × 669 du fichier.
+ * `priority` sur l'en-tête : le logotype est au-dessus de la ligne de
+ * flottaison, et le laisser arriver en différé fait sauter la mise en page au
+ * premier affichage.
  */
+
+/** Rapport du fichier source, à tenir pour que rien ne s'étire. */
+const RAPPORT = 2000 / 669
+
 export function Logo({
   tone = 'light',
-  showBaseline = true,
+  height = 40,
+  priority = false,
   className,
   href = '/',
 }: {
-  /** `light` = fond clair, texte sombre. `dark` = fond sombre, texte blanc. */
+  /** `light` = fond clair, mot en noir. `dark` = fond sombre, mot en blanc. */
   tone?: 'light' | 'dark'
-  showBaseline?: boolean
+  /** Hauteur rendue, en pixels. La largeur en découle. */
+  height?: number
+  priority?: boolean
   className?: string
   href?: string | null
 }) {
-  const wordColor = tone === 'dark' ? 'text-white' : 'text-slate-ink'
+  const fichier = tone === 'dark' ? 'ledvroom-fond-sombre' : 'ledvroom'
 
   const content = (
-    /*
-      Composition reprise du code de référence (`.shop-brand`, `.brand`,
-      `.brand-mark`, `.brand-baseline`) :
-        — trois barres de 5 px de large, hautes de 15, 24 et 19 px, alignées
-          en bas, écartées de 4 px, inclinées de -19° ;
-        — le mot à 30 px, graisse 900, interlettrage -1.4 px ;
-        — la ligne de signature à 7 px, interlettrage 1.45 px, décalée de
-          38 px pour s'aligner sous la première lettre.
-      Le dessin était auparavant un SVG à trois barres de hauteur égale.
-    */
-    <span className={cn('inline-flex flex-col gap-[7px]', className)}>
-      <span
-        className={cn(
-          'inline-flex items-center text-[27px] leading-none font-black tracking-[-1.4px] whitespace-nowrap lg:text-[30px]',
-          wordColor,
-        )}
-      >
-        <LogoMark className="mr-3" />
-        {identity.name}
-        <span className="text-brand">{identity.wordmarkSuffix}</span>
-      </span>
-
-      {showBaseline ? (
-        <span
-          className={cn(
-            'pl-[36px] text-[6px] leading-none tracking-[1.2px] uppercase lg:pl-[38px] lg:text-[7px] lg:tracking-[1.45px]',
-            tone === 'dark' ? 'text-white/55' : 'text-[#90958c]',
-          )}
-        >
-          {identity.baseline}
-        </span>
-      ) : null}
-    </span>
+    <Image
+      src={`/marque/${fichier}.webp`}
+      /*
+        Le texte alternatif porte le nom et la signature parce que l'image les
+        porte : un lecteur d'écran doit entendre ce qu'un œil lit. Quand le
+        logotype est un lien, c'est lui qui nomme la destination.
+      */
+      alt={`${identity.name} — ${identity.baseline}`}
+      width={Math.round(height * RAPPORT)}
+      height={height}
+      priority={priority}
+      className={cn('h-auto w-auto', className)}
+      style={{ height, width: 'auto' }}
+    />
   )
 
   if (!href) return content
@@ -71,21 +69,19 @@ export function Logo({
 }
 
 /**
- * Les trois barres seules — `.brand-mark` de la référence.
+ * L'icône carrée seule — le « V » sur fond noir.
  *
- * Elles sont dessinées en HTML plutôt qu'en SVG : l'inclinaison et les trois
- * hauteurs se lisent directement, et les barres suivent la couleur de marque
- * sans passer par un `fill`.
+ * Elle sert là où le logotype complet serait illisible : une pastille, une
+ * vignette, un en-tête très étroit. C'est le même dessin que la favicon.
  */
-export function LogoMark({ className }: { className?: string }) {
+export function LogoMark({ size = 32, className }: { size?: number; className?: string }) {
   return (
-    <span
-      aria-hidden="true"
-      className={cn('flex shrink-0 skew-x-[-19deg] items-end gap-[4px]', className)}
-    >
-      <i className="block h-[15px] w-[5px] bg-brand" />
-      <i className="block h-[24px] w-[5px] bg-brand" />
-      <i className="block h-[19px] w-[5px] bg-brand" />
-    </span>
+    <Image
+      src="/marque/icone.webp"
+      alt=""
+      width={size}
+      height={size}
+      className={cn('shrink-0 rounded-[22%]', className)}
+    />
   )
 }

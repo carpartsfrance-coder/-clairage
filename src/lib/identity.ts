@@ -1,10 +1,13 @@
 /**
  * Identité commerciale et coordonnées — point unique de modification.
  *
- * « LUMERA » est un nom de travail. Changer la marque, le domaine, les
- * coordonnées ou les conditions affichées se fait ici (ou, une fois la base en
- * place, depuis la table `Setting` qui reprend les mêmes clés et prend le pas
- * sur ces valeurs par défaut).
+ * La marque est **LEDVROOM**, sur le domaine ledvroom.com. « LUMERA » était le
+ * nom de travail du projet ; il ne subsiste que dans le nom du dépôt et des
+ * ressources Render, qui n'apparaissent nulle part côté client.
+ *
+ * Changer la marque, le domaine, les coordonnées ou les conditions affichées
+ * se fait ici (ou, une fois la base en place, depuis la table `Setting` qui
+ * reprend les mêmes clés et prend le pas sur ces valeurs par défaut).
  *
  * Rien dans ce fichier ne doit affirmer un délai garanti, une certification ou
  * un volume de ventes : les champs correspondants restent vides tant que
@@ -13,9 +16,25 @@
 
 export const identity = {
   /** Nom affiché partout : header, footer, e-mails, documents. */
-  name: 'LUMERA',
-  /** Le point final fait partie du logotype des maquettes. */
-  wordmarkSuffix: '.',
+  name: 'LEDVROOM',
+  /**
+   * Suffixe du mot-symbole écrit en texte (e-mails, documents).
+   *
+   * Vide : le logotype fourni ne porte aucun point final, contrairement aux
+   * maquettes de travail. Le champ demeure pour que les rendus textuels n'aient
+   * pas à savoir s'il y en a un.
+   */
+  wordmarkSuffix: '',
+  /**
+   * Début du nom porté en rouge dans les rendus textuels — « LED » de
+   * LEDVROOM, comme sur le logotype.
+   *
+   * Les e-mails ne peuvent pas poser l'image du logotype : beaucoup de
+   * messageries bloquent les images distantes par défaut, et un en-tête qui
+   * disparaît laisse un message anonyme. Le mot est donc réécrit en texte, et
+   * ce champ dit où le couper pour retrouver les deux couleurs.
+   */
+  wordmarkAccent: 'LED',
   baseline: 'Éclairage auto & moto',
   tagline: 'Le bon éclairage pour votre véhicule, avec les bons accessoires.',
 

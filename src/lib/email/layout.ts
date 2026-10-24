@@ -82,7 +82,7 @@ export function renderHtml(options: {
 <tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid ${LINE};border-radius:8px">
   <tr><td style="padding:20px 24px;border-bottom:1px solid ${LINE}">
-    <span style="font:800 22px/1 Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.5px">${escape(identity.name)}<span style="color:${BRAND}">${escape(identity.wordmarkSuffix)}</span></span>
+    <span style="font:800 22px/1 Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.5px"><span style="color:${BRAND}">${escape(identity.wordmarkAccent)}</span>${escape(identity.name.slice(identity.wordmarkAccent.length))}<span style="color:${BRAND}">${escape(identity.wordmarkSuffix)}</span></span>
     <div style="font:600 10px/1.4 Helvetica,Arial,sans-serif;color:${MUTED};letter-spacing:2px;text-transform:uppercase;padding-top:4px">${escape(identity.baseline)}</div>
   </td></tr>
   <tr><td style="padding:22px 24px 6px">
