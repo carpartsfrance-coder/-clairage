@@ -65,8 +65,7 @@ export const identity = {
     /** SIRET du siège. Le SIREN seul ne désigne pas un établissement. */
     siret: '907 510 838 00028' as string | null,
     vatNumber: 'FR61907510838' as string | null,
-    /** Montant exact à reprendre sur les statuts ou le Kbis. */
-    capital: null as string | null,
+    capital: '1 €' as string | null,
     /** Adresse complète du siège. La ville seule ne suffit pas. */
     address: '50 boulevard Stalingrad, 06300 Nice, France' as string | null,
     city: 'Nice' as string | null,
@@ -77,10 +76,9 @@ export const identity = {
     rcs: 'RCS Nice 907 510 838' as string | null,
     /*
       Pour une personne morale, la loi de 1982 désigne le représentant légal :
-      ici le président de la SASU. Son nom est à confirmer, le registre ne le
-      diffusant pas.
+      ici le président de la SASU.
     */
-    publicationDirector: null as string | null,
+    publicationDirector: 'Killian Belabbes' as string | null,
     hostingProvider: 'Render Services, Inc.',
     /** Hébergeur : adresse et téléphone sont exigés par la LCEN. */
     hostingAddress: '525 Brannan Street, Suite 300, San Francisco, CA 94107, États-Unis' as
