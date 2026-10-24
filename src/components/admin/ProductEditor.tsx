@@ -53,6 +53,7 @@ export function ProductInfoForm({
   metaDescription,
   categories,
   selectedCategoryIds,
+  featured,
 }: {
   productId: string
   tagline: string | null
@@ -60,6 +61,7 @@ export function ProductInfoForm({
   metaDescription: string | null
   categories: Array<{ id: string; name: string; path: string }>
   selectedCategoryIds: string[]
+  featured: boolean
 }) {
   const [state, action, pending] = useActionState<ProductEditState, FormData>(updateProductInfo, {})
 
@@ -116,6 +118,31 @@ export function ProductInfoForm({
             </label>
           ))}
         </div>
+      </fieldset>
+
+      {/*
+        La mise en avant est éditoriale, et elle n'avait aucune commande : le
+        champ existait en base, l'accueil le lisait, mais rien ne permettait de
+        le poser. Seul le jeu de démonstration en cochait — d'où une vitrine
+        vide sur tout environnement installé sans démonstration.
+      */}
+      <fieldset className="mt-5">
+        <legend className="text-sm font-semibold">Mise en avant</legend>
+        <label className="mt-2 flex min-h-9 items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="featured"
+            defaultChecked={featured}
+            className="mt-0.5 size-4 shrink-0"
+          />
+          <span className="min-w-0">
+            Afficher ce produit sur la page d’accueil
+            <span className="mt-0.5 block text-xs text-muted-strong">
+              La vitrine en montre quatre au plus. C’est un choix de mise en avant, pas un
+              classement : rien ici ne dit que le produit se vend mieux qu’un autre.
+            </span>
+          </span>
+        </label>
       </fieldset>
 
       <Button type="submit" className="mt-4" disabled={pending}>

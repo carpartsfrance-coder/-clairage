@@ -198,6 +198,7 @@ export default async function AdminProductPage({ params }: PageProps) {
           metaDescription={product.metaDescription}
           categories={categoriesOptions}
           selectedCategoryIds={product.categories.map((entry) => entry.categoryId)}
+          featured={product.featured}
         />
       </section>
 

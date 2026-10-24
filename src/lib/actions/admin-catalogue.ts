@@ -49,6 +49,8 @@ const schemaInfos = z.object({
   metaDescription: texteOptionnel,
   /** Rubriques retenues, dans l'ordre d'affichage. */
   categoryIds: z.array(z.string()).max(5),
+  /** Mise en avant sur la page d'accueil. */
+  featured: z.boolean(),
 })
 
 export async function updateProductInfo(
@@ -63,9 +65,11 @@ export async function updateProductInfo(
     metaTitle: formData.get('metaTitle') ?? '',
     metaDescription: formData.get('metaDescription') ?? '',
     categoryIds: formData.getAll('categoryIds').filter((valeur): valeur is string => typeof valeur === 'string' && valeur.length > 0),
+    // Une case décochée n'est pas envoyée : son absence vaut « non ».
+    featured: formData.get('featured') !== null,
   })
   if (!parsed.success) return { error: 'Formulaire invalide.' }
-  const { productId, tagline, metaTitle, metaDescription, categoryIds } = parsed.data
+  const { productId, tagline, metaTitle, metaDescription, categoryIds, featured } = parsed.data
 
   const produit = await prisma.product.findUnique({
     where: { id: productId },
@@ -81,7 +85,7 @@ export async function updateProductInfo(
   await prisma.$transaction([
     prisma.product.update({
       where: { id: productId },
-      data: { tagline, metaTitle, metaDescription },
+      data: { tagline, metaTitle, metaDescription, featured },
     }),
     prisma.productCategory.deleteMany({ where: { productId } }),
     ...categoryIds.map((categoryId, index) =>
@@ -91,6 +95,9 @@ export async function updateProductInfo(
 
   revalidatePath(`/admin/catalogue/${productId}`)
   revalidatePath(`/p/${produit.slug}`)
+  // La mise en avant se lit sur l'accueil : sans cette ligne, cocher la case
+  // n'aurait aucun effet visible avant la prochaine régénération.
+  revalidatePath('/')
   return { ok: true, message: 'Fiche enregistrée.' }
 }
 
