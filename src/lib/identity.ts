@@ -38,17 +38,42 @@ export const identity = {
   baseline: 'Éclairage auto & moto',
   tagline: 'Le bon éclairage pour votre véhicule, avec les bons accessoires.',
 
-  /** Renseigner avant toute ouverture commerciale. */
+  /**
+   * Identité légale de l'éditeur.
+   *
+   * Les champs à `null` ne sont **pas affichés** : une mention légale fausse
+   * expose davantage qu'une mention absente, et le numéro d'immatriculation
+   * d'une société ne se devine pas. Les pages légales signalent explicitement
+   * ce qui manque, et `readiness.ts` le compte parmi les points bloquants
+   * tant que ce n'est pas renseigné.
+   *
+   * Les champs obligatoires pour vendre en ligne en France (art. L111-1 du
+   * code de la consommation et art. 6 III de la LCEN) sont : la dénomination,
+   * la forme juridique, le capital, l'adresse du siège, le RCS, le numéro de
+   * TVA intracommunautaire et le directeur de la publication.
+   */
   legal: {
-    companyName: null as string | null,
+    companyName: 'Carpas France' as string | null,
     legalForm: null as string | null,
     siret: null as string | null,
     vatNumber: null as string | null,
     capital: null as string | null,
+    /** Adresse complète du siège. La ville seule ne suffit pas. */
     address: null as string | null,
+    city: 'Nice' as string | null,
     rcs: null as string | null,
     publicationDirector: null as string | null,
     hostingProvider: 'Render Services, Inc.',
+    /** Hébergeur : adresse et téléphone sont exigés par la LCEN. */
+    hostingAddress: '525 Brannan Street, Suite 300, San Francisco, CA 94107, États-Unis' as
+      | string
+      | null,
+    /**
+     * Médiateur de la consommation. Obligatoire pour un vendeur en ligne
+     * (art. L612-1) : l'adhésion à un médiateur agréé est à souscrire, et son
+     * nom ne s'invente pas.
+     */
+    mediator: null as { name: string; url: string; address: string } | null,
   },
 
   contact: {
