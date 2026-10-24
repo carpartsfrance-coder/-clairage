@@ -1,5 +1,11 @@
 import type { Metadata } from 'next'
-import { getFeaturedProducts, getHomeBlocks, getHomeFaq, getUniverses } from '@/lib/queries/home'
+import {
+  VITRINE_RUBRIQUES,
+  getFeaturedProducts,
+  getHomeBlocks,
+  getHomeFaq,
+  getUniverses,
+} from '@/lib/queries/home'
 import { getSelectedVehicle } from '@/lib/session'
 import { HeroSection } from '@/components/home/HeroSection'
 import { VehicleBand } from '@/components/home/VehicleBand'
@@ -52,12 +58,15 @@ export default async function HomePage() {
         content={blocks.products}
         products={products}
         shortcut={{ label: 'Trouver pour mon véhicule', href: '#choisir-mon-vehicule' }}
+        /* Les rubriques viennent de la requête qui alimente la vitrine : les
+           raccourcis affichés et les familles où le repli va puiser sont donc
+           forcément les mêmes. */
         filters={[
           { label: 'Tout découvrir', href: '/c' },
-          { label: 'Phares LED', href: '/c/phares-led' },
-          { label: 'Intérieur', href: '/c/interieur' },
-          { label: 'Plaque & recul', href: '/c/plaque-recul' },
-          { label: 'Xénon', href: '/c/xenon' },
+          ...VITRINE_RUBRIQUES.map((rubrique) => ({
+            label: rubrique.label,
+            href: `/c/${rubrique.slug}`,
+          })),
         ]}
       />
       <MethodSection content={blocks.method} />
