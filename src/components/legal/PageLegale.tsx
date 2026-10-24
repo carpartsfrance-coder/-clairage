@@ -98,9 +98,13 @@ export function AvertissementIncomplet({ manquants }: { manquants: string[] }) {
     <aside className="mb-8 rounded-lg border border-[#e9c4c4] bg-[#fdf4f4] p-4">
       <p className="text-[13px] font-bold text-[#a3292c]">Ces mentions sont incomplètes.</p>
       <p className="mt-1.5 text-[12px] leading-[1.7] text-[#6b4a4a]">
-        {manquants.length === 1 ? 'Une information obligatoire manque' : `${manquants.length} informations obligatoires manquent`}{' '}
-        : {manquants.join(', ')}. Elles sont exigées pour vendre en ligne en France. La boutique ne
-        doit pas ouvrir commercialement avant qu'elles ne soient renseignées.
+        {`${
+          manquants.length === 1
+            ? 'Une information obligatoire manque'
+            : `${manquants.length} informations obligatoires manquent`
+        } : ${manquants.join(', ')}.`}{' '}
+        {manquants.length === 1 ? 'Elle est exigée' : 'Elles sont exigées'} pour vendre en ligne en
+        France. La boutique ne doit pas ouvrir commercialement avant que ce soit renseigné.
       </p>
     </aside>
   )

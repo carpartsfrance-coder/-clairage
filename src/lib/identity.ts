@@ -53,15 +53,33 @@ export const identity = {
    * TVA intracommunautaire et le directeur de la publication.
    */
   legal: {
-    companyName: 'Carpas France' as string | null,
-    legalForm: null as string | null,
-    siret: null as string | null,
-    vatNumber: null as string | null,
+    /*
+      Vérifié au répertoire Sirene le 24 octobre 2026, à partir du SIREN
+      907 510 838 : la dénomination exacte est CAR PARTS FRANCE, en trois mots.
+      L'adresse du siège et le dirigeant y sont marqués « non-diffusible » —
+      la société a exercé son droit d'opposition — et proviennent donc de
+      l'exploitant, pas du registre.
+    */
+    companyName: 'CAR PARTS FRANCE' as string | null,
+    legalForm: 'SASU — société par actions simplifiée à associé unique' as string | null,
+    /** SIRET du siège. Le SIREN seul ne désigne pas un établissement. */
+    siret: '907 510 838 00028' as string | null,
+    vatNumber: 'FR61907510838' as string | null,
+    /** Montant exact à reprendre sur les statuts ou le Kbis. */
     capital: null as string | null,
     /** Adresse complète du siège. La ville seule ne suffit pas. */
-    address: null as string | null,
+    address: '50 boulevard Stalingrad, 06300 Nice, France' as string | null,
     city: 'Nice' as string | null,
-    rcs: null as string | null,
+    /*
+      Le numéro d'immatriculation au RCS est le SIREN ; ce qui le complète est
+      la ville du greffe, celle du siège — Nice.
+    */
+    rcs: 'RCS Nice 907 510 838' as string | null,
+    /*
+      Pour une personne morale, la loi de 1982 désigne le représentant légal :
+      ici le président de la SASU. Son nom est à confirmer, le registre ne le
+      diffusant pas.
+    */
     publicationDirector: null as string | null,
     hostingProvider: 'Render Services, Inc.',
     /** Hébergeur : adresse et téléphone sont exigés par la LCEN. */
