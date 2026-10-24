@@ -89,7 +89,11 @@ export const identity = {
      * (art. L612-1) : l'adhésion à un médiateur agréé est à souscrire, et son
      * nom ne s'invente pas.
      */
-    mediator: null as { name: string; url: string; address: string } | null,
+    mediator: {
+      name: "Fédération Nationale de l'Automobile (FNA)",
+      address: 'Tour Kupka B, 16 rue Hoche, 92906 Paris La Défense Cedex',
+      url: 'https://www.fna.fr',
+    } as { name: string; url: string; address: string } | null,
   },
 
   contact: {

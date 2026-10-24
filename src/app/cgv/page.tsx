@@ -283,7 +283,27 @@ export default function Page() {
         </p>
       </Article>
 
-      <Article numero={11} id="droit" titre="Droit applicable">
+      <Article numero={11} id="bloctel" titre="Prospection téléphonique">
+        <p>
+          Le numéro de téléphone demandé lors de la commande sert au suivi de la livraison et à
+          nous permettre de vous joindre en cas de difficulté sur votre commande. Il est facultatif.
+        </p>
+        <p>
+          Conformément à l'article L223-1 du code de la consommation, vous pouvez vous inscrire
+          gratuitement sur la liste d'opposition au démarchage téléphonique à l'adresse{' '}
+          <a
+            href="https://www.bloctel.gouv.fr"
+            className="underline underline-offset-2"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            bloctel.gouv.fr
+          </a>
+          . Cette opposition est respectée.
+        </p>
+      </Article>
+
+      <Article numero={12} id="droit" titre="Droit applicable">
         <p>
           Les présentes conditions sont soumises au droit français. En cas de litige, et à défaut de
           résolution amiable, les tribunaux français sont compétents selon les règles de droit
