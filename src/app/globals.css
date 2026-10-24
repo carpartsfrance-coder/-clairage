@@ -259,3 +259,80 @@
     top: 1rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Plancher de lisibilité et de préhension, sous le point de rupture
+   -------------------------------------------------------------------------- */
+
+/*
+  La maquette a été transcrite au pixel depuis un écran large, où une mention
+  de 6 ou 7 px se lit comme une ligne de bas de page. Sur un téléphone de
+  390 px, elle ne se lit plus du tout — mesuré sur la production : 43 textes
+  sous 12 px sur l'accueil, 32 sur la fiche produit, le plus petit à 6 px.
+
+  Les tailles minuscules sont posées en valeurs arbitraires Tailwind, 382 fois
+  dans 50 fichiers. Les reprendre une à une serait long et surtout fragile :
+  la prochaine section écrite rouvrirait le problème. Le plancher est donc
+  central, et il ne s'applique QUE sous `--breakpoint-fiche`. Au-dessus, le
+  dessin d'origine est intact.
+
+  Ces règles redéfinissent des utilitaires Tailwind : elles doivent donc venir
+  APRÈS eux dans la feuille, ce qui est le cas ici — c'est la fin du fichier,
+  et à spécificité égale le dernier l'emporte. Déplacer ce bloc plus haut le
+  rendrait inopérant.
+*/
+@media (width < 801px) {
+  /*
+    Mentions et surtitres. La liste est exhaustive, relevée dans le code :
+    5, 6, 6.5, 7 et 8 px, plus `text-[0.7rem]` qui vaut 11,2 px. Une taille
+    oubliée resterait illisible sans que rien ne le signale — c'est ce qui
+    s'est produit avec 5 px au premier essai.
+  */
+  .text-\[5px\],
+  .text-\[6px\],
+  .text-\[6\.5px\],
+  .text-\[7px\],
+  .text-\[8px\],
+  .text-\[9px\] {
+    font-size: 11px;
+  }
+
+  /*
+    Texte courant. 11 px reste sous le confort admis ; 12 px est le plancher
+    au-dessous duquel iOS propose de zoomer, ce qui est le signe que le
+    système lui-même juge la taille insuffisante.
+  */
+  .text-\[10px\],
+  .text-\[11px\],
+  .text-\[0\.7rem\] {
+    font-size: 12px;
+  }
+
+  /*
+    Préhension. Une cible de moins de 44 px se rate au pouce — Apple comme
+    Google retiennent ce seuil, et la production en comptait 37 sur 51 à
+    l'accueil, dont le bouton du panier à 33 px.
+
+    `touch-cible` agrandit la ZONE TACTILE sans toucher au dessin : la pastille
+    reste de sa taille, c'est sa surface sensible qui s'étend autour. Poser un
+    `min-height` à la place déplacerait tout ce qui l'entoure.
+
+    Les liens à l'intérieur d'un paragraphe ne sont pas concernés : les
+    agrandir hacherait l'interligne, et les référentiels d'accessibilité les
+    exemptent précisément pour cette raison.
+  */
+  .touch-cible {
+    position: relative;
+  }
+
+  .touch-cible::after {
+    content: '';
+    position: absolute;
+    inset: 50% 50%;
+    min-width: 44px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
+    translate: -50% -50%;
+  }
+}

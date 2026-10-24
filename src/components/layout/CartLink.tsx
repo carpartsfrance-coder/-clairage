@@ -21,7 +21,7 @@ export function CartLink({ itemCount }: { itemCount: number }) {
     <Link
       href="/panier"
       aria-label={label}
-      className="flex min-h-[38px] items-center gap-[9px] rounded-sm px-1 transition-colors hover:text-brand"
+      className="touch-cible flex min-h-[38px] items-center gap-[9px] rounded-sm px-1 transition-colors hover:text-brand"
     >
       <span className="relative flex shrink-0">
         <IconCart className="size-[25px] text-[#333d2a]" strokeWidth={1.45} />

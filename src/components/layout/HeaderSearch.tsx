@@ -139,7 +139,7 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
           <button
             type="submit"
             aria-label="Lancer la recherche"
-            className="mr-[5px] grid h-[33px] min-w-[35px] shrink-0 place-items-center rounded-[5px] bg-brand text-white transition-colors hover:bg-brand-dark"
+            className="touch-cible mr-[5px] grid h-[33px] min-w-[35px] shrink-0 place-items-center rounded-[5px] bg-brand text-white transition-colors hover:bg-brand-dark"
           >
             <IconArrowRight className="size-[17px]" />
           </button>

@@ -75,7 +75,7 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
                   <Link
                     href={filter.href}
                     className={cn(
-                      'inline-flex items-center rounded-full px-[11px] py-[6px] text-[9px] whitespace-nowrap transition-colors lg:px-[14px] lg:py-[7px] lg:text-[10px]',
+                      'touch-cible inline-flex items-center rounded-full px-[11px] py-[6px] text-[9px] whitespace-nowrap transition-colors lg:px-[14px] lg:py-[7px] lg:text-[10px]',
                       index === 0
                         ? 'border border-[#282e23] bg-[#282e23] text-white'
                         : 'border border-[#e1e5d9] text-[#737d68] hover:border-[#282e23] hover:text-[#282e23]',
