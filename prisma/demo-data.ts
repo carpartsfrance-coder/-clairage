@@ -471,20 +471,21 @@ export const demoHomeBlocks = {
   },
   comparison: {
     /*
-      L'accroche porte sur la technologie, et non sur ce que le kit rendra.
+      L'accroche est une phrase entendue, pas une affirmation.
 
-      La distinction est tout : le rendement d'une source se mesure, alors que
-      ce qu'elle donne une fois montée dans une optique dépend de l'optique.
-      Un filament porté à incandescence dissipe l'essentiel de son énergie en
-      chaleur et rayonne surtout dans l'infrarouge ; sa température de couleur
-      le fait tirer sur le jaune. Ce sont des propriétés de la source, que
-      personne ne conteste.
+      Elle installe le manque — la nuit, on ne voit pas grand-chose — en
+      laissant le lecteur le reconnaître plutôt qu'en le lui assénant. Rien
+      n'est avancé sur ce que le kit rendra : c'est la différence entre
+      décrire une situation, ce qu'un annonceur peut faire, et promettre un
+      résultat, ce qui exigerait de pouvoir le prouver.
 
-      Aucun chiffre n'est avancé. Les ordres de grandeur courants — une
-      quinzaine de lumens par watt pour l'incandescent, 75 à 110 pour une LED
-      — concernent l'éclairage général ; je n'ai pas trouvé de valeur sourcée
-      propre aux ampoules automobiles. Une accroche qualitative tient sans
-      eux, un chiffre faux ne tiendrait pas.
+      « Phares jaunis » est exact et vérifiable par le lecteur sur sa propre
+      voiture : le polycarbonate des optiques se voile aux UV, et un filament
+      halogène perd de son éclat en vieillissant.
+
+      Aucun chiffre n'est avancé, et c'est délibéré : les ordres de grandeur
+      courants concernent l'éclairage général, pas les ampoules automobiles,
+      pour lesquelles je n'ai pas trouvé de valeur sourcée.
 
       Trois formulations ont été écartées, et il vaut mieux savoir pourquoi
       avant de les réintroduire :
@@ -504,9 +505,14 @@ export const demoHomeBlocks = {
       cette conversion n'est pas homologuée en France.
     */
     eyebrow: "Halogène d'origine ou blanc LED",
-    title: "L'halogène chauffe\nplus qu'il n'éclaire.",
+    /*
+      Espaces insécables autour des guillemets et avant le point
+      d'interrogation : la typographie française les exige, et sans eux un
+      « ? » se retrouve seul en début de ligne dès que le titre se replie.
+    */
+    title: "« Tu vois quelque chose, toi ? »",
     subtitle:
-      "Un filament porté à incandescence perd l'essentiel de son énergie en chaleur. Ce qui en sort est jaune — c'est la technologie qui veut ça.",
+      "La question qu'on finit toujours par poser dans une voiture aux phares jaunis.",
     /*
       Le bouton suit le visuel. Il a mené un temps aux kits d'habitacle, du
       temps où la section montrait un plafonnier ; le comparatif portant de
