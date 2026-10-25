@@ -37,6 +37,15 @@
   --color-brand-darker: #9e1111;
   --color-brand-soft: #fdecec;
   --color-brand-border: #f6c9c9;
+  /*
+    L'accent de marque sur fond sombre. Le rouge franc n'y tient que 3,43:1 —
+    sous le seuil de 4,5. Éclairci, il garde sa teinte et atteint 5,64:1 sur
+    le #1c2024 des bandeaux. À employer partout où un accent rouge se pose sur
+    du sombre, plutôt que d'inventer un ton sur place : c'est ainsi qu'étaient
+    apparus les saumons #e76b5d et #d89b8f, seules couleurs du site à ne venir
+    d'aucun jeton.
+  */
+  --color-brand-on-dark: #ef7070;
 
   /* --- Noir et anthracite ------------------------------------------------ */
   --color-ink: #18191b; /* --ink : texte principal et bandeaux sombres */

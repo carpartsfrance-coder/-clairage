@@ -481,13 +481,38 @@ export const demoHomeBlocks = {
       installée sans `--demo` : le visiteur qui cliquait tombait sur un 404,
       depuis la page d'accueil. Une rubrique existe dès que la taxonomie est
       semée.
+
+      Il mène désormais à l'habitacle, pour suivre le visuel. Il renvoyait aux
+      kits de phares alors que le bandeau d'ouverture, deux écrans plus haut,
+      y mène déjà.
     */
-    ctaLabel: 'Voir les kits LED pour phares',
-    ctaHref: '/c/phares-led',
-    image: 'car-night.png',
+    ctaLabel: "Voir les kits LED pour l'habitacle",
+    ctaHref: '/c/interieur',
+    /*
+      L'habitacle, et non les phares.
+
+      Ce bloc a montré tour à tour une voiture dont les deux phares étaient
+      blancs sous des étiquettes « Jaune » et « Blanc LED », puis un vrai
+      comparatif halogène / LED — mais découpé dans la photographie du bandeau
+      d'ouverture : même voiture, même nuit, même avant de capot. Le hero
+      faisant déjà cette démonstration, la section la répétait au lieu
+      d'ajouter quelque chose, et elle le faisait moins bien puisqu'elle n'en
+      montrait qu'un détail recadré.
+
+      L'habitacle est une autre scène et un autre argument : l'éclairage ne
+      s'arrête pas aux phares, et c'est là que le conducteur passe son temps.
+
+      La bande est prise par le HAUT de l'image d'origine. Le plafonnier
+      allumé — le sujet — se trouve à 6 % de sa hauteur ; un cadre panoramique
+      centré l'aurait purement et simplement coupé.
+
+      Il n'y a pas d'avant / après ici, et c'est faute de matière : aucune vue
+      d'habitacle en éclairage d'origine n'existe au dépôt. Fabriquer un
+      « avant » en assombrissant celle-ci reviendrait à inventer la différence
+      qu'on prétend montrer.
+    */
+    image: '/visuels/habitacle-blanc.webp',
     caption: 'Simulation de rendu — illustration.',
-    leftLabel: 'Jaune',
-    rightLabel: 'Blanc LED',
   },
   products: {
     eyebrow: 'Les essentiels pour passer au blanc',
