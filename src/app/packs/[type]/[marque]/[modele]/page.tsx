@@ -87,7 +87,7 @@ export default async function PacksModelePage({ params }: PageProps) {
       <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         Éclairage {makeName} {model.name}
       </h1>
-      <p className="mt-2 max-w-[580px] text-[11px] leading-[1.8] text-[#7b8074]">
+      <p className="mt-2 max-w-[580px] text-[11px] leading-[1.8] text-[#7a7a7a]">
         Choisissez la période de fabrication qui correspond à votre véhicule. Un restylage change
         souvent le bloc optique : deux périodes du même modèle n&apos;acceptent pas forcément les
         mêmes pièces.
@@ -98,7 +98,7 @@ export default async function PacksModelePage({ params }: PageProps) {
           <li key={generation.slug}>
             <Link
               href={`/packs/${type}/${marque}/${modele}/${generation.slug}`}
-              className="flex min-h-[72px] items-center justify-between gap-4 rounded-[9px] border border-[#e3e6dc] px-4 py-3 transition-colors hover:border-slate-ink"
+              className="flex min-h-[72px] items-center justify-between gap-4 rounded-[9px] border border-[#e1e1e1] px-4 py-3 transition-colors hover:border-slate-ink"
             >
               <GenerationThumb photo={generation.photo} />
               <span className="min-w-0 flex-1">
@@ -106,7 +106,7 @@ export default async function PacksModelePage({ params }: PageProps) {
                   {generation.name}
                   <span className="ml-2 font-normal text-[#686c67]">{generation.years}</span>
                 </span>
-                <span className="mt-0.5 block text-[9px] text-[#838c77]">
+                <span className="mt-0.5 block text-[9px] text-[#828282]">
                   {generation.phase ? `${generation.phase} · ` : null}
                   {generation.hasFitments
                     ? generation.configurationCount > 1

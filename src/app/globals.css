@@ -17,17 +17,26 @@
     Valeurs reprises du code réel de la maquette v3
     (`lumera-homepage-reference/reference-site/styles.css`, variables `:root`).
 
-    Le rouge y vaut #c82e28, et non le #ec2525 que portaient les anciens PNG.
-    Les deux sources se contredisaient ; le cahier des charges demandait
-    d'ailleurs « un rouge proche de #C82E28 ». Le code publié tranche, et c'est
-    lui qui fait foi pour cette intégration.
+    **Le rouge a été ouvert.** La maquette donnait #c82e28, une brique à 67 %
+    de saturation ; le logotype fourni est plus sombre encore, #a52d26 à 40 %
+    de clarté. L'exploitant a demandé un rouge franc.
+
+    #e11d1d en est la limite utile, et ce n'est pas un choix de goût : au-delà,
+    le texte blanc posé dessus passe sous les 4,5:1 que l'accessibilité exige
+    pour du texte courant. Mesuré — #e8232a tombe à 4,46:1, #ec2525 à 4,32:1,
+    et un rouge pur #eb0000 ne regagne rien (4,63:1) en perdant toute nuance.
+    #e11d1d tient 4,78:1 à 77 % de saturation : c'est le plus vif qui reste
+    lisible.
+
+    Le bouton principal porte du blanc en 13 px gras, ce qui ne compte PAS
+    comme du gros texte — le seuil de 3:1 ne s'y applique pas.
   */
   /* --- Couleurs de marque ------------------------------------------------ */
-  --color-brand: #c82e28; /* --red de la référence */
-  --color-brand-dark: #ad241f; /* --red-dark */
-  --color-brand-darker: #8f1d19;
-  --color-brand-soft: #fbeceb;
-  --color-brand-border: #f0c9c7;
+  --color-brand: #e11d1d; /* rouge franc, 4,78:1 sur blanc */
+  --color-brand-dark: #c21616; /* survol */
+  --color-brand-darker: #9e1111;
+  --color-brand-soft: #fdecec;
+  --color-brand-border: #f6c9c9;
 
   /* --- Noir et anthracite ------------------------------------------------ */
   --color-ink: #18191b; /* --ink : texte principal et bandeaux sombres */
@@ -40,12 +49,12 @@
   --color-slate-ink: #18191b;
   --color-muted: #707276; /* --muted */
   --color-muted-strong: #55585b;
-  --color-line: #e5e5e2; /* --line */
-  --color-line-strong: #c7c9c0;
+  --color-line: #e3e3e3; /* --line */
+  --color-line-strong: #c4c4c4;
   --color-surface: #ffffff;
-  --color-surface-soft: #f7f8f4; /* bandeau de réassurance */
-  --color-surface-paper: #f5f5f2; /* --paper */
-  --color-surface-muted: #f7f8f5; /* champ de recherche du header */
+  --color-surface-soft: #f6f6f6; /* bandeau de réassurance */
+  --color-surface-paper: #f3f3f3; /* --paper */
+  --color-surface-muted: #f6f6f6; /* champ de recherche du header */
 
   /* --- Statuts ----------------------------------------------------------- */
   /*

@@ -62,7 +62,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
           <h2 id="contact-formulaire" className="text-[14px] font-bold">
             Votre demande
           </h2>
-          <p className="mt-2 mb-5 max-w-[580px] text-[11px] leading-[1.8] text-[#7b8074]">
+          <p className="mt-2 mb-5 max-w-[580px] text-[11px] leading-[1.8] text-[#7a7a7a]">
             Dites-nous ce qu&apos;il vous faut : nous ouvrons une demande, elle reçoit une
             référence, et vous la gardez pour la suite.
           </p>
@@ -75,12 +75,12 @@ export default async function ContactPage({ searchParams }: PageProps) {
         </section>
 
         <section aria-labelledby="contact-cadre" className="fiche:w-[370px] fiche:shrink-0">
-          <div className="rounded-[9px] border border-[#e2e3dc] p-5">
+          <div className="rounded-[9px] border border-[#e0e0e0] p-5">
             <h2 id="contact-cadre" className="text-[14px] font-bold">
               Ce qui se passe ensuite
             </h2>
 
-            <p className="mt-3 text-[11px] leading-[1.8] text-[#7b8074]">
+            <p className="mt-3 text-[11px] leading-[1.8] text-[#7a7a7a]">
               Votre demande est enregistrée et apparaît dans la file de l&apos;équipe avec sa
               référence. L&apos;envoi automatique d&apos;e-mails n&apos;est pas encore activé sur
               cet environnement : vous ne recevrez pas d&apos;accusé de réception, et aucun délai
@@ -94,7 +94,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
                     key={item.label}
                     className="flex items-baseline justify-between gap-4 border-t border-line py-3"
                   >
-                    <dt className="text-[#818775]">{item.label}</dt>
+                    <dt className="text-[#7e7e7e]">{item.label}</dt>
                     <dd className="min-w-0 text-right font-semibold">
                       {item.href ? (
                         <a href={item.href} className="underline-offset-[3px] hover:underline">
@@ -110,14 +110,14 @@ export default async function ContactPage({ searchParams }: PageProps) {
             ) : (
               /* Pas de téléphone ni d'adresse publiée : on le dit, plutôt que
                  d'afficher un canal qui ne mènerait nulle part. */
-              <p className="mt-3 text-[10px] leading-[1.7] text-[#8d9483]">
+              <p className="mt-3 text-[10px] leading-[1.7] text-[#8c8c8c]">
                 Aucun numéro de téléphone ni adresse e-mail d&apos;assistance n&apos;est publié
                 pour le moment : ce formulaire est la voie d&apos;entrée.
               </p>
             )}
 
             <h3 className="mt-6 text-[12px] font-bold">Plus rapide que d&apos;écrire</h3>
-            <ul className="mt-2 flex flex-col gap-2 text-[11px] leading-[1.7] text-[#7b8074]">
+            <ul className="mt-2 flex flex-col gap-2 text-[11px] leading-[1.7] text-[#7a7a7a]">
               <li>
                 <Link href="/suivi" className="font-semibold text-ink hover:underline">
                   Suivre une commande

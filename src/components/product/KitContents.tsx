@@ -43,7 +43,7 @@ export function KitContents({
   */
   if (composants.length === 0) {
     return (
-      <p className="max-w-[580px] text-[11px] leading-[1.8] text-[#7b8074]">
+      <p className="max-w-[580px] text-[11px] leading-[1.8] text-[#7a7a7a]">
         <strong className="text-slate-ink">{selected.name}</strong> — ce conditionnement ne
         contient que le produit lui-même, sans accessoire de montage. Ce que votre véhicule exige
         en plus est indiqué dans le bloc d&apos;achat et à l&apos;étape Installation.
@@ -86,7 +86,7 @@ export function KitContents({
             >
               <span
                 aria-hidden="true"
-                className="mt-[3px] self-start text-[11px] tracking-[1px] text-[#a4a49d]"
+                className="mt-[3px] self-start text-[11px] tracking-[1px] text-[#a0a0a0]"
               >
                 {String(index + 1).padStart(2, '0')}
               </span>
@@ -101,7 +101,7 @@ export function KitContents({
                     {composant.productName}
                   </Link>
                 </strong>
-                <p className="my-[3px] text-[10px] text-[#85857e]">
+                <p className="my-[3px] text-[10px] text-[#828282]">
                   {composant.variantName}
                   {!composant.required ? ' · facultatif' : null}
                 </p>
@@ -118,7 +118,7 @@ export function KitContents({
           Le chiffre que la référence n'affiche pas, et qui change la lecture :
           ce que coûtent les mêmes pièces achetées séparément.
         */}
-        <p className="flex items-baseline justify-between gap-4 border-b border-line py-[15px] text-[10px] text-[#85857e] fiche:py-[17px]">
+        <p className="flex items-baseline justify-between gap-4 border-b border-line py-[15px] text-[10px] text-[#828282] fiche:py-[17px]">
           <span>
             Les mêmes pièces achetées séparément
             {economie > 0 ? ` — soit ${formatPrice(economie)} de plus` : null}
@@ -138,7 +138,7 @@ export function KitContents({
             <strong className="block text-[10px]">
               Et vous n&apos;êtes pas seul pour le montage.
             </strong>
-            <small className="mt-0.5 block text-[9px] text-[#85867e]">
+            <small className="mt-0.5 block text-[9px] text-[#828282]">
               Guides de montage et assistance avant comme après l&apos;achat.
             </small>
           </span>

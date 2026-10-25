@@ -334,7 +334,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         {/* ---------------- .assurance-strip ---------------- */}
         <section
           aria-label="Nos engagements"
-          className="border-t border-[#edf0e7] border-b-[#e9eee0] bg-[#f6f7f3]"
+          className="border-t border-[#ececec] border-b-[#e9eee0] bg-[#f5f5f5]"
         >
           <div className="container-page grid gap-[17px] py-[21px] fiche:flex fiche:min-h-[87px] fiche:items-center fiche:justify-between fiche:gap-5 fiche:py-0 min-[1101px]:gap-[25px]">
             {[
@@ -356,14 +356,14 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             ].map(({ Icon, title, text }) => (
               <div key={title} className="flex items-center gap-3 min-[1101px]:gap-3.5">
                 <Icon
-                  className="size-[23px] shrink-0 text-[#647951] min-[1101px]:size-[25px]"
+                  className="size-[23px] shrink-0 text-[#656565] min-[1101px]:size-[25px]"
                   strokeWidth={1.3}
                 />
                 <span className="min-w-0">
                   <strong className="block text-[11px] font-semibold min-[1450px]:text-[12px]">
                     {title}
                   </strong>
-                  <small className="mt-[2px] block text-[10px] text-[#8a957e] fiche:mt-[3px] min-[1101px]:text-[9px] min-[1281px]:text-[10px] min-[1450px]:text-[11px] min-[1450px]:text-[#7c8c6c]">
+                  <small className="mt-[2px] block text-[10px] text-[#8a8a8a] fiche:mt-[3px] min-[1101px]:text-[9px] min-[1281px]:text-[10px] min-[1450px]:text-[11px] min-[1450px]:text-[#7c7c7c]">
                     {text}
                   </small>
                 </span>
@@ -403,7 +403,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 {kitVariant ? 'Ouvrez. Installez. Profitez.' : 'Caractéristiques'}
               </h2>
             </div>
-            <p className="mt-[11px] text-[10px] leading-[1.7] text-[#858580] fiche:mt-0 fiche:text-right fiche:text-[11px]">
+            <p className="mt-[11px] text-[10px] leading-[1.7] text-[#828282] fiche:mt-0 fiche:text-right fiche:text-[11px]">
               Ce que réunit le conditionnement
               <span className="hidden fiche:inline">
                 <br />
@@ -426,7 +426,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                     key={spec.label}
                     className="flex gap-4 border-b border-line py-2.5 text-[11px]"
                   >
-                    <dt className="w-40 shrink-0 text-[#85857e]">{spec.label}</dt>
+                    <dt className="w-40 shrink-0 text-[#828282]">{spec.label}</dt>
                     <dd className="font-semibold">{spec.value}</dd>
                   </div>
                 ))}
@@ -472,7 +472,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         <section
           id="montage"
           aria-labelledby="titre-montage"
-          className="scroll-mt-32 border-y border-[#eeeee9] bg-surface-paper py-[35px] fiche:py-[50px]"
+          className="scroll-mt-32 border-y border-[#ececec] bg-surface-paper py-[35px] fiche:py-[50px]"
         >
           {/* .install-layout : texte à gauche (.85fr), étapes à droite. */}
           <div className="container-page block fiche:grid fiche:grid-cols-[0.85fr_1.15fr] fiche:items-center fiche:gap-[40px] min-[1101px]:gap-[76px]">
@@ -488,12 +488,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 <br />
                 bien accompagné.
               </h2>
-              <p className="max-w-full text-[11px] leading-[1.8] text-[#787a73] fiche:max-w-[310px]">
+              <p className="max-w-full text-[11px] leading-[1.8] text-[#767676] fiche:max-w-[310px]">
                 Retrouvez les étapes et les points à vérifier avant de commencer.
               </p>
 
               {/* .level-pill : le niveau réellement enregistré, ou son absence. */}
-              <p className="mt-3.5 flex items-center gap-2 text-[9px] text-[#62655f] fiche:mt-[18px]">
+              <p className="mt-3.5 flex items-center gap-2 text-[9px] text-[#626262] fiche:mt-[18px]">
                 <span aria-hidden="true" className="flex items-end gap-0.5">
                   {[6, 9, 12].map((hauteur, index) => (
                     <i
@@ -501,7 +501,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                       style={{ height: `${hauteur}px` }}
                       className={cn(
                         'block w-1 rounded-[1px]',
-                        index < barres ? 'bg-[#363e34]' : 'bg-[#d5d7d0]',
+                        index < barres ? 'bg-[#363e34]' : 'bg-[#d3d3d3]',
                       )}
                     />
                   ))}
@@ -532,10 +532,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                       {index < product.guides.length - 1 ? (
                         <span
                           aria-hidden="true"
-                          className="absolute top-8 bottom-0 left-[15px] w-px bg-[#d9dcd3]"
+                          className="absolute top-8 bottom-0 left-[15px] w-px bg-[#d8d8d8]"
                         />
                       ) : null}
-                      <span className="relative grid size-[31px] shrink-0 place-items-center rounded-full border border-[#c9ccc1] bg-surface-paper text-[11px]">
+                      <span className="relative grid size-[31px] shrink-0 place-items-center rounded-full border border-[#c6c6c6] bg-surface-paper text-[11px]">
                         {index + 1}
                       </span>
                       <div className="min-w-0">
@@ -547,7 +547,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                             {guide.title}
                           </Link>
                         </h3>
-                        <p className="max-w-[360px] text-[10px] text-[#7e8078]">
+                        <p className="max-w-[360px] text-[10px] text-[#7c7c7c]">
                           {guide.durationMinutes
                             ? `Environ ${guide.durationMinutes} minutes.`
                             : 'Durée non indiquée.'}
@@ -568,12 +568,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               {/* .help-inline */}
               <Link
                 href="/contact"
-                className="mt-4 flex w-full items-center gap-3 rounded-[7px] border border-[#e5e6df] bg-white px-3 py-3.5 text-[10px] text-[#777b70] hover:border-slate-ink fiche:px-4"
+                className="mt-4 flex w-full items-center gap-3 rounded-[7px] border border-[#e2e2e2] bg-white px-3 py-3.5 text-[10px] text-[#767676] hover:border-slate-ink fiche:px-4"
               >
-                <IconHeadset className="size-[19px] shrink-0 text-[#383e34]" />
+                <IconHeadset className="size-[19px] shrink-0 text-[#393939]" />
                 <span>
                   Un doute à une étape ?
-                  <strong className="ml-0 block font-semibold text-[#30382c] fiche:ml-[3px] fiche:inline">
+                  <strong className="ml-0 block font-semibold text-[#323232] fiche:ml-[3px] fiche:inline">
                     Demandez-nous conseil ↗
                   </strong>
                 </span>
@@ -602,7 +602,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   Le blanc, jusque dans les détails.
                 </h2>
               </div>
-              <p className="mt-[11px] text-[10px] leading-[1.7] text-[#858580] fiche:mt-0 fiche:text-right fiche:text-[11px]">
+              <p className="mt-[11px] text-[10px] leading-[1.7] text-[#828282] fiche:mt-0 fiche:text-right fiche:text-[11px]">
                 Des compléments facultatifs.
                 <span className="hidden fiche:inline">
                   <br />
@@ -616,7 +616,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               vehicleSelected={Boolean(vehicle)}
             />
 
-            <p className="mt-3 text-[8px] leading-[1.7] text-[#999b92]">
+            <p className="mt-3 text-[8px] leading-[1.7] text-[#969696]">
               Les adaptateurs et décodeurs exigés par votre kit ne sont pas ici : ils figurent dans
               le bloc d&apos;achat, avec le conditionnement qui les contient.
             </p>
@@ -644,7 +644,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               </span>{' '}
               passer au blanc.
             </h2>
-            <p className="mt-3 mb-[23px] text-[10px] leading-[1.9] text-[#81847c] fiche:mt-5 fiche:mb-0 fiche:text-[11px]">
+            <p className="mt-3 mb-[23px] text-[10px] leading-[1.9] text-[#808080] fiche:mt-5 fiche:mb-0 fiche:text-[11px]">
               Encore une question ?
               <Link
                 href="/contact"
@@ -665,12 +665,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                         {item.question}
                         <span
                           aria-hidden="true"
-                          className="shrink-0 text-[17px] leading-[26px] font-normal text-[#8c8e85] transition-transform group-open:rotate-45"
+                          className="shrink-0 text-[17px] leading-[26px] font-normal text-[#8a8a8a] transition-transform group-open:rotate-45"
                         >
                           +
                         </span>
                       </summary>
-                      <p className="mt-3 max-w-[580px] text-[10px] leading-[1.8] text-[#7b8074] fiche:text-[11px]">
+                      <p className="mt-3 max-w-[580px] text-[10px] leading-[1.8] text-[#7a7a7a] fiche:text-[11px]">
                         {item.answer}
                       </p>
                     </details>
@@ -696,7 +696,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                         <p className="text-[12px] font-bold">
                           {review.title ?? review.authorName}
                         </p>
-                        <p className="mt-1 text-[10px] leading-[1.8] text-[#7b8074]">
+                        <p className="mt-1 text-[10px] leading-[1.8] text-[#7a7a7a]">
                           {review.body}
                         </p>
                         <p className="mt-2 text-[9px] text-muted">
@@ -719,7 +719,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           aria-labelledby="titre-assistance"
           className="container-page"
         >
-          <div className="mb-9 block rounded-lg bg-[#f4f5f0] p-[23px] fiche:mb-14 fiche:flex fiche:items-center fiche:gap-[22px] fiche:rounded-[10px] fiche:px-8 fiche:py-[29px]">
+          <div className="mb-9 block rounded-lg bg-[#f2f2f2] p-[23px] fiche:mb-14 fiche:flex fiche:items-center fiche:gap-[22px] fiche:rounded-[10px] fiche:px-8 fiche:py-[29px]">
             <span className="mb-4 grid size-10 shrink-0 place-items-center rounded-full bg-white fiche:mb-0 fiche:size-[52px]">
               <IconHeadset className="size-[21px] text-slate-ink fiche:size-6" />
             </span>
@@ -734,7 +734,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               >
                 Le bon kit commence par le bon conseil.
               </h2>
-              <p className="mt-1.5 text-[10px] text-[#83867a]">
+              <p className="mt-1.5 text-[10px] text-[#808080]">
                 Une question sur votre véhicule ou son installation ?
               </p>
             </div>
@@ -750,7 +750,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         </section>
 
         {siteConfig.demoBanner ? (
-          <p className="container-page pb-6 text-[8px] leading-[1.7] text-[#999b92]">
+          <p className="container-page pb-6 text-[8px] leading-[1.7] text-[#969696]">
             {siteConfig.demoBannerLabel} — visuels illustratifs, prix et compatibilités à remplacer
             avant ouverture.
           </p>

@@ -24,7 +24,7 @@ export function CartLink({ itemCount }: { itemCount: number }) {
       className="touch-cible flex min-h-[38px] items-center gap-[9px] rounded-sm px-1 transition-colors hover:text-brand"
     >
       <span className="relative flex shrink-0">
-        <IconCart className="size-[25px] text-[#333d2a]" strokeWidth={1.45} />
+        <IconCart className="size-[25px] text-[#343434]" strokeWidth={1.45} />
         <span
           aria-hidden
           className="absolute -top-[7px] -right-[5px] flex h-[17px] min-w-[17px] items-center justify-center rounded-full border-2 border-white bg-brand px-[3px] text-[8px] leading-none font-bold text-white"
@@ -32,7 +32,7 @@ export function CartLink({ itemCount }: { itemCount: number }) {
           {itemCount > 99 ? '99+' : itemCount}
         </span>
       </span>
-      <span className="hidden text-[11px] font-semibold text-[#3e4a33] xl:block">Panier</span>
+      <span className="hidden text-[11px] font-semibold text-[#3f3f3f] xl:block">Panier</span>
     </Link>
   )
 }

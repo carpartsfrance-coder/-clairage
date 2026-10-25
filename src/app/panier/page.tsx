@@ -47,7 +47,7 @@ async function modifierLigne(formData: FormData) {
  * référence.
  */
 const stepButton =
-  'inline-flex size-11 items-center justify-center rounded-sm border border-[#dbe0d3] ' +
+  'inline-flex size-11 items-center justify-center rounded-sm border border-[#dadada] ' +
   'text-base leading-none text-slate-ink transition-colors ' +
   'hover:border-slate-ink hover:bg-surface-soft disabled:opacity-45 ' +
   'disabled:pointer-events-none sm:size-9'
@@ -67,7 +67,7 @@ export default async function PanierPage() {
       <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         Votre panier
         {cart.itemCount > 0 ? (
-          <span className="ml-2 text-[12px] font-normal text-[#8a8e83]">
+          <span className="ml-2 text-[12px] font-normal text-[#888888]">
             ({cart.itemCount}
             {cart.itemCount > 1 ? ' articles' : ' article'})
           </span>
@@ -77,11 +77,11 @@ export default async function PanierPage() {
       {cart.lines.length === 0 ? (
         /* .cart-empty : icône de 42 px, titre à 18 px, texte à 12 px. */
         <div className="px-4 py-[70px] text-center">
-          <IconCart className="mx-auto size-[42px] text-[#a2a69a]" />
+          <IconCart className="mx-auto size-[42px] text-[#a0a0a0]" />
           <h2 className="mt-4 mb-[7px] text-[18px] font-bold">
             Votre passage au blanc commence ici.
           </h2>
-          <p className="text-[12px] text-[#8c9184]">
+          <p className="text-[12px] text-[#8b8b8b]">
             Partez de votre véhicule pour voir ce qui lui correspond.
           </p>
           <ButtonLink
@@ -203,11 +203,11 @@ export default async function PanierPage() {
                               {line.productName}
                             </Link>
                           </h3>
-                          <p className="my-0.5 text-[9px] text-[#818775]">
+                          <p className="my-0.5 text-[9px] text-[#7e7e7e]">
                             {line.variantName} · réf. {line.sku}
                           </p>
                           {line.requiredBy ? (
-                            <p className="my-0.5 text-[9px] text-[#818775]">
+                            <p className="my-0.5 text-[9px] text-[#7e7e7e]">
                               Ajouté comme accessoire nécessaire
                             </p>
                           ) : null}
@@ -217,7 +217,7 @@ export default async function PanierPage() {
                           <strong className="block text-[12px]">
                             {formatPrice(line.lineTotalCents)}
                           </strong>
-                          <span className="block text-[9px] text-[#818775]">
+                          <span className="block text-[9px] text-[#7e7e7e]">
                             {formatPrice(line.unitPriceCents)} l&apos;unité
                           </span>
                         </div>
@@ -228,7 +228,7 @@ export default async function PanierPage() {
                           <summary className="cursor-pointer text-[10px] font-semibold">
                             Contenu du kit
                           </summary>
-                          <ul className="mt-1.5 flex flex-col gap-1 text-[#818775]">
+                          <ul className="mt-1.5 flex flex-col gap-1 text-[#7e7e7e]">
                             {line.components.map((component) => (
                               <li key={component.sku}>
                                 {component.quantity} × {component.productName}
@@ -245,7 +245,7 @@ export default async function PanierPage() {
                       <p
                         className={cn(
                           'mt-2 text-[10px]',
-                          purchasable ? 'text-[#818775]' : 'font-semibold text-danger',
+                          purchasable ? 'text-[#7e7e7e]' : 'font-semibold text-danger',
                         )}
                       >
                         {availabilityLabel(line.availability)}
@@ -293,7 +293,7 @@ export default async function PanierPage() {
                           type="submit"
                           name="quantity"
                           value={0}
-                          className="inline-flex min-h-11 items-center text-[9px] text-[#969c8c] underline underline-offset-2 hover:text-brand sm:min-h-0"
+                          className="inline-flex min-h-11 items-center text-[9px] text-[#949494] underline underline-offset-2 hover:text-brand sm:min-h-0"
                           aria-label={`Retirer ${line.productName} du panier`}
                         >
                           Supprimer
@@ -313,11 +313,11 @@ export default async function PanierPage() {
               Rien n'est ajouté : le client sait peut-être déjà qu'il les a.
             */}
             {cart.missingAccessories.length > 0 ? (
-              <div className="mt-[22px] rounded-[7px] bg-[#f7f7f3] p-[15px]">
+              <div className="mt-[22px] rounded-[7px] bg-[#f5f5f5] p-[15px]">
                 <h3 className="mb-[7px] text-[12px] font-bold">
                   Votre montage demande des pièces que le panier ne contient pas.
                 </h3>
-                <ul className="flex flex-col gap-1.5 text-[10px] leading-[1.7] text-[#7f8775]">
+                <ul className="flex flex-col gap-1.5 text-[10px] leading-[1.7] text-[#7e7e7e]">
                   {cart.missingAccessories.map((accessoire) => (
                     <li key={accessoire.variantId}>
                       <Link
@@ -335,7 +335,7 @@ export default async function PanierPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-2 text-[10px] leading-[1.7] text-[#7f8775]">
+                <p className="mt-2 text-[10px] leading-[1.7] text-[#7e7e7e]">
                   Rien n&apos;est ajouté automatiquement : si vous les possédez déjà, poursuivez.
                 </p>
               </div>
@@ -358,7 +358,7 @@ export default async function PanierPage() {
             aria-labelledby="panier-recapitulatif"
             className="fiche:sticky fiche:top-6 fiche:w-[370px] fiche:shrink-0"
           >
-            <div className="rounded-[9px] border border-[#e2e3dc] p-5">
+            <div className="rounded-[9px] border border-[#e0e0e0] p-5">
               <h2 id="panier-recapitulatif" className="text-[14px] font-bold">
                 Récapitulatif
               </h2>
@@ -420,7 +420,7 @@ export default async function PanierPage() {
                 </div>
               </dl>
 
-              <p className="mt-2 text-[9px] leading-[1.8] text-[#8d9483]">
+              <p className="mt-2 text-[9px] leading-[1.8] text-[#8c8c8c]">
                 {teaser?.isSettled
                   ? 'Livraison comprise pour la France. Ce total est celui que vous réglerez.'
                   : teaser
@@ -437,7 +437,7 @@ export default async function PanierPage() {
               </ButtonLink>
 
               {/* .cart-fineprint : centré, 9 px, interligne 1.8. */}
-              <p className="mt-3 text-center text-[9px] leading-[1.8] text-[#8d9483]">
+              <p className="mt-3 text-center text-[9px] leading-[1.8] text-[#8c8c8c]">
                 {paymentIsSimulated()
                   ? 'Le tunnel de commande est en service, mais aucun prestataire de paiement n’est configuré sur cet environnement : la dernière étape simule l’issue du paiement et n’encaisse rien.'
                   : 'Paiement sécurisé à l’étape suivante. Rien n’est débité avant votre validation.'}

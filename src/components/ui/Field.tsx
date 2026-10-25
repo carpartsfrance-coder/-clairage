@@ -10,12 +10,12 @@ import { IconChevronDown } from './icons'
    -------------------------------------------------------------------------- */
 
 /*
-  `.form-field` du code de référence : fond blanc, filet #d5d9cf, rayon 7 px,
+  `.form-field` du code de référence : fond blanc, filet #d4d4d4, rayon 7 px,
   12 px de retrait et texte à 13 px. La taille `md` est celle-là ; `sm` et
   `lg` restent pour les écrans qui s'en servent (back-office, filtres).
 */
 const controlBase =
-  'w-full rounded-[7px] border bg-white text-[#31372c] placeholder:text-muted ' +
+  'w-full rounded-[7px] border bg-white text-[#323232] placeholder:text-muted ' +
   'transition-colors disabled:bg-surface-muted disabled:text-muted'
 
 const controlSizes = {
@@ -109,7 +109,7 @@ export function TextField({
         className={cn(
           controlBase,
           controlSizes[fieldSize],
-          error ? 'border-danger' : 'border-[#d5d9cf] hover:border-muted',
+          error ? 'border-danger' : 'border-[#d4d4d4] hover:border-muted',
           className,
         )}
         {...rest}
@@ -170,7 +170,7 @@ export function SelectField({
             controlSizes[fieldSize],
             'appearance-none pr-10',
             Boolean(adornment) && 'pl-11',
-            error ? 'border-danger' : 'border-[#d5d9cf] hover:border-muted',
+            error ? 'border-danger' : 'border-[#d4d4d4] hover:border-muted',
             className,
           )}
           {...rest}

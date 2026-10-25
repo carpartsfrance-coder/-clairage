@@ -62,7 +62,7 @@ export function VehicleBar({
   }
 
   /*
-    `.vehicle-bar` du code de référence : fond #f5f6f3, filet #e7e9e2, rayon
+    `.vehicle-bar` du code de référence : fond #f4f4f4, filet #e5e5e5, rayon
     8 px, 12/19 px de retrait, pastille blanche de 36 px, surtitre à 8 px et
     intitulé à 12 px. L'état « aucun véhicule » garde le fond rouge pâle du
     projet : c'est le seul endroit de la fiche qui dit qu'aucune compatibilité
@@ -72,7 +72,7 @@ export function VehicleBar({
     <div
       className={cn(
         'flex items-center justify-between gap-3 rounded-lg border px-3 py-[11px] fiche:px-[19px] fiche:py-3',
-        vehicle ? 'border-[#e7e9e2] bg-[#f5f6f3]' : 'border-brand-border bg-brand-soft',
+        vehicle ? 'border-[#e5e5e5] bg-[#f4f4f4]' : 'border-brand-border bg-brand-soft',
         className,
       )}
     >
@@ -83,7 +83,7 @@ export function VehicleBar({
 
         {vehicle ? (
           <div className="min-w-0">
-            <small className="mb-px block text-[7px] tracking-[1.3px] text-[#697164] uppercase fiche:text-[8px]">
+            <small className="mb-px block text-[7px] tracking-[1.3px] text-[#6a6a6a] uppercase fiche:text-[8px]">
               Votre véhicule
             </small>
             <strong className="block text-[10px] fiche:text-[12px]">

@@ -51,7 +51,7 @@ export function MakeSearch({
           onChange={(event) => setQuery(event.target.value)}
           autoComplete="off"
           placeholder="Tapez les premières lettres"
-          className="h-[46px] w-full rounded-[7px] border border-[#d5d9cf] bg-white pr-3 pl-9 text-[13px] text-[#31372c] placeholder:text-muted"
+          className="h-[46px] w-full rounded-[7px] border border-[#d4d4d4] bg-white pr-3 pl-9 text-[13px] text-[#323232] placeholder:text-muted"
         />
       </div>
 
@@ -67,11 +67,11 @@ export function MakeSearch({
                 <li key={entry.slug}>
                   <Link
                     href={entry.href}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#e1e5d9] px-[14px] text-[11px] hover:border-slate-ink"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#dfdfdf] px-[14px] text-[11px] hover:border-slate-ink"
                   >
                     {entry.name}
                     {entry.hint ? (
-                      <span className="text-[9px] text-[#838c77]">{entry.hint}</span>
+                      <span className="text-[9px] text-[#828282]">{entry.hint}</span>
                     ) : null}
                   </Link>
                 </li>

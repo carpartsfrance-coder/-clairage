@@ -165,7 +165,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                 className="text-[14px] font-bold fiche:text-[16px]"
               >
                 {groupe.label}
-                <span className="ml-2 text-[10px] font-normal text-[#838c77]">
+                <span className="ml-2 text-[10px] font-normal text-[#828282]">
                   {groupe.products.length === 1
                     ? '1 référence'
                     : `${groupe.products.length} références`}
@@ -178,7 +178,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                     <Link
                       href={`/p/${produit.productSlug}`}
                       className={cn(
-                        'flex h-full gap-3 rounded-[9px] border border-[#e3e6dc] p-3 transition-colors hover:border-slate-ink',
+                        'flex h-full gap-3 rounded-[9px] border border-[#e1e1e1] p-3 transition-colors hover:border-slate-ink',
                         produit.status === 'INCOMPATIBLE' && 'opacity-75',
                       )}
                     >
@@ -200,14 +200,14 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                           {produit.productName}
                         </span>
                         {produit.tagline ? (
-                          <span className="mt-0.5 line-clamp-2 text-[9px] leading-[1.6] text-[#838c77]">
+                          <span className="mt-0.5 line-clamp-2 text-[9px] leading-[1.6] text-[#828282]">
                             {produit.tagline}
                           </span>
                         ) : null}
 
                         {/* Contenu essentiel du conditionnement conseillé. */}
                         {produit.contents.length > 0 ? (
-                          <span className="mt-1 line-clamp-2 text-[9px] text-[#838c77]">
+                          <span className="mt-1 line-clamp-2 text-[9px] text-[#828282]">
                             {produit.contents.join(' + ')}
                           </span>
                         ) : null}
@@ -215,7 +215,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                         <span className="mt-auto pt-2">
                           {produit.recommended ? (
                             <>
-                              <span className="block text-[9px] text-[#8a947e]">
+                              <span className="block text-[9px] text-[#898989]">
                                 {produit.recommended.name}
                               </span>
                               <strong className="block text-[15px] tracking-[-0.4px]">

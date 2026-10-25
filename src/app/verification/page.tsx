@@ -81,7 +81,7 @@ export default async function VerificationPage({ searchParams }: PageProps) {
             <h2 id="verification-formulaire" className="text-[14px] font-bold">
               Ce qu&apos;il nous manque
             </h2>
-            <p className="mt-2 mb-5 max-w-[580px] text-[11px] leading-[1.8] text-[#7b8074]">
+            <p className="mt-2 mb-5 max-w-[580px] text-[11px] leading-[1.8] text-[#7a7a7a]">
               {referenceValide
                 ? "Nous n'avons pas l'information nécessaire pour confirmer que cette référence convient à votre véhicule. Nous la vérifions et vous répondons — rien n'est commandé en attendant."
                 : "Dites-nous ce que vous avez sous le capot, et nous identifions l'équipement d'origine de votre véhicule. Aucun choix n'est enregistré en attendant."}
@@ -103,7 +103,7 @@ export default async function VerificationPage({ searchParams }: PageProps) {
             aria-labelledby="verification-contexte"
             className="fiche:w-[370px] fiche:shrink-0"
           >
-            <div className="rounded-[9px] border border-[#e2e3dc] p-5">
+            <div className="rounded-[9px] border border-[#e0e0e0] p-5">
               <h2 id="verification-contexte" className="text-[14px] font-bold">
                 Ce que nous transmettons
               </h2>
@@ -112,7 +112,7 @@ export default async function VerificationPage({ searchParams }: PageProps) {
                 {referenceValide ? (
                   <>
                     <div className="flex items-baseline justify-between gap-4 border-b border-line py-3">
-                      <dt className="text-[#818775]">Produit</dt>
+                      <dt className="text-[#7e7e7e]">Produit</dt>
                       <dd className="min-w-0 text-right font-semibold">
                         <Link
                           href={`/p/${variant!.product.slug}`}
@@ -124,10 +124,10 @@ export default async function VerificationPage({ searchParams }: PageProps) {
                     </div>
 
                     <div className="flex items-baseline justify-between gap-4 border-b border-line py-3">
-                      <dt className="text-[#818775]">Conditionnement</dt>
+                      <dt className="text-[#7e7e7e]">Conditionnement</dt>
                       <dd className="text-right font-semibold">
                         {variant!.name}
-                        <span className="block text-[10px] font-normal text-[#818775]">
+                        <span className="block text-[10px] font-normal text-[#7e7e7e]">
                           réf. {variant!.sku} · {formatPrice(variant!.priceCents)}
                         </span>
                       </dd>
@@ -136,7 +136,7 @@ export default async function VerificationPage({ searchParams }: PageProps) {
                 ) : null}
 
                 <div className="flex items-baseline justify-between gap-4 border-b border-line py-3">
-                  <dt className="text-[#818775]">Véhicule</dt>
+                  <dt className="text-[#7e7e7e]">Véhicule</dt>
                   <dd className="text-right font-semibold">
                     {vehicle
                       ? vehicle.label
@@ -147,7 +147,7 @@ export default async function VerificationPage({ searchParams }: PageProps) {
                 </div>
 
                 <div className="flex items-baseline justify-between gap-4 py-3">
-                  <dt className="text-[#818775]">Équipement d&apos;origine</dt>
+                  <dt className="text-[#7e7e7e]">Équipement d&apos;origine</dt>
                   <dd className="text-right font-semibold">
                     {vehicle?.equipmentLabel ?? 'Non précisé'}
                   </dd>
@@ -155,7 +155,7 @@ export default async function VerificationPage({ searchParams }: PageProps) {
               </dl>
 
               {vehicle ? null : (
-                <p className="mt-2 text-[10px] leading-[1.7] text-[#8d9483]">
+                <p className="mt-2 text-[10px] leading-[1.7] text-[#8c8c8c]">
                   Aucun véhicule n&apos;est sélectionné.{' '}
                   <Link href="/vehicule" className="font-semibold underline underline-offset-2">
                     L&apos;indiquer

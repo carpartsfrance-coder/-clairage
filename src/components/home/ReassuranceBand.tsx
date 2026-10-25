@@ -47,9 +47,9 @@ const headingId = 'reassurance-band-title'
  * Bandeau de repères — `.home-reassurance` du code de référence.
  *
  * Une seule ligne de trois mentions courtes : icône de 20 px (17 en mobile),
- * texte de 10 px couleur #666d62, 19 px de marge haute et basse (17 en
- * mobile), fond #f7f8f4 et filet bas
- * #e8eae1. Le projet affichait un titre ET une phrase par colonne, dans une
+ * texte de 10 px couleur #686868, 19 px de marge haute et basse (17 en
+ * mobile), fond #f6f6f6 et filet bas
+ * #e5e5e5. Le projet affichait un titre ET une phrase par colonne, dans une
  * grille à filets verticaux : deux fois la hauteur de la référence pour la
  * même information.
  *
@@ -63,7 +63,7 @@ export function ReassuranceBand({ items }: ReassuranceBandProps) {
   return (
     <section
       aria-labelledby={headingId}
-      className="border-b border-[#e8eae1] bg-[#f7f8f4]"
+      className="border-b border-[#e5e5e5] bg-[#f6f6f6]"
     >
       <div className="container-page py-[17px] lg:py-[19px]">
         <h2 id={headingId} className="sr-only">
@@ -76,10 +76,10 @@ export function ReassuranceBand({ items }: ReassuranceBandProps) {
             return (
               <li
                 key={`${item.icon}-${index}`}
-                className="flex items-center gap-2.5 text-[9px] text-[#666d62] lg:text-[10px]"
+                className="flex items-center gap-2.5 text-[9px] text-[#686868] lg:text-[10px]"
               >
                 {Icon ? (
-                  <Icon className="size-[17px] shrink-0 text-[#373e32] lg:size-5" strokeWidth={1.35} />
+                  <Icon className="size-[17px] shrink-0 text-[#383838] lg:size-5" strokeWidth={1.35} />
                 ) : null}
                 <span className="font-medium">
                   {item.title}

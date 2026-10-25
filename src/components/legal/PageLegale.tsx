@@ -34,7 +34,7 @@ export function PageLegale({
           {titre}
         </h1>
         {chapeau ? (
-          <p className="mt-3 text-[13px] leading-[1.75] text-[#5f6657]">{chapeau}</p>
+          <p className="mt-3 text-[13px] leading-[1.75] text-[#5e5e5e]">{chapeau}</p>
         ) : null}
         <p className="mt-3 text-[11px] text-muted-strong">Dernière mise à jour : {miseAJour}</p>
       </header>
@@ -62,7 +62,7 @@ export function Article({
         {numero ? <span className="text-muted-strong">{numero}. </span> : null}
         {titre}
       </h2>
-      <div className="mt-2.5 flex flex-col gap-3 pb-6 text-[13px] leading-[1.75] text-[#4a5043]">
+      <div className="mt-2.5 flex flex-col gap-3 pb-6 text-[13px] leading-[1.75] text-[#4a4a4a]">
         {children}
       </div>
     </section>

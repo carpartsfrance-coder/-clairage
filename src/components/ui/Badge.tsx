@@ -97,7 +97,7 @@ export function RoadApprovalNote({
     compose à 8 px sans forcer les autres pages qui s'en servent.
   */
   return (
-    <p className="flex items-start gap-1.5 text-[inherit] text-[#85837e]">
+    <p className="flex items-start gap-1.5 text-[inherit] text-[#828282]">
       <IconInfo className="mt-px size-3 shrink-0" />
       <span>
         {copy}

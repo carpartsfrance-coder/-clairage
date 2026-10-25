@@ -149,7 +149,7 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
               }}
               onMouseLeave={programmerFermeture}
             >
-              {index > 0 ? <span aria-hidden className="h-4 w-px bg-[#e6eadd]" /> : null}
+              {index > 0 ? <span aria-hidden className="h-4 w-px bg-[#e3e3e3]" /> : null}
 
               {/*
                 Deux lignes : le surtitre dit la nature de la rubrique
@@ -169,7 +169,7 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
                   <span
                     className={cn(
                       'text-[9px] font-medium',
-                      section.highlight ? 'text-brand/80' : 'text-[#8c9481]',
+                      section.highlight ? 'text-brand/80' : 'text-[#8b8b8b]',
                     )}
                   >
                     {section.kicker}
@@ -237,7 +237,7 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
             >
               {section.columns.map((colonne) => (
                 <div key={colonne.title}>
-                  <p className="mb-2 text-[8px] font-bold tracking-[1.2px] text-[#8c9481] uppercase">
+                  <p className="mb-2 text-[8px] font-bold tracking-[1.2px] text-[#8b8b8b] uppercase">
                     {colonne.title}
                   </p>
 
@@ -263,7 +263,7 @@ export function MainNav({ sections }: { sections: NavSection[] }) {
                             className="flex min-h-9 items-center justify-between gap-3 rounded-xs py-1 text-[11px] hover:text-brand"
                           >
                             <span className="min-w-0 truncate font-medium">{lien.label}</span>
-                            <span className="shrink-0 text-[9px] text-[#a4a49d]">
+                            <span className="shrink-0 text-[9px] text-[#a0a0a0]">
                               {lien.hint ?? lien.count}
                             </span>
                           </Link>

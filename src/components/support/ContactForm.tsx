@@ -127,7 +127,7 @@ export function ContactForm({
           minLength={10}
           maxLength={2000}
           placeholder="Véhicule, référence du produit, ce que vous cherchez à obtenir…"
-          className="w-full rounded-[7px] border border-[#d5d9cf] bg-white p-3 text-[13px] text-[#31372c] placeholder:text-muted"
+          className="w-full rounded-[7px] border border-[#d4d4d4] bg-white p-3 text-[13px] text-[#323232] placeholder:text-muted"
         />
         <p className="text-[10px] font-normal text-muted">
           Le modèle exact du véhicule et la référence inscrite sur la pièce d&apos;origine sont ce

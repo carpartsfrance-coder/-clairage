@@ -172,13 +172,13 @@ export function VehicleSelector({
 
   /*
     Habillage des champs dans le bandeau sombre, repris de `home.css` :
-      select  : 43 px de haut, fond #fafaf8, filet #4c5153, rayon 5 px,
+      select  : 43 px de haut, fond #f9f9f9, filet #4c5153, rayon 5 px,
                 texte 12 px couleur #23272a ;
       label   : 7 px, gras, interlettrage 1.2 px, couleur #c2c8cb, capitales.
     Hors bandeau, les champs gardent l'habillage standard du projet.
   */
   const champSombre = inline
-    ? 'h-[43px] rounded-[5px] border-[#4c5153] bg-[#fafaf8] px-[11px] text-[12px] text-[#23272a]'
+    ? 'h-[43px] rounded-[5px] border-[#4c5153] bg-[#f9f9f9] px-[11px] text-[12px] text-[#23272a]'
     : undefined
   const labelSombre = inline
     ? 'text-[7px] font-bold uppercase tracking-[1.2px] text-[#c2c8cb]'

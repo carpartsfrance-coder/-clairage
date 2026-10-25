@@ -89,7 +89,7 @@ type Dispatch = {
 
 const ligneBoutons = 'flex flex-wrap items-end gap-2'
 const miniBouton =
-  'inline-flex min-h-9 items-center rounded-md border border-[#c7c9c0] px-3 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:opacity-50'
+  'inline-flex min-h-9 items-center rounded-md border border-[#c4c4c4] px-3 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:opacity-50'
 
 /** Les deux champs cachés que tout formulaire de cet écran porte. */
 function Cible({ level, intent }: { level: 'make' | 'model' | 'generation'; intent: string }) {
@@ -192,7 +192,7 @@ function PanneauAdresse({
   dispatch: Dispatch
 }) {
   return (
-    <details className="mt-2 rounded-[7px] border border-[#e2e3dc] bg-white">
+    <details className="mt-2 rounded-[7px] border border-[#e0e0e0] bg-white">
       <summary className="flex min-h-9 cursor-pointer items-center px-3 py-2 text-[11px] font-semibold">
         Changer l&apos;adresse publique
       </summary>
@@ -228,7 +228,7 @@ function PanneauAdresse({
             type="checkbox"
             name="confirm"
             value="oui"
-            className="mt-0.5 size-4 shrink-0 accent-[#31372c]"
+            className="mt-0.5 size-4 shrink-0 accent-[#323232]"
           />
           <span>Je comprends que les liens vers l&apos;ancienne adresse ne répondront plus.</span>
         </label>
@@ -258,7 +258,7 @@ function LigneGeneration({
         : null
 
   return (
-    <li className="rounded-[7px] border border-[#e2e3dc] bg-white p-3">
+    <li className="rounded-[7px] border border-[#e0e0e0] bg-white p-3">
       <form action={dispatch.action} className="flex flex-wrap items-end gap-2">
         <Cible level="generation" intent="update" />
         <input type="hidden" name="generationId" value={generation.id} />
@@ -375,7 +375,7 @@ function FormulaireGeneration({ modelId, dispatch }: { modelId: string; dispatch
   return (
     <form
       action={dispatch.action}
-      className="mt-2 rounded-[7px] border border-dashed border-[#c7c9c0] p-3"
+      className="mt-2 rounded-[7px] border border-dashed border-[#c4c4c4] p-3"
     >
       <Cible level="generation" intent="create" />
       <input type="hidden" name="modelId" value={modelId} />
@@ -459,7 +459,7 @@ function BlocModele({
         : null
 
   return (
-    <li className="rounded-[9px] border border-[#e2e3dc] bg-surface-soft p-3">
+    <li className="rounded-[9px] border border-[#e0e0e0] bg-surface-soft p-3">
       <form action={dispatch.action} className="flex flex-wrap items-end gap-2">
         <Cible level="model" intent="update" />
         <input type="hidden" name="modelId" value={model.id} />
@@ -753,7 +753,7 @@ function BlocMarque({
 
         <form
           action={dispatch.action}
-          className="mt-3 rounded-[7px] border border-dashed border-[#c7c9c0] p-3"
+          className="mt-3 rounded-[7px] border border-dashed border-[#c4c4c4] p-3"
         >
           <Cible level="model" intent="create" />
           <input type="hidden" name="makeId" value={make.id} />

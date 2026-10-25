@@ -103,17 +103,17 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
 
         {/*
           `.header-search` de la référence : 45 px de haut, rayon 7 px, fond
-          #f7f8f5, filet #e1e5dc, et un bouton rouge de 33 px détaché de 5 px
+          #f6f6f6, filet #e0e0e0, et un bouton rouge de 33 px détaché de 5 px
           du bord — et non un bloc collé sur toute la hauteur.
         */}
         <div
           className={cn(
-            'flex w-full items-center rounded-[7px] border border-[#e1e5dc] bg-[#f7f8f5]',
-            'focus-within:border-[#a1ab97] focus-within:shadow-[0_0_0_3px_#97a58517]',
+            'flex w-full items-center rounded-[7px] border border-[#e0e0e0] bg-[#f6f6f6]',
+            'focus-within:border-[#a1a1a1] focus-within:shadow-[0_0_0_3px_#95959517]',
             compact ? 'h-[42px]' : 'h-[45px]',
           )}
         >
-          <IconSearch className="ml-[15px] size-[18px] shrink-0 self-center text-[#89927e]" />
+          <IconSearch className="ml-[15px] size-[18px] shrink-0 self-center text-[#888888]" />
           <input
             id={inputId}
             type="search"
@@ -134,7 +134,7 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
             aria-controls={listId}
             aria-autocomplete="list"
             aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
-            className="h-full min-w-0 flex-1 bg-transparent px-3 text-[12px] text-[#353e2d] outline-none placeholder:text-[#8a9282]" 
+            className="h-full min-w-0 flex-1 bg-transparent px-3 text-[12px] text-[#363636] outline-none placeholder:text-[#8a8a8a]" 
           />
           <button
             type="submit"

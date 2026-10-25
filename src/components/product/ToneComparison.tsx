@@ -64,7 +64,7 @@ export function ToneComparison({
             {lines.map((line, index) => (
               <span
                 key={`${index}-${line}`}
-                className={index > 0 ? 'block font-normal text-[#e8e8e5]' : 'block'}
+                className={index > 0 ? 'block font-normal text-[#e6e6e6]' : 'block'}
               >
                 {line}
               </span>

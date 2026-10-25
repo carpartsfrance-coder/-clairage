@@ -24,7 +24,7 @@ const HELP_TITLE_ID = 'accueil-aide-titre'
  * Valeurs reprises de `home.css` et `styles.css` : deux colonnes .8fr / 1.2fr
  * avec 75 px d'écart, questions espacées de 16 px au-dessus et en dessous,
  * intitulé à 11 px, réponse à 10 px, et le « + » de 17 px qui bascule à
- * l'ouverture. Puis le panneau d'assistance arrondi sur fond #f4f5f0, pastille
+ * l'ouverture. Puis le panneau d'assistance arrondi sur fond #f2f2f2, pastille
  * blanche de 52 px et bouton secondaire poussé à droite.
  *
  * Les questions restent des <details> natifs : ouverture, fermeture et
@@ -88,12 +88,12 @@ export function FaqHelpSection({ faq, help }: FaqHelpSectionProps) {
                       {/* Le « + » de la référence, qui bascule en croix. */}
                       <span
                         aria-hidden="true"
-                        className="shrink-0 text-[17px] leading-[26px] font-normal text-[#8c8e85] transition-transform group-open:rotate-45"
+                        className="shrink-0 text-[17px] leading-[26px] font-normal text-[#8a8a8a] transition-transform group-open:rotate-45"
                       >
                         +
                       </span>
                     </summary>
-                    <p className="mt-3 max-w-[580px] text-[10px] leading-[1.8] text-[#7b8074]">
+                    <p className="mt-3 max-w-[580px] text-[10px] leading-[1.8] text-[#7a7a7a]">
                       {item.answer}
                     </p>
                   </details>
@@ -103,12 +103,12 @@ export function FaqHelpSection({ faq, help }: FaqHelpSectionProps) {
           </div>
         ) : null}
 
-        {/* .assistance-banner : panneau arrondi #f4f5f0, 29 px de marge haute
+        {/* .assistance-banner : panneau arrondi #f2f2f2, 29 px de marge haute
             et basse, pastille blanche de 52 px, bouton secondaire à droite. */}
         <section
           aria-labelledby={HELP_TITLE_ID}
           className={cn(
-            'rounded-lg bg-[#f4f5f0] px-[23px] py-[23px] md:flex md:items-center md:gap-[22px] lg:rounded-[10px] lg:px-8 lg:py-[29px]',
+            'rounded-lg bg-[#f2f2f2] px-[23px] py-[23px] md:flex md:items-center md:gap-[22px] lg:rounded-[10px] lg:px-8 lg:py-[29px]',
             hasFaq && 'mt-[33px] lg:mt-12',
           )}
         >
@@ -126,7 +126,7 @@ export function FaqHelpSection({ faq, help }: FaqHelpSectionProps) {
             >
               {help.title}
             </h2>
-            <p className="mt-1.5 text-[10px] text-[#83867a]">{help.text}</p>
+            <p className="mt-1.5 text-[10px] text-[#808080]">{help.text}</p>
           </div>
 
           <ButtonLink

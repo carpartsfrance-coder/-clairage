@@ -331,12 +331,12 @@ export function CheckoutForm({
                     <label
                       key={option.code}
                       /* `.pack-option` de la fiche produit : 1,5 px de rouge
-                         sur #fdf6f5 quand il est retenu, filet #ddddda sinon. */
+                         sur #fdf6f5 quand il est retenu, filet #dcdcdc sinon. */
                       className={cn(
                         'flex cursor-pointer items-center gap-2.5 rounded-lg transition-colors',
                         active
                           ? 'border-[1.5px] border-brand bg-[#fdf6f5] px-[12.5px] py-[12.5px]'
-                          : 'border border-[#ddddda] px-[13px] py-[13px] hover:border-slate-ink',
+                          : 'border border-[#dcdcdc] px-[13px] py-[13px] hover:border-slate-ink',
                       )}
                     >
                       <input
@@ -351,10 +351,10 @@ export function CheckoutForm({
                         <span className="min-w-0">
                           <span className="block text-[12px] font-bold">{option.label}</span>
                           {option.carrier ? (
-                            <span className="block text-[10px] text-[#777974]">{option.carrier}</span>
+                            <span className="block text-[10px] text-[#767676]">{option.carrier}</span>
                           ) : null}
                           {delay ? (
-                            <span className="block text-[10px] text-[#777974]">{delay}</span>
+                            <span className="block text-[10px] text-[#767676]">{delay}</span>
                           ) : null}
                         </span>
                         <span className="text-[13px] font-bold whitespace-nowrap">
@@ -453,7 +453,7 @@ export function CheckoutForm({
         className="fiche:sticky fiche:top-6 fiche:w-[370px] fiche:shrink-0"
       >
         {/* `.price-details` : lignes séparées par un filet, montants à droite. */}
-        <div className="rounded-[9px] border border-[#e2e3dc] p-5">
+        <div className="rounded-[9px] border border-[#e0e0e0] p-5">
           <h2 id="commande-recapitulatif" className="text-[14px] font-bold">
             Récapitulatif
           </h2>
@@ -466,8 +466,8 @@ export function CheckoutForm({
               >
                 <span className="min-w-0">
                   <span className="block font-semibold">{line.productName}</span>
-                  <span className="block text-[10px] text-[#818775]">{line.variantName}</span>
-                  <span className="block text-[10px] text-[#818775]">
+                  <span className="block text-[10px] text-[#7e7e7e]">{line.variantName}</span>
+                  <span className="block text-[10px] text-[#7e7e7e]">
                     Quantité : {line.quantity}
                   </span>
                 </span>
@@ -514,7 +514,7 @@ export function CheckoutForm({
           {/* Le contrôle serveur des montants existe toujours (voir
               `placeOrder`) ; il n'a simplement rien à faire sur cet écran. Ce
               que le client a besoin de lire, c'est ce qu'il va payer. */}
-          <p className="mt-3 text-[9px] leading-[1.8] text-[#8d9483]">
+          <p className="mt-3 text-[9px] leading-[1.8] text-[#8c8c8c]">
             Montant TTC, livraison comprise. C&apos;est la somme qui sera débitée, et rien ne s&apos;y
             ajoute après validation.
           </p>

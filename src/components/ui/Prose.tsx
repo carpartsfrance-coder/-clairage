@@ -94,7 +94,7 @@ export function Prose({ children, className }: { children: string; className?: s
         }
 
         return (
-          <p key={index} className="mb-3.5 text-[12px] leading-[1.85] text-[#4c4f49] fiche:text-[13px]">
+          <p key={index} className="mb-3.5 text-[12px] leading-[1.85] text-[#4c4c4c] fiche:text-[13px]">
             {lignes.map((ligne, i) => (
               <Fragment key={`${index}-${i}`}>
                 {i > 0 ? <br /> : null}

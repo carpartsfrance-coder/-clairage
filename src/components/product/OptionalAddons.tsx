@@ -156,7 +156,7 @@ export function OptionalAddons({
               <label
                 className={cn(
                   'relative flex items-center gap-[18px] rounded-[9px] border p-[13px] fiche:gap-[14px] fiche:p-4 min-[1101px]:gap-5',
-                  coche ? 'border-brand bg-[#fdf9f8]' : 'border-[#e2e3dc]',
+                  coche ? 'border-brand bg-[#fdf9f8]' : 'border-[#e0e0e0]',
                   selectionnable ? 'cursor-pointer' : 'cursor-default opacity-75',
                 )}
               >
@@ -185,14 +185,14 @@ export function OptionalAddons({
 
                 {/* .extra-copy : surtitre, intitulé, description, prix. */}
                 <span className="flex min-w-0 flex-col gap-1.5 pr-2.5 fiche:pr-2">
-                  <small className="text-[7px] tracking-[1.1px] text-[#93968b] uppercase">
+                  <small className="text-[7px] tracking-[1.1px] text-[#909090] uppercase">
                     {addon.variantName}
                   </small>
                   <strong className="text-[12px] tracking-[-0.2px] min-[1101px]:text-[13px]">
                     {addon.name}
                   </strong>
                   {addon.tagline ? (
-                    <span className="text-[9px] leading-[1.5] text-[#83877d] fiche:text-[8px] min-[1101px]:text-[9px]">
+                    <span className="text-[9px] leading-[1.5] text-[#828282] fiche:text-[8px] min-[1101px]:text-[9px]">
                       {addon.tagline}
                     </span>
                   ) : null}
@@ -204,7 +204,7 @@ export function OptionalAddons({
 
                   <b className="mt-1 text-[13px]">
                     {formatPrice(addon.priceCents)}
-                    <em className="ml-[3px] text-[8px] font-normal text-[#8e9186] not-italic">
+                    <em className="ml-[3px] text-[8px] font-normal text-[#8c8c8c] not-italic">
                       {PACKAGING_LABELS[addon.packaging]}
                       {addon.hasOtherPackagings ? ' · autres conditionnements sur la fiche' : null}
                     </em>
@@ -234,7 +234,7 @@ export function OptionalAddons({
                   aria-hidden="true"
                   className={cn(
                     'absolute top-3 right-3 grid size-[18px] place-items-center rounded-[5px] border fiche:top-3.5 fiche:right-3.5 fiche:size-[21px]',
-                    coche ? 'border-brand bg-brand text-white' : 'border-[#d6d9cf] bg-white',
+                    coche ? 'border-brand bg-brand text-white' : 'border-[#d4d4d4] bg-white',
                   )}
                 >
                   {coche ? <IconCheck className="size-3.5" strokeWidth={2} /> : null}
@@ -285,7 +285,7 @@ export function OptionalAddons({
       ) : null}
 
       {!vehicleSelected ? (
-        <p className="mt-3 text-[8px] leading-[1.7] text-[#999b92]">
+        <p className="mt-3 text-[8px] leading-[1.7] text-[#969696]">
           Aucun véhicule n&apos;est sélectionné : la compatibilité de ces compléments n&apos;est pas
           vérifiée.
         </p>

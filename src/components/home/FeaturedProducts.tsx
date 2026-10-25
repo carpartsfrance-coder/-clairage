@@ -77,8 +77,8 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
                     className={cn(
                       'touch-cible inline-flex items-center rounded-full px-[11px] py-[6px] text-[9px] whitespace-nowrap transition-colors lg:px-[14px] lg:py-[7px] lg:text-[10px]',
                       index === 0
-                        ? 'border border-[#282e23] bg-[#282e23] text-white'
-                        : 'border border-[#e1e5d9] text-[#737d68] hover:border-[#282e23] hover:text-[#282e23]',
+                        ? 'border border-[#282828] bg-[#282828] text-white'
+                        : 'border border-[#dfdfdf] text-[#727272] hover:border-[#282828] hover:text-[#282828]',
                     )}
                   >
                     {filter.label}
@@ -101,11 +101,11 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
               {products.map((product) => (
                 <li
                   key={product.slug}
-                  className="min-w-0 overflow-hidden rounded-[9px] border border-[#e3e6dc] bg-white transition-colors hover:border-[#c6cbba]"
+                  className="min-w-0 overflow-hidden rounded-[9px] border border-[#e1e1e1] bg-white transition-colors hover:border-[#c2c2c2]"
                 >
                   <Link href={`/p/${product.slug}`} className="flex h-full flex-col">
-                    {/* .home-product-image : 215 px, fond #f3f4ee. */}
-                    <span className="relative block h-[155px] w-full shrink-0 overflow-hidden bg-[#f3f4ee] lg:h-[215px]">
+                    {/* .home-product-image : 215 px, fond #f1f1f1. */}
+                    <span className="relative block h-[155px] w-full shrink-0 overflow-hidden bg-[#f1f1f1] lg:h-[215px]">
                       {product.image ? (
                         /* alt vide : le nom du produit est déjà dans le lien. */
                         <Image
@@ -129,7 +129,7 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
                     {/* .home-product-info : 17/15/13 (12/10 en mobile). */}
                     <span className="flex min-w-0 flex-1 flex-col px-2.5 py-3 lg:px-[15px] lg:pt-[17px] lg:pb-[13px]">
                       {product.categoryName ? (
-                        <small className="block text-[6px] tracking-[0.6px] text-[#8c9481] uppercase lg:text-[7px] lg:tracking-[0.9px]">
+                        <small className="block text-[6px] tracking-[0.6px] text-[#8b8b8b] uppercase lg:text-[7px] lg:tracking-[0.9px]">
                           {product.categoryName}
                         </small>
                       ) : null}
@@ -139,23 +139,23 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
                       </span>
 
                       {product.tagline ? (
-                        <span className="mb-3 block min-h-[37px] text-[8px] leading-[1.6] text-[#838c77] lg:mb-[18px] lg:min-h-[29px] lg:text-[9px]">
+                        <span className="mb-3 block min-h-[37px] text-[8px] leading-[1.6] text-[#828282] lg:mb-[18px] lg:min-h-[29px] lg:text-[9px]">
                           {product.tagline}
                         </span>
                       ) : null}
 
                       {/* .product-bottom : filet, prix à gauche, flèche à droite. */}
-                      <span className="mt-auto flex items-center justify-between gap-2 border-t border-[#e8ebe0] pt-2.5 lg:pt-3">
+                      <span className="mt-auto flex items-center justify-between gap-2 border-t border-[#e5e5e5] pt-2.5 lg:pt-3">
                         <span className="min-w-0">
                           {product.kitPriceCents !== null ? (
                             <>
-                              <small className="block text-[6px] tracking-[0.6px] text-[#8a947e] uppercase lg:text-[7px]">
+                              <small className="block text-[6px] tracking-[0.6px] text-[#898989] uppercase lg:text-[7px]">
                                 Ampoules seules
                               </small>
                               <strong className="block text-[17px] leading-tight tracking-[-0.5px] text-slate-ink lg:text-[19px] lg:tracking-[-0.6px]">
                                 {formatPrice(product.fromPriceCents)}
                               </strong>
-                              <small className="mt-0.5 block text-[6px] text-[#8a947e] lg:text-[7px]">
+                              <small className="mt-0.5 block text-[6px] text-[#898989] lg:text-[7px]">
                                 Kit complet{' '}
                                 <span className="font-bold text-slate-ink">
                                   {formatPrice(product.kitPriceCents)}
@@ -165,14 +165,14 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
                           ) : (
                             <>
                               {product.hasKit ? (
-                                <small className="block text-[6px] tracking-[0.6px] text-[#8a947e] uppercase lg:text-[7px]">
+                                <small className="block text-[6px] tracking-[0.6px] text-[#898989] uppercase lg:text-[7px]">
                                   À partir de
                                 </small>
                               ) : null}
                               <strong className="block text-[17px] leading-tight tracking-[-0.5px] text-slate-ink lg:text-[19px] lg:tracking-[-0.6px]">
                                 {formatPrice(product.fromPriceCents)}
                               </strong>
-                              <small className="mt-0.5 block text-[6px] text-[#8a947e] lg:text-[7px]">
+                              <small className="mt-0.5 block text-[6px] text-[#898989] lg:text-[7px]">
                                 TTC
                               </small>
                             </>
@@ -181,7 +181,7 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
 
                         <span
                           aria-hidden="true"
-                          className="grid size-[27px] shrink-0 place-items-center rounded-full border border-[#dfe5d6] text-slate-ink lg:size-8"
+                          className="grid size-[27px] shrink-0 place-items-center rounded-full border border-[#dedede] text-slate-ink lg:size-8"
                         >
                           <IconArrowRight className="size-[13px] lg:size-[15px]" />
                         </span>
@@ -197,7 +197,7 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
               illustratifs. Ici les prix viennent du catalogue : la mention ne
               porte donc que sur ce qui reste à vérifier, la compatibilité.
             */}
-            <p className="mt-3 text-[8px] leading-[1.7] text-[#999b92]">
+            <p className="mt-3 text-[8px] leading-[1.7] text-[#969696]">
               La compatibilité et l'homologation dépendent du véhicule et de son équipement
               d'origine : elles sont à confirmer sur la fiche produit avant commande.
             </p>

@@ -83,7 +83,7 @@ export function BrandMark({
   return (
     <span
       className={cn(
-        'relative grid shrink-0 place-items-center overflow-hidden border border-[#e3e6dc] font-bold tracking-[0.5px] text-[#8c9481]',
+        'relative grid shrink-0 place-items-center overflow-hidden border border-[#e1e1e1] font-bold tracking-[0.5px] text-[#8b8b8b]',
         logo ? 'bg-white' : 'bg-surface-paper',
         taille.boite,
         taille.texte,

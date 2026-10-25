@@ -63,7 +63,7 @@ export function CategoryBoard({ categories }: { categories: CategoryRow[] }) {
       ) : null}
 
       <form action={ordreAction}>
-        <div className="overflow-x-auto rounded-[9px] border border-[#e2e3dc]">
+        <div className="overflow-x-auto rounded-[9px] border border-[#e0e0e0]">
           <table className="w-full min-w-[720px] border-collapse text-[12px]">
             <thead>
               <tr className="border-b border-line bg-surface-soft text-left">
@@ -102,7 +102,7 @@ export function CategoryBoard({ categories }: { categories: CategoryRow[] }) {
                       min={0}
                       step={1}
                       defaultValue={category.position}
-                      className="h-9 w-16 rounded-[7px] border border-[#d5d9cf] px-2 text-[12px]"
+                      className="h-9 w-16 rounded-[7px] border border-[#d4d4d4] px-2 text-[12px]"
                     />
                   </td>
 
@@ -147,7 +147,7 @@ export function CategoryBoard({ categories }: { categories: CategoryRow[] }) {
                       className={cn(
                         'inline-flex min-h-9 items-center rounded-md border px-3 text-[11px] font-semibold transition-colors',
                         category.published
-                          ? 'border-[#c7c9c0] hover:border-slate-ink'
+                          ? 'border-[#c4c4c4] hover:border-slate-ink'
                           : 'border-brand text-brand hover:bg-brand-soft',
                       )}
                     >

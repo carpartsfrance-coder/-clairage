@@ -12,7 +12,7 @@ import { useProductConfiguration } from './ProductConfiguration'
  * Galerie de la fiche produit — `.gallery` de la maquette V2.
  *
  * Valeurs reprises : visuel de 435 px (480 au-delà de 1 450, 380 sous 1 100,
- * 290 sous 800, 265 sous 370), rayon 12 px sur fond #f3f4ef, pastille de vue
+ * 290 sous 800, 265 sous 370), rayon 12 px sur fond #f2f2f2, pastille de vue
  * en haut à gauche, bouton d'agrandissement de 32 px, légende en bas, puis
  * trois vignettes de 77 px à intitulé incrusté.
  *
@@ -144,11 +144,11 @@ export function ProductGallery({
        Sous 800 px la maquette la remet dans le flux (`position:static`). */
     <div className="fiche:sticky fiche:top-[150px]">
       {/* .main-visual */}
-      <div className="relative h-[290px] overflow-hidden rounded-[9px] bg-[#f3f4ef] max-[370px]:h-[265px] fiche:h-[380px] fiche:rounded-xl min-[1101px]:h-[435px] min-[1450px]:h-[480px]">
+      <div className="relative h-[290px] overflow-hidden rounded-[9px] bg-[#f2f2f2] max-[370px]:h-[265px] fiche:h-[380px] fiche:rounded-xl min-[1101px]:h-[435px] min-[1450px]:h-[480px]">
         {packAffiche ? (
           /* .gallery-pack — la composition, dans le cadre du visuel. */
-          <div className="flex h-full flex-col justify-center bg-[linear-gradient(120deg,#eff2e7,#f8f9f5)] px-6 py-[22px] fiche:px-[35px] fiche:pt-12 fiche:pb-[25px]">
-            <span className="mb-[14px] grid size-[45px] place-items-center rounded-xl border border-[#e2e8d9] bg-white text-[#788a66]">
+          <div className="flex h-full flex-col justify-center bg-[linear-gradient(120deg,#eff2e7,#f7f7f7)] px-6 py-[22px] fiche:px-[35px] fiche:pt-12 fiche:pb-[25px]">
+            <span className="mb-[14px] grid size-[45px] place-items-center rounded-xl border border-[#e0e0e0] bg-white text-[#787878]">
               <IconPack className="size-[19px]" />
             </span>
             <h3 className="mb-[13px] text-[22px] leading-[1.15] tracking-[-0.8px] fiche:mb-6 fiche:text-[26px] fiche:leading-[1.2]">
@@ -160,9 +160,9 @@ export function ProductGallery({
               {composition.map((composant, rang) => (
                 <li
                   key={composant.sku}
-                  className="flex items-center gap-[11px] border-b border-[#dde5d4] py-2 text-[10px] fiche:gap-[14px] fiche:py-[10px] fiche:text-[12px]"
+                  className="flex items-center gap-[11px] border-b border-[#dcdcdc] py-2 text-[10px] fiche:gap-[14px] fiche:py-[10px] fiche:text-[12px]"
                 >
-                  <span className="text-[9px] text-[#849975]">
+                  <span className="text-[9px] text-[#878787]">
                     {String(rang + 1).padStart(2, '0')}
                   </span>
                   <strong>
@@ -173,7 +173,7 @@ export function ProductGallery({
                 </li>
               ))}
             </ul>
-            <small className="mt-[9px] text-[7px] text-[#89967d] fiche:mt-[13px] fiche:text-[8px]">
+            <small className="mt-[9px] text-[7px] text-[#8a8a8a] fiche:mt-[13px] fiche:text-[8px]">
               Composition du conditionnement retenu, détaillée plus bas.
             </small>
           </div>
@@ -193,13 +193,13 @@ export function ProductGallery({
             />
 
             {/* .visual-label : l'intitulé de la vue qu'on regarde. */}
-            <span className="absolute top-[13px] left-[14px] z-[2] rounded-3xl border border-[#e5e8df] bg-white/80 px-2 py-1 text-[7px] font-bold tracking-[1px] text-[#626b57] uppercase fiche:top-[17px] fiche:left-[18px] fiche:px-[9px] fiche:py-[5px] fiche:text-[8px]">
+            <span className="absolute top-[13px] left-[14px] z-[2] rounded-3xl border border-[#e3e3e3] bg-white/80 px-2 py-1 text-[7px] font-bold tracking-[1px] text-[#616161] uppercase fiche:top-[17px] fiche:left-[18px] fiche:px-[9px] fiche:py-[5px] fiche:text-[8px]">
               {current.thumbLabel}
             </span>
 
             {/* .visual-corner : la légende enregistrée du visuel. */}
             {current.caption ? (
-              <span className="absolute bottom-[14px] left-[15px] z-[2] max-w-[75%] text-[6.5px] tracking-[0.8px] text-[#75816b] uppercase fiche:bottom-[19px] fiche:left-5 fiche:text-[8px] fiche:tracking-[1.05px]">
+              <span className="absolute bottom-[14px] left-[15px] z-[2] max-w-[75%] text-[6.5px] tracking-[0.8px] text-[#767676] uppercase fiche:bottom-[19px] fiche:left-5 fiche:text-[8px] fiche:tracking-[1.05px]">
                 {current.caption}
               </span>
             ) : null}
@@ -246,8 +246,8 @@ export function ProductGallery({
                 onKeyDown={(event) => surTouche(event, position)}
                 onClick={() => setVue(onglet.vue)}
                 className={cn(
-                  'relative grid h-16 place-items-center overflow-hidden rounded-[5px] bg-[#f3f4ef] transition-colors fiche:h-[77px] fiche:rounded-md min-[1450px]:h-[84px]',
-                  actif ? 'border-[1.7px] border-brand' : 'border border-[#e3e7db] hover:border-line-strong',
+                  'relative grid h-16 place-items-center overflow-hidden rounded-[5px] bg-[#f2f2f2] transition-colors fiche:h-[77px] fiche:rounded-md min-[1450px]:h-[84px]',
+                  actif ? 'border-[1.7px] border-brand' : 'border border-[#e1e1e1] hover:border-line-strong',
                 )}
               >
                 {visuel ? (
@@ -262,7 +262,7 @@ export function ProductGallery({
                     )}
                   />
                 ) : (
-                  <IconPack className="size-6 text-[#788a66]" />
+                  <IconPack className="size-6 text-[#787878]" />
                 )}
                 <span className="absolute inset-x-0 bottom-0 bg-white/95 p-[2px] text-center text-[8px] text-ink fiche:p-[3px_4px] fiche:text-[9px]">
                   {onglet.libelle}
@@ -279,7 +279,7 @@ export function ProductGallery({
         s'excuser d'une vraie photo.
       */}
       {!packAffiche && (current.nature === 'ILLUSTRATION' || current.nature === 'DIAGRAM') ? (
-        <p className="mt-[9px] flex items-center justify-center gap-[5px] text-center text-[8px] leading-[1.5] text-[#92998a] fiche:mt-3 fiche:gap-[6px] fiche:text-[9px]">
+        <p className="mt-[9px] flex items-center justify-center gap-[5px] text-center text-[8px] leading-[1.5] text-[#929292] fiche:mt-3 fiche:gap-[6px] fiche:text-[9px]">
           <IconInfo className="size-[11px] shrink-0 fiche:size-3" />
           {current.nature === 'DIAGRAM'
             ? 'Schéma de principe — il situe le montage, il ne le représente pas.'
@@ -288,14 +288,14 @@ export function ProductGallery({
       ) : null}
 
       {/* .gallery-promise — masquée sous 800 px par la maquette. */}
-      <div className="mt-[21px] hidden items-center gap-[13px] border-t border-line pt-[23px] text-[11px] text-[#737b6b] fiche:flex">
-        <IconHeadset className="size-[25px] shrink-0 text-[#667b57]" strokeWidth={1.5} />
+      <div className="mt-[21px] hidden items-center gap-[13px] border-t border-line pt-[23px] text-[11px] text-[#737373] fiche:flex">
+        <IconHeadset className="size-[25px] shrink-0 text-[#696969]" strokeWidth={1.5} />
         <span>
           Un doute sur votre montage ?
           <br />
           <Link
             href="/contact"
-            className="mt-[2px] inline-block text-[11px] font-bold text-[#3f5035] underline-offset-[3px] hover:underline"
+            className="mt-[2px] inline-block text-[11px] font-bold text-[#424242] underline-offset-[3px] hover:underline"
           >
             On vous accompagne, avant et après.<span className="ml-[7px]">↗</span>
           </Link>

@@ -97,7 +97,7 @@ export async function Header() {
       </div>
 
       {/* ---------------- Ligne principale ---------------- */}
-      <div className="border-b border-[#e7e9e5]">
+      <div className="border-b border-[#e7e7e7]">
         <div
           className={
             /* .shop-header-main : 89 px et 36 px d'écart (43 au-delà de 1450 px). */
@@ -121,7 +121,7 @@ export async function Header() {
               <VehicleMenu vehicle={vehicle} />
             </div>
             {/* .header-cart-link : filet à gauche, 24 px de retrait. */}
-            <span aria-hidden className="mx-5 hidden h-8 w-px bg-[#e1e6d9] lg:block" />
+            <span aria-hidden className="mx-5 hidden h-8 w-px bg-[#e0e0e0] lg:block" />
             <CartLink itemCount={cart.itemCount} />
           </div>
         </div>
@@ -140,7 +140,7 @@ export async function Header() {
           depuis le menu. */}
       <div
         className={
-          'overflow-hidden border-b border-line bg-[#f7f8f4] transition-[height] duration-200 motion-reduce:transition-none lg:hidden ' +
+          'overflow-hidden border-b border-line bg-[#f6f6f6] transition-[height] duration-200 motion-reduce:transition-none lg:hidden ' +
           'h-11 group-data-scrolled/header:h-0 group-data-scrolled/header:border-b-0'
         }
       >
@@ -150,7 +150,7 @@ export async function Header() {
       </div>
 
       {/* ---------------- Navigation ---------------- */}
-      <nav aria-label="Catégories" className="hidden border-t border-[#f0f1ec] lg:block">
+      <nav aria-label="Catégories" className="hidden border-t border-[#eeeeee] lg:block">
         <div
           className={
             /* .shop-category-inner : 46 px, items à 12 px, écart de 28 px. */
@@ -162,8 +162,8 @@ export async function Header() {
 
           <Link
             href="/guides"
-            /* .header-nav-help : 10 px, couleur #7f8d73. */
-            className="flex shrink-0 items-center gap-2 text-[10px] whitespace-nowrap text-[#7f8d73] transition-colors hover:text-[#333e29]"
+            /* .header-nav-help : 10 px, couleur #808080. */
+            className="flex shrink-0 items-center gap-2 text-[10px] whitespace-nowrap text-[#808080] transition-colors hover:text-[#343434]"
           >
             <IconHeadset className="size-4 shrink-0" strokeWidth={1.5} />
             Conseils &amp; montage

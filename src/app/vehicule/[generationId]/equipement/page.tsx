@@ -231,7 +231,7 @@ export default async function Page({
                         'flex w-full items-center gap-4 rounded-lg p-4 text-left transition-colors',
                         config.id === configurationRetenue
                           ? 'border-[1.5px] border-brand bg-[#fdf6f5]'
-                          : 'border border-[#ddddda] hover:border-slate-ink',
+                          : 'border border-[#dcdcdc] hover:border-slate-ink',
                       )}
                     >
                       {/*
@@ -307,9 +307,9 @@ export default async function Page({
               véhicule déjà renseigné, au lieu de renvoyer vers une page de
               contact qui n'est pas construite.
             */}
-            <div className="mt-4 rounded-[7px] bg-[#f7f7f3] p-[15px]">
+            <div className="mt-4 rounded-[7px] bg-[#f5f5f5] p-[15px]">
               <p className="text-[12px] font-bold">Vous ne savez pas lequel vous avez ?</p>
-              <p className="mt-1.5 text-[10px] leading-[1.7] text-[#7f8775]">
+              <p className="mt-1.5 text-[10px] leading-[1.7] text-[#7e7e7e]">
                 Ne choisissez pas au hasard : un halogène et un xénon n&apos;acceptent pas la même
                 pièce. Nous l&apos;identifions à partir de votre véhicule.
               </p>

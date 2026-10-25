@@ -74,7 +74,7 @@ export default async function PacksMarquePage({ params }: PageProps) {
       <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         Éclairage {makeName}
       </h1>
-      <p className="mt-2 max-w-[580px] text-[11px] leading-[1.8] text-[#7b8074]">
+      <p className="mt-2 max-w-[580px] text-[11px] leading-[1.8] text-[#7a7a7a]">
         Choisissez votre modèle et sa période de fabrication. Les années indiquées sont celles de
         la génération, pas celles de la première immatriculation.
       </p>
@@ -94,7 +94,7 @@ export default async function PacksMarquePage({ params }: PageProps) {
 
       <ul className="mt-5 flex flex-col gap-3">
         {models.map((model) => (
-          <li key={model.slug} className="rounded-[9px] border border-[#e3e6dc]">
+          <li key={model.slug} className="rounded-[9px] border border-[#e1e1e1]">
             <div className="flex items-center justify-between gap-4 border-b border-line px-4 py-3">
               <h2 className="text-[14px] font-bold">
                 <Link
@@ -104,7 +104,7 @@ export default async function PacksMarquePage({ params }: PageProps) {
                   {model.name}
                 </Link>
               </h2>
-              <span className="shrink-0 text-[9px] text-[#838c77]">
+              <span className="shrink-0 text-[9px] text-[#828282]">
                 {model.generations.length > 1
                   ? `${model.generations.length} générations`
                   : '1 génération'}
@@ -130,7 +130,7 @@ export default async function PacksMarquePage({ params }: PageProps) {
                         {generation.name}
                         <span className="ml-2 font-normal text-[#686c67]">{generation.years}</span>
                       </span>
-                      <span className="mt-0.5 block text-[9px] text-[#838c77]">
+                      <span className="mt-0.5 block text-[9px] text-[#828282]">
                         {generation.phase ? `${generation.phase} · ` : null}
                         {generation.hasFitments
                           ? generation.configurationCount > 1

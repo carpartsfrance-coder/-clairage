@@ -72,8 +72,8 @@ export function BrandGrid({
             className={cn(
               'flex h-full flex-col items-center justify-center gap-2 rounded-lg border px-1.5 py-3 text-center transition-colors',
               tone === 'page'
-                ? 'border-[#e3e6dc] bg-white hover:border-slate-ink'
-                : 'border-transparent hover:border-[#e3e6dc] hover:bg-surface-paper',
+                ? 'border-[#e1e1e1] bg-white hover:border-slate-ink'
+                : 'border-transparent hover:border-[#e1e1e1] hover:bg-surface-paper',
             )}
           >
             <BrandMark name={entry.label} logo={entry.logo ?? null} size="lg" />
@@ -103,7 +103,7 @@ export function BrandGrid({
             </span>
 
             {entry.hint ? (
-              <span className="text-[9px] text-[#8c9481]">{entry.hint}</span>
+              <span className="text-[9px] text-[#8b8b8b]">{entry.hint}</span>
             ) : null}
           </Link>
         </li>

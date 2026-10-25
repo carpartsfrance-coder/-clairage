@@ -49,31 +49,31 @@ export default function Page() {
 
       <Article numero={1} id="editeur" titre="Éditeur du site">
         <dl className="grid gap-x-6 gap-y-2 fiche:grid-cols-[minmax(0,180px)_1fr]">
-          <dt className="text-[12px] font-semibold text-[#6b7263]">Dénomination sociale</dt>
+          <dt className="text-[12px] font-semibold text-[#6a6a6a]">Dénomination sociale</dt>
           <dd>{l.companyName ?? <AComplete quoi="Dénomination" />}</dd>
 
-          <dt className="text-[12px] font-semibold text-[#6b7263]">Forme juridique</dt>
+          <dt className="text-[12px] font-semibold text-[#6a6a6a]">Forme juridique</dt>
           <dd>{l.legalForm ?? <AComplete quoi="Forme juridique" />}</dd>
 
-          <dt className="text-[12px] font-semibold text-[#6b7263]">Capital social</dt>
+          <dt className="text-[12px] font-semibold text-[#6a6a6a]">Capital social</dt>
           <dd>{l.capital ?? <AComplete quoi="Capital social" />}</dd>
 
-          <dt className="text-[12px] font-semibold text-[#6b7263]">Siège social</dt>
+          <dt className="text-[12px] font-semibold text-[#6a6a6a]">Siège social</dt>
           <dd>{l.address ?? <AComplete quoi={`Adresse complète${l.city ? ` à ${l.city}` : ''}`} />}</dd>
 
-          <dt className="text-[12px] font-semibold text-[#6b7263]">RCS</dt>
+          <dt className="text-[12px] font-semibold text-[#6a6a6a]">RCS</dt>
           <dd>{l.rcs ?? <AComplete quoi="Ville et numéro RCS" />}</dd>
 
-          <dt className="text-[12px] font-semibold text-[#6b7263]">SIRET</dt>
+          <dt className="text-[12px] font-semibold text-[#6a6a6a]">SIRET</dt>
           <dd>{l.siret ?? <AComplete quoi="SIRET" />}</dd>
 
-          <dt className="text-[12px] font-semibold text-[#6b7263]">TVA intracommunautaire</dt>
+          <dt className="text-[12px] font-semibold text-[#6a6a6a]">TVA intracommunautaire</dt>
           <dd>{l.vatNumber ?? <AComplete quoi="Numéro de TVA" />}</dd>
 
-          <dt className="text-[12px] font-semibold text-[#6b7263]">Directeur de la publication</dt>
+          <dt className="text-[12px] font-semibold text-[#6a6a6a]">Directeur de la publication</dt>
           <dd>{l.publicationDirector ?? <AComplete quoi="Nom du directeur" />}</dd>
 
-          <dt className="text-[12px] font-semibold text-[#6b7263]">Contact</dt>
+          <dt className="text-[12px] font-semibold text-[#6a6a6a]">Contact</dt>
           <dd>
             {identity.contact.email ? (
               <a href={`mailto:${identity.contact.email}`} className="underline underline-offset-2">

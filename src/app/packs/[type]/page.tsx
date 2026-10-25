@@ -55,7 +55,7 @@ export default async function PacksTypePage({ params }: PageProps) {
       <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         {libelle.long}
       </h1>
-      <p className="mt-2 max-w-[580px] text-[11px] leading-[1.8] text-[#7b8074]">
+      <p className="mt-2 max-w-[580px] text-[11px] leading-[1.8] text-[#7a7a7a]">
         Choisissez votre marque, puis votre modèle et sa période de fabrication. Les éclairages
         affichés sont ceux documentés pour ce véhicule.
       </p>

@@ -338,7 +338,7 @@ export function BuyBox({
                     'choix-conditionnement',
                     active
                       ? 'border-[1.5px] border-brand bg-[#fdf6f5] px-[12.5px] py-[14.5px] fiche:px-[9.5px] fiche:py-[12.5px] min-[1101px]:px-[13.5px]'
-                      : 'border border-[#ddddda] px-[13px] py-[15px] fiche:px-2.5 fiche:py-[13px] min-[1101px]:px-3.5',
+                      : 'border border-[#dcdcdc] px-[13px] py-[15px] fiche:px-2.5 fiche:py-[13px] min-[1101px]:px-3.5',
                     !available && 'opacity-60',
                   )}
                 >
@@ -366,7 +366,7 @@ export function BuyBox({
                       'relative block size-[15px] shrink-0 rounded-full border',
                       active
                         ? 'border-brand after:absolute after:inset-[3px] after:rounded-full after:bg-brand'
-                        : 'border-[#b5b5b1]',
+                        : 'border-[#b3b3b3]',
                     )}
                   />
 
@@ -377,7 +377,7 @@ export function BuyBox({
                       </span>
                     ) : null}
                     <strong className="text-[13px] fiche:text-[12px]">{variant.name}</strong>
-                    <small className="text-[10px] text-[#777974] fiche:text-[9px] min-[1281px]:text-[10px]">
+                    <small className="text-[10px] text-[#767676] fiche:text-[9px] min-[1281px]:text-[10px]">
                       {variant.components.length > 0
                         ? 'Ampoules + accessoires nécessaires'
                         : variant.missingAccessories.length > 0
@@ -466,7 +466,7 @@ export function BuyBox({
           <strong className="block text-[33px] leading-[1.1] font-bold tracking-[-1.5px] fiche:text-[35px]">
             {formatPrice(total)}
           </strong>
-          <span className="mt-[5px] block text-[10px] text-[#8e9686] min-[1450px]:text-[11px]">
+          <span className="mt-[5px] block text-[10px] text-[#8e8e8e] min-[1450px]:text-[11px]">
             TTC · {selected.name.toLowerCase()}
             {accessoriesTotal > 0 ? ' et accessoires cochés' : null}
           </span>
@@ -540,7 +540,7 @@ export function BuyBox({
               type="button"
               disabled={!purchasable || pending}
               onClick={submit}
-              className="flex min-h-[50px] flex-1 items-center justify-center gap-3 rounded-md border border-[#c7c9c0] bg-white px-[17px] py-2.5 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex min-h-[50px] flex-1 items-center justify-center gap-3 rounded-md border border-[#c4c4c4] bg-white px-[17px] py-2.5 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
             >
               <IconCart className="size-4 shrink-0" />
               {pending ? 'Ajout en cours…' : 'Commander sans attendre la vérification'}
@@ -625,7 +625,7 @@ export function BuyBox({
       </div>
 
       {/* ---- .road-note : l'homologation, dite telle qu'elle est connue ---- */}
-      <div className="mt-2.5 text-[8px] text-[#85837e]">
+      <div className="mt-2.5 text-[8px] text-[#828282]">
         <RoadApprovalNote
           status={selected.fitment.roadApproval}
           market={selected.fitment.approvalMarket}
@@ -639,7 +639,7 @@ export function BuyBox({
       */}
       <div
         className={cn(
-          'fixed inset-x-0 bottom-0 z-20 border-t border-[#e2e3df] bg-white/93 backdrop-blur-xl transition-[translate] duration-200',
+          'fixed inset-x-0 bottom-0 z-20 border-t border-[#e1e1e1] bg-white/93 backdrop-blur-xl transition-[translate] duration-200',
           barreVisible ? 'translate-y-0' : 'max-fiche:translate-y-0 fiche:translate-y-[110%]',
         )}
       >
@@ -668,7 +668,7 @@ export function BuyBox({
               <strong className="block text-[11px] leading-[1.3] min-[1101px]:text-[12px]">
                 {productName}
               </strong>
-              <span className="mt-[3px] block text-[9px] text-[#99a48e]">
+              <span className="mt-[3px] block text-[9px] text-[#999999]">
                 {selected.name}
                 {vehicleLabel ? ` · ${vehicleLabel}` : null}
               </span>
@@ -680,7 +680,7 @@ export function BuyBox({
               <strong className="block text-[24px] leading-[1.2] tracking-[-0.9px] fiche:text-[25px] fiche:tracking-[-1px]">
                 {formatPrice(total)}
               </strong>
-              <span className="mt-[1px] block text-[7px] leading-[1.4] whitespace-nowrap text-[#94a387] fiche:text-[8px]">
+              <span className="mt-[1px] block text-[7px] leading-[1.4] whitespace-nowrap text-[#959595] fiche:text-[8px]">
                 TTC{delivery?.priceLabel ? ` · ${delivery.priceLabel.toLowerCase()}` : null}
               </span>
             </div>
@@ -742,7 +742,7 @@ function SelecteurQuantite({
     <div
       role="group"
       aria-label="Quantité"
-      className="flex h-[50px] w-[87px] shrink-0 items-center justify-between rounded-md border border-[#dfe4d9] fiche:h-[51px] fiche:w-[100px]"
+      className="flex h-[50px] w-[87px] shrink-0 items-center justify-between rounded-md border border-[#dedede] fiche:h-[51px] fiche:w-[100px]"
     >
       <button
         type="button"

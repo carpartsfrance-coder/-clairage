@@ -94,7 +94,7 @@ export function FitmentCheckForm({
           rows={4}
           maxLength={1000}
           placeholder="Référence du bloc optique, finition, difficulté rencontrée…"
-          className="w-full rounded-[7px] border border-[#d5d9cf] bg-white p-3 text-[13px] text-[#31372c] placeholder:text-muted"
+          className="w-full rounded-[7px] border border-[#d4d4d4] bg-white p-3 text-[13px] text-[#323232] placeholder:text-muted"
         />
         <p className="text-[10px] font-normal text-muted">
           Facultatif. La référence inscrite sur le phare d&apos;origine est ce qui lève le doute

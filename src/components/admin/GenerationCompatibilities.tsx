@@ -90,7 +90,7 @@ type Dispatch = {
 }
 
 const miniBouton =
-  'inline-flex min-h-9 items-center rounded-md border border-[#c7c9c0] px-3 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:opacity-50'
+  'inline-flex min-h-9 items-center rounded-md border border-[#c4c4c4] px-3 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:opacity-50'
 
 function Cible({ level, intent }: { level: 'configuration' | 'fitment'; intent: string }) {
   return (
@@ -288,7 +288,7 @@ function Accessoires({
           {fitment.accessories.map((accessoire) => (
             <li
               key={accessoire.id}
-              className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[7px] border border-[#e2e3dc] bg-white px-2.5 py-2 text-[11px]"
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[7px] border border-[#e0e0e0] bg-white px-2.5 py-2 text-[11px]"
             >
               <span className="min-w-0 flex-1 font-medium">{accessoire.label}</span>
               <span className="text-muted">× {accessoire.quantity}</span>
@@ -370,7 +370,7 @@ function BlocCompatibilite({
   dispatch: Dispatch
 }) {
   return (
-    <details className="rounded-[7px] border border-[#e2e3dc] bg-surface-soft">
+    <details className="rounded-[7px] border border-[#e0e0e0] bg-surface-soft">
       <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5 text-[12px]">
         <span className="font-semibold">{fitment.positionLabel}</span>
         <span className="min-w-0 flex-1 text-muted-strong">{fitment.variantLabel}</span>
@@ -508,7 +508,7 @@ function BlocConfiguration({
 
       <form
         action={dispatch.action}
-        className="mt-3 rounded-[7px] border border-dashed border-[#c7c9c0] p-3"
+        className="mt-3 rounded-[7px] border border-dashed border-[#c4c4c4] p-3"
       >
         <Cible level="fitment" intent="create" />
         <input type="hidden" name="configurationId" value={configuration.id} />

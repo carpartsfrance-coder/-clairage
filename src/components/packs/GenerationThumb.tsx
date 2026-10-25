@@ -26,7 +26,7 @@ export function GenerationThumb({
     <span
       aria-hidden="true"
       className={cn(
-        'relative hidden h-[46px] w-[68px] shrink-0 overflow-hidden rounded-[6px] border border-[#e3e6dc] bg-surface-paper fiche:block',
+        'relative hidden h-[46px] w-[68px] shrink-0 overflow-hidden rounded-[6px] border border-[#e1e1e1] bg-surface-paper fiche:block',
         className,
       )}
     >

@@ -80,7 +80,7 @@ export default async function AidePage() {
         Aide &amp; contact
       </h1>
 
-      <p className="mt-3 max-w-[580px] text-[11px] leading-[1.8] text-[#7b8074]">
+      <p className="mt-3 max-w-[580px] text-[11px] leading-[1.8] text-[#7a7a7a]">
         Ce qui est déjà en place pour vous dépanner, et comment nous joindre quand ça ne suffit
         pas.
       </p>
@@ -99,7 +99,7 @@ export default async function AidePage() {
                     {entree.title}
                   </Link>
                 </h3>
-                <p className="mt-2 text-[11px] leading-[1.8] text-[#7b8074]">{entree.text}</p>
+                <p className="mt-2 text-[11px] leading-[1.8] text-[#7a7a7a]">{entree.text}</p>
                 <p className="mt-auto pt-4 text-[11px] font-bold">
                   <Link href={entree.href} className="text-ink hover:underline">
                     {entree.action}{' '}
@@ -126,7 +126,7 @@ export default async function AidePage() {
             <h2 id="aide-questions" className="text-[14px] font-bold">
               Questions fréquentes
             </h2>
-            <p className="mt-2 text-[11px] leading-[1.8] text-[#7b8074]">
+            <p className="mt-2 text-[11px] leading-[1.8] text-[#7a7a7a]">
               Ce qui revient le plus souvent. Si votre cas n&apos;y est pas,{' '}
               <Link href="/contact" className="font-semibold text-ink hover:underline">
                 écrivez-nous
@@ -143,12 +143,12 @@ export default async function AidePage() {
                     {item.question}
                     <span
                       aria-hidden="true"
-                      className="shrink-0 text-[17px] leading-[26px] font-normal text-[#8c8e85] transition-transform group-open:rotate-45"
+                      className="shrink-0 text-[17px] leading-[26px] font-normal text-[#8a8a8a] transition-transform group-open:rotate-45"
                     >
                       +
                     </span>
                   </summary>
-                  <p className="mt-3 max-w-[580px] text-[10px] leading-[1.8] text-[#7b8074] fiche:text-[11px]">
+                  <p className="mt-3 max-w-[580px] text-[10px] leading-[1.8] text-[#7a7a7a] fiche:text-[11px]">
                     {item.answer}
                   </p>
                 </details>

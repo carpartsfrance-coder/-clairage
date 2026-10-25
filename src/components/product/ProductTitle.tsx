@@ -75,7 +75,7 @@ export function ProductTitle({
           {eyebrow.map((partie, index) => (
             <span key={partie}>
               {index > 0 ? (
-                <span aria-hidden="true" className="mx-[6px] text-[#c3c7bc]">
+                <span aria-hidden="true" className="mx-[6px] text-[#c2c2c2]">
                   ·
                 </span>
               ) : null}
@@ -95,13 +95,13 @@ export function ProductTitle({
       </h1>
 
       {tagline ? (
-        <p className="mt-[10px] max-w-[335px] text-[12px] leading-[1.65] text-[#70766b] fiche:mt-[14px] fiche:max-w-none fiche:text-[13px] min-[1450px]:text-[14px] min-[1450px]:text-[#65705e]">
+        <p className="mt-[10px] max-w-[335px] text-[12px] leading-[1.65] text-[#707070] fiche:mt-[14px] fiche:max-w-none fiche:text-[13px] min-[1450px]:text-[14px] min-[1450px]:text-[#676767]">
           {tagline}
         </p>
       ) : null}
 
       {puces.length > 0 ? (
-        <p className="mt-[11px] flex items-center text-[9px] text-[#5c6455] fiche:mt-[14px] min-[1101px]:text-[10px] min-[1450px]:text-[11px] min-[1450px]:text-[#66745a]">
+        <p className="mt-[11px] flex items-center text-[9px] text-[#5c5c5c] fiche:mt-[14px] min-[1101px]:text-[10px] min-[1450px]:text-[11px] min-[1450px]:text-[#676767]">
           {puces.map((puce, index) => (
             <span
               key={puce.cle}
@@ -116,7 +116,7 @@ export function ProductTitle({
               {puce.pastille ? (
                 <i
                   aria-hidden="true"
-                  className="size-2 shrink-0 rounded-full border border-[#c9d0c2] bg-white"
+                  className="size-2 shrink-0 rounded-full border border-[#c9c9c9] bg-white"
                 />
               ) : null}
               {puce.texte}
