@@ -17,7 +17,7 @@ import { IconArrowRight, IconCar, IconMotorcycle } from '@/components/ui/icons'
  * serveur renvoie l'étape d'équipement au lieu de choisir à la place du client.
  *
  * `layout` :
- *   - `inline`  : bandeau sombre de la page d'accueil, une seule ligne.
+ *   - `inline`  : carte claire de la page d'accueil, une seule ligne.
  *   - `stacked` : modale et page dédiée, champs empilés avec libellés visibles.
  */
 
@@ -171,43 +171,69 @@ export function VehicleSelector({
   const inline = layout === 'inline'
 
   /*
-    Habillage des champs dans le bandeau sombre, repris de `home.css` :
-      select  : 43 px de haut, fond #f9f9f9, filet #4c5153, rayon 5 px,
-                texte 12 px couleur #23272a ;
-      label   : 7 px, gras, interlettrage 1.2 px, couleur #c2c8cb, capitales.
-    Hors bandeau, les champs gardent l'habillage standard du projet.
+    Habillage des champs dans la carte d'accueil.
+
+    Le bandeau sombre de la maquette de référence demandait des champs blanc
+    cassé à filet sombre et des libellés de 7 px en capitales. La carte est
+    claire, donc les champs reprennent l'habillage ordinaire du projet, en
+    plus grand : 48 px de haut au lieu de 43, et des libellés de 12 px.
+
+    Ces 7 px ne tenaient d'ailleurs plus : le plancher de lisibilité les
+    remontait à 10 px, si bien que la valeur écrite ici ne décrivait plus ce
+    qui s'affichait. 12 px est la taille réellement rendue, et elle est lisible
+    sans secours.
+
+    `cn` concatène sans arbitrer les conflits : les surcharges sont donc
+    écrites en valeurs arbitraires, qui l'emportent sur les utilitaires
+    standards de `fieldSize`.
   */
-  const champSombre = inline
-    ? 'h-[43px] rounded-[5px] border-[#4c5153] bg-[#f9f9f9] px-[11px] text-[12px] text-[#23272a]'
+  const champCarte = inline
+    ? 'h-[48px] rounded-[9px] border-line-strong px-[13px] text-[14px] text-ink'
     : undefined
-  const labelSombre = inline
-    ? 'text-[7px] font-bold uppercase tracking-[1.2px] text-[#c2c8cb]'
-    : undefined
+  const labelCarte = inline ? 'text-[12px] font-semibold text-muted-strong' : undefined
+
+  /*
+    Ce qu'affiche un champ vide.
+
+    En carte, les champs sont étroits : sur un téléphone de 390 px, le modèle
+    dispose de 132 px de texte et l'année de 66. « Choisissez une marque » y
+    était coupé à « Choisissez une », c'est-à-dire privé de ce qu'il avait à
+    dire, et aucune formule expliquant l'attente ne tient dans 66 px — mesuré,
+    « Modèle d'abord » en réclame 96. Rééquilibrer les colonnes déplaçait la
+    troncature d'un champ à l'autre sans la supprimer.
+
+    Chaque champ porte donc son propre nom, grisé et désactivé : c'est l'usage
+    partout, cela ne ment sur rien, et la cascade se lit d'elle-même puisque
+    les champs s'activent de gauche à droite. Les dispositions empilées, qui
+    ont la place, gardent la phrase explicite.
+  */
+  const videModele = inline ? 'Modèle' : makeId ? 'Modèle' : 'Choisissez une marque'
+  const videAnnee = inline ? 'Année' : modelId ? 'Année' : 'Choisissez un modèle'
 
 
   return (
     <form
       onSubmit={submit}
-      /* En bandeau, les écarts viennent des marges de chaque bloc (comme dans
-         la référence) et non d'un `gap` global : les deux se cumuleraient. */
+      /* En carte, les écarts viennent des marges de chaque bloc et non d'un
+         `gap` global : les deux se cumuleraient. */
       className={cn('flex flex-col', inline ? 'gap-0' : 'gap-3', className)}
     >
-      {/* Bascule voiture / moto */}
       {/*
         Bascule voiture / moto.
 
-        En bandeau d'accueil (`inline`), la référence n'emploie pas un
-        interrupteur en pilule mais deux onglets soulignés (`.finder-tabs`) :
-        10 px, gris #9fa6aa, et un filet de 2 px couleur #e76b5d sous l'onglet
-        actif. Ailleurs, la pilule du projet est conservée.
+        Les deux dispositions emploient désormais la même pilule. Le bandeau
+        d'accueil portait des onglets soulignés d'un filet #e76b5d, un saumon
+        hérité de la maquette de référence : il ne figure plus à la charte
+        depuis le passage au rouge franc, et c'était la seule couleur du site
+        à ne venir d'aucun jeton. La pilule n'a besoin d'aucun accent — c'est
+        le fond blanc qui désigne l'onglet actif.
       */}
       <div
         role="radiogroup"
         aria-label="Type de véhicule"
         className={cn(
-          inline
-            ? 'mb-[13px] flex w-fit gap-5'
-            : 'inline-flex w-fit rounded-sm bg-surface-muted p-1',
+          'inline-flex w-fit rounded-[9px] border border-line bg-surface-muted p-[3px]',
+          inline && 'mb-[15px]',
         )}
       >
         {(
@@ -225,20 +251,14 @@ export function VehicleSelector({
               aria-checked={active}
               onClick={() => setType(value)}
               className={cn(
-                'flex items-center transition-colors',
-                inline
-                  ? 'min-h-9 gap-1.5 border-b-2 pb-1.5 text-[10px] lg:min-h-0'
-                  : 'min-h-9 gap-2 rounded-xs px-4 text-sm font-semibold',
-                inline
-                  ? active
-                    ? 'border-[#e76b5d] text-white'
-                    : 'border-transparent text-[#9fa6aa] hover:text-white'
-                  : active
-                    ? 'bg-white text-slate-ink shadow-soft'
-                    : 'text-muted-strong hover:text-slate-ink',
+                'flex min-h-11 items-center gap-2 rounded-[7px] px-4 text-[13px]',
+                'font-semibold transition-colors',
+                active
+                  ? 'bg-white text-slate-ink shadow-soft'
+                  : 'text-muted-strong hover:text-slate-ink',
               )}
             >
-              <Icon className={inline ? 'size-[15px]' : 'size-5'} />
+              <Icon className="size-[17px]" />
               {label}
             </button>
           )
@@ -256,11 +276,25 @@ export function VehicleSelector({
           className={cn(
             inline
               /*
-                Mobile : deux colonnes, la marque sur toute la largeur et le
-                bouton en dessous — c'est la grille de la référence, et elle
-                économise une rangée par rapport à un empilement simple.
+                Mobile : trois rangées. La marque, puis le modèle, chacun sur
+                toute la largeur ; l'année et le bouton se partagent la
+                dernière.
+
+                Le modèle a besoin de cette largeur entière. Mesuré sur le
+                catalogue, le plus long s'appelle « Grande Punto / Punto Evo »
+                et réclame 170 px : il se faisait couper dans une demi-rangée,
+                et rééquilibrer les deux colonnes ne faisait que déplacer la
+                troncature sur l'année. L'année, elle, n'a jamais que quatre
+                chiffres, d'où la colonne étroite à côté du bouton — ce qui
+                rend cette disposition aussi haute que la précédente.
+
+                Les quatre éléments ne passent sur une ligne qu'à partir de
+                1024 px, et non 768. Mesuré à 768, le modèle n'y disposait que
+                de 118 px — moins que sur un téléphone, où il occupe une
+                rangée entière. La ligne unique n'a de sens que là où elle ne
+                reprend pas d'une main ce qu'elle donne de l'autre.
               */
-              ? 'grid grid-cols-2 items-end gap-[11px] md:grid-cols-[1fr_1.2fr_0.75fr_1.1fr] md:gap-3 [&>*:first-child]:col-span-2 md:[&>*:first-child]:col-span-1 [&>*:last-child]:col-span-2 md:[&>*:last-child]:col-span-1'
+              ? 'grid grid-cols-[1fr_2fr] items-end gap-3 lg:grid-cols-[1fr_1.2fr_0.8fr_auto] [&>*:nth-child(-n+2)]:col-span-2 lg:[&>*:nth-child(-n+2)]:col-span-1'
               : 'grid gap-4 sm:grid-cols-3',
           )}
         >
@@ -269,8 +303,8 @@ export function VehicleSelector({
             label="Marque"
             hideLabel={false}
             fieldSize="lg"
-            className={champSombre}
-            labelClassName={labelSombre}
+            className={champCarte}
+            labelClassName={labelCarte}
             value={makeId}
             disabled={loading}
             onChange={(event) => {
@@ -292,8 +326,8 @@ export function VehicleSelector({
             label="Modèle"
             hideLabel={false}
             fieldSize="lg"
-            className={champSombre}
-            labelClassName={labelSombre}
+            className={champCarte}
+            labelClassName={labelCarte}
             value={modelId}
             disabled={!makeId || models.length === 0}
             onChange={(event) => {
@@ -301,7 +335,7 @@ export function VehicleSelector({
               setYear('')
             }}
           >
-            <option value="">{makeId ? 'Modèle' : 'Choisissez une marque'}</option>
+            <option value="">{videModele}</option>
             {models.map((model) => (
               <option key={model.id} value={model.id}>
                 {model.name}
@@ -314,13 +348,13 @@ export function VehicleSelector({
             label="Année"
             hideLabel={false}
             fieldSize="lg"
-            className={champSombre}
-            labelClassName={labelSombre}
+            className={champCarte}
+            labelClassName={labelCarte}
             value={year}
             disabled={!modelId || years.length === 0}
             onChange={(event) => setYear(event.target.value)}
           >
-            <option value="">{modelId ? 'Année' : 'Choisissez un modèle'}</option>
+            <option value="">{videAnnee}</option>
             {years.map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -333,9 +367,20 @@ export function VehicleSelector({
             size="lg"
             disabled={!modelId || !year || submitting}
             iconRight={<IconArrowRight className="size-5" />}
-            /* .finder-section .primary : 43 px, 11 px, rayon 7 px. */
             className={cn(
-              inline ? 'h-[43px] min-h-[43px] rounded-[7px] text-[11px] md:w-auto' : 'sm:col-span-3',
+              inline
+                /*
+                  Retraits en valeurs arbitraires, et non `px-4` : `size="lg"`
+                  apporte `px-7`, que `cn` ne sait pas arbitrer puisqu'il se
+                  contente de concaténer. C'est alors l'ordre de la feuille
+                  générée qui tranche, et il donne `px-7`. Le bouton gardait
+                  56 px de retrait, dépassait de 9 px la colonne du téléphone
+                  et cassait sa ligne. Une valeur arbitraire passe après
+                  l'échelle standard et l'emporte — même raison que `h-[48px]`
+                  face à `h-14`.
+                */
+                ? 'h-[48px] min-h-[48px] rounded-[9px] px-[16px] text-[14px] lg:w-auto lg:px-[24px]'
+                : 'sm:col-span-3',
             )}
           >
             {submitting ? 'Recherche…' : currentConfigurationId ? 'Mettre à jour' : 'Voir mes éclairages'}
