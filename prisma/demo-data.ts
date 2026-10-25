@@ -471,25 +471,38 @@ export const demoHomeBlocks = {
   },
   comparison: {
     /*
-      Le texte vise la conversion, mais pas par n'importe quel argument.
+      Le texte vise la conversion, et trois formulations ont été écartées.
 
-      Le plus vendeur serait « voyez plus loin ». C'est aussi le seul que
-      cette image ne peut pas soutenir : elle est simulée, et une LED montée
-      dans un réflecteur conçu pour l'halogène ne donne pas toujours une
-      meilleure portée. Le levier retenu est donc l'autre, et il est vrai :
-      des phares jaunes vieillissent une voiture. C'est une affaire de goût,
-      pas de performance — personne ne peut le contredire, et c'est ce qui
-      décide la plupart des achats de kits LED.
+      « Les halogènes n'éclairent quasiment rien » est faux : un projecteur
+      halogène est homologué et doit satisfaire des minima photométriques.
 
-      Le sous-titre, lui, lève l'objection qui bloque vraiment : « est-ce que
-      ça va sur ma voiture ». Il dit aussi que le site signale les
-      compatibilités NON vérifiées, ce que fait réellement la fiche produit.
-      L'aveu est l'argument : tous les concurrents promettent l'universel.
+      « Surtout par temps de pluie » est l'angle le plus faible, pas le plus
+      fort. Sur chaussée mouillée le film d'eau renvoie la lumière vers
+      l'avant quelle que soit sa couleur, et une lumière plus froide produit
+      davantage d'éblouissement d'inconfort.
+
+      « Les LED améliorent la visibilité » n'est pas établi pour un kit monté
+      dans une optique conçue pour l'halogène. Aucune étude indépendante ne le
+      démontre, et les sources formelles vont plutôt dans l'autre sens
+      (éblouissement, coupure dégradée). Les CGV du site disent d'ailleurs que
+      cette conversion n'est pas homologuée en France : affirmer un résultat
+      d'utilisation relèverait de l'article L121-2 du code de la consommation.
+
+      Ce qui est retenu est vérifiable et se constate soi-même : une ampoule
+      halogène perd de son éclat en vieillissant — le tungstène évaporé
+      noircit l'ampoule — et le polycarbonate des optiques se voile aux UV.
+      Le besoin est donc réel, et il est dit sans rien promettre sur ce que le
+      kit rendra : c'est au client de constater son propre phare.
+
+      Le sous-titre lève l'objection qui bloque vraiment, « est-ce que ça va
+      sur ma voiture », et ajoute que le site signale aussi les compatibilités
+      NON vérifiées, ce que fait la fiche produit. L'aveu est l'argument :
+      tous les concurrents promettent l'universel.
     */
     eyebrow: "Halogène d'origine ou blanc LED",
-    title: 'Rien ne vieillit une voiture\ncomme des phares jaunes.',
+    title: 'Vos phares éclairent moins\nqu\'au premier jour.',
     subtitle:
-      "Nous indiquons si le kit va sur votre véhicule — et nous le disons aussi quand nous ne l'avons pas vérifié.",
+      "Une ampoule halogène perd de son éclat en vieillissant, et le plastique des optiques se voile. Nous vous disons si un kit LED va sur votre véhicule — et aussi quand nous ne l'avons pas vérifié.",
     /*
       Le bouton suit le visuel. Il a mené un temps aux kits d'habitacle, du
       temps où la section montrait un plafonnier ; le comparatif portant de
