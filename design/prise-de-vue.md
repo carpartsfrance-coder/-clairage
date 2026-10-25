@@ -12,7 +12,7 @@ n'est une photographie qui nous appartienne.**
 | Emplacement | Fichier | Mention portée |
 |---|---|---|
 | Bandeau d'ouverture | `/visuels/hero-golf-nuit.webp` | « Illustration de rendu. » |
-| Section « Le détail qui change tout » | `/visuels/habitacle-blanc.webp` | « Simulation de rendu — illustration. » |
+| Section « Le détail qui change tout » | `/visuels/comparatif-route.webp` | « Simulation illustrative » peinte dans l'image, plus la mention du bloc |
 | Les six univers | `/demo/univers-*.jpg`, `indicator.png` | « — illustration » dans le texte alternatif |
 
 Ces images sont honnêtement étiquetées, mais elles restent des images de

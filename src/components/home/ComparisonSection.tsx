@@ -31,27 +31,26 @@ function chemin(fichier: string) {
 }
 
 /**
- * Ce que l'éclairage change ailleurs que dans les phares.
+ * Le comparatif halogène / blanc LED.
  *
  * **Le nom du composant est celui de la clé en base (`comparison`), et non de
  * son contenu.** La clé ne peut pas changer sans orpheliner les blocs déjà
  * enregistrés ; garder le fichier aligné dessus vaut mieux qu'un nom juste
  * d'un côté et faux de l'autre.
  *
- * La section a d'abord montré une voiture dont les deux phares étaient blancs
- * sous les étiquettes « Jaune » et « Blanc LED » — une différence affirmée que
- * l'image ne montrait pas. Puis un vrai comparatif halogène / LED, découpé
- * dans la photographie du bandeau d'ouverture. Mais le bandeau fait déjà cette
- * démonstration, deux écrans plus haut, en plus grand et sur la même voiture :
- * la section la répétait au lieu d'ajouter quelque chose.
+ * Le visuel est fourni par l'éditeur et porte déjà tout ce qu'il lui faut : la
+ * séparation, les deux étiquettes et la mention « Simulation illustrative ».
+ * Le composant n'en rajoute aucune — il doublerait ce qui est peint dedans, et
+ * deux mentions valent moins qu'une, parce qu'on finit par n'en lire aucune.
  *
- * Elle montre donc l'habitacle. Autre scène, autre argument, et le bouton suit
- * — il mène aux kits d'habitacle, pas à ceux de phares.
+ * Son seul travail est donc de ne rien abîmer : le cadre prend le rapport du
+ * fichier, de sorte qu'aucune largeur ne rogne la mention ni ne décentre la
+ * séparation.
  *
- * **Il n'y a plus d'avant / après, et c'est assumé.** Un comparatif demande
- * une paire ; la seule que nous possédions est celle du bandeau d'ouverture.
- * Assombrir une vue d'habitacle pour lui fabriquer un « avant » reviendrait à
- * inventer la différence qu'on prétend montrer.
+ * **La mention du bloc va plus loin que « illustration ».** Une comparaison de
+ * faisceau laisse entendre un résultat, or celui-ci dépend de l'optique du
+ * véhicule autant que de l'ampoule. La section le dit, parce qu'une déception
+ * se paie au service après-vente et qu'une ligne coûte moins cher.
  *
  * **Sans visuel, aucun panneau n'est affiché** et le texte prend toute la
  * largeur, plutôt qu'un cadre vide ou une image cassée.
@@ -115,22 +114,29 @@ export function ComparisonSection({ content }: ComparisonSectionProps) {
         </div>
 
         {visuel ? (
-          <div className="relative h-[235px] overflow-hidden rounded-[10px] bg-[#25282b] lg:h-[290px]">
+          /*
+            Le cadre prend le rapport exact du fichier (1672/941), et non une
+            hauteur fixe. L'image porte sa mention « Simulation illustrative »
+            dans ses 7 % inférieurs : un panneau panoramique l'aurait rognée,
+            et la mention aurait disparu de l'écran tout en restant dans le
+            fichier. Au rapport du fichier, rien n'est recadré à aucune
+            largeur — ni la mention, ni les deux étiquettes, ni la séparation
+            centrale, qui resterait sinon centrée par chance plutôt que par
+            construction.
+          */
+          <div className="relative aspect-[1672/941] overflow-hidden rounded-[10px] bg-[#25282b]">
             <Image
               src={visuel}
               /*
-                Porteuse de sens : c'est ce que la section démontre, pas un
-                décor. Le texte à gauche parle de style ; l'image dit où.
+                Porteuse de sens : c'est le comparatif lui-même, pas un décor.
+                Le texte alternatif dit ce que montre l'image ET qu'elle est
+                une simulation : un lecteur d'écran ne voit pas la mention
+                peinte dans le coin.
               */
-              alt="Plafonnier LED blanc allumé dans un habitacle, de nuit."
+              alt="Comparatif simulé, de nuit, depuis le poste de conduite : à gauche la route éclairée en halogène, à droite la même route éclairée en LED."
               fill
               sizes="(min-width: 1024px) 730px, 100vw"
-              /*
-                Ancrée en haut. Le plafonnier est dans le premier dixième de
-                l'image : un cadrage centré le coupe, et la section perd le
-                seul élément qu'elle a à montrer.
-              */
-              className="object-cover object-top"
+              className="object-cover object-center"
             />
           </div>
         ) : null}

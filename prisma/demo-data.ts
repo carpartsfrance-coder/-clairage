@@ -472,47 +472,38 @@ export const demoHomeBlocks = {
   comparison: {
     eyebrow: 'Le détail qui change tout',
     title: 'Même voiture.\nUn autre regard.',
-    subtitle: 'Un blanc pur pour moderniser le style de votre véhicule.',
+    subtitle: "Un blanc pur à la place du jaune d'origine.",
     /*
-      La cible est une rubrique, pas un produit. Ce bloc fournit les valeurs
-      par DÉFAUT de la page d'accueil : elles servent partout où la table
-      `HomeBlock` est vide, donc sur tout environnement neuf. Le bouton
-      pointait sur un produit de démonstration, absent de la production
-      installée sans `--demo` : le visiteur qui cliquait tombait sur un 404,
-      depuis la page d'accueil. Une rubrique existe dès que la taxonomie est
-      semée.
-
-      Il mène désormais à l'habitacle, pour suivre le visuel. Il renvoyait aux
-      kits de phares alors que le bandeau d'ouverture, deux écrans plus haut,
-      y mène déjà.
+      Le bouton suit le visuel. Il a mené un temps aux kits d'habitacle, du
+      temps où la section montrait un plafonnier ; le comparatif portant de
+      nouveau sur les phares, il y revient.
     */
-    ctaLabel: "Voir les kits LED pour l'habitacle",
-    ctaHref: '/c/interieur',
+    ctaLabel: 'Voir les kits LED pour phares',
+    ctaHref: '/c/phares-led',
     /*
-      L'habitacle, et non les phares.
+      Le comparatif de nuit, fourni par l'éditeur.
 
-      Ce bloc a montré tour à tour une voiture dont les deux phares étaient
-      blancs sous des étiquettes « Jaune » et « Blanc LED », puis un vrai
-      comparatif halogène / LED — mais découpé dans la photographie du bandeau
-      d'ouverture : même voiture, même nuit, même avant de capot. Le hero
-      faisant déjà cette démonstration, la section la répétait au lieu
-      d'ajouter quelque chose, et elle le faisait moins bien puisqu'elle n'en
-      montrait qu'un détail recadré.
+      L'image porte déjà sa séparation, ses deux étiquettes et sa mention
+      « Simulation illustrative » — le composant n'en ajoute donc aucune, il
+      doublerait ce qui est peint dedans.
 
-      L'habitacle est une autre scène et un autre argument : l'éclairage ne
-      s'arrête pas aux phares, et c'est là que le conducteur passe son temps.
-
-      La bande est prise par le HAUT de l'image d'origine. Le plafonnier
-      allumé — le sujet — se trouve à 6 % de sa hauteur ; un cadre panoramique
-      centré l'aurait purement et simplement coupé.
-
-      Il n'y a pas d'avant / après ici, et c'est faute de matière : aucune vue
-      d'habitacle en éclairage d'origine n'existe au dépôt. Fabriquer un
-      « avant » en assombrissant celle-ci reviendrait à inventer la différence
-      qu'on prétend montrer.
+      Son rapport est 1672/941, et le cadre le reprend exactement : la mention
+      occupe les 7 % inférieurs de l'image, qu'un panneau panoramique aurait
+      rognés. Elle aurait disparu de l'écran tout en restant dans le fichier,
+      ce qui est la pire des deux situations.
     */
-    image: '/visuels/habitacle-blanc.webp',
-    caption: 'Simulation de rendu — illustration.',
+    image: '/visuels/comparatif-route.webp',
+    /*
+      La mention va plus loin que « illustration ».
+
+      Une comparaison de faisceau laisse entendre un résultat ; or il dépend
+      de l'optique du véhicule autant que de l'ampoule, et le remplacement
+      d'un halogène par une LED dans un réflecteur conçu pour l'halogène ne
+      donne pas toujours ce que montre l'image. Le dire ici coûte une ligne et
+      évite une déception que le service après-vente paierait plus cher.
+    */
+    caption:
+      'Simulation de rendu — illustration. Le résultat dépend du véhicule, de son optique et du kit monté.',
   },
   products: {
     eyebrow: 'Les essentiels pour passer au blanc',
