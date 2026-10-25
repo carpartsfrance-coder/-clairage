@@ -47,7 +47,7 @@ export function Logo({
   className?: string
   href?: string | null
 }) {
-  const fichier = tone === 'dark' ? 'ledvroom-fond-sombre' : 'ledvroom'
+  const fichier = tone === 'dark' ? 'ledvroom-fond-sombre-v2' : 'ledvroom-v2'
 
   const content = (
     <Image
@@ -84,7 +84,7 @@ export function Logo({
 export function LogoMark({ size = 32, className }: { size?: number; className?: string }) {
   return (
     <Image
-      src="/marque/icone.webp"
+      src="/marque/icone-v2.webp"
       alt=""
       width={size}
       height={size}
