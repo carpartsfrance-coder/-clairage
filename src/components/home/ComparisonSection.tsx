@@ -95,15 +95,31 @@ export function ComparisonSection({ content }: ComparisonSectionProps) {
             ))}
           </h2>
 
-          <p className="mb-4 max-w-[330px] text-[13px] leading-[1.8] text-[#b0b9bc] lg:mb-[18px]">
+          <p className="mb-5 max-w-[380px] text-[15px] leading-[1.7] text-[#b0b9bc] lg:text-[16px]">
             {content.subtitle}
           </p>
 
+          {/*
+            Bouton plein, et non plus en contour. C'est la seule action de la
+            section : un contour la faisait passer pour secondaire.
+
+            Le survol ne change pas la couleur. `primary` l'assombrit en
+            #c21616, ce qui tombe à 2,67:1 sur le fond du bandeau — sous le
+            seuil de 3 exigé pour une surface d'interface — et assombrir sur
+            fond sombre va de toute façon à contresens. Aucune teinte ne tient
+            les deux seuils : éclaircir le rouge sauve la surface mais fait
+            passer le texte blanc sous 4,5. Le survol se signale donc par un
+            anneau clair, qui augmente le contraste au lieu de le réduire.
+
+            Le `!` est nécessaire : `cn` concatène sans arbitrer, et la feuille
+            générée place `hover:bg-brand-dark` APRÈS, donc il gagnerait. Une
+            valeur arbitraire ne suffit pas ici — vérifié dans la feuille, elle
+            est émise avant et perd.
+          */}
           <ButtonLink
             href={content.ctaHref}
-            variant="onDark"
-            className="min-h-[44px] gap-4 rounded-md border-[#667176] px-[17px] text-[13px] text-[#f0f2f1]"
-            iconRight={<IconArrowRight className="size-4" />}
+            className="min-h-[48px] gap-3 rounded-md px-6 text-[15px] hover:bg-brand! hover:ring-2 hover:ring-white/45"
+            iconRight={<IconArrowRight className="size-[18px]" />}
           >
             {content.ctaLabel}
           </ButtonLink>
@@ -124,7 +140,14 @@ export function ComparisonSection({ content }: ComparisonSectionProps) {
             centrale, qui resterait sinon centrée par chance plutôt que par
             construction.
           */
-          <div className="relative aspect-[1672/941] overflow-hidden rounded-[10px] bg-[#25282b]">
+          /*
+            L'image passe en tête sur téléphone, où tout s'empile : le bouton
+            arrivait sinon AVANT le comparatif, et le visiteur atteignait
+            l'action avant d'avoir vu la preuve. L'ordre devient image, puis
+            argument, puis bouton. `lg:order-none` annule la bascule dès que
+            les deux colonnes reprennent, où le texte doit rester à gauche.
+          */
+          <div className="relative order-first aspect-[1672/941] overflow-hidden rounded-[10px] bg-[#25282b] lg:order-none">
             <Image
               src={visuel}
               /*

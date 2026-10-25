@@ -470,9 +470,26 @@ export const demoHomeBlocks = {
     title: 'Du blanc, partout où vous le voulez.',
   },
   comparison: {
-    eyebrow: 'Le détail qui change tout',
-    title: 'Même voiture.\nUn autre regard.',
-    subtitle: "Un blanc pur à la place du jaune d'origine.",
+    /*
+      Le texte vise la conversion, mais pas par n'importe quel argument.
+
+      Le plus vendeur serait « voyez plus loin ». C'est aussi le seul que
+      cette image ne peut pas soutenir : elle est simulée, et une LED montée
+      dans un réflecteur conçu pour l'halogène ne donne pas toujours une
+      meilleure portée. Le levier retenu est donc l'autre, et il est vrai :
+      des phares jaunes vieillissent une voiture. C'est une affaire de goût,
+      pas de performance — personne ne peut le contredire, et c'est ce qui
+      décide la plupart des achats de kits LED.
+
+      Le sous-titre, lui, lève l'objection qui bloque vraiment : « est-ce que
+      ça va sur ma voiture ». Il dit aussi que le site signale les
+      compatibilités NON vérifiées, ce que fait réellement la fiche produit.
+      L'aveu est l'argument : tous les concurrents promettent l'universel.
+    */
+    eyebrow: "Halogène d'origine ou blanc LED",
+    title: 'Rien ne vieillit une voiture\ncomme des phares jaunes.',
+    subtitle:
+      "Nous indiquons si le kit va sur votre véhicule — et nous le disons aussi quand nous ne l'avons pas vérifié.",
     /*
       Le bouton suit le visuel. Il a mené un temps aux kits d'habitacle, du
       temps où la section montrait un plafonnier ; le comparatif portant de
