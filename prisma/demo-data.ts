@@ -410,20 +410,37 @@ export const demoRelations = [
 /** Contenus éditoriaux de la page d'accueil, administrables ensuite. */
 export const demoHomeBlocks = {
   hero: {
-    eyebrow: 'Éclairage auto & moto',
-    title: 'Passez du jaune au blanc LED.',
-    // Coupes de ligne reprises de la référence (`<br>` dans son HTML) : elles
-    // font partie de la composition du bandeau.
-    subtitle:
-      'Phares, intérieur, plaque…\nLe bon éclairage pour votre véhicule,\navec les bons accessoires.',
-    ctaLabel: 'Trouver mon éclairage',
-    // Ancre, et non page séparée : le sélecteur est juste en dessous et visible
-    // dès l'arrivée. Y envoyer directement évite un chargement de page pour
-    // revenir au même geste. La page /vehicule reste accessible par le menu,
-    // pour qui veut l'explication complète du parcours.
+    eyebrow: "L'éclairage qui change tout",
+    /*
+      Les crochets marquent le mot porté en rouge. Un marqueur dans le texte
+      plutôt qu'un champ séparé : le mot reste à sa place dans la phrase, et
+      le jour où elle change, on ne risque pas d'accentuer un mot qui n'y est
+      plus.
+    */
+    title: "Redonnez de l'[éclat] à votre voiture.",
+    subtitle: 'LED pour phares, habitacle et plaque.\nLe bon kit, du premier coup.',
+    /** Pastille cernée sous le texte. */
+    badge: 'Blanc pur · Look moderne',
+    /*
+      Le bandeau n'a plus de bouton propre : l'action est le sélecteur de
+      véhicule, juste en dessous. Deux appels à l'action superposés se
+      disputaient le même geste.
+    */
+    ctaLabel: '',
     ctaHref: '#choisir-mon-vehicule',
-    bullets: ['Montage expliqué', 'Assistance au choix'],
-    image: 'home-hero.png',
+    bullets: [],
+    /* Chemin complet : ce visuel porte la plaque LEDVROOM, il n'est plus un
+       élément de démonstration mais un visuel de marque. */
+    image: '/visuels/hero-golf-nuit.webp',
+    /*
+      Repères posés sur les deux phares. Les pourcentages sont mesurés sur le
+      fichier : le phare halogène est à 55,5 % de la largeur, le phare LED à
+      85,5 %. Les déplacer demande de remesurer, pas d'ajuster à l'œil.
+    */
+    annotations: [
+      { label: 'Halogène', x: 55.5 },
+      { label: 'LED', x: 85.5 },
+    ],
     imageCaption: 'Illustration de rendu.',
   },
   vehicleBand: {
