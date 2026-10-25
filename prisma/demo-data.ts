@@ -471,38 +471,42 @@ export const demoHomeBlocks = {
   },
   comparison: {
     /*
-      Le texte vise la conversion, et trois formulations ont été écartées.
+      L'accroche porte sur la technologie, et non sur ce que le kit rendra.
 
-      « Les halogènes n'éclairent quasiment rien » est faux : un projecteur
+      La distinction est tout : le rendement d'une source se mesure, alors que
+      ce qu'elle donne une fois montée dans une optique dépend de l'optique.
+      Un filament porté à incandescence dissipe l'essentiel de son énergie en
+      chaleur et rayonne surtout dans l'infrarouge ; sa température de couleur
+      le fait tirer sur le jaune. Ce sont des propriétés de la source, que
+      personne ne conteste.
+
+      Aucun chiffre n'est avancé. Les ordres de grandeur courants — une
+      quinzaine de lumens par watt pour l'incandescent, 75 à 110 pour une LED
+      — concernent l'éclairage général ; je n'ai pas trouvé de valeur sourcée
+      propre aux ampoules automobiles. Une accroche qualitative tient sans
+      eux, un chiffre faux ne tiendrait pas.
+
+      Trois formulations ont été écartées, et il vaut mieux savoir pourquoi
+      avant de les réintroduire :
+
+      « Les halogènes n'éclairent quasiment rien » est faux — un projecteur
       halogène est homologué et doit satisfaire des minima photométriques.
 
       « Surtout par temps de pluie » est l'angle le plus faible, pas le plus
-      fort. Sur chaussée mouillée le film d'eau renvoie la lumière vers
+      fort : sur chaussée mouillée le film d'eau renvoie la lumière vers
       l'avant quelle que soit sa couleur, et une lumière plus froide produit
       davantage d'éblouissement d'inconfort.
 
       « Les LED améliorent la visibilité » n'est pas établi pour un kit monté
-      dans une optique conçue pour l'halogène. Aucune étude indépendante ne le
-      démontre, et les sources formelles vont plutôt dans l'autre sens
+      dans une optique conçue pour l'halogène : aucune étude indépendante ne
+      le démontre, et les sources formelles vont plutôt dans l'autre sens
       (éblouissement, coupure dégradée). Les CGV du site disent d'ailleurs que
-      cette conversion n'est pas homologuée en France : affirmer un résultat
-      d'utilisation relèverait de l'article L121-2 du code de la consommation.
-
-      Ce qui est retenu est vérifiable et se constate soi-même : une ampoule
-      halogène perd de son éclat en vieillissant — le tungstène évaporé
-      noircit l'ampoule — et le polycarbonate des optiques se voile aux UV.
-      Le besoin est donc réel, et il est dit sans rien promettre sur ce que le
-      kit rendra : c'est au client de constater son propre phare.
-
-      Le sous-titre lève l'objection qui bloque vraiment, « est-ce que ça va
-      sur ma voiture », et ajoute que le site signale aussi les compatibilités
-      NON vérifiées, ce que fait la fiche produit. L'aveu est l'argument :
-      tous les concurrents promettent l'universel.
+      cette conversion n'est pas homologuée en France.
     */
     eyebrow: "Halogène d'origine ou blanc LED",
-    title: 'Vos phares éclairent moins\nqu\'au premier jour.',
+    title: "L'halogène chauffe\nplus qu'il n'éclaire.",
     subtitle:
-      "Une ampoule halogène perd de son éclat en vieillissant, et le plastique des optiques se voile. Nous vous disons si un kit LED va sur votre véhicule — et aussi quand nous ne l'avons pas vérifié.",
+      "Un filament porté à incandescence perd l'essentiel de son énergie en chaleur. Ce qui en sort est jaune — c'est la technologie qui veut ça.",
     /*
       Le bouton suit le visuel. Il a mené un temps aux kits d'habitacle, du
       temps où la section montrait un plafonnier ; le comparatif portant de
