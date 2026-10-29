@@ -15,6 +15,21 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    /*
+      Les qualités autorisées. Next 16 exige cette liste : l'optimiseur est une
+      API publique, et sans allocation explicite n'importe qui pourrait lui
+      faire produire cent variantes d'un même fichier. Une valeur absente de la
+      liste vaut 400.
+
+      75 est la valeur par défaut, celle de tout le catalogue — des photos de
+      produits où l'œil ne verra pas la différence. 90 est réservée aux visuels
+      de marque qui portent du texte gravé : le bandeau d'accueil compare deux
+      phares, légendes incrustées dans l'image, et un fichier déjà compressé
+      qui repasse à 75 perd la moitié de ses octets (134 ko → 63 ko) — assez
+      pour que les petits caractères bavent et que les dégradés sombres se
+      cassent en bandes.
+    */
+    qualities: [75, 90],
     // Les medias durables sont servis depuis un stockage objet S3-compatible.
     // Le domaine est fourni par MEDIA_PUBLIC_HOST (voir .env.example).
     remotePatterns: process.env.MEDIA_PUBLIC_HOST

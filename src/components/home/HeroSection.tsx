@@ -13,8 +13,6 @@ export type HeroSectionProps = {
     bullets: string[]
     /** Chemin complet depuis `public/`, ou simple nom pour `public/demo/`. */
     image: string
-    /** Repères posés sur l'image, en pourcentage de sa largeur. */
-    annotations?: Array<{ label: string; x: number }>
     imageCaption: string
   }
 }
@@ -27,18 +25,25 @@ export type HeroSectionProps = {
  * démonstration que le site vend, faite en une image plutôt qu'en un
  * paragraphe.
  *
+ * **Les repères sont dans la photo**, trait de rappel compris, et non posés
+ * en HTML par-dessus. Le composant n'a donc rien à mesurer ni à replacer
+ * quand le cadre bouge : l'étiquette ne peut plus désigner le vide. En
+ * contrepartie, ce sont des pixels — ils rétrécissent avec l'image et se
+ * coupent avec elle, ce que les réglages de cadrage ci-dessous ont pour seul
+ * objet de contenir.
+ *
  * **Il n'a pas de bouton.** L'action est le sélecteur de véhicule, juste en
  * dessous : deux appels à l'action superposés se disputaient le même geste, et
  * celui qui compte sur un site de pièces est « quelle est votre voiture ».
  *
- * Sur téléphone, la bande reste courte et les repères disparaissent : à 390 px
- * de large, deux étiquettes posées sur des phares distants de 30 % de l'image
- * se chevauchent. Le voile y est franc, la photo passant au rang d'ambiance —
- * mesuré, son ciel urbain est éclairé et n'offre aucune zone sombre où poser
- * du texte.
+ * Sous 1024 px, les légendes gravées ne sont plus lisibles : la photo fait
+ * trois fois sa hauteur, le cadre ne l'est jamais, et `object-cover` en montre
+ * à peine la moitié. Le cadrage les repousse donc hors champ ou sous le voile
+ * plutôt que de les laisser coupées en plein mot, et la photo redevient une
+ * ambiance derrière le texte.
  */
 export function HeroSection({ content }: HeroSectionProps) {
-  const { eyebrow, title, subtitle, badge, image, annotations = [], imageCaption } = content
+  const { eyebrow, title, subtitle, badge, image, imageCaption } = content
 
   const src = image.startsWith('/') ? image : `/demo/${image}`
 
@@ -58,86 +63,113 @@ export function HeroSection({ content }: HeroSectionProps) {
         priority
         sizes="100vw"
         /*
-          Le cadrage. Entre 640 et 1023 px, le cadre est bien plus haut que
-          l'image n'est faite pour, et `object-cover` ampute près de la moitié
-          de la largeur : les deux phares n'y tiennent pas ensemble. À 62 % le
-          phare halogène reste dégagé et la LED s'approche du bord droit, voire
-          en sort vers 640 px. Porter la visée plus à droite pour rattraper la
-          LED fait passer l'halogène derrière le titre — essayé, c'est pire.
-          Cette bande montre donc la voiture sans garantir les deux phares,
-          et c'est pourquoi les repères n'y sont pas affichés : ils
-          désigneraient un phare hors champ. Au-delà de 1024 px le rapport du
-          cadre rejoint celui de l'image, il n'y a plus de recadrage, et les
-          deux phares sont là.
+          Qualité relevée pour ce seul visuel, et allouée dans next.config.ts.
+
+          Le fichier arrive déjà compressé (134 ko pour 2000 × 667) ; le
+          repasser à la valeur par défaut le ramenait à 63 ko, soit la moitié
+          des octets jetés une seconde fois. Sur une photo de produit cela ne
+          se voit pas ; ici les légendes « Halogène » et « LED » sont gravées
+          dans l'image, en petits caractères sur des aplats sombres — c'est
+          exactement ce qu'une seconde passe destructrice abîme en premier.
         */
-        className="object-cover object-[72%_center] sm:object-[62%_center] lg:object-[center_center]"
+        quality={90}
+        /*
+          Le cadrage, et ce qu'il doit épargner.
+
+          Mesuré sur le fichier : l'étiquette « Halogène » occupe la bande
+          47,3 %–55,3 % de la largeur, l'étiquette « LED » la bande
+          88,8 %–99,5 %, et la voiture s'étend de 51,5 % à 89,5 %. Entre les
+          deux légendes il reste 33,5 % de largeur vierge — moins que ce
+          qu'un cadre de téléphone ou de tablette laisse voir. Aucun cadrage
+          sous 1024 px ne montre donc la voiture sans toucher à une légende :
+          le choix est seulement de savoir laquelle, et comment.
+
+          D'où la règle sous 1280 px : **caler sur le bord droit**. Ce qui
+          tombe est alors toujours pris à gauche, dans la paroi sombre ; la
+          légende LED, qui s'arrête à un demi-pour-cent du bord droit, n'est
+          jamais tranchée ; et le fragment de « Halogène » que le cadre laisse
+          parfois au ras du bord gauche se perd sous la partie la plus dense
+          du voile. Une visée centrée, elle, coupait des deux côtés — donc
+          dans la légende LED.
+
+          Le téléphone fait exception à 80 % : calée à droite, la fenêtre
+          commencerait à 59 % et amputerait la voiture de son phare halogène.
+          À 80 % elle part de 48,8 % et la prend entière — mais elle ramasse
+          au passage la légende « Halogène » presque complète, le long du
+          bord gauche. Ce n'est pas le cadrage qui l'efface, c'est la densité
+          du voile : plus de 90 % de noir sur cette bande, assez pour la
+          réduire à une trace. La seule autre issue serait de cadrer entre
+          les deux légendes, ce qui demande un bandeau aussi haut que large
+          et coupe la voiture de son phare halogène — le sujet même de la
+          comparaison.
+
+          À partir de 1280 px le cadre prend le rapport du fichier, il n'y a
+          plus de recadrage latéral, et les deux légendes sont là telles
+          qu'elles ont été gravées.
+        */
+        className="object-cover object-[80%_center] sm:object-[100%_center] xl:object-[center_center]"
       />
 
       {/*
-        Le voile. Franc et couvrant sur téléphone, dégradé vers la droite
-        au-delà : la largeur y suffit à séparer le texte du sujet, et la
-        voiture peut rester nette là où personne n'écrit.
+        Le voile, en trois régimes.
 
-        Les paliers sont mesurés, pas choisis à l'œil. Le voile tient sa pleine
-        densité jusqu'à 42 % — la ligne de titre la plus longue s'arrête vers
-        52 % — puis chute vite, parce que le phare halogène est à 55,5 % de la
-        largeur et la LED à 85,5 %. Un dégradé qui descendait doucement dès
-        34 % noyait l'halogène tout en laissant la LED éclatante : la
-        comparaison que vend cette image se trouvait exagérée par la mise en
-        scène, et non par la photo. Ici les deux phares reçoivent le même
-        traitement, et l'écart entre eux reste celui du cliché.
+        Sous 1280 px, il doit effacer une légende sans éteindre la photo.
+        À ces largeurs, le recadrage calé à droite ramène « Halogène » dans
+        la moitié gauche du cadre — entre 29 % et 40 % à 1024 px, entre 43 %
+        et 52 % à 1279 px — c'est-à-dire sous le titre. Deux textes
+        superposés ne se lisent ni l'un ni l'autre, et c'est au voile de
+        trancher : il tient donc plus de 90 % de noir jusqu'à 40 %, et
+        75 % encore à 55 %, ce qui couvre la légende sur toute la plage.
+
+        Passé 55 % il chute vite, et c'est tout l'intérêt : la voiture
+        commence là (35 % du cadre à 1024 px, 48 % à 1279 px) et la légende
+        LED se tient au-delà de 76 %, dégagée du texte. Un voile dense d'un
+        bord à l'autre — essayé — effaçait la légende, mais rendait aussi la
+        voiture grise et la page terne.
+
+        À partir de 1280 px, il s'efface avant la première légende. Les
+        paliers sont mesurés, pas choisis à l'œil : le voile tient sa densité
+        jusqu'à 32 %, chute entre 38 % et 45 %, et a disparu à 52 % — alors
+        que « Halogène » commence à 47,3 % et que le titre, cadre centré à
+        1280 px et au-delà, s'arrête avant 46 %. Les valeurs d'avant, calées sur
+        une photo dont les repères étaient posés en HTML par-dessus, tenaient
+        encore 60 % de noir à 52 % : la légende gravée y passait au gris. Le
+        texte n'y perd rien, parce que cette photo-ci est quasi noire sur
+        toute sa moitié gauche, là où l'ancienne montrait des façades
+        éclairées.
+
+        Les deux phares reçoivent le même traitement : l'écart entre eux reste
+        celui du cliché, et non celui de la mise en scène.
       */}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,#070a0ef2_0%,#070a0edb_60%,#070a0ec4_100%)] sm:bg-[linear-gradient(90deg,#070a0ef7_0%,#070a0ee0_42%,#070a0e99_52%,#070a0e33_62%,#070a0e0a_80%,transparent_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,#070a0ef2_0%,#070a0edb_60%,#070a0ec4_100%)] sm:bg-[linear-gradient(90deg,#070a0ef7_0%,#070a0eed_40%,#070a0ebf_55%,#070a0e59_70%,#070a0e26_85%,#070a0e14_100%)] xl:bg-[linear-gradient(90deg,#070a0eeb_0%,#070a0edb_32%,#070a0e96_38%,#070a0e2e_45%,transparent_52%)]" />
 
       {/*
-        Les repères sur les phares.
+        Au-delà de 1280 px, le cadre prend EXACTEMENT le rapport du fichier
+        (2000/667). C'est ce qui fait tenir la promesse de l'image : rien
+        n'est rogné latéralement, donc les deux légendes gravées sont vues
+        entières, à l'endroit où le photographe les a posées.
 
-        L'abscisse est mesurée sur le fichier et reste exacte : au-delà de
-        1024 px le cadre est toujours plus large que haut par rapport à
-        l'image, donc `object-cover` ne rogne jamais les côtés.
+        Le seuil est à 1280 px et non à 1024 px, et il est mesuré lui aussi.
+        En dessous, le conteneur occupe toute la largeur de la fenêtre, si
+        bien que la hauteur dictée par le rapport (la largeur divisée par
+        trois) descend sous les 434 px dont le texte a besoin. Il faut alors
+        choisir : laisser le cadre grandir, et `object-cover` rogne les côtés
+        — c'est le recadrage calé à droite, plus haut ; ou tenir le rapport,
+        et le texte déborde d'un bandeau qui le coupe. À 1280 px, le
+        conteneur plafonne et les deux contraintes se rejoignent : 427 px de
+        cadre pour 434 px de texte, l'écart se logeant dans les 48 px de
+        marge intérieure.
 
-        L'ordonnée, elle, n'est pas donnée — elle est fixée à l'axe médian.
-        C'est le seul point qu'un recadrage centré laisse en place quelle que
-        soit la hauteur du cadre ; une ordonnée en pourcentage, elle, dérivait
-        dès que le cadre cessait d'avoir le rapport du fichier. Les deux
-        phares sont mesurés à 49,1 % et 50,5 % de la hauteur, soit l'axe à
-        1,5 % près : si la photo change, c'est cette mesure qu'il faut refaire.
+        `xl:min-h-0` est indispensable : la hauteur minimale de la tablette
+        survivrait au changement de régime et forcerait, à 1280 px, le
+        recadrage latéral que tout ce bloc cherche à éviter.
 
-        L'étiquette est posée au-dessus du trait, et non à son pied : sur le
-        phare LED, du blanc sur du blanc incandescent ne se lit pas.
-
-        `aria-hidden` : ce sont des légendes d'image, et l'image est
-        décorative — le texte à gauche dit déjà ce que la photo montre.
+        Ce rapport suit le fichier et doit être repris avec lui. Le laisser à
+        celui de la photo précédente (2000/755) rognerait une colonne sur
+        chaque bord — et la légende « LED » s'arrête à un demi-pour-cent du
+        bord droit.
       */}
-      {annotations.length > 0 ? (
-        <div aria-hidden="true" className="absolute inset-0 hidden lg:block">
-          {annotations.map((repere) => (
-            <span
-              key={repere.label}
-              className="absolute flex -translate-x-1/2 -translate-y-full flex-col items-center"
-              style={{ left: `${repere.x}%`, top: '50%' }}
-            >
-              <span className="text-[10px] font-semibold tracking-[1.6px] whitespace-nowrap text-white uppercase drop-shadow-[0_1px_4px_#070a0e] drop-shadow-[0_0_10px_#070a0ecc]">
-                {repere.label}
-              </span>
-              <span className="mt-1.5 h-10 w-px bg-gradient-to-b from-white/10 to-white/70" />
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      {/*
-        Au-delà de 1024 px, le cadre prend EXACTEMENT le rapport du fichier
-        (2000/755). Sans recadrage, un pourcentage mesuré sur l'image vaut le
-        même pourcentage du cadre — c'est ce qui permet aux repères de tomber
-        sur les phares. Les poser en pourcentage du cadre alors que
-        `object-cover` rogne les côtés les décalait, et l'étiquette « LED »
-        sortait du champ.
-
-        En dessous, le rapport ne tient plus — la hauteur vient du texte — donc
-        les repères sont masqués plutôt que faux.
-      */}
-      <div className="container-page relative flex min-h-[320px] items-center sm:min-h-[460px] lg:aspect-[2000/755] lg:min-h-[380px]">
+      <div className="container-page relative flex min-h-[320px] items-center sm:min-h-[460px] xl:aspect-[2000/667] xl:min-h-0">
         <div className="z-[1] w-full py-8 sm:max-w-[460px] sm:py-12 lg:max-w-[560px]">
           <p className="mb-3 text-[9px] font-bold tracking-[2.4px] text-white/80 uppercase sm:mb-4 sm:text-[10px] sm:tracking-[3px]">
             {eyebrow}

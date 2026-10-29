@@ -429,18 +429,17 @@ export const demoHomeBlocks = {
     ctaLabel: '',
     ctaHref: '#choisir-mon-vehicule',
     bullets: [],
-    /* Chemin complet : ce visuel porte la plaque LEDVROOM, il n'est plus un
-       élément de démonstration mais un visuel de marque. */
-    image: '/visuels/hero-golf-nuit.webp',
     /*
-      Repères posés sur les deux phares. Les pourcentages sont mesurés sur le
-      fichier : le phare halogène est à 55,5 % de la largeur, le phare LED à
-      85,5 %. Les déplacer demande de remesurer, pas d'ajuster à l'œil.
+      Chemin complet : ce visuel porte la plaque LEDVROOM, il n'est plus un
+      élément de démonstration mais un visuel de marque.
+
+      Les repères « Halogène » et « LED » sont gravés dans le fichier, avec
+      leur trait de rappel vers chaque phare. Le bandeau n'en pose donc plus
+      par-dessus : deux jeux d'étiquettes se seraient superposés. Changer de
+      photo veut dire reprendre une image qui porte ses propres repères, ou
+      remettre le calque dans le composant.
     */
-    annotations: [
-      { label: 'Halogène', x: 55.5 },
-      { label: 'LED', x: 85.5 },
-    ],
+    image: '/visuels/hero-golf-reperes.webp',
     imageCaption: 'Illustration de rendu.',
   },
   vehicleBand: {

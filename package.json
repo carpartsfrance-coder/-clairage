@@ -25,6 +25,7 @@
     "jobs:run": "tsx --conditions=react-server scripts/run-jobs.ts",
     "test:db:setup": "createdb lumera_test || true && DATABASE_URL=\"postgresql://$USER@localhost:5432/lumera_test?schema=public\" prisma migrate deploy",
     "seed:taxonomy": "tsx scripts/seed-taxonomy.ts",
+    "contenus:accueil": "tsx scripts/sync-home-blocks.ts",
     "import:brand-logos": "tsx scripts/import-brand-logos.ts",
     "logo:marque": "tsx scripts/attach-brand-logo.ts",
     "logos:fournis": "tsx scripts/import-logos-fournis.ts",
