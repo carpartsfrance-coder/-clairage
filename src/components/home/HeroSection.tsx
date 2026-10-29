@@ -55,7 +55,38 @@ export function HeroSection({ content }: HeroSectionProps) {
   const fragments = title.split(/\[([^\]]+)\]/)
 
   return (
-    <section aria-labelledby="hero-titre" className="relative overflow-hidden bg-ink-hero text-white">
+    <section
+      aria-labelledby="hero-titre"
+      /*
+        Le rapport est porté par la SECTION, et c'est tout le sujet.
+
+        Il était posé sur le conteneur intérieur, qui plafonne à 1280 px. La
+        hauteur du bandeau restait donc bloquée à 427 px pendant que la photo,
+        elle, s'étalait sur toute la largeur de la fenêtre : à 1920 px,
+        `object-cover` jetait 33 % de la hauteur de l'image — la voiture s'en
+        trouvait grossie et coupée en haut comme en bas. Mesuré sur le rendu
+        avant correction : cadre 1920 × 427 pour une image affichée
+        1920 × 640.
+
+        Porté par la section, le cadre suit la fenêtre : 1920 × 640 à 1920 px,
+        1280 × 427 à 1280 px, et l'image tient exactement dedans, sans aucune
+        perte dans un sens ni dans l'autre.
+
+        Le plafond de 700 px borne ce que cette règle produirait sur un très
+        grand écran — 853 px de bandeau à 2560 px de fenêtre. Au-delà de
+        2100 px, le recadrage vertical revient donc, mais progressivement, et
+        les légendes gravées se tiennent entre 25 % et 31 % de la hauteur :
+        elles sont les dernières choses qu'un rognage par le haut atteindrait.
+
+        `xl:w-full` n'est pas décoratif. Un bloc qui porte un rapport ET une
+        hauteur maximale ne renonce pas au rapport quand le plafond mord : il
+        rétrécit sa LARGEUR pour le tenir. Mesuré à 2400 px de fenêtre avant
+        correction, la section ne faisait plus que 2099 px et laissait 301 px
+        de vide à sa droite. Une largeur explicite la rend définie, et le
+        rapport ne décide plus alors que de la hauteur.
+      */
+      className="relative overflow-hidden bg-ink-hero text-white xl:aspect-[2000/667] xl:max-h-[700px] xl:w-full"
+    >
       <Image
         src={src}
         alt=""
@@ -162,14 +193,16 @@ export function HeroSection({ content }: HeroSectionProps) {
 
         `xl:min-h-0` est indispensable : la hauteur minimale de la tablette
         survivrait au changement de régime et forcerait, à 1280 px, le
-        recadrage latéral que tout ce bloc cherche à éviter.
+        recadrage latéral que tout ce bloc cherche à éviter. `xl:h-full` prend
+        le relais pour centrer le texte dans la hauteur que la section tient
+        désormais.
 
         Ce rapport suit le fichier et doit être repris avec lui. Le laisser à
         celui de la photo précédente (2000/755) rognerait une colonne sur
         chaque bord — et la légende « LED » s'arrête à un demi-pour-cent du
         bord droit.
       */}
-      <div className="container-page relative flex min-h-[320px] items-center sm:min-h-[460px] xl:aspect-[2000/667] xl:min-h-0">
+      <div className="container-page relative flex min-h-[320px] items-center sm:min-h-[440px] xl:h-full xl:min-h-0">
         <div className="z-[1] w-full py-8 sm:max-w-[460px] sm:py-12 lg:max-w-[560px]">
           <p className="mb-3 text-[9px] font-bold tracking-[2.4px] text-white/80 uppercase sm:mb-4 sm:text-[10px] sm:tracking-[3px]">
             {eyebrow}
