@@ -11,7 +11,7 @@ n'est une photographie qui nous appartienne.**
 
 | Emplacement | Fichier | Mention portée |
 |---|---|---|
-| Bandeau d'ouverture | `/visuels/hero-golf-nuit.webp` | « Illustration de rendu. » |
+| Bandeau d'ouverture | `/visuels/hero-golf-reperes.webp` | « Illustration de rendu. » |
 | Section « Le détail qui change tout » | `/visuels/comparatif-route.webp` | « Simulation illustrative » peinte dans l'image, plus la mention du bloc |
 | Les six univers | `/demo/univers-*.jpg`, `indicator.png` | « — illustration » dans le texte alternatif |
 
@@ -107,6 +107,51 @@ d'un autre.
 Déposez-les tels quels, sans retouche de luminosité ni de couleur — c'est la
 retouche qui transforme un comparatif en argument fabriqué. Le recadrage, le
 redimensionnement et la conversion se font ensuite côté site.
+
+### La définition, pour les visuels pleine largeur
+
+**3840 px de large pour tout visuel qui occupe toute la largeur de la page**,
+bandeau d'ouverture en tête. Ce n'est pas un confort : un écran à double
+densité réclame deux pixels pour un, donc 2880 px sur une fenêtre de 1440 et
+3840 sur une fenêtre de 1920. En dessous, l'image est étirée et paraît floue
+quelle que soit sa qualité de compression.
+
+Le site n'a rien à régler pour en profiter : `next/image` réclame déjà la
+variante 3840 px et se contente de ce que le fichier contient.
+
+**Mais ne remplacez pas un fichier sous le même nom.** L'optimiseur garde ses
+versions retaillées pendant quatre heures (`minimumCacheTTL`) et ne sait pas
+qu'un fichier a changé : Next n'offre aucun moyen de purger ce cache. Vérifié
+en remplaçant ce visuel — après redémarrage du serveur, il continuait de
+servir l'ancienne image, jusqu'à suppression manuelle de `<distDir>/cache/images`.
+
+Donnez donc au nouveau fichier **un nom neuf** (`hero-golf-reperes-3840.webp`),
+et changez le chemin dans `prisma/demo-data.ts` puis en base avec
+`npm run contenus:accueil -- hero`. Le cache est alors contourné par
+construction, et l'ancien fichier reste disponible le temps de comparer.
+
+### Le palliatif en place sur le bandeau d'ouverture
+
+`/visuels/hero-golf-reperes.webp` ne fait que **2000 px** — c'est la seule
+version disponible. À 1440 px de fenêtre sur écran double densité, il est donc
+étiré d'un facteur 1,44.
+
+Il a pour cette raison été **pré-accentué** avant dépôt, ce qui est l'exception
+à la règle de non-retouche ci-dessus : l'accentuation ne corrige pas un
+comparatif, elle compense un étirement. Masque flou de rayon 1,0, intensité
+90 %, seuil 3, puis WebP qualité 93 :
+
+```
+UnsharpMask(radius=1.0, percent=90, threshold=3)
+```
+
+Le seuil est ce qui rend l'opération sans danger : il laisse les aplats
+intacts — mesuré sur la paroi sombre à gauche, l'écart-type reste à 1,61 avant
+comme après, donc aucun grain ajouté — et ne travaille que sur les contours.
+Mesurée après étirement, la variance du laplacien passe de 52 à 112.
+
+**Ce palliatif saute le jour où une source 3840 px arrive.** Accentuer puis
+agrandir ne remplace pas des pixels qui n'ont jamais été capturés.
 
 Les mentions « illustration » et « simulation de rendu » seront retirées
 emplacement par emplacement, à mesure que chaque visuel de synthèse est
