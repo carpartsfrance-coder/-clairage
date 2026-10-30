@@ -451,27 +451,41 @@ export const demoHomeBlocks = {
     shortcutLabel: "Je connais ma référence d'ampoule",
     note: "Votre équipement d'origine sera précisé avant le choix du kit.",
   },
+  /*
+    Les libellés viennent de la maquette, et ils sont plus prudents que les
+    précédents sur deux points.
+
+    « Installation simple sur les modèles compatibles » remplace « Une
+    installation simple et réversible » : la portée est dite, là où l'ancienne
+    formule valait pour tous les véhicules.
+
+    « Une équipe pour vous accompagner » remplace « Nos experts vous guident à
+    chaque étape ». Ce sous-titre n'était affiché nulle part ; en le rendant
+    visible, « experts » devenait une affirmation sur le personnel, et
+    « à chaque étape » un engagement de suivi.
+  */
   reassurance: [
     {
-      icon: 'gear',
-      title: 'Des kits adaptés au montage',
-      text: 'Des solutions pensées pour votre véhicule.',
+      icon: 'car',
+      title: 'Des kits adaptés à votre véhicule',
+      text: 'Choisissez un éclairage pensé pour votre montage',
     },
     {
       icon: 'wrench',
-      title: 'Branchement sans modifier le câblage',
-      text: 'Une installation simple et réversible.',
-      footnote: 'Selon le véhicule et son équipement d’origine.',
+      title: 'Sans modifier le câblage',
+      text: 'Installation simple sur les modèles compatibles',
+      footnote: "Selon le véhicule et son équipement d'origine.",
     },
     {
-      icon: 'shield',
-      title: 'Un accompagnement avant et après',
-      text: 'Nos experts vous guident à chaque étape.',
+      icon: 'headset',
+      title: "Conseils avant et après l'achat",
+      text: 'Une équipe pour vous accompagner',
     },
   ],
   universes: {
-    eyebrow: 'À chaque envie, son éclairage',
-    title: 'Du blanc, partout où vous le voulez.',
+    eyebrow: 'Découvrez nos univers',
+    title: "Trouvez l'éclairage qu'il vous faut",
+    subtitle: 'Explorez nos catégories pour équiper votre véhicule.',
   },
   comparison: {
     /*
