@@ -411,18 +411,31 @@ export const demoRelations = [
 export const demoHomeBlocks = {
   hero: {
     eyebrow: "L'éclairage auto & moto",
-    title: 'Passez au blanc LED.',
+    /*
+      La coupure est explicite. Laissée au navigateur, la phrase passait sur
+      TROIS lignes dans la colonne du panneau — la maquette en montre deux.
+    */
+    title: 'Passez au\nblanc LED.',
     subtitle: 'Phares, habitacle, plaque.\nLe détail qui change votre véhicule.',
     ctaLabel: 'Découvrir les kits LED',
     ctaHref: '/c',
     /*
-      VISUEL PROVISOIRE. Le bandeau attend une photo produit ; celle-ci est
-      l'ancien visuel de comparaison, qui porte ses repères « Halogène » et
-      « LED » gravés dans le fichier. Ils n'ont plus de sens dans ce cadrage —
-      à remplacer, et la mention ci-dessous avec.
+      La photo fournie par l'éditeur. Elle est composée pour ce cadre : sa
+      moitié gauche est un fond sombre vide — mesurée entre 12 et 35 de
+      luminance jusqu'aux deux tiers de la hauteur — et c'est d'elle que vient
+      la diagonale rouge. Elle sert donc de fond au panneau entier, et non de
+      vignette dans sa moitié droite.
+
+      Pas de mention de simulation, et c'est délibéré : l'ancienne décrivait
+      un comparatif halogène / LED, c'est-à-dire un résultat. Un visuel
+      produit n'avance rien de tel.
+
+      EN REVANCHE, sa provenance n'est pas établie. 9 902 des 9 904 fiches du
+      catalogue portent des images de fournisseur ; si celle-ci en est une et
+      ne montre pas l'ampoule réellement expédiée, c'est une autre affaire que
+      la mention de rendu — et elle se règle en photographiant le produit.
     */
-    image: '/visuels/hero-golf-reperes.webp',
-    imageCaption: 'Illustration de rendu.',
+    image: '/visuels/hero-ampoules.webp',
     /*
       Les culots mis en avant, vérifiés au catalogue avant d'être écrits :
       H7 compte 6 produits publiés, H4 et H11 en comptent 2 chacun, H1 en

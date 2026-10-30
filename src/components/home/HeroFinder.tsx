@@ -83,33 +83,50 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
       */}
       <div className="container-page grid gap-[10px] py-4 lg:grid-cols-[422px_minmax(0,1fr)] lg:py-6">
         {/* ---------------------------------------------------- le bandeau */}
-        <div className="relative order-first overflow-hidden rounded-md bg-ink-hero text-white lg:order-last">
+        <div className="relative order-first overflow-hidden rounded-md bg-ink-hero text-white sm:min-h-[480px] lg:order-last lg:min-h-[555px]">
           {/*
-            La photo. En flux sur téléphone, où elle prend une bande sous le
-            texte ; calée à droite au-delà, où elle occupe sa moitié du
-            panneau. Un `fill` ne se positionne que par rapport à l'ancêtre
-            positionné le plus proche : c'est ce qui permet au même élément
-            d'être tantôt dans le flux, tantôt absolu.
+            La photo EST le panneau, et non sa moitié droite.
+
+            Elle est composée pour cela : mesurée, sa moitié gauche reste
+            entre 12 et 35 de luminance jusqu'aux deux tiers de la hauteur,
+            soit 14:1 pour du texte blanc. La diagonale rouge et le bloc de
+            béton, eux, montent à 220 dans le bas — c'est là que le voile
+            devient nécessaire, pas ailleurs.
+
+            Sur téléphone, la photo reprend une bande en flux au-dessus du
+            texte. Le panneau y est trop étroit pour qu'un recadrage garde à
+            la fois les ampoules et la zone sombre : le texte se retrouverait
+            sur les ampoules.
           */}
-          <div className="relative h-[190px] sm:absolute sm:inset-y-0 sm:right-0 sm:h-auto sm:w-[50%]">
+          <div className="relative h-[190px] sm:absolute sm:inset-0 sm:h-auto">
             <Image
               src={chemin(hero.image)}
               alt=""
               fill
               priority
-              sizes="(min-width: 1024px) 560px, 100vw"
-              className="object-cover object-center sm:object-left"
+              sizes="(min-width: 1024px) 1070px, 100vw"
+              /*
+                Calé à gauche au-delà du téléphone, et c'est mesuré : centré,
+                le recadrage plaçait les ampoules entre 50 et 85 % du panneau,
+                c'est-à-dire sous la colonne de texte. Calé à gauche elles
+                occupent 59 à 94 % et lui laissent la place.
+              */
+              className="object-cover object-[70%_center] sm:object-left"
             />
-            {/*
-              Le raccord entre la photo et l'aplat. Vers le haut sur
-              téléphone, où la photo est sous le texte ; vers la gauche
-              au-delà, où elle est à côté. Sans lui, la photo se termine par
-              une arête nette au milieu du panneau.
-            */}
-            <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_55%,var(--color-ink-hero)_100%)] sm:bg-[linear-gradient(90deg,var(--color-ink-hero)_0%,transparent_42%)]" />
           </div>
 
-          <div className="relative z-[1] px-6 py-8 sm:w-[56%] sm:px-8 sm:py-11 lg:py-14">
+          {/*
+            Le voile. Vers le haut sur téléphone, où la photo est au-dessus du
+            texte ; vers la droite au-delà, où le texte est posé dessus.
+
+            Il tient sa densité jusqu'à la moitié de la largeur, parce que
+            c'est là que le bloc de béton atteint 220 : plus tôt, du blanc n'y
+            passerait pas le seuil de 4,5. Au-delà de 68 % il a disparu, et
+            les ampoules gardent leurs noirs.
+          */}
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,transparent_58%,#0b0d10_100%)] sm:bg-[linear-gradient(90deg,#0b0d10f0_0%,#0b0d10e0_34%,#0b0d10b8_50%,#0b0d1052_60%,transparent_68%)]" />
+
+          <div className="relative z-[1] px-6 py-8 sm:flex sm:min-h-[480px] sm:w-[54%] sm:flex-col sm:justify-center sm:px-10 sm:py-12 lg:min-h-[555px] lg:px-12">
             <p className="m-0 text-[11px] font-bold tracking-[2.2px] text-brand-on-dark uppercase">
               {hero.eyebrow}
             </p>
@@ -119,15 +136,14 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
               /*
                 Mesuré sur la maquette : les deux lignes du titre y font 62 et
                 65 px de haut de capitale pour un interligne de 72 px, ce qui
-                place le corps autour de 80 px à 1536 px de large. J'avais posé
-                56 px — le titre y paraissait deux fois moins présent.
+                place le corps autour de 80 px à 1536 px de large.
               */
-              className="m-0 mt-3 text-[38px] leading-[0.98] font-extrabold tracking-[-1.6px] text-white sm:text-[54px] sm:tracking-[-2.4px] xl:text-[76px] xl:tracking-[-3.4px]"
+              className="m-0 mt-3 text-[38px] leading-[0.98] font-extrabold tracking-[-1.6px] text-white sm:text-[48px] sm:tracking-[-2px] xl:text-[62px] xl:tracking-[-2.8px]"
             >
               <span className="whitespace-pre-line">{hero.title}</span>
             </h1>
 
-            <p className="m-0 mt-4 text-[14px] leading-[1.65] text-white/85 sm:text-[16px]">
+            <p className="m-0 mt-4 text-[14px] leading-[1.65] text-white/85 sm:mt-5 sm:text-[16px]">
               {hero.subtitle.split(/\r?\n/).map((ligne, index) => (
                 <span key={ligne} className={index === 0 ? undefined : 'block'}>
                   {ligne}
@@ -139,7 +155,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
               <ButtonLink
                 href={hero.ctaHref}
                 variant="onDark"
-                className="mt-6 min-h-[48px] gap-3 rounded-md border-white/40 px-6 text-[15px]"
+                className="mt-6 w-fit min-h-[48px] gap-3 rounded-md border-white/40 px-6 text-[15px] sm:mt-7"
                 iconRight={<IconArrowRight className="size-[18px]" />}
               >
                 {hero.ctaLabel}
@@ -153,7 +169,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
               rayon que la recherche démentirait au premier clic.
             */}
             {bases.length > 0 ? (
-              <p className="m-0 mt-7 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold tracking-[1px] text-white/55">
+              <p className="m-0 mt-7 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold tracking-[1px] text-white/55 sm:mt-9">
                 {bases.map((base, index) => (
                   <span key={base} className="flex items-center gap-3">
                     {index > 0 ? (
