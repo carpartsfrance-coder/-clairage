@@ -58,15 +58,12 @@ function chemin(fichier: string) {
  * reste un `h2`.
  */
 export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
-  const initial = vehicle
-    ? {
-        type: vehicle.type,
-        makeId: vehicle.selection.makeId,
-        modelId: vehicle.selection.modelId,
-        year: vehicle.selection.year,
-      }
-    : null
-
+  /*
+    Le sélecteur de cette carte part toujours de zéro. Il n'apparaît que
+    lorsqu'aucun véhicule n'est retenu : lui passer une sélection initiale
+    n'aurait rien à reprendre. La page dédiée et le menu, eux, continuent de
+    rouvrir le formulaire sur le véhicule en cours.
+  */
   const bases = hero.bases ?? []
 
   return (
@@ -219,22 +216,32 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
               </ButtonLink>
 
               {/*
-                Le formulaire reste rangé : le client qui revient n'a pas à le
-                traverser pour atteindre ses éclairages. `<details>` plutôt
-                qu'un état React — ouverture, fermeture et clavier sont
-                assurés par le navigateur.
+                « Changer de véhicule » remet le sélecteur à zéro, il ne
+                déplie pas un second formulaire.
+
+                C'était un `<details>` : l'ouvrir ajoutait la cascade complète
+                sous le bouton et faisait grandir la carte d'environ 250 px,
+                donc le bandeau avec elle, et tout ce qui suit descendait d'un
+                coup. Le même formulaire se trouve déjà juste au-dessus une
+                fois le véhicule retiré — il était donc monté deux fois pour
+                le même usage.
+
+                Un formulaire HTML et non un appel en JavaScript : la route
+                existe, `VehicleMenu` l'emploie déjà de cette façon, et le
+                bouton continue de fonctionner sans script.
+
+                Le panier n'est pas touché : la route ne vide que le cookie
+                du véhicule, et la page panier signale d'elle-même les lignes
+                dont la compatibilité n'est plus vérifiable.
               */}
-              <details className="group mt-3">
-                <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-[13px] text-muted-strong underline underline-offset-[3px] hover:text-ink [&::-webkit-details-marker]:hidden">
+              <form action="/api/vehicule/retirer" method="post" className="mt-3">
+                <button
+                  type="submit"
+                  className="touch-cible inline-flex items-center text-[13px] text-muted-strong underline underline-offset-[3px] transition-colors hover:text-ink"
+                >
                   Changer de véhicule
-                  <span aria-hidden="true" className="ml-2 transition-transform group-open:rotate-45">
-                    +
-                  </span>
-                </summary>
-                <div className="mt-4 border-t border-line pt-5">
-                  <VehicleSelector layout="card" initial={initial} />
-                </div>
-              </details>
+                </button>
+              </form>
             </>
           ) : (
             <VehicleSelector layout="card" initial={null} />
