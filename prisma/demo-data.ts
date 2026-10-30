@@ -410,40 +410,32 @@ export const demoRelations = [
 /** Contenus éditoriaux de la page d'accueil, administrables ensuite. */
 export const demoHomeBlocks = {
   hero: {
-    eyebrow: "L'éclairage qui change tout",
+    eyebrow: "L'éclairage auto & moto",
+    title: 'Passez au blanc LED.',
+    subtitle: 'Phares, habitacle, plaque.\nLe détail qui change votre véhicule.',
+    ctaLabel: 'Découvrir les kits LED',
+    ctaHref: '/c',
     /*
-      Les crochets marquent le mot porté en rouge. Un marqueur dans le texte
-      plutôt qu'un champ séparé : le mot reste à sa place dans la phrase, et
-      le jour où elle change, on ne risque pas d'accentuer un mot qui n'y est
-      plus.
-    */
-    title: "Redonnez de l'[éclat] à votre voiture.",
-    subtitle: 'LED pour phares, habitacle et plaque.\nLe bon kit, du premier coup.',
-    /** Pastille cernée sous le texte. */
-    badge: 'Blanc pur · Look moderne',
-    /*
-      Le bandeau n'a plus de bouton propre : l'action est le sélecteur de
-      véhicule, juste en dessous. Deux appels à l'action superposés se
-      disputaient le même geste.
-    */
-    ctaLabel: '',
-    ctaHref: '#choisir-mon-vehicule',
-    bullets: [],
-    /*
-      Chemin complet : ce visuel porte la plaque LEDVROOM, il n'est plus un
-      élément de démonstration mais un visuel de marque.
-
-      Les repères « Halogène » et « LED » sont gravés dans le fichier, avec
-      leur trait de rappel vers chaque phare. Le bandeau n'en pose donc plus
-      par-dessus : deux jeux d'étiquettes se seraient superposés. Changer de
-      photo veut dire reprendre une image qui porte ses propres repères, ou
-      remettre le calque dans le composant.
+      VISUEL PROVISOIRE. Le bandeau attend une photo produit ; celle-ci est
+      l'ancien visuel de comparaison, qui porte ses repères « Halogène » et
+      « LED » gravés dans le fichier. Ils n'ont plus de sens dans ce cadrage —
+      à remplacer, et la mention ci-dessous avec.
     */
     image: '/visuels/hero-golf-reperes.webp',
     imageCaption: 'Illustration de rendu.',
+    /*
+      Les culots mis en avant, vérifiés au catalogue avant d'être écrits :
+      H7 compte 6 produits publiés, H4 et H11 en comptent 2 chacun, H1 en
+      compte 1. Annoncer un culot absent serait une promesse de rayon que la
+      recherche démentirait au premier clic — c'est d'ailleurs pourquoi H8,
+      H9, HB3 et HB4 n'y figurent pas : le catalogue n'en a aucun.
+    */
+    bases: ['H7', 'H4', 'H1', 'H11'],
   },
   vehicleBand: {
-    title: 'Le bon éclairage commence par votre véhicule.',
+    eyebrow: 'Mon véhicule',
+    title: 'Trouvez les LED pour votre véhicule',
+    shortcutLabel: "Je connais ma référence d'ampoule",
     note: "Votre équipement d'origine sera précisé avant le choix du kit.",
   },
   reassurance: [

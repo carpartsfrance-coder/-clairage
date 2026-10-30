@@ -17,8 +17,15 @@ import { IconArrowRight, IconCar, IconMotorcycle } from '@/components/ui/icons'
  * serveur renvoie l'étape d'équipement au lieu de choisir à la place du client.
  *
  * `layout` :
- *   - `inline`  : carte claire de la page d'accueil, une seule ligne.
+ *   - `inline`  : une seule ligne, pour un bloc large.
  *   - `stacked` : modale et page dédiée, champs empilés avec libellés visibles.
+ *   - `card`    : colonne étroite du bandeau d'ouverture.
+ *
+ * `card` existe parce que `stacked` ne convenait pas : il repasse en trois
+ * colonnes dès 640 px de FENÊTRE, or la carte du bandeau n'en fait que 400 sur
+ * grand écran. Les trois champs s'y seraient écrasés au moment précis où la
+ * place abonde ailleurs. Une disposition qui dépend de la largeur de la
+ * fenêtre ne peut pas servir dans une colonne de largeur fixe.
  */
 
 type Option = { id: string; name: string }
@@ -39,7 +46,7 @@ export function VehicleSelector({
   onDone,
   className,
 }: {
-  layout?: 'inline' | 'stacked'
+  layout?: 'inline' | 'stacked' | 'card'
   currentConfigurationId?: string | null
   /**
    * Véhicule déjà retenu. Le formulaire s'ouvre dessus au lieu de repartir de
@@ -169,6 +176,9 @@ export function VehicleSelector({
 
   const catalogueEmpty = !loading && makes.length === 0
   const inline = layout === 'inline'
+  const carte = layout === 'card'
+  /* Les deux dispositions compactes partagent l'habillage des champs. */
+  const compact = inline || carte
 
   /*
     Habillage des champs dans la carte d'accueil.
@@ -187,10 +197,10 @@ export function VehicleSelector({
     écrites en valeurs arbitraires, qui l'emportent sur les utilitaires
     standards de `fieldSize`.
   */
-  const champCarte = inline
+  const champCarte = compact
     ? 'h-[48px] rounded-[9px] border-line-strong px-[13px] text-[14px] text-ink'
     : undefined
-  const labelCarte = inline ? 'text-[12px] font-semibold text-muted-strong' : undefined
+  const labelCarte = compact ? 'text-[12px] font-semibold text-muted-strong' : undefined
 
   /*
     Ce qu'affiche un champ vide.
@@ -207,8 +217,14 @@ export function VehicleSelector({
     les champs s'activent de gauche à droite. Les dispositions empilées, qui
     ont la place, gardent la phrase explicite.
   */
-  const videModele = inline ? 'Modèle' : makeId ? 'Modèle' : 'Choisissez une marque'
-  const videAnnee = inline ? 'Année' : modelId ? 'Année' : 'Choisissez un modèle'
+  const videModele = inline ? 'Modèle' : makeId ? 'Choisir un modèle' : 'Choisissez une marque'
+  const videAnnee = inline ? 'Année' : modelId ? "Choisir l'année" : 'Choisissez un modèle'
+  /*
+    En carte, les champs occupent toute la largeur : l'invite entière y tient,
+    contrairement à la disposition en ligne où « Choisissez une marque » se
+    faisait couper dans une demi-rangée de téléphone.
+  */
+  const videMarque = loading ? 'Chargement…' : carte ? 'Choisir une marque' : 'Marque'
 
 
   return (
@@ -232,13 +248,28 @@ export function VehicleSelector({
         role="radiogroup"
         aria-label="Type de véhicule"
         className={cn(
-          'inline-flex w-fit rounded-[9px] border border-line bg-surface-muted p-[3px]',
+          carte
+            /*
+              En carte, deux onglets soulignés plutôt qu'une pilule : la
+              colonne est étroite et la pilule y mangeait une rangée entière
+              pour deux mots. Le filet actif est le rouge de la charte — pas
+              le saumon #e76b5d qui traînait ici du temps de la maquette de
+              référence, et qui ne venait d'aucun jeton.
+            */
+            ? 'mb-5 flex w-full gap-7 border-b border-line'
+            : 'inline-flex w-fit rounded-[9px] border border-line bg-surface-muted p-[3px]',
           inline && 'mb-[15px]',
         )}
       >
         {(
           [
-            { value: 'CAR' as const, label: 'Voiture', Icon: IconCar },
+            /*
+              « Auto » et non « Voiture » : les deux mots valent, mais
+              « Auto / Moto » forment une paire de même registre, et c'est le
+              vocabulaire employé partout ailleurs sur le site — « Packs
+              auto », « Packs moto ».
+            */
+            { value: 'CAR' as const, label: 'Auto', Icon: IconCar },
             { value: 'MOTORCYCLE' as const, label: 'Moto', Icon: IconMotorcycle },
           ]
         ).map(({ value, label, Icon }) => {
@@ -251,14 +282,20 @@ export function VehicleSelector({
               aria-checked={active}
               onClick={() => setType(value)}
               className={cn(
-                'flex min-h-11 items-center gap-2 rounded-[7px] px-4 text-[13px]',
-                'font-semibold transition-colors',
-                active
-                  ? 'bg-white text-slate-ink shadow-soft'
-                  : 'text-muted-strong hover:text-slate-ink',
+                'flex min-h-11 items-center font-semibold transition-colors',
+                carte
+                  ? 'gap-2 border-b-2 pb-2.5 text-[15px]'
+                  : 'gap-2 rounded-[7px] px-4 text-[13px]',
+                carte
+                  ? active
+                    ? 'border-brand text-ink'
+                    : 'border-transparent text-muted-strong hover:text-ink'
+                  : active
+                    ? 'bg-white text-slate-ink shadow-soft'
+                    : 'text-muted-strong hover:text-slate-ink',
               )}
             >
-              <Icon className="size-[17px]" />
+              {carte ? null : <Icon className="size-[17px]" />}
               {label}
             </button>
           )
@@ -295,7 +332,15 @@ export function VehicleSelector({
                 reprend pas d'une main ce qu'elle donne de l'autre.
               */
               ? 'grid grid-cols-[1fr_2fr] items-end gap-3 lg:grid-cols-[1fr_1.2fr_0.8fr_auto] [&>*:nth-child(-n+2)]:col-span-2 lg:[&>*:nth-child(-n+2)]:col-span-1'
-              : 'grid gap-4 sm:grid-cols-3',
+              : carte
+                /*
+                  Une colonne, quelle que soit la fenêtre. C'est tout l'objet
+                  de cette disposition : la carte fait 400 px sur grand écran,
+                  donc la largeur de la fenêtre ne dit rien de la place
+                  disponible ici.
+                */
+                ? 'grid gap-[14px]'
+                : 'grid gap-4 sm:grid-cols-3',
           )}
         >
           <SelectField
@@ -313,7 +358,7 @@ export function VehicleSelector({
               setYear('')
             }}
           >
-            <option value="">{loading ? 'Chargement…' : 'Marque'}</option>
+            <option value="">{videMarque}</option>
             {makes.map((make) => (
               <option key={make.id} value={make.id}>
                 {make.name}
@@ -380,7 +425,9 @@ export function VehicleSelector({
                   face à `h-14`.
                 */
                 ? 'h-[48px] min-h-[48px] rounded-[9px] px-[16px] text-[14px] lg:w-auto lg:px-[24px]'
-                : 'sm:col-span-3',
+                : carte
+                  ? 'mt-1 h-[48px] min-h-[48px] w-full rounded-[9px] text-[15px]'
+                  : 'sm:col-span-3',
             )}
           >
             {submitting ? 'Recherche…' : currentConfigurationId ? 'Mettre à jour' : 'Voir mes éclairages'}

@@ -7,8 +7,7 @@ import {
   getUniverses,
 } from '@/lib/queries/home'
 import { getSelectedVehicle } from '@/lib/session'
-import { HeroSection } from '@/components/home/HeroSection'
-import { VehicleBand } from '@/components/home/VehicleBand'
+import { HeroFinder } from '@/components/home/HeroFinder'
 import { ReassuranceBand } from '@/components/home/ReassuranceBand'
 import { UniversesSection } from '@/components/home/UniversesSection'
 import { ComparisonSection } from '@/components/home/ComparisonSection'
@@ -49,8 +48,12 @@ export default async function HomePage() {
           StructuredData.tsx. */}
       <OrganizationStructuredData />
 
-      <HeroSection content={blocks.hero} />
-      <VehicleBand content={blocks.vehicleBand} vehicle={vehicle} />
+      {/*
+        Le bandeau et le sélecteur n'en font plus qu'un bloc : la promesse à
+        droite, l'action à gauche, dans le premier écran. Ils se suivaient, ce
+        qui obligeait à descendre pour agir.
+      */}
+      <HeroFinder hero={blocks.hero} finder={blocks.vehicleBand} vehicle={vehicle} />
       <ReassuranceBand items={blocks.reassurance} />
       <UniversesSection content={blocks.universes} universes={universes} />
       <ComparisonSection content={blocks.comparison} />
