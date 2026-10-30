@@ -127,7 +127,7 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
             onBlur={() => {
               blurTimer.current = setTimeout(() => setOpen(false), 120)
             }}
-            placeholder="Rechercher une ampoule, un culot, un kit…"
+            placeholder="Rechercher une ampoule, un culot, une référence…"
             autoComplete="off"
             role="combobox"
             aria-expanded={open}

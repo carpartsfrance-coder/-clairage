@@ -16,9 +16,12 @@ export type NavItem = {
 }
 
 export const topNav: Array<NavItem & { icon: 'return' | 'help' }> = [
-  { label: 'Livraison & retours', href: '/livraison-retours', icon: 'return' },
   // Vers /aide et non /contact : l'entrée porte les deux mots, et la page
   // d'aide réunit le suivi, les questions publiées et le formulaire.
+  //
+  // « Livraison & retours » a quitté cette barre pour suivre la maquette.
+  // Rien n'est perdu : le pied de page et le panier y mènent toujours, et
+  // le seuil de livraison offerte reste annoncé à gauche de cette barre.
   { label: 'Aide & contact', href: '/aide', icon: 'help' },
 ]
 

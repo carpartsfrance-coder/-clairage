@@ -5,7 +5,7 @@ import { getCartSummary, getSelectedVehicle } from '@/lib/session'
 import { topNav } from '@/lib/navigation'
 import { getNavigation } from '@/lib/queries/navigation'
 import { MainNav } from './MainNav'
-import { IconHeadset, IconReturn, IconTruck } from '@/components/ui/icons'
+import { IconUser, IconHeadset, IconReturn, IconTruck } from '@/components/ui/icons'
 import { HeaderSearch } from './HeaderSearch'
 import { VehicleMenu } from './VehicleMenu'
 import { CartLink } from './CartLink'
@@ -121,6 +121,21 @@ export async function Header() {
               <VehicleMenu vehicle={vehicle} />
             </div>
             {/* .header-cart-link : filet à gauche, 24 px de retrait. */}
+            <span aria-hidden className="mx-5 hidden h-8 w-px bg-[#e0e0e0] lg:block" />
+            {/*
+              « Mon compte », repris de la maquette. Il mène à `/compte`, qui
+              existe réellement — commandes, adresses, profil, véhicules — et
+              non à une page à faire.
+            */}
+            <Link
+              href="/compte"
+              className="touch-cible hidden min-h-[38px] items-center gap-[9px] rounded-sm px-1 transition-colors hover:text-brand lg:flex"
+            >
+              <IconUser className="size-[25px] shrink-0 text-[#343434]" strokeWidth={1.45} />
+              <span className="hidden text-[11px] font-semibold text-[#3f3f3f] xl:block">
+                Mon compte
+              </span>
+            </Link>
             <span aria-hidden className="mx-5 hidden h-8 w-px bg-[#e0e0e0] lg:block" />
             <CartLink itemCount={cart.itemCount} />
           </div>

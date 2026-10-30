@@ -71,9 +71,19 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
 
   return (
     <section aria-labelledby="hero-titre" className="bg-surface-soft">
-      <div className="container-page grid gap-4 py-4 lg:grid-cols-[400px_minmax(0,1fr)] lg:gap-5 lg:py-6">
+      {/*
+        Mesuré sur la maquette : carte de 422 px, 10 px d'écart, et des rayons
+        de 6 px partout — soit `rounded-md` dans les jetons du projet, et non
+        les 12 px de `rounded-xl` posés d'abord.
+
+        Le fond garde le jeton `surface-soft` : la maquette donne #f5f7f9,
+        trois niveaux de bleu d'écart avec le #f6f6f6 du jeton, soit un écart
+        invisible. Ajouter un second gris presque identique coûterait plus
+        cher à tenir qu'il ne rapporte à l'œil.
+      */}
+      <div className="container-page grid gap-[10px] py-4 lg:grid-cols-[422px_minmax(0,1fr)] lg:py-6">
         {/* ---------------------------------------------------- le bandeau */}
-        <div className="relative order-first overflow-hidden rounded-xl bg-ink-hero text-white lg:order-last">
+        <div className="relative order-first overflow-hidden rounded-md bg-ink-hero text-white lg:order-last">
           {/*
             La photo. En flux sur téléphone, où elle prend une bande sous le
             texte ; calée à droite au-delà, où elle occupe sa moitié du
@@ -106,7 +116,13 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
 
             <h1
               id="hero-titre"
-              className="m-0 mt-3 text-[34px] leading-[1.02] font-extrabold tracking-[-1.4px] text-white sm:text-[44px] sm:tracking-[-2px] xl:text-[56px] xl:tracking-[-2.6px]"
+              /*
+                Mesuré sur la maquette : les deux lignes du titre y font 62 et
+                65 px de haut de capitale pour un interligne de 72 px, ce qui
+                place le corps autour de 80 px à 1536 px de large. J'avais posé
+                56 px — le titre y paraissait deux fois moins présent.
+              */
+              className="m-0 mt-3 text-[38px] leading-[0.98] font-extrabold tracking-[-1.6px] text-white sm:text-[54px] sm:tracking-[-2.4px] xl:text-[76px] xl:tracking-[-3.4px]"
             >
               <span className="whitespace-pre-line">{hero.title}</span>
             </h1>
@@ -160,14 +176,14 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
         {/* ----------------------------------------------------- la carte */}
         <aside
           id="choisir-mon-vehicule"
-          className="scroll-mt-28 rounded-xl border border-line bg-white p-5 sm:p-6 lg:order-first"
+          className="scroll-mt-28 rounded-md border border-line bg-white p-6 sm:p-8 lg:order-first"
         >
           <p className="m-0 flex items-center gap-2 text-[11px] font-bold tracking-[1.6px] text-muted-strong uppercase">
             <IconCar className="size-[18px] shrink-0" />
             {finder.eyebrow}
           </p>
 
-          <h2 className="mt-3 mb-5 text-[24px] leading-[1.15] font-bold tracking-[-0.8px] text-ink">
+          <h2 className="mt-2.5 mb-5 text-[30px] leading-[1.08] font-extrabold tracking-[-1.1px] text-ink lg:text-[36px] lg:tracking-[-1.4px]">
             {finder.title}
           </h2>
 
@@ -208,10 +224,10 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
             <VehicleSelector layout="card" initial={null} />
           )}
 
-          <p className="m-0 mt-4 text-center">
+          <p className="m-0 mt-4">
             <Link
               href="/recherche"
-              className="inline-flex min-h-11 items-center text-[13px] text-muted-strong underline underline-offset-[3px] hover:text-ink"
+              className="touch-cible inline-flex items-center text-[13px] text-muted-strong underline underline-offset-[3px] hover:text-ink"
             >
               {finder.shortcutLabel}
             </Link>

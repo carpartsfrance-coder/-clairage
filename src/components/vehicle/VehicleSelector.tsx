@@ -197,10 +197,29 @@ export function VehicleSelector({
     écrites en valeurs arbitraires, qui l'emportent sur les utilitaires
     standards de `fieldSize`.
   */
-  const champCarte = compact
-    ? 'h-[48px] rounded-[9px] border-line-strong px-[13px] text-[14px] text-ink'
-    : undefined
-  const labelCarte = compact ? 'text-[12px] font-semibold text-muted-strong' : undefined
+  /*
+    Mesuré sur la maquette : les champs font 40 px de haut et 6 px de rayon,
+    sur un fond très légèrement teinté plutôt que blanc. J'avais posé 48 px et
+    9 px de rayon, ce qui alourdissait la carte d'une trentaine de pixels et
+    arrondissait tout un cran de trop.
+  */
+  const champCarte = carte
+    /*
+      Les `!` sont nécessaires : `fieldSize="lg"` apporte `h-14`, et
+      `controlBase` apporte `bg-white`. `cn` concatène sans arbitrer, et
+      l'ordre de la feuille générée donne la victoire aux classes de base.
+      Mesuré au rendu sans eux : 56 px de haut et un fond blanc, au lieu des
+      40 px et du gris très clair de la maquette.
+    */
+    ? 'h-10! rounded-md border-line bg-surface-muted! px-3 text-[14px] text-ink'
+    : inline
+      ? 'h-[48px] rounded-[9px] border-line-strong px-[13px] text-[14px] text-ink'
+      : undefined
+  const labelCarte = carte
+    ? 'text-[13px] font-bold text-ink'
+    : compact
+      ? 'text-[12px] font-semibold text-muted-strong'
+      : undefined
 
   /*
     Ce qu'affiche un champ vide.
@@ -217,8 +236,25 @@ export function VehicleSelector({
     les champs s'activent de gauche à droite. Les dispositions empilées, qui
     ont la place, gardent la phrase explicite.
   */
-  const videModele = inline ? 'Modèle' : makeId ? 'Choisir un modèle' : 'Choisissez une marque'
-  const videAnnee = inline ? 'Année' : modelId ? "Choisir l'année" : 'Choisissez un modèle'
+  /*
+    En carte, le champ porte toujours son propre nom, même désactivé — c'est
+    ce que fait la maquette, et c'est l'usage : le gris et l'ordre de gauche à
+    droite disent déjà qu'il attend le précédent. Ailleurs, la phrase explique.
+  */
+  const videModele = carte
+    ? 'Choisir un modèle'
+    : inline
+      ? 'Modèle'
+      : makeId
+        ? 'Choisir un modèle'
+        : 'Choisissez une marque'
+  const videAnnee = carte
+    ? "Choisir l'année"
+    : inline
+      ? 'Année'
+      : modelId
+        ? "Choisir l'année"
+        : 'Choisissez un modèle'
   /*
     En carte, les champs occupent toute la largeur : l'invite entière y tient,
     contrairement à la disposition en ligne où « Choisissez une marque » se
@@ -282,10 +318,16 @@ export function VehicleSelector({
               aria-checked={active}
               onClick={() => setType(value)}
               className={cn(
-                'flex min-h-11 items-center font-semibold transition-colors',
+                'flex items-center font-semibold transition-colors',
+                /*
+                  En carte, `touch-cible` plutôt que `min-h-11` : la zone
+                  sensible fait toujours 44 px, mais elle ne pousse plus la
+                  mise en page. Mesuré, le `min-h-11` ajoutait une vingtaine
+                  de pixels à la hauteur de la carte pour deux mots.
+                */
                 carte
-                  ? 'gap-2 border-b-2 pb-2.5 text-[15px]'
-                  : 'gap-2 rounded-[7px] px-4 text-[13px]',
+                  ? 'touch-cible gap-2 border-b-2 pb-2 text-[15px]'
+                  : 'min-h-11 gap-2 rounded-[7px] px-4 text-[13px]',
                 carte
                   ? active
                     ? 'border-brand text-ink'
@@ -339,7 +381,7 @@ export function VehicleSelector({
                   donc la largeur de la fenêtre ne dit rien de la place
                   disponible ici.
                 */
-                ? 'grid gap-[14px]'
+                ? 'grid gap-2'
                 : 'grid gap-4 sm:grid-cols-3',
           )}
         >
@@ -426,11 +468,18 @@ export function VehicleSelector({
                 */
                 ? 'h-[48px] min-h-[48px] rounded-[9px] px-[16px] text-[14px] lg:w-auto lg:px-[24px]'
                 : carte
-                  ? 'mt-1 h-[48px] min-h-[48px] w-full rounded-[9px] text-[15px]'
+                  ? 'mt-1 h-[42px] min-h-[42px] w-full rounded-md! text-[15px]'
                   : 'sm:col-span-3',
             )}
           >
-            {submitting ? 'Recherche…' : currentConfigurationId ? 'Mettre à jour' : 'Voir mes éclairages'}
+            {submitting
+              ? 'Recherche…'
+              : currentConfigurationId
+                ? 'Mettre à jour'
+                : /* Libellé de la maquette, plus direct que « Voir mes éclairages ». */
+                  carte
+                  ? 'Trouver mes LED'
+                  : 'Voir mes éclairages'}
           </Button>
         </div>
       )}
