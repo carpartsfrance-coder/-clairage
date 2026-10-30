@@ -138,7 +138,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
                 65 px de haut de capitale pour un interligne de 72 px, ce qui
                 place le corps autour de 80 px à 1536 px de large.
               */
-              className="m-0 mt-3 text-[38px] leading-[0.98] font-extrabold tracking-[-1.6px] text-white sm:text-[48px] sm:tracking-[-2px] xl:text-[62px] xl:tracking-[-2.8px]"
+              className="m-0 mt-3 text-[38px] leading-[0.98] font-extrabold tracking-[-1.6px] text-white sm:text-[54px] sm:tracking-[-2.4px] xl:text-[76px] xl:tracking-[-3.4px]"
             >
               <span className="whitespace-pre-line">{hero.title}</span>
             </h1>

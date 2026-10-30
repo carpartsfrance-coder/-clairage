@@ -205,15 +205,31 @@
    -------------------------------------------------------------------------- */
 
 /*
-  Équivalent de `.shell` dans la référence : max-width 1280px, 32px de marge
-  intérieure. Le projet descendait à 16px sur petit écran — on le garde, la
-  référence fait de même sous 800px (voir ses media queries).
+  La gouttière du site.
+
+  Le plafond vient de la maquette, mesuré et non choisi : son contenu occupe
+  1492 px à 1536 px de fenêtre, soit des gouttières de 22 px. Avec les 2 rem
+  de retrait conservés ici, cela donne 1492 + 64 = 1556 px.
+
+  Il valait 1280 px — hérité de `.shell` du code de référence — ce qui ne
+  laissait que 1216 px de contenu et serrait toutes les sections d'environ
+  270 px par rapport à la maquette. Le bandeau d'ouverture le payait le plus
+  cher : son panneau tombait de 1069 à 864 px, le titre n'y tenait plus à son
+  corps prévu, et la seconde ampoule de la photo sortait du cadre.
+
+  Les retraits ne bougent pas. Ce sont eux qui protègent le texte sur petit
+  écran, et la maquette fait de même en dessous de 800 px.
+
+  Les pages de texte ne s'élargissent pas pour autant : les mentions légales,
+  les CGV et les descriptions bornent déjà leur mesure de ligne à 68
+  caractères, précisément pour que la largeur du conteneur ne décide pas de
+  leur lisibilité.
 */
 @utility container-page {
   width: 100%;
   margin-inline: auto;
   padding-inline: 1rem;
-  max-width: 1280px;
+  max-width: 1556px;
 
   @media (width >= 48rem) {
     padding-inline: 1.5rem;

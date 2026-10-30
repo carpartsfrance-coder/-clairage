@@ -139,7 +139,13 @@ export const commercialTerms = {
 export const siteConfig = {
   /** Utilisé pour les URL canoniques, les sitemaps et les e-mails. */
   url: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3400',
-  defaultMetaTitle: 'LUMERA — Éclairage LED auto & moto',
+  /*
+    Le nom de la marque, et non l'ancien nom de travail. « LUMERA » partait
+    dans la balise `<title>` de chaque page — onglets, résultats de recherche,
+    liens partagés — alors que l'en-tête de ce fichier dit depuis le début que
+    la marque est LEDVROOM.
+  */
+  defaultMetaTitle: 'LEDVROOM — Éclairage LED auto & moto',
   defaultMetaDescription:
     'Kits et ampoules LED pour phares, intérieur, plaque, recul, clignotants, xénon et moto. Sélectionnez votre véhicule pour voir ce qui lui correspond.',
   /**
