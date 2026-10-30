@@ -207,15 +207,18 @@
 /*
   La gouttière du site.
 
-  Le plafond vient de la maquette, mesuré et non choisi : son contenu occupe
-  1492 px à 1536 px de fenêtre, soit des gouttières de 22 px. Avec les 2 rem
-  de retrait conservés ici, cela donne 1492 + 64 = 1556 px.
+  Le plafond est à 1440 px, soit 1376 px de contenu une fois retirés les
+  2 rem de retrait. C'est un cran en dessous de la maquette, qui mesure
+  1492 px de contenu à 1536 px de fenêtre : elle servait de point de départ,
+  l'éditeur l'a jugée un peu large à l'usage.
 
   Il valait 1280 px — hérité de `.shell` du code de référence — ce qui ne
-  laissait que 1216 px de contenu et serrait toutes les sections d'environ
-  270 px par rapport à la maquette. Le bandeau d'ouverture le payait le plus
-  cher : son panneau tombait de 1069 à 864 px, le titre n'y tenait plus à son
-  corps prévu, et la seconde ampoule de la photo sortait du cadre.
+  laissait que 1216 px et serrait toutes les sections d'environ 160 px par
+  rapport à ici.
+
+  Le bandeau d'ouverture est ce qui dépend le plus de cette valeur : sous
+  1280 px de plafond, son panneau tombait à 864 px, le titre n'y tenait plus
+  à son corps prévu et la seconde ampoule de la photo sortait du cadre.
 
   Les retraits ne bougent pas. Ce sont eux qui protègent le texte sur petit
   écran, et la maquette fait de même en dessous de 800 px.
@@ -229,7 +232,7 @@
   width: 100%;
   margin-inline: auto;
   padding-inline: 1rem;
-  max-width: 1556px;
+  max-width: 1440px;
 
   @media (width >= 48rem) {
     padding-inline: 1.5rem;
