@@ -104,7 +104,12 @@ export function ProductInfoForm({
           Sans rubrique, le produit n’a pas de fil d’Ariane et n’apparaît dans aucun menu. La
           première cochée porte le fil d’Ariane.
         </p>
-        <div className="mt-2 grid gap-1 sm:grid-cols-2">
+        {/*
+          `grid-cols-1` explicite : sans lui, la colonne implicite se dimensionne
+          sur son contenu, et un chemin de rubrique long pousse la page entière
+          en débordement horizontal sous 640 px.
+        */}
+        <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
           {categories.map((categorie) => (
             <label key={categorie.id} className="flex min-h-9 items-center gap-2 text-sm">
               <input

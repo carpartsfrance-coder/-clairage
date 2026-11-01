@@ -1,27 +1,43 @@
-import { Fragment, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireStaff } from '@/lib/admin/guard'
 import { can } from '@/lib/admin/permissions'
-import { getAdminProduct, listAttachableMedia } from '@/lib/queries/admin'
-import { formatPrice } from '@/lib/identity'
+import {
+  getAdminProduct,
+  listAttachableMedia,
+  listCategoryOptions,
+  listVatRates,
+} from '@/lib/queries/admin'
 import { MAX_UPLOAD_BYTES, storageStatus } from '@/lib/storage'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Alert } from '@/components/ui/Surface'
 import { releverManques, type Manque } from '@/lib/admin/completeness'
 import { ordreAffichage } from '@/lib/admin/media-order'
-import { prisma } from '@/lib/db'
 import { ProductInfoForm, ProductStatusForm } from '@/components/admin/ProductEditor'
 import { ProductMediaManager, type VisuelFiche } from '@/components/admin/ProductMediaManager'
+import {
+  ProductVariantsManager,
+  type VarianteFiche,
+} from '@/components/admin/ProductVariantsManager'
 
 /**
- * Fiche produit du back-office — lecture seule.
+ * Fiche produit du back-office.
  *
  * Tout ce qui manque est dit « non renseigné » : une fiche d'administration
  * sert à repérer les trous (texte alternatif absent, compatibilité non
  * documentée, TVA manquante), pas à les masquer.
+ *
+ * Chaque bloc a son propre enregistrement, et ce n'est pas un détail de mise
+ * en page : un seul gros « Enregistrer » obligerait à renvoyer le prix pour
+ * corriger une accroche, et ferait de chaque correction de détail une
+ * réécriture complète de la fiche.
+ *
+ * Les compatibilités et les caractéristiques restent en lecture ici — les
+ * premières s'éditent depuis l'écran Véhicules, où l'on travaille génération
+ * par génération.
  */
 
 type PageProps = { params: Promise<{ productId: string }> }
@@ -57,13 +73,6 @@ const DIFFICULTY_LABELS: Record<string, string> = {
   EASY: 'Montage simple',
   MEDIUM: 'Montage intermédiaire',
   HARD: 'Montage difficile',
-}
-
-const PACKAGING_LABELS: Record<string, string> = {
-  UNIT: "À l'unité",
-  PAIR: 'La paire',
-  PACK: 'Pack',
-  KIT: 'Kit complet',
 }
 
 const FITMENT_LABELS: Record<string, { label: string; tone: BadgeTone }> = {
@@ -108,19 +117,44 @@ export default async function AdminProductPage({ params }: PageProps) {
     .map((manque) => manque.champ)
   const categoryNames = product.categories.map((entry) => entry.category.name)
 
+  // Rubriques proposées à l'édition, et taux de TVA disponibles. Les deux
+  // listes servent aussi à l'écran de création : elles vivent dans les
+  // requêtes, pas ici.
+  const [categoriesOptions, tauxTva] = await Promise.all([listCategoryOptions(), listVatRates()])
+
   /*
-    Rubriques proposées à l'édition : toutes celles du catalogue, avec leur
-    chemin complet. Une liste à plat de noms rendrait « Phares LED » et
-    « Phares LED » (sous deux parents différents) indiscernables.
+    Les conditionnements, avec ce qu'il faut pour décider : le taux lisible, le
+    stock réservé, la composition d'un kit, et ce qui s'y rattache ailleurs
+    dans la boutique.
   */
-  const categories = await prisma.category.findMany({
-    orderBy: [{ position: 'asc' }, { name: 'asc' }],
-    select: { id: true, name: true, parent: { select: { name: true } } },
-  })
-  const categoriesOptions = categories.map((categorie) => ({
-    id: categorie.id,
-    name: categorie.name,
-    path: categorie.parent ? `${categorie.parent.name} › ${categorie.name}` : categorie.name,
+  const variantes: VarianteFiche[] = product.variants.map((variant) => ({
+    id: variant.id,
+    sku: variant.sku,
+    name: variant.name,
+    packaging: variant.packaging,
+    priceCents: variant.priceCents,
+    compareAtCents: variant.compareAtCents,
+    vatRateId: variant.vatRateId,
+    vatRateLabel: variant.vatRate?.label ?? null,
+    stockOnHand: variant.stockOnHand,
+    stockReserved: variant.stockReserved,
+    lowStockThreshold: variant.lowStockThreshold,
+    weightGrams: variant.weightGrams,
+    backorder: variant.backorder,
+    active: variant.active,
+    composants: variant.components.map((entry) => ({
+      id: entry.id,
+      quantite: entry.quantity,
+      requis: entry.required,
+      libelle: `${entry.component.product.name} · ${entry.component.name}`,
+      sku: entry.component.sku,
+    })),
+    attaches: {
+      commandes: variant._count.orderLines,
+      paniers: variant._count.cartLines,
+      kits: variant._count.partOfKits,
+      compatibilites: variant.fitments.length,
+    },
   }))
   /*
     Les visuels, dans l'ordre où la boutique les montrera : par groupe de rôle,
@@ -266,98 +300,21 @@ export default async function AdminProductPage({ params }: PageProps) {
         </dl>
       </section>
 
-      {/* --- Variantes ---------------------------------------------------- */}
+      {/* --- Conditionnements ---------------------------------------------- */}
       <section aria-labelledby="produit-variantes" className="mt-6">
         <h2 id="produit-variantes" className="text-base font-bold">
-          Variantes
+          Conditionnements
         </h2>
-        {product.variants.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-strong">
-            Aucune variante : ce produit n&apos;est pas achetable en l&apos;état.
-          </p>
-        ) : (
-          <div className="mt-2 overflow-x-auto rounded-md border border-line">
-            <table className="w-full min-w-[68rem] border-collapse text-sm">
-              <thead className="bg-surface-soft text-xs text-muted-strong">
-                <tr>
-                  <th scope="col" className={TH}>SKU</th>
-                  <th scope="col" className={TH}>Nom</th>
-                  <th scope="col" className={TH}>Conditionnement</th>
-                  <th scope="col" className={TH_NUM}>Prix</th>
-                  <th scope="col" className={TH}>TVA</th>
-                  <th scope="col" className={TH_NUM}>Stock détenu</th>
-                  <th scope="col" className={TH_NUM}>Réservé</th>
-                  <th scope="col" className={TH_NUM}>Vendable</th>
-                  <th scope="col" className={TH_NUM}>Seuil</th>
-                  <th scope="col" className={TH}>Actif</th>
-                </tr>
-              </thead>
-              <tbody>
-                {product.variants.map((variant) => {
-                  const isKit = variant.components.length > 0
-                  const sellable = Math.max(0, variant.stockOnHand - variant.stockReserved)
-
-                  return (
-                    <Fragment key={variant.id}>
-                      <tr className="border-t border-line">
-                        <td className="px-3 py-2 font-mono text-xs">{variant.sku}</td>
-                        <td className="px-3 py-2 font-medium">{variant.name}</td>
-                        <td className="px-3 py-2">
-                          {PACKAGING_LABELS[variant.packaging] ?? variant.packaging}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums">
-                          {formatPrice(variant.priceCents)}
-                        </td>
-                        <td className="px-3 py-2">{variant.vatRate?.label ?? <Unset />}</td>
-                        {isKit ? (
-                          <td colSpan={4} className="px-3 py-2 text-xs text-muted-strong">
-                            Stock calculé depuis les composants
-                          </td>
-                        ) : (
-                          <>
-                            <td className="px-3 py-2 text-right tabular-nums">{variant.stockOnHand}</td>
-                            <td className="px-3 py-2 text-right tabular-nums">{variant.stockReserved}</td>
-                            <td className="px-3 py-2 text-right font-semibold tabular-nums">{sellable}</td>
-                            <td className="px-3 py-2 text-right tabular-nums">
-                              {variant.lowStockThreshold}
-                            </td>
-                          </>
-                        )}
-                        <td className="px-3 py-2">
-                          {variant.active ? (
-                            <Badge tone="ok">Actif</Badge>
-                          ) : (
-                            <Badge tone="neutral">Inactif</Badge>
-                          )}
-                        </td>
-                      </tr>
-                      {isKit ? (
-                        <tr className="border-t border-line bg-surface-soft">
-                          <td colSpan={10} className="px-3 py-2">
-                            <p className="text-xs font-semibold text-muted-strong">Composants</p>
-                            <ul className="mt-1 flex flex-col gap-0.5 text-sm">
-                              {variant.components.map((entry) => (
-                                <li key={entry.id}>
-                                  {entry.quantity} × {entry.component.product.name} ·{' '}
-                                  {entry.component.name}
-                                  <span className="text-xs text-muted">
-                                    {' '}
-                                    ({entry.component.sku}
-                                    {entry.required ? '' : ', facultatif'})
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <p className="mt-1 max-w-[70ch] text-xs text-muted-strong">
+          C&apos;est ce bloc qui fait vendre la fiche : le prix, le taux de TVA et le stock. Le
+          stock d&apos;un kit n&apos;est pas saisi, il se calcule depuis ses composants.
+        </p>
+        <ProductVariantsManager
+          productId={product.id}
+          variantes={variantes}
+          tauxTva={tauxTva}
+          mayEdit={mayEdit}
+        />
       </section>
 
       {/* --- Compatibilités ----------------------------------------------- */}

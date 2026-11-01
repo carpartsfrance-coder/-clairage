@@ -336,6 +336,16 @@ export async function getAdminProduct(productId: string) {
           orderBy: { position: 'asc' },
           include: {
             vatRate: true,
+            /*
+              Ce qui rattache la variante au reste de la boutique. L'écran ne
+              propose la suppression que sur un conditionnement libre : une
+              ligne de commande passerait à `null` (perdant la référence
+              vendue) et les compatibilités seraient effacées en cascade, les
+              deux sans un mot. Panier et kit, eux, sont en `Restrict` : la
+              base refuserait, mais avec une erreur de contrainte qui
+              n'apprend rien.
+            */
+            _count: { select: { orderLines: true, cartLines: true, partOfKits: true } },
             components: {
               orderBy: { position: 'asc' },
               include: { component: { include: { product: { select: { name: true } } } } },
@@ -729,4 +739,38 @@ export async function listMedia(filters: MediaFilters) {
     /** Combien de visuels n'ont pas de texte alternatif, tous filtres confondus. */
     missingAlt: await prisma.media.count({ where: { OR: [{ alt: null }, { alt: '' }] } }),
   }
+}
+
+/**
+ * Rubriques proposées au choix, avec leur chemin complet.
+ *
+ * Le chemin n'est pas décoratif : une liste à plat de noms rendrait « Phares
+ * LED » et « Phares LED » — sous deux parents différents — indiscernables, et
+ * un produit rangé dans la mauvaise n'apparaît pas où on le cherche.
+ */
+export async function listCategoryOptions() {
+  const categories = await prisma.category.findMany({
+    orderBy: [{ position: 'asc' }, { name: 'asc' }],
+    select: { id: true, name: true, parent: { select: { name: true } } },
+  })
+  return categories.map((categorie) => ({
+    id: categorie.id,
+    name: categorie.name,
+    path: categorie.parent ? `${categorie.parent.name} › ${categorie.name}` : categorie.name,
+  }))
+}
+
+/**
+ * Taux de TVA disponibles, le taux par défaut en tête.
+ *
+ * La liste peut être vide : rien dans l'application ne crée un taux, ils
+ * viennent de `prisma/seed.ts`. L'écran doit le dire plutôt que d'afficher une
+ * liste déroulante vide, puisque sans taux aucune variante ne s'enregistre et
+ * aucune fiche ne se publie.
+ */
+export async function listVatRates() {
+  return await prisma.vatRate.findMany({
+    orderBy: [{ isDefault: 'desc' }, { rateBp: 'desc' }],
+    select: { id: true, label: true, rateBp: true, isDefault: true },
+  })
 }

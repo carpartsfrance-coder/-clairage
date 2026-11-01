@@ -1082,7 +1082,10 @@ model StockMovement {
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   /// Positif = entrée, négatif = sortie.
   delta     Int
-  reason    String // order | refund | manual | import | return
+  /// Ce qui a provoqué le mouvement. Écrit par le code : `order`, `cancel`,
+  /// `refund`, `import` ; ou saisi par un administrateur depuis la fiche
+  /// produit : `reception`, `inventaire`, `casse`, `retour`, `autre`.
+  reason    String
   reference String?
   actorId   String?
   createdAt DateTime       @default(now())

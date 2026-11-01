@@ -1,21 +1,25 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireStaff } from '@/lib/admin/guard'
+import { can } from '@/lib/admin/permissions'
 import { listAdminProducts, type CatalogFilters } from '@/lib/queries/admin'
 import { formatPrice } from '@/lib/identity'
 import { cn } from '@/lib/cn'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
+import { Button, ButtonLink } from '@/components/ui/Button'
 import { SelectField, TextField } from '@/components/ui/Field'
 import { EmptyState } from '@/components/ui/Surface'
 
 /**
  * Catalogue — liste de travail.
  *
- * Lecture seule : aucune action d'écriture n'existe encore côté back-office,
- * donc aucun bouton ne prétend le contraire. Le filtre de stock porte sur une
- * valeur dérivée (stock vendable, kits exclus) : il est appliqué avant la
- * pagination, pour que le total affiché corresponde à ce qu'on liste.
+ * La liste reste en lecture : on y filtre et on ouvre une fiche, l'écriture se
+ * fait sur la fiche. Seule exception, l'ajout — il n'a pas de fiche d'où
+ * partir, et c'était l'impasse du back-office : rien n'y créait un produit.
+ *
+ * Le filtre de stock porte sur une valeur dérivée (stock vendable, kits
+ * exclus) : il est appliqué avant la pagination, pour que le total affiché
+ * corresponde à ce qu'on liste.
  */
 
 export const metadata: Metadata = {
@@ -67,7 +71,7 @@ export default async function AdminCatalogPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  await requireStaff('catalog.view')
+  const staff = await requireStaff('catalog.view')
   const params = await searchParams
 
   const statusParam = readOne(params, 'status')
@@ -88,8 +92,19 @@ export default async function AdminCatalogPage({
 
   return (
     <div className="container-page py-6">
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[1.5rem] leading-tight font-extrabold">Catalogue</h1>
+        {/*
+          L'ajout n'est offert qu'avec le droit d'écriture : proposer un
+          formulaire que l'action refusera ensuite ferait perdre une saisie
+          entière. La garde reste dans l'action, qui est un point d'entrée
+          public.
+        */}
+        {can(staff.role, 'catalog.edit') ? (
+          <ButtonLink href="/admin/catalogue/nouveau" size="sm">
+            Nouveau produit
+          </ButtonLink>
+        ) : null}
       </header>
 
       <section aria-labelledby="filtres-catalogue" className="mt-4">
