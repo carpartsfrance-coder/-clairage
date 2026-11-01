@@ -1,21 +1,20 @@
 import { Fragment, type ReactNode } from 'react'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireStaff } from '@/lib/admin/guard'
-import { getAdminProduct } from '@/lib/queries/admin'
+import { can } from '@/lib/admin/permissions'
+import { getAdminProduct, listAttachableMedia } from '@/lib/queries/admin'
 import { formatPrice } from '@/lib/identity'
+import { MAX_UPLOAD_BYTES, storageStatus } from '@/lib/storage'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Alert } from '@/components/ui/Surface'
 import { releverManques, type Manque } from '@/lib/admin/completeness'
+import { ordreAffichage } from '@/lib/admin/media-order'
 import { prisma } from '@/lib/db'
-import {
-  MediaAltForm,
-  ProductInfoForm,
-  ProductStatusForm,
-} from '@/components/admin/ProductEditor'
+import { ProductInfoForm, ProductStatusForm } from '@/components/admin/ProductEditor'
+import { ProductMediaManager, type VisuelFiche } from '@/components/admin/ProductMediaManager'
 
 /**
  * Fiche produit du back-office — lecture seule.
@@ -73,21 +72,6 @@ const FITMENT_LABELS: Record<string, { label: string; tone: BadgeTone }> = {
   INCOMPATIBLE: { label: 'Incompatible', tone: 'danger' },
 }
 
-const MEDIA_ROLE_LABELS: Record<string, string> = {
-  PRODUCT: 'Produit',
-  RESULT: 'Rendu',
-  KIT_CONTENT: 'Contenu du kit',
-  INSTALL: 'Montage',
-}
-
-const MEDIA_NATURE_LABELS: Record<string, string> = {
-  UNSPECIFIED: 'Non précisée',
-  PRODUCT_PHOTO: 'Photo du produit',
-  ILLUSTRATION: 'Illustration',
-  TEST_PHOTO: "Photo d'essai",
-  DIAGRAM: 'Schéma',
-}
-
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' })
 
 /** Valeur absente : on l'écrit, on ne la devine pas. */
@@ -108,10 +92,15 @@ const TH = 'px-3 py-2 text-left font-semibold'
 const TH_NUM = 'px-3 py-2 text-right font-semibold'
 
 export default async function AdminProductPage({ params }: PageProps) {
-  await requireStaff('catalog.view')
+  const staff = await requireStaff('catalog.view')
   const { productId } = await params
   const product = await getAdminProduct(productId)
   if (!product) notFound()
+
+  // La lecture suffit pour consulter la fiche ; poser un visuel demande le
+  // droit d'écriture. On masque ce qui serait refusé plutôt que d'offrir un
+  // formulaire qui échouera — la garde reste dans l'action.
+  const mayEdit = can(staff.role, 'catalog.edit')
 
   const manques = releverManques(product)
   const bloquants = manques
@@ -133,7 +122,50 @@ export default async function AdminProductPage({ params }: PageProps) {
     name: categorie.name,
     path: categorie.parent ? `${categorie.parent.name} › ${categorie.name}` : categorie.name,
   }))
-  const missingAltCount = product.media.filter((entry) => !entry.media.alt).length
+  /*
+    Les visuels, dans l'ordre où la boutique les montrera : par groupe de rôle,
+    puis par position. Les trier ici — et non « par position » comme le faisait
+    cet écran — est ce qui donne un sens aux flèches de déplacement. Tant que
+    l'administration classait autrement que la galerie, « monter » une image ne
+    disait rien de précis.
+  */
+  const visuels: VisuelFiche[] = ordreAffichage(
+    product.media.map((entry) => ({
+      id: entry.id,
+      role: entry.role,
+      position: entry.position,
+      entry,
+    })),
+  ).map(({ entry }) => ({
+    attachmentId: entry.id,
+    mediaId: entry.media.id,
+    url: entry.media.url,
+    alt: entry.media.alt,
+    caption: entry.media.caption,
+    nature: entry.media.nature,
+    mimeType: entry.media.mimeType,
+    role: entry.role,
+    /*
+      Emplacements où le fichier sert ailleurs qu'ici — ce rattachement est
+      retiré du compte. C'est ce nombre qui autorise l'écran à proposer la
+      suppression du fichier en même temps que son retrait ; le serveur
+      revérifie, parce qu'entre l'affichage et le clic une autre fiche a pu le
+      reprendre.
+    */
+    autresUsages:
+      entry.media._count.products -
+      1 +
+      entry.media._count.categoryHeroes +
+      entry.media._count.vehicleMakeLogos +
+      entry.media._count.equipmentIllustrations +
+      entry.media._count.vehicleGenerationPhotos,
+  }))
+
+  // Le dépôt de fichier n'est proposé que si le stockage tient debout : écrire
+  // sur un disque éphémère ferait disparaître la photo au déploiement suivant,
+  // sans erreur et sans trace.
+  const stockage = storageStatus()
+  const mediatheque = mayEdit ? await listAttachableMedia(product.id) : []
 
   return (
     <div className="container-page py-6">
@@ -432,51 +464,21 @@ export default async function AdminProductPage({ params }: PageProps) {
         <h2 id="produit-visuels" className="text-base font-bold">
           Visuels
         </h2>
-        {product.media.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-strong">Aucun visuel associé à ce produit.</p>
-        ) : (
-          <>
-            {missingAltCount > 0 ? (
-              <p className="mt-2 text-sm font-medium text-warn">
-                {missingAltCount} visuel{missingAltCount === 1 ? '' : 's'} sans texte alternatif.
-              </p>
-            ) : null}
-            <ul className="mt-2 flex flex-col divide-y divide-line rounded-md border border-line">
-              {product.media.map((entry) => (
-                <li key={entry.id} className="flex items-center gap-3 px-3 py-2">
-                  <Image
-                    src={entry.media.url}
-                    alt=""
-                    width={64}
-                    height={64}
-                    className="size-16 shrink-0 rounded-sm border border-line bg-surface-muted object-contain"
-                  />
-                  <div className="min-w-0 flex-1 text-sm">
-                    <p className="font-medium">
-                      {MEDIA_ROLE_LABELS[entry.role] ?? entry.role}
-                      <span className="text-xs font-normal text-muted">
-                        {' '}
-                        · {MEDIA_NATURE_LABELS[entry.media.nature] ?? entry.media.nature}
-                      </span>
-                    </p>
-                    {/*
-                      Le texte alternatif s'édite là où son absence est
-                      signalée. Le constater dans un écran et le corriger dans
-                      un autre, c'est ce qui fait qu'on ne le corrige jamais.
-                    */}
-                    <div className="mt-1">
-                      <MediaAltForm
-                        productId={product.id}
-                        mediaId={entry.media.id}
-                        alt={entry.media.alt}
-                      />
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+        {/*
+          Ajouter, ordonner, décrire et retirer se font ici, à l'endroit où
+          l'absence est constatée. Le texte alternatif aussi : le voir manquer
+          dans un écran et le corriger dans un autre, c'est ce qui fait qu'on ne
+          le corrige jamais.
+        */}
+        <ProductMediaManager
+          productId={product.id}
+          visuels={visuels}
+          mediatheque={mediatheque}
+          maxBytes={MAX_UPLOAD_BYTES}
+          stockageOk={stockage.ok}
+          stockageProbleme={stockage.problem}
+          mayEdit={mayEdit}
+        />
       </section>
 
       {/* --- Caractéristiques --------------------------------------------- */}

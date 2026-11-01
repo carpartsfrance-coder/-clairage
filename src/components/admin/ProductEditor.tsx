@@ -224,7 +224,7 @@ export function MediaAltForm({
   const [state, action, pending] = useActionState<ProductEditState, FormData>(updateMediaAlt, {})
 
   return (
-    <form action={action} className="flex items-end gap-2">
+    <form action={action} className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="mediaId" value={mediaId} />
       <TextField
@@ -235,7 +235,12 @@ export function MediaAltForm({
         fieldSize="sm"
         placeholder="Décrivez ce que montre l’image"
         defaultValue={alt ?? ''}
-        wrapperClassName="flex-1"
+        /*
+          `min-w-0` autorise le champ à rétrécir dans une vignette étroite, et
+          `flex-wrap` sur le formulaire fait passer le bouton dessous plutôt
+          que de réduire le champ à deux lettres.
+        */
+        wrapperClassName="min-w-[8rem] flex-1"
         aria-label="Texte alternatif du visuel"
       />
       <Button type="submit" variant="secondary" size="sm" disabled={pending}>

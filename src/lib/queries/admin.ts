@@ -354,7 +354,31 @@ export async function getAdminProduct(productId: string) {
           },
         },
         categories: { include: { category: true } },
-        media: { include: { media: true }, orderBy: { position: 'asc' } },
+        media: {
+          orderBy: { position: 'asc' },
+          include: {
+            /*
+              Les rattachements du fichier sont comptés partout : l'écran ne
+              propose de supprimer un fichier en même temps qu'on le retire de
+              la fiche que s'il ne sert nulle part ailleurs. Un logo de marque
+              ou une photo de génération effacé par mégarde laisserait un carré
+              vide dans un menu, sans erreur ni trace.
+            */
+            media: {
+              include: {
+                _count: {
+                  select: {
+                    products: true,
+                    categoryHeroes: true,
+                    vehicleMakeLogos: true,
+                    equipmentIllustrations: true,
+                    vehicleGenerationPhotos: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         specs: { orderBy: { position: 'asc' } },
       },
     })
@@ -467,6 +491,34 @@ export async function listMediaOptions() {
     })
   } catch (error) {
     console.error('[admin] médias indisponibles', error)
+    return []
+  }
+}
+
+/**
+ * Images rattachables à une fiche produit : celles qui n'y sont pas déjà.
+ *
+ * Plafonnée, et volontairement : l'écran propose de **reprendre** un visuel
+ * déjà téléversé — un schéma de brochage, un comparatif de teintes — pas de
+ * parcourir toute la médiathèque. Au-delà de quelques dizaines de vignettes,
+ * une grille devient moins rapide que le dépôt d'un fichier, et la médiathèque
+ * a son écran avec recherche et pagination.
+ *
+ * Les PDF sont écartés : une galerie n'affiche que des images.
+ */
+export async function listAttachableMedia(productId: string, limit = 48) {
+  try {
+    return await prisma.media.findMany({
+      where: {
+        mimeType: { startsWith: 'image/' },
+        products: { none: { productId } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: { id: true, url: true, alt: true, caption: true, nature: true, storageKey: true },
+    })
+  } catch (error) {
+    console.error('[admin] médias rattachables indisponibles', error)
     return []
   }
 }
