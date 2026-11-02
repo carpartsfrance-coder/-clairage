@@ -390,6 +390,16 @@ export async function getAdminProduct(productId: string) {
           },
         },
         specs: { orderBy: { position: 'asc' } },
+        faqItems: { orderBy: { position: 'asc' } },
+        /*
+          Les guides rattachés, avec leur date de publication : la fiche
+          publique ne montre que les guides publiés (`getProduct` les filtre),
+          et l'écran doit donc pouvoir dire qu'un rattachement ne se voit pas
+          encore.
+        */
+        guides: {
+          include: { guide: { select: { id: true, slug: true, title: true, publishedAt: true } } },
+        },
       },
     })
   } catch (error) {
@@ -772,5 +782,24 @@ export async function listVatRates() {
   return await prisma.vatRate.findMany({
     orderBy: [{ isDefault: 'desc' }, { rateBp: 'desc' }],
     select: { id: true, label: true, rateBp: true, isDefault: true },
+  })
+}
+
+/**
+ * Guides de montage proposés au rattachement, les publiés en tête.
+ *
+ * Comme les taux de TVA, les guides ne se créent nulle part dans
+ * l'application : ils viennent du jeu de données. La liste peut donc être
+ * vide, et l'écran doit le dire au lieu d'ouvrir une liste déroulante sans
+ * aucun choix.
+ *
+ * Les non publiés sont proposés quand même — on prépare souvent le
+ * rattachement avant la mise en ligne du guide — mais ils sont signalés comme
+ * tels, parce que la fiche ne les affichera pas.
+ */
+export async function listGuideOptions() {
+  return await prisma.guide.findMany({
+    orderBy: [{ publishedAt: 'desc' }, { title: 'asc' }],
+    select: { id: true, title: true, slug: true, publishedAt: true, difficulty: true },
   })
 }

@@ -8,6 +8,7 @@ import {
   getAdminProduct,
   listAttachableMedia,
   listCategoryOptions,
+  listGuideOptions,
   listVatRates,
 } from '@/lib/queries/admin'
 import { MAX_UPLOAD_BYTES, storageStatus } from '@/lib/storage'
@@ -22,6 +23,18 @@ import {
   ProductVariantsManager,
   type VarianteFiche,
 } from '@/components/admin/ProductVariantsManager'
+import {
+  AdresseForm,
+  IdentiteForm,
+  RedactionnelForm,
+} from '@/components/admin/ProductContentForms'
+import { ProductSpecsManager, type SpecFiche } from '@/components/admin/ProductSpecsManager'
+import { ProductFaqManager, type FaqFiche } from '@/components/admin/ProductFaqManager'
+import {
+  ProductGuidesManager,
+  type GuideFiche,
+  type GuideOption,
+} from '@/components/admin/ProductGuidesManager'
 
 /**
  * Fiche produit du back-office.
@@ -35,9 +48,9 @@ import {
  * corriger une accroche, et ferait de chaque correction de détail une
  * réécriture complète de la fiche.
  *
- * Les compatibilités et les caractéristiques restent en lecture ici — les
- * premières s'éditent depuis l'écran Véhicules, où l'on travaille génération
- * par génération.
+ * Les compatibilités restent en lecture ici : elles s'éditent depuis l'écran
+ * Véhicules, où l'on travaille génération par génération plutôt que produit
+ * par produit.
  */
 
 type PageProps = { params: Promise<{ productId: string }> }
@@ -61,18 +74,6 @@ const STATUS_TONES: Record<string, BadgeTone> = {
   DRAFT: 'warn',
   PUBLISHED: 'ok',
   ARCHIVED: 'neutral',
-}
-
-const VEHICLE_TYPE_LABELS: Record<string, string> = {
-  CAR: 'Voiture',
-  MOTORCYCLE: 'Moto',
-  BOTH: 'Voiture et moto',
-}
-
-const DIFFICULTY_LABELS: Record<string, string> = {
-  EASY: 'Montage simple',
-  MEDIUM: 'Montage intermédiaire',
-  HARD: 'Montage difficile',
 }
 
 const FITMENT_LABELS: Record<string, { label: string; tone: BadgeTone }> = {
@@ -117,10 +118,42 @@ export default async function AdminProductPage({ params }: PageProps) {
     .map((manque) => manque.champ)
   const categoryNames = product.categories.map((entry) => entry.category.name)
 
-  // Rubriques proposées à l'édition, et taux de TVA disponibles. Les deux
-  // listes servent aussi à l'écran de création : elles vivent dans les
-  // requêtes, pas ici.
-  const [categoriesOptions, tauxTva] = await Promise.all([listCategoryOptions(), listVatRates()])
+  // Rubriques proposées à l'édition, taux de TVA et guides disponibles. Les
+  // deux premières listes servent aussi à l'écran de création : elles vivent
+  // dans les requêtes, pas ici.
+  const [categoriesOptions, tauxTva, tousLesGuides] = await Promise.all([
+    listCategoryOptions(),
+    listVatRates(),
+    listGuideOptions(),
+  ])
+
+  const specs: SpecFiche[] = product.specs.map((spec) => ({
+    id: spec.id,
+    label: spec.label,
+    value: spec.value,
+  }))
+
+  const questions: FaqFiche[] = product.faqItems.map((item) => ({
+    id: item.id,
+    question: item.question,
+    answer: item.answer,
+  }))
+
+  /*
+    Les guides rattachés portent leur date de publication : la fiche publique
+    ne montre que les guides publiés, et l'écran doit pouvoir dire qu'un
+    rattachement ne se voit pas encore.
+  */
+  const guidesRattaches: GuideFiche[] = product.guides.map((lien) => ({
+    id: lien.guide.id,
+    title: lien.guide.title,
+    slug: lien.guide.slug,
+    publie: lien.guide.publishedAt !== null,
+  }))
+  const dejaRattaches = new Set(guidesRattaches.map((guide) => guide.id))
+  const guidesDisponibles: GuideOption[] = tousLesGuides
+    .filter((guide) => !dejaRattaches.has(guide.id))
+    .map((guide) => ({ id: guide.id, title: guide.title, publie: guide.publishedAt !== null }))
 
   /*
     Les conditionnements, avec ce qu'il faut pour décider : le taux lisible, le
@@ -268,36 +301,53 @@ export default async function AdminProductPage({ params }: PageProps) {
         />
       </section>
 
-      {/* --- Informations ------------------------------------------------- */}
-      <section aria-labelledby="produit-infos" className="mt-5">
-        <h2 id="produit-infos" className="text-base font-bold">
-          Informations
+      {/* --- Identité ------------------------------------------------------ */}
+      <section aria-labelledby="produit-identite" className="mt-6">
+        <h2 id="produit-identite" className="text-base font-bold">
+          Identité
         </h2>
-        <dl className="mt-2 rounded-md border border-line border-t-0 bg-white">
-          <InfoRow label="Identifiant interne">
-            <span className="font-mono text-xs">{product.id}</span>
-          </InfoRow>
-          <InfoRow label="Slug">
-            <span className="font-mono text-xs">{product.slug}</span>
-          </InfoRow>
-          <InfoRow label="Marque">{product.brand ?? <Unset />}</InfoRow>
-          <InfoRow label="Culot">{product.bulbBase ?? <Unset />}</InfoRow>
-          <InfoRow label="Température de couleur">
-            {product.colorTemperature ? `${product.colorTemperature} K` : <Unset />}
-          </InfoRow>
-          <InfoRow label="Type de véhicule">
-            {VEHICLE_TYPE_LABELS[product.vehicleType] ?? <Unset />}
-          </InfoRow>
-          <InfoRow label="Difficulté de montage">
-            {DIFFICULTY_LABELS[product.difficulty] ?? <Unset />}
-          </InfoRow>
-          <InfoRow label="Catégories">
-            {categoryNames.length > 0 ? categoryNames.join(', ') : <Unset />}
-          </InfoRow>
-          <InfoRow label="Titre SEO">{product.metaTitle ?? <Unset />}</InfoRow>
-          <InfoRow label="Description SEO">{product.metaDescription ?? <Unset />}</InfoRow>
-          <InfoRow label="Modifié le">{dateFormatter.format(product.updatedAt)}</InfoRow>
-        </dl>
+        <p className="mt-1 max-w-[70ch] text-xs text-muted-strong">
+          Ces champs décrivent le produit, et quatre d&apos;entre eux décident d&apos;où il
+          apparaît : le culot alimente le menu et la recherche par culot, la teinte une facette,
+          le type de véhicule les parcours auto et moto, le niveau de montage la section
+          «&nbsp;Montage&nbsp;».
+        </p>
+        <IdentiteForm
+          productId={product.id}
+          valeurs={{
+            name: product.name,
+            brand: product.brand ?? '',
+            bulbBase: product.bulbBase ?? '',
+            temperature: product.colorTemperature === null ? '' : String(product.colorTemperature),
+            difficulty: product.difficulty,
+            vehicleType: product.vehicleType,
+          }}
+          mayEdit={mayEdit}
+        />
+        <AdresseForm
+          productId={product.id}
+          slug={product.slug}
+          statut={product.status}
+          mayEdit={mayEdit}
+        />
+      </section>
+
+      {/* --- Textes -------------------------------------------------------- */}
+      <section aria-labelledby="produit-textes" className="mt-6">
+        <h2 id="produit-textes" className="text-base font-bold">
+          Textes
+        </h2>
+        <p className="mt-1 max-w-[70ch] text-xs text-muted-strong">
+          La description courte sous-titre le bloc de comparaison des teintes ; le rédactionnel
+          long est la section «&nbsp;La référence&nbsp;». Sans l&apos;un ni l&apos;autre, la fiche
+          n&apos;a aucun texte à lire.
+        </p>
+        <RedactionnelForm
+          productId={product.id}
+          description={product.description ?? ''}
+          body={product.body ?? ''}
+          mayEdit={mayEdit}
+        />
       </section>
 
       {/* --- Conditionnements ---------------------------------------------- */}
@@ -443,28 +493,62 @@ export default async function AdminProductPage({ params }: PageProps) {
         <h2 id="produit-specs" className="text-base font-bold">
           Caractéristiques
         </h2>
-        {product.specs.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-strong">Aucune caractéristique renseignée.</p>
-        ) : (
-          <div className="mt-2 overflow-x-auto rounded-md border border-line">
-            <table className="w-full border-collapse text-sm">
-              <thead className="bg-surface-soft text-xs text-muted-strong">
-                <tr>
-                  <th scope="col" className={TH}>Caractéristique</th>
-                  <th scope="col" className={TH}>Valeur</th>
-                </tr>
-              </thead>
-              <tbody>
-                {product.specs.map((spec) => (
-                  <tr key={spec.id} className="border-t border-line">
-                    <td className="px-3 py-2 text-muted-strong sm:w-72">{spec.label}</td>
-                    <td className="px-3 py-2">{spec.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <p className="mt-1 max-w-[70ch] text-xs text-muted-strong">
+          Ce que le client vérifie avant d&apos;acheter. Elles s&apos;affichent sur la fiche dans
+          cet ordre, et un libellé ne peut pas y figurer deux fois.
+        </p>
+        <ProductSpecsManager productId={product.id} specs={specs} mayEdit={mayEdit} />
+      </section>
+
+      {/* --- Questions fréquentes ------------------------------------------ */}
+      <section aria-labelledby="produit-faq" className="mt-6">
+        <h2 id="produit-faq" className="text-base font-bold">
+          Questions fréquentes
+        </h2>
+        <p className="mt-1 max-w-[70ch] text-xs text-muted-strong">
+          Elles s&apos;affichent sur la fiche et partent dans les données structurées que les
+          moteurs peuvent reprendre : une question posée deux fois y serait reprise deux fois.
+        </p>
+        <ProductFaqManager productId={product.id} questions={questions} mayEdit={mayEdit} />
+      </section>
+
+      {/* --- Guides de montage -------------------------------------------- */}
+      <section aria-labelledby="produit-guides" className="mt-6">
+        <h2 id="produit-guides" className="text-base font-bold">
+          Guides de montage
+        </h2>
+        <p className="mt-1 max-w-[70ch] text-xs text-muted-strong">
+          Un guide est rédigé une fois et sert à plusieurs produits : on le rattache ici, on ne
+          l&apos;écrit pas.
+        </p>
+        <ProductGuidesManager
+          productId={product.id}
+          rattaches={guidesRattaches}
+          disponibles={guidesDisponibles}
+          mayEdit={mayEdit}
+        />
+      </section>
+
+      {/* --- Informations techniques --------------------------------------- */}
+      <section aria-labelledby="produit-infos" className="mt-6">
+        <h2 id="produit-infos" className="text-base font-bold">
+          Informations
+        </h2>
+        {/*
+          Ce qui reste ici ne s'édite pas, par nature : un identifiant de base
+          et une date de modification. Tout le reste a rejoint le formulaire
+          qui l'écrit — voir un champ « non renseigné » dans un écran et le
+          corriger dans un autre, c'est ce qui fait qu'on ne le corrige jamais.
+        */}
+        <dl className="mt-2 rounded-md border border-line border-t-0 bg-white">
+          <InfoRow label="Identifiant interne">
+            <span className="font-mono text-xs">{product.id}</span>
+          </InfoRow>
+          <InfoRow label="Rubriques">
+            {categoryNames.length > 0 ? categoryNames.join(', ') : <Unset />}
+          </InfoRow>
+          <InfoRow label="Modifié le">{dateFormatter.format(product.updatedAt)}</InfoRow>
+        </dl>
       </section>
     </div>
   )

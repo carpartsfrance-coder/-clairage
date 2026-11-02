@@ -417,6 +417,26 @@ export function adresseProduit(saisie: { name: string; slug: string }): ParseRes
   return { ok: true, value: slug }
 }
 
+export const NOM_MAX = 200
+
+/**
+ * Nom d'un produit.
+ *
+ * C'est le titre de la fiche, le libellé de la vignette dans tout le
+ * catalogue, et le nom repris dans le panier et sur la facture : un nom vide
+ * laisserait une ligne de commande sans intitulé.
+ *
+ * Le renommer ne déplace pas l'adresse publique — voir `adresseProduit`.
+ */
+export function parseNom(valeur: string): ParseResult<string> {
+  const name = valeur.trim()
+  if (name.length === 0) return { ok: false, error: 'Le nom du produit est obligatoire.' }
+  if (name.length > NOM_MAX) {
+    return { ok: false, error: `Le nom du produit dépasse ${NOM_MAX} caractères.` }
+  }
+  return { ok: true, value: name }
+}
+
 export type ProduitSaisie = { name: string; slug: string; brand: string; categoryId: string }
 
 export type ProduitWriteData = { name: string; slug: string; brand: string | null; categoryId: string }
@@ -434,9 +454,9 @@ export type ProduitWriteData = { name: string; slug: string; brand: string | nul
  * l'impasse qu'on corrige.
  */
 export function parseProduit(saisie: ProduitSaisie): ParseResult<ProduitWriteData> {
-  const name = saisie.name.trim()
-  if (name.length === 0) return { ok: false, error: 'Le nom du produit est obligatoire.' }
-  if (name.length > 200) return { ok: false, error: 'Le nom du produit dépasse 200 caractères.' }
+  const nom = parseNom(saisie.name)
+  if (!nom.ok) return nom
+  const name = nom.value
 
   const slug = adresseProduit({ name, slug: saisie.slug })
   if (!slug.ok) return slug
