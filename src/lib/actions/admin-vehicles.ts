@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import type { VehicleType } from '@prisma/client'
 import { prisma } from '../db'
 import { audit, requireStaff, type StaffUser } from '../admin/guard'
-import { CHEMIN_PAR_TYPE } from '../queries/packs'
 import {
   deletionBlockedReason,
   isValidSlug,
@@ -12,9 +11,17 @@ import {
   parsePeriod,
   resolveSlug,
   slugify,
-  vehiclePackPath,
   type VehicleLevel,
 } from '../admin/vehicles'
+/*
+  L'invalidation du site public est partagée avec la fiche produit, qui écrit
+  désormais les mêmes compatibilités : une seule règle, dans un seul fichier.
+*/
+import {
+  contexteGeneration,
+  revalidateDepuisConfiguration,
+  revalidateVehicle,
+} from '../admin/revalidation-vehicules'
 
 /**
  * Écriture du référentiel véhicule depuis le back-office.
@@ -57,58 +64,6 @@ function champ(formData: FormData, nom: string): string {
 function erreur(contexte: string, cause: unknown): VehicleAdminState {
   console.error(`[admin] véhicules — ${contexte}`, cause)
   return { error: "L'enregistrement a échoué. Rien n'a été modifié." }
-}
-
-/**
- * Invalide ce que le site public sert sur ce véhicule.
- *
- * Le menu est rendu dans le gabarit : sans `revalidatePath('/', 'layout')`,
- * une marque nouvellement créée n'apparaîtrait nulle part tant qu'un autre
- * changement ne l'aurait pas forcé. Les pages de packs sont invalidées du plus
- * général au plus précis, parce qu'une génération ajoutée change aussi la
- * liste des modèles et celle des marques.
- *
- * La fiche produit n'est pas listée : elle lit le véhicule choisi dans le
- * cookie, donc elle est rendue à chaque requête et n'a rien à invalider.
- */
-function revalidateVehicle(scope: {
-  type: VehicleType
-  makeSlug?: string | null
-  modelSlug?: string | null
-  generationSlug?: string | null
-}): void {
-  revalidatePath('/admin/vehicules')
-  revalidatePath('/', 'layout')
-
-  // `BOTH` n'est listé par aucun des deux parcours ; on invalide les deux
-  // quand même, pour le cas où le type vient de changer dans un sens ou l'autre.
-  const chemins =
-    scope.type === 'BOTH' ? ['auto', 'moto'] : [CHEMIN_PAR_TYPE[scope.type as 'CAR' | 'MOTORCYCLE']]
-
-  for (const chemin of chemins) {
-    revalidatePath(`/packs/${chemin}`)
-    if (!scope.makeSlug) continue
-    revalidatePath(vehiclePackPath(chemin, scope.makeSlug))
-    if (!scope.modelSlug) continue
-    revalidatePath(vehiclePackPath(chemin, scope.makeSlug, scope.modelSlug))
-    if (!scope.generationSlug) continue
-    revalidatePath(
-      vehiclePackPath(chemin, scope.makeSlug, scope.modelSlug, scope.generationSlug),
-    )
-  }
-}
-
-/** Contexte d'une génération : ce qu'il faut pour invalider et pour afficher. */
-async function contexteGeneration(generationId: string) {
-  return prisma.vehicleGeneration.findUnique({
-    where: { id: generationId },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      model: { select: { slug: true, make: { select: { slug: true, type: true } } } },
-    },
-  })
 }
 
 /**
@@ -1085,26 +1040,6 @@ function lireCompatibilité(formData: FormData) {
     source: champ(formData, 'source'),
     verifiedAt: champ(formData, 'verifiedAt'),
   })
-}
-
-/** Invalide la page publique de la génération qui porte cette configuration. */
-async function revalidateDepuisConfiguration(configurationId: string): Promise<void> {
-  const configuration = await prisma.vehicleConfiguration.findUnique({
-    where: { id: configurationId },
-    select: { generationId: true },
-  })
-  if (!configuration) return
-
-  const generation = await contexteGeneration(configuration.generationId)
-  if (generation) {
-    revalidateVehicle({
-      type: generation.model.make.type,
-      makeSlug: generation.model.make.slug,
-      modelSlug: generation.model.slug,
-      generationSlug: generation.slug,
-    })
-  }
-  revalidatePath(`/admin/vehicules/${configuration.generationId}`)
 }
 
 async function créerCompatibilité(

@@ -170,8 +170,19 @@ export async function getProduct(
           orderBy: { publishedAt: 'desc' },
           take: 10,
         },
+        /*
+          Compléments facultatifs.
+
+          La cible doit être publiée. Sans ce filtre, un complément rattaché à
+          un brouillon — ou à un produit archivé — s'affichait sous le bloc
+          d'achat avec un lien vers `/p/<slug>`, c'est-à-dire vers une page que
+          `getProduct` refuse de servir : une proposition d'achat qui mène en
+          404. Le back-office dit maintenant, sur la ligne concernée, qu'un
+          complément non publié n'apparaîtra pas ; cette requête est ce qui rend
+          cette phrase vraie.
+        */
         relatedFrom: {
-          where: { type: 'OPTIONAL_ADDON' },
+          where: { type: 'OPTIONAL_ADDON', target: { status: 'PUBLISHED' } },
           orderBy: { position: 'asc' },
           include: {
             target: {

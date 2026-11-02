@@ -258,7 +258,21 @@ function CarteVariante({
 
       {estKit ? (
         <div className="rounded-sm bg-surface-soft px-2.5 py-2">
-          <p className="text-[11px] font-semibold text-muted-strong">Composants</p>
+          {/*
+            La composition reste affichée ici parce qu'elle explique le stock
+            qui vient d'être annoncé « calculé depuis les composants » ; elle
+            s'écrit dans sa propre section, d'où le lien plutôt qu'un second
+            formulaire au même endroit.
+          */}
+          <p className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] font-semibold text-muted-strong">
+            Composants
+            <a
+              href="#produit-composition"
+              className="font-semibold text-brand underline underline-offset-4"
+            >
+              Modifier la composition
+            </a>
+          </p>
           <ul className="mt-1 flex flex-col gap-0.5 text-xs">
             {variante.composants.map((composant) => (
               <li key={composant.id}>

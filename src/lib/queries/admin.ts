@@ -1,6 +1,7 @@
 import 'server-only'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '../db'
+import { RESULTATS_MAX, normaliserTerme, termeSuffisant } from '../admin/produit-liens'
 
 /**
  * Lectures du back-office.
@@ -351,8 +352,23 @@ export async function getAdminProduct(productId: string) {
               include: { component: { include: { product: { select: { name: true } } } } },
             },
             fitments: {
+              /*
+                Un ordre explicite : sans lui, la liste se réordonne au gré du
+                moteur entre deux affichages, et l'écran devient illisible dès
+                qu'une référence équipe une trentaine de véhicules.
+              */
+              orderBy: [
+                { configuration: { generation: { name: 'asc' } } },
+                { position: { position: 'asc' } },
+              ],
               include: {
                 position: true,
+                /*
+                  Les accessoires de montage sont comptés, pas chargés :
+                  l'écran n'a besoin que de dire ce qu'un retrait emporterait
+                  en cascade.
+                */
+                _count: { select: { accessories: true } },
                 configuration: {
                   include: {
                     equipment: true,
@@ -400,11 +416,199 @@ export async function getAdminProduct(productId: string) {
         guides: {
           include: { guide: { select: { id: true, slug: true, title: true, publishedAt: true } } },
         },
+        /*
+          Les compléments facultatifs, dans l'ordre où la fiche les propose.
+          Seul `OPTIONAL_ADDON` est lu par la fiche publique : les deux autres
+          types du schéma ne sont affichés nulle part, et l'écran ne les offre
+          donc pas. La cible porte son statut et son nombre de références
+          actives, les deux conditions qui décident si le complément se voit.
+        */
+        relatedFrom: {
+          where: { type: 'OPTIONAL_ADDON' },
+          orderBy: { position: 'asc' },
+          include: {
+            target: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                status: true,
+                _count: { select: { variants: { where: { active: true } } } },
+              },
+            },
+          },
+        },
       },
     })
   } catch (error) {
     console.error('[admin] fiche produit indisponible', error)
     return null
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Liens d'une fiche produit                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Mots d'un terme de recherche.
+ *
+ * Chercher « peugeot 208 » dans un seul champ ne trouve rien : la marque est
+ * d'un côté, la génération de l'autre. Chaque mot doit donc se retrouver
+ * quelque part, et tous doivent se retrouver — un terme qui ne fait
+ * qu'allonger la liste n'aide personne.
+ */
+function mots(terme: string): string[] {
+  return normaliserTerme(terme).split(' ').filter(Boolean)
+}
+
+/**
+ * Produits rattachables comme compléments.
+ *
+ * Pourquoi une recherche plutôt qu'une liste : le catalogue compte près de dix
+ * mille produits. Les charger tous dans une liste déroulante alourdirait
+ * chaque affichage de la fiche — c'est ce que fait encore `listVariantOptions`
+ * pour l'écran Véhicules, et cette page en porte le poids.
+ *
+ * Les brouillons sont proposés : un complément se prépare souvent avant sa
+ * publication, et l'écran dit alors qu'il ne se voit pas encore. Les archivés
+ * sont écartés : la boutique ne les sert plus.
+ */
+export async function chercherComplements(
+  terme: string,
+  options: { produitId: string; exclureIds: readonly string[] },
+) {
+  if (!termeSuffisant(terme)) return []
+
+  try {
+    return await prisma.product.findMany({
+      where: {
+        status: { not: 'ARCHIVED' },
+        id: { notIn: [options.produitId, ...options.exclureIds] },
+        AND: mots(terme).map((mot) => ({
+          OR: [
+            { name: { contains: mot, mode: 'insensitive' as const } },
+            { slug: { contains: mot, mode: 'insensitive' as const } },
+            { bulbBase: { contains: mot, mode: 'insensitive' as const } },
+            { variants: { some: { sku: { contains: mot, mode: 'insensitive' as const } } } },
+          ],
+        })),
+      },
+      orderBy: { name: 'asc' },
+      take: RESULTATS_MAX,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        _count: { select: { variants: { where: { active: true } } } },
+      },
+    })
+  } catch (error) {
+    console.error('[admin] recherche de compléments impossible', error)
+    return []
+  }
+}
+
+/**
+ * Références incluables dans un kit.
+ *
+ * Les kits sont comptés, pas écartés : un kit n'est pas incluable dans un kit
+ * — son stock est calculé, donc son stock physique vaut zéro et le parent
+ * passerait en rupture — mais le dire sur la ligne vaut mieux que de faire
+ * disparaître la référence que l'exploitant cherche.
+ *
+ * Les références désactivées sont écartées : elles ne se vendent plus, mais
+ * surtout leur stock n'est plus tenu, et c'est lui qui ferait le stock du kit.
+ */
+export async function chercherVariantes(
+  terme: string,
+  options: { varianteId: string; exclureIds: readonly string[] },
+) {
+  if (!termeSuffisant(terme)) return []
+
+  try {
+    return await prisma.productVariant.findMany({
+      where: {
+        active: true,
+        id: { notIn: [options.varianteId, ...options.exclureIds] },
+        product: { status: { not: 'ARCHIVED' } },
+        AND: mots(terme).map((mot) => ({
+          OR: [
+            { sku: { contains: mot, mode: 'insensitive' as const } },
+            { name: { contains: mot, mode: 'insensitive' as const } },
+            { product: { name: { contains: mot, mode: 'insensitive' as const } } },
+          ],
+        })),
+      },
+      orderBy: [{ product: { name: 'asc' } }, { position: 'asc' }],
+      take: RESULTATS_MAX,
+      select: {
+        id: true,
+        sku: true,
+        name: true,
+        stockOnHand: true,
+        stockReserved: true,
+        product: { select: { name: true, status: true } },
+        _count: { select: { components: true } },
+      },
+    })
+  } catch (error) {
+    console.error('[admin] recherche de références impossible', error)
+    return []
+  }
+}
+
+/**
+ * Configurations véhicule, cherchées par marque, modèle, génération,
+ * équipement ou référence de bloc optique.
+ *
+ * Les configurations désactivées sont proposées, avec leur état : le parcours
+ * public les ignore, mais documenter une compatibilité avant de rouvrir une
+ * configuration est un travail légitime. L'écran le signale sur la ligne.
+ */
+export async function chercherConfigurations(terme: string) {
+  if (!termeSuffisant(terme)) return []
+
+  try {
+    return await prisma.vehicleConfiguration.findMany({
+      where: {
+        AND: mots(terme).map((mot) => ({
+          OR: [
+            { headlampRef: { contains: mot, mode: 'insensitive' as const } },
+            { label: { contains: mot, mode: 'insensitive' as const } },
+            { equipment: { label: { contains: mot, mode: 'insensitive' as const } } },
+            { generation: { name: { contains: mot, mode: 'insensitive' as const } } },
+            { generation: { model: { name: { contains: mot, mode: 'insensitive' as const } } } },
+            {
+              generation: {
+                model: { make: { name: { contains: mot, mode: 'insensitive' as const } } },
+              },
+            },
+          ],
+        })),
+      },
+      orderBy: [{ generation: { name: 'asc' } }, { headlampRef: 'asc' }],
+      take: RESULTATS_MAX,
+      select: {
+        id: true,
+        headlampRef: true,
+        label: true,
+        active: true,
+        equipment: { select: { label: true } },
+        generation: {
+          select: {
+            name: true,
+            yearFrom: true,
+            yearTo: true,
+            model: { select: { name: true, make: { select: { name: true } } } },
+          },
+        },
+      },
+    })
+  } catch (error) {
+    console.error('[admin] recherche de configurations impossible', error)
+    return []
   }
 }
 

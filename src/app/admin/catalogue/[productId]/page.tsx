@@ -5,12 +5,18 @@ import { notFound } from 'next/navigation'
 import { requireStaff } from '@/lib/admin/guard'
 import { can } from '@/lib/admin/permissions'
 import {
+  chercherComplements,
+  chercherConfigurations,
+  chercherVariantes,
   getAdminProduct,
   listAttachableMedia,
   listCategoryOptions,
   listGuideOptions,
+  listLightPositions,
   listVatRates,
 } from '@/lib/queries/admin'
+import { availabilityForKit } from '@/lib/stock'
+import { libelleVehicule } from '@/lib/admin/produit-liens'
 import { MAX_UPLOAD_BYTES, storageStatus } from '@/lib/storage'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
@@ -35,6 +41,22 @@ import {
   type GuideFiche,
   type GuideOption,
 } from '@/components/admin/ProductGuidesManager'
+import {
+  ProductAddonsManager,
+  type ComplementCandidat,
+  type ComplementFiche,
+} from '@/components/admin/ProductAddonsManager'
+import {
+  ProductKitManager,
+  type ComposantCandidat,
+  type ConditionnementComposable,
+} from '@/components/admin/ProductKitManager'
+import {
+  ProductFitmentsManager,
+  type CompatibiliteFiche,
+  type ConditionnementCompatible,
+  type ConfigurationCandidate,
+} from '@/components/admin/ProductFitmentsManager'
 
 /**
  * Fiche produit du back-office.
@@ -48,12 +70,30 @@ import {
  * corriger une accroche, et ferait de chaque correction de détail une
  * réécriture complète de la fiche.
  *
- * Les compatibilités restent en lecture ici : elles s'éditent depuis l'écran
- * Véhicules, où l'on travaille génération par génération plutôt que produit
- * par produit.
+ * Les liens vers le reste de la boutique — compléments, composition d'un kit,
+ * compatibilités véhicule — se choisissent par une recherche, et non dans une
+ * liste déroulante : le catalogue compte près de dix mille produits et le
+ * référentiel véhicule 2 180 configurations. Le terme cherché vit dans
+ * l'adresse, ce qui le rend rechargeable et partageable, et dit aussi de quel
+ * conditionnement il s'agit — sans quoi un même terme proposerait les mêmes
+ * candidats sous les trois conditionnements de la fiche.
+ *
+ * Les compatibilités s'écrivent aussi depuis l'écran Véhicules, et avec les
+ * mêmes règles (`parseFitment`) : là on documente un véhicule, ici une
+ * référence qui en équipe quarante.
  */
 
-type PageProps = { params: Promise<{ productId: string }> }
+type PageProps = {
+  params: Promise<{ productId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+/** Un paramètre d'adresse, réduit à sa première valeur. */
+function unSeul(params: Record<string, string | string[] | undefined>, cle: string): string {
+  const valeur = params[cle]
+  if (Array.isArray(valeur)) return valeur[0] ?? ''
+  return valeur ?? ''
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { productId } = await params
@@ -76,12 +116,6 @@ const STATUS_TONES: Record<string, BadgeTone> = {
   ARCHIVED: 'neutral',
 }
 
-const FITMENT_LABELS: Record<string, { label: string; tone: BadgeTone }> = {
-  CONFIRMED: { label: 'Confirmée', tone: 'ok' },
-  UNKNOWN: { label: 'À vérifier', tone: 'warn' },
-  INCOMPATIBLE: { label: 'Incompatible', tone: 'danger' },
-}
-
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' })
 
 /** Valeur absente : on l'écrit, on ne la devine pas. */
@@ -98,14 +132,25 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-const TH = 'px-3 py-2 text-left font-semibold'
-const TH_NUM = 'px-3 py-2 text-right font-semibold'
-
-export default async function AdminProductPage({ params }: PageProps) {
+export default async function AdminProductPage({ params, searchParams }: PageProps) {
   const staff = await requireStaff('catalog.view')
   const { productId } = await params
   const product = await getAdminProduct(productId)
   if (!product) notFound()
+
+  /*
+    Les recherches de liens vivent dans l'adresse : `complement` cherche un
+    produit, `composant` une référence pour le kit désigné par `kit`,
+    `vehicule` une configuration pour le conditionnement désigné par `compat`.
+    Un identifiant inconnu ne casse rien — le bloc correspondant ne reconnaît
+    simplement aucun de ses conditionnements.
+  */
+  const requete = await searchParams
+  const termeComplement = unSeul(requete, 'complement')
+  const termeComposant = unSeul(requete, 'composant')
+  const kitCible = unSeul(requete, 'kit') || null
+  const termeVehicule = unSeul(requete, 'vehicule')
+  const compatCible = unSeul(requete, 'compat') || null
 
   // La lecture suffit pour consulter la fiche ; poser un visuel demande le
   // droit d'écriture. On masque ce qui serait refusé plutôt que d'offrir un
@@ -121,10 +166,11 @@ export default async function AdminProductPage({ params }: PageProps) {
   // Rubriques proposées à l'édition, taux de TVA et guides disponibles. Les
   // deux premières listes servent aussi à l'écran de création : elles vivent
   // dans les requêtes, pas ici.
-  const [categoriesOptions, tauxTva, tousLesGuides] = await Promise.all([
+  const [categoriesOptions, tauxTva, tousLesGuides, emplacements] = await Promise.all([
     listCategoryOptions(),
     listVatRates(),
     listGuideOptions(),
+    listLightPositions(),
   ])
 
   const specs: SpecFiche[] = product.specs.map((spec) => ({
@@ -189,6 +235,162 @@ export default async function AdminProductPage({ params }: PageProps) {
       compatibilites: variant.fitments.length,
     },
   }))
+  /*
+    Les compléments facultatifs, dans l'ordre où la fiche les propose. Chacun
+    porte de quoi dire s'il se voit : seuls les produits publiés ayant une
+    référence active sont affichés par la fiche.
+  */
+  const complements: ComplementFiche[] = product.relatedFrom.map((lien) => ({
+    relationId: lien.id,
+    produitId: lien.target.id,
+    name: lien.target.name,
+    slug: lien.target.slug,
+    statut: lien.target.status,
+    referencesActives: lien.target._count.variants,
+  }))
+
+  /*
+    La composition de chaque conditionnement, avec ce qu'elle décide : le
+    nombre de kits montables et le composant qui le limite. C'est le seul
+    endroit où l'on voit qu'une quantité vient de diviser par deux ce qu'on
+    peut vendre — la fiche publique, elle, n'affiche que le résultat.
+  */
+  const conditionnementsComposables: ConditionnementComposable[] = product.variants.map(
+    (variant) => {
+      const disponibilite =
+        variant.components.length > 0
+          ? availabilityForKit(
+              variant.components.map((entry) => ({
+                quantity: entry.quantity,
+                required: entry.required,
+                component: entry.component,
+              })),
+            )
+          : null
+
+      return {
+        id: variant.id,
+        sku: variant.sku,
+        name: variant.name,
+        dansDesKits: variant._count.partOfKits,
+        montables: disponibilite?.sellable ?? null,
+        composantLimitant: disponibilite?.limitingComponent?.sku ?? null,
+        composants: variant.components.map((entry) => ({
+          ligneId: entry.id,
+          componentId: entry.componentId,
+          sku: entry.component.sku,
+          libelle: `${entry.component.product.name} · ${entry.component.name}`,
+          quantite: entry.quantity,
+          requis: entry.required,
+          vendable: Math.max(0, entry.component.stockOnHand - entry.component.stockReserved),
+        })),
+      }
+    },
+  )
+
+  /*
+    Les compatibilités, par conditionnement. La date de vérification est
+    rendue au format du champ `date` (AAAA-MM-JJ) et au format français :
+    l'une se remplit, l'autre se lit.
+  */
+  const conditionnementsCompatibles: ConditionnementCompatible[] = product.variants.map(
+    (variant) => ({
+      id: variant.id,
+      sku: variant.sku,
+      name: variant.name,
+      compatibilites: variant.fitments.map((fitment): CompatibiliteFiche => {
+        const generation = fitment.configuration.generation
+        return {
+          id: fitment.id,
+          vehicule: libelleVehicule({
+            marque: generation.model.make.name,
+            modele: generation.model.name,
+            generation: generation.name,
+          }),
+          equipement: fitment.configuration.headlampRef
+            ? `${fitment.configuration.equipment.label} · ${fitment.configuration.headlampRef}`
+            : fitment.configuration.equipment.label,
+          emplacement: fitment.position.label,
+          statut: fitment.status,
+          quantite: fitment.quantity,
+          restrictions: fitment.restrictions,
+          homologation: fitment.roadApproval,
+          marche: fitment.approvalMarket,
+          noteHomologation: fitment.approvalNote,
+          source: fitment.source,
+          verifieLe: fitment.verifiedAt ? fitment.verifiedAt.toISOString().slice(0, 10) : '',
+          verifieLeAffiche: fitment.verifiedAt ? dateFormatter.format(fitment.verifiedAt) : null,
+          configurationActive: fitment.configuration.active,
+          accessoires: fitment._count.accessories,
+        }
+      }),
+    }),
+  )
+
+  /*
+    Les trois recherches, lancées ensemble et seulement quand elles ont un
+    terme : sans cela, chaque affichage de la fiche irait interroger le
+    catalogue pour rien. Les produits et références déjà liés sont exclus en
+    base plutôt que barrés à l'écran — une proposition qu'on ne peut pas
+    accepter n'est pas une proposition.
+  */
+  const composantsDuKitCible =
+    conditionnementsComposables.find((bloc) => bloc.id === kitCible)?.composants ?? []
+
+  const [candidatsComplement, candidatsComposant, candidatesVehicule] = await Promise.all([
+    mayEdit && termeComplement
+      ? chercherComplements(termeComplement, {
+          produitId: product.id,
+          exclureIds: complements.map((complement) => complement.produitId),
+        })
+      : Promise.resolve([]),
+    mayEdit && kitCible && termeComposant
+      ? chercherVariantes(termeComposant, {
+          varianteId: kitCible,
+          exclureIds: composantsDuKitCible.map((composant) => composant.componentId),
+        })
+      : Promise.resolve([]),
+    mayEdit && compatCible && termeVehicule
+      ? chercherConfigurations(termeVehicule)
+      : Promise.resolve([]),
+  ])
+
+  const candidatsDeComplement: ComplementCandidat[] = candidatsComplement.map((produit) => ({
+    id: produit.id,
+    name: produit.name,
+    slug: produit.slug,
+    statut: produit.status,
+    referencesActives: produit._count.variants,
+  }))
+
+  const candidatsDeComposant: ComposantCandidat[] = candidatsComposant.map((variante) => ({
+    id: variante.id,
+    sku: variante.sku,
+    libelle: `${variante.product.name} · ${variante.name}`,
+    estKit: variante._count.components > 0,
+    vendable: Math.max(0, variante.stockOnHand - variante.stockReserved),
+    statutProduit: variante.product.status,
+  }))
+
+  const candidatesDeVehicule: ConfigurationCandidate[] = candidatesVehicule.map(
+    (configuration) => ({
+      id: configuration.id,
+      vehicule: libelleVehicule({
+        marque: configuration.generation.model.make.name,
+        modele: configuration.generation.model.name,
+        generation: configuration.generation.name,
+      }),
+      equipement: [
+        configuration.equipment.label,
+        configuration.headlampRef,
+        configuration.label,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      active: configuration.active,
+    }),
+  )
+
   /*
     Les visuels, dans l'ordre où la boutique les montrera : par groupe de rôle,
     puis par position. Les trier ici — et non « par position » comme le faisait
@@ -367,103 +569,68 @@ export default async function AdminProductPage({ params }: PageProps) {
         />
       </section>
 
+      {/* --- Composition des kits ------------------------------------------ */}
+      <section aria-labelledby="produit-composition" className="mt-6">
+        <h2 id="produit-composition" className="text-base font-bold">
+          Composition des kits
+        </h2>
+        <p className="mt-1 max-w-[70ch] text-xs text-muted-strong">
+          Dès qu&apos;un conditionnement a un composant, la boutique cesse de lire le stock saisi
+          sur lui : elle calcule combien de kits ses composants indispensables permettent de
+          monter, réserve les composants à la commande, et liste les pièces à prendre en rayon.
+          Une quantité fausse ici ne fait pas un affichage faux, elle fait une vente qu&apos;on ne
+          peut pas honorer.
+        </p>
+        <ProductKitManager
+          conditionnements={conditionnementsComposables}
+          kitCible={kitCible}
+          terme={termeComposant}
+          candidats={candidatsDeComposant}
+          mayEdit={mayEdit}
+        />
+      </section>
+
+      {/* --- Compléments facultatifs --------------------------------------- */}
+      <section aria-labelledby="produit-complements" className="mt-6">
+        <h2 id="produit-complements" className="text-base font-bold">
+          Compléments facultatifs
+        </h2>
+        <p className="mt-1 max-w-[70ch] text-xs text-muted-strong">
+          Le bloc «&nbsp;Complétez votre commande&nbsp;» de la fiche, sous l&apos;achat : c&apos;est
+          là que se vendent l&apos;adaptateur et le décodeur dont le montage a besoin. Un
+          complément déjà fourni par le pack retenu disparaît de lui-même.
+        </p>
+        <ProductAddonsManager
+          productId={product.id}
+          complements={complements}
+          terme={termeComplement}
+          candidats={candidatsDeComplement}
+          mayEdit={mayEdit}
+        />
+      </section>
+
       {/* --- Compatibilités ----------------------------------------------- */}
       <section aria-labelledby="produit-compatibilites" className="mt-6">
         <h2 id="produit-compatibilites" className="text-base font-bold">
           Compatibilités
         </h2>
-        {product.variants.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-strong">
-            Aucune variante : il n&apos;y a donc aucune compatibilité à documenter.
-          </p>
-        ) : (
-          <div className="mt-2 flex flex-col gap-4">
-            {product.variants.map((variant) => (
-              <div key={`fit-${variant.id}`}>
-                <h3 className="text-sm font-semibold">
-                  {variant.name} <span className="font-mono text-xs text-muted">{variant.sku}</span>
-                </h3>
-                {variant.fitments.length === 0 ? (
-                  <p className="mt-1 text-sm text-muted-strong">
-                    Aucune compatibilité documentée pour cette référence.
-                  </p>
-                ) : (
-                  <div className="mt-1 overflow-x-auto rounded-md border border-line">
-                    <table className="w-full min-w-[72rem] border-collapse text-sm">
-                      <thead className="bg-surface-soft text-xs text-muted-strong">
-                        <tr>
-                          <th scope="col" className={TH}>Véhicule</th>
-                          <th scope="col" className={TH}>Emplacement</th>
-                          <th scope="col" className={TH}>Statut</th>
-                          <th scope="col" className={TH_NUM}>Quantité</th>
-                          <th scope="col" className={TH}>Restrictions</th>
-                          <th scope="col" className={TH}>Homologation</th>
-                          <th scope="col" className={TH}>Source</th>
-                          <th scope="col" className={TH}>Vérifié le</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {variant.fitments.map((fitment) => {
-                          const status =
-                            FITMENT_LABELS[fitment.status] ?? FITMENT_LABELS.UNKNOWN
-                          const generation = fitment.configuration.generation
-                          const approval =
-                            fitment.roadApproval === 'APPROVED'
-                              ? `Homologué (${fitment.approvalMarket})`
-                              : fitment.roadApproval === 'NOT_APPROVED'
-                                ? `Non homologué (${fitment.approvalMarket})`
-                                : `À confirmer (${fitment.approvalMarket})`
-
-                          return (
-                            <tr key={fitment.id} className="border-t border-line align-top">
-                              <td className="px-3 py-2">
-                                <span className="font-medium">
-                                  {generation.model.make.name} {generation.name}
-                                </span>
-                                <span className="block text-xs text-muted">
-                                  {fitment.configuration.equipment.label}
-                                  {fitment.configuration.headlampRef
-                                    ? ` · ${fitment.configuration.headlampRef}`
-                                    : ''}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2">{fitment.position.label}</td>
-                              <td className="px-3 py-2">
-                                <Badge tone={status.tone}>{status.label}</Badge>
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums">
-                                {fitment.quantity}
-                              </td>
-                              <td className="px-3 py-2 text-xs">
-                                {fitment.restrictions ?? <span className="text-muted">aucune</span>}
-                              </td>
-                              <td className="px-3 py-2 text-xs">
-                                {approval}
-                                {fitment.approvalNote ? (
-                                  <span className="block text-muted">{fitment.approvalNote}</span>
-                                ) : null}
-                              </td>
-                              <td className="px-3 py-2 text-xs">
-                                {fitment.source ?? <Unset />}
-                              </td>
-                              <td className="px-3 py-2 text-xs text-muted-strong">
-                                {fitment.verifiedAt ? (
-                                  dateFormatter.format(fitment.verifiedAt)
-                                ) : (
-                                  <span className="text-muted">—</span>
-                                )}
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <p className="mt-1 max-w-[70ch] text-xs text-muted-strong">
+          Sans compatibilité documentée, le parcours véhicule ne proposera jamais cette
+          référence. Les mêmes règles qu&apos;à l&apos;écran Véhicules s&apos;appliquent :
+          «&nbsp;confirmée&nbsp;» demande une source et une date, et l&apos;absence de ligne vaut
+          «&nbsp;à vérifier&nbsp;», jamais «&nbsp;incompatible&nbsp;».
+        </p>
+        <ProductFitmentsManager
+          conditionnements={conditionnementsCompatibles}
+          emplacements={emplacements.map((emplacement) => ({
+            id: emplacement.id,
+            label: emplacement.label,
+          }))}
+          compatCible={compatCible}
+          terme={termeVehicule}
+          candidates={candidatesDeVehicule}
+          mayEdit={mayEdit}
+        />
       </section>
 
       {/* --- Visuels ------------------------------------------------------ */}
