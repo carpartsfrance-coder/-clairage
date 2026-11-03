@@ -34,7 +34,8 @@
     "import:vehicle-photos": "tsx scripts/import-vehicle-photos.ts",
     "import:produits": "tsx scripts/import-produits.ts",
     "import:packs-vehicule": "tsx scripts/import-packs-vehicule.ts",
-    "visuel:gamme": "tsx scripts/pose-visuel-gamme.ts"
+    "visuel:gamme": "tsx scripts/pose-visuel-gamme.ts",
+    "stock:minimum": "tsx scripts/pose-stock-minimum.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",
