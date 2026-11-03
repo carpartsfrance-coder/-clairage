@@ -142,6 +142,7 @@ export async function updateProductIdentity(
   const productId = champ(formData, 'productId')
   const identite = parseIdentite({
     name: champ(formData, 'name'),
+    tagline: champ(formData, 'tagline'),
     brand: champ(formData, 'brand'),
     bulbBase: champ(formData, 'bulbBase'),
     temperature: champ(formData, 'temperature'),

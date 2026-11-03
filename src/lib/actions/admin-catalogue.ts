@@ -42,34 +42,78 @@ const texteOptionnel = z
   .trim()
   .transform((valeur) => (valeur.length === 0 ? null : valeur))
 
-const schemaInfos = z.object({
+/*
+  Le référencement et la publication se sont séparés en deux formulaires quand
+  la fiche est passée aux onglets : les métadonnées vivent dans l'onglet SEO,
+  les rubriques et la mise en avant dans la colonne de droite, visible depuis
+  tous les onglets. Un seul formulaire à cheval sur les deux n'aurait pas pu
+  exister — et l'accroche, elle, a rejoint l'identité, qu'elle prolonge.
+*/
+const schemaSeo = z.object({
   productId: z.string().min(1),
-  tagline: texteOptionnel,
   metaTitle: texteOptionnel,
   metaDescription: texteOptionnel,
+})
+
+const schemaPublication = z.object({
+  productId: z.string().min(1),
   /** Rubriques retenues, dans l'ordre d'affichage. */
   categoryIds: z.array(z.string()).max(5),
   /** Mise en avant sur la page d'accueil. */
   featured: z.boolean(),
 })
 
-export async function updateProductInfo(
+/** Titre et description de référencement : l'onglet SEO. */
+export async function updateProductSeo(
   _previous: ProductEditState,
   formData: FormData,
 ): Promise<ProductEditState> {
   await requireStaff('catalog.edit')
 
-  const parsed = schemaInfos.safeParse({
+  const parsed = schemaSeo.safeParse({
     productId: formData.get('productId'),
-    tagline: formData.get('tagline') ?? '',
     metaTitle: formData.get('metaTitle') ?? '',
     metaDescription: formData.get('metaDescription') ?? '',
-    categoryIds: formData.getAll('categoryIds').filter((valeur): valeur is string => typeof valeur === 'string' && valeur.length > 0),
+  })
+  if (!parsed.success) return { error: 'Formulaire invalide.' }
+  const { productId, metaTitle, metaDescription } = parsed.data
+
+  const produit = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { slug: true },
+  })
+  if (!produit) return { error: 'Produit introuvable.' }
+
+  await prisma.product.update({ where: { id: productId }, data: { metaTitle, metaDescription } })
+
+  revalidatePath(`/admin/catalogue/${productId}`)
+  revalidatePath(`/p/${produit.slug}`)
+  return { ok: true, message: 'Référencement enregistré.' }
+}
+
+/**
+ * Rubriques et mise en avant : la colonne de droite.
+ *
+ * Les deux vont ensemble parce qu'elles décident d'où le produit apparaît en
+ * dehors de sa propre fiche — dans les menus et le fil d'Ariane pour les
+ * rubriques, sur l'accueil pour la mise en avant.
+ */
+export async function updateProductPublication(
+  _previous: ProductEditState,
+  formData: FormData,
+): Promise<ProductEditState> {
+  await requireStaff('catalog.edit')
+
+  const parsed = schemaPublication.safeParse({
+    productId: formData.get('productId'),
+    categoryIds: formData
+      .getAll('categoryIds')
+      .filter((valeur): valeur is string => typeof valeur === 'string' && valeur.length > 0),
     // Une case décochée n'est pas envoyée : son absence vaut « non ».
     featured: formData.get('featured') !== null,
   })
   if (!parsed.success) return { error: 'Formulaire invalide.' }
-  const { productId, tagline, metaTitle, metaDescription, categoryIds, featured } = parsed.data
+  const { productId, categoryIds, featured } = parsed.data
 
   const produit = await prisma.product.findUnique({
     where: { id: productId },
@@ -83,10 +127,7 @@ export async function updateProductInfo(
     deux onglets ouverts se marcheraient dessus.
   */
   await prisma.$transaction([
-    prisma.product.update({
-      where: { id: productId },
-      data: { tagline, metaTitle, metaDescription, featured },
-    }),
+    prisma.product.update({ where: { id: productId }, data: { featured } }),
     prisma.productCategory.deleteMany({ where: { productId } }),
     ...categoryIds.map((categoryId, index) =>
       prisma.productCategory.create({ data: { productId, categoryId, position: index } }),
@@ -98,7 +139,9 @@ export async function updateProductInfo(
   // La mise en avant se lit sur l'accueil : sans cette ligne, cocher la case
   // n'aurait aucun effet visible avant la prochaine régénération.
   revalidatePath('/')
-  return { ok: true, message: 'Fiche enregistrée.' }
+  // Les rubriques alimentent le menu : il est rendu dans le gabarit.
+  revalidatePath('/', 'layout')
+  return { ok: true, message: 'Publication enregistrée.' }
 }
 
 const schemaAlt = z.object({

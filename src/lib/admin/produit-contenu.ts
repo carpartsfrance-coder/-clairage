@@ -172,6 +172,7 @@ export function isTypeVehicule(valeur: string): valeur is VehicleTypeValue {
 
 export type IdentiteSaisie = {
   name: string
+  tagline: string
   brand: string
   bulbBase: string
   temperature: string
@@ -181,6 +182,7 @@ export type IdentiteSaisie = {
 
 export type IdentiteWriteData = {
   name: string
+  tagline: string | null
   brand: string | null
   bulbBase: string | null
   colorTemperature: number | null
@@ -189,6 +191,15 @@ export type IdentiteWriteData = {
 }
 
 export const MARQUE_MAX = 120
+
+/**
+ * Accroche : la ligne sous le titre, en haut de la fiche.
+ *
+ * Elle rejoint l'identité plutôt que le référencement, parce qu'elle est lue
+ * par le client et non par un moteur — et parce qu'elle se corrige en même
+ * temps que le nom qu'elle prolonge.
+ */
+export const ACCROCHE_MAX = 160
 
 /* Le nom est la même règle qu'à la création : repris, pas réécrit. */
 export { NOM_MAX }
@@ -204,6 +215,11 @@ export { NOM_MAX }
 export function parseIdentite(saisie: IdentiteSaisie): ParseResult<IdentiteWriteData> {
   const nom = parseNom(saisie.name)
   if (!nom.ok) return nom
+
+  const accroche = saisie.tagline.trim()
+  if (accroche.length > ACCROCHE_MAX) {
+    return { ok: false, error: `L’accroche dépasse ${ACCROCHE_MAX} caractères.` }
+  }
 
   const marque = saisie.brand.trim()
   if (marque.length > MARQUE_MAX) {
@@ -227,6 +243,7 @@ export function parseIdentite(saisie: IdentiteSaisie): ParseResult<IdentiteWrite
     ok: true,
     value: {
       name: nom.value,
+      tagline: accroche.length > 0 ? accroche : null,
       brand: marque.length > 0 ? marque : null,
       bulbBase: culot.value,
       colorTemperature: temperature.value,

@@ -6,6 +6,7 @@ import { SelectField, TextField } from '@/components/ui/Field'
 import { Button } from '@/components/ui/Button'
 import { texteSaisi } from '@/lib/admin/catalogue'
 import {
+  ACCROCHE_MAX,
   BODY_MAX,
   CULOT_MAX,
   DESCRIPTION_MAX,
@@ -64,6 +65,7 @@ const CADRE = 'mt-3 rounded-lg border border-line p-4'
 
 export type ValeursIdentite = {
   name: string
+  tagline: string
   brand: string
   bulbBase: string
   temperature: string
@@ -84,6 +86,7 @@ export function IdentiteForm({
 
   const affichees: ValeursIdentite = {
     name: texteSaisi(state.saisie, 'name', valeurs.name),
+    tagline: texteSaisi(state.saisie, 'tagline', valeurs.tagline),
     brand: texteSaisi(state.saisie, 'brand', valeurs.brand),
     bulbBase: texteSaisi(state.saisie, 'bulbBase', valeurs.bulbBase),
     temperature: texteSaisi(state.saisie, 'temperature', valeurs.temperature),
@@ -110,6 +113,7 @@ export function IdentiteForm({
     return (
       <dl className="mt-3 rounded-md border border-line border-t-0 bg-white">
         <Ligne label="Nom">{valeurs.name}</Ligne>
+        <Ligne label="Accroche">{valeurs.tagline || <Vide />}</Ligne>
         <Ligne label="Marque">{valeurs.brand || <Vide />}</Ligne>
         <Ligne label="Culot">{valeurs.bulbBase || <Vide />}</Ligne>
         <Ligne label="Température de couleur">
@@ -137,6 +141,22 @@ export function IdentiteForm({
         defaultValue={affichees.name}
         maxLength={NOM_MAX}
         required
+      />
+
+      {/*
+        L'accroche suit le nom parce qu'elle le prolonge : c'est la ligne
+        affichée juste en dessous sur la fiche. Elle vivait jusqu'ici dans le
+        formulaire de référencement, à côté des métadonnées — un voisinage qui
+        laissait croire qu'elle s'adressait aux moteurs et non au client.
+      */}
+      <TextField
+        id="tagline"
+        name="tagline"
+        label="Accroche"
+        hint="La ligne sous le titre, en haut de la fiche."
+        wrapperClassName="mt-4"
+        defaultValue={affichees.tagline}
+        maxLength={ACCROCHE_MAX}
       />
 
       {/* `grid-cols-1` explicite : sans lui, la colonne implicite se dimensionne

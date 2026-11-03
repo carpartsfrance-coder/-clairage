@@ -212,7 +212,7 @@ function AjoutComposant({
         label="Chercher une référence"
         placeholder="H7, adaptateur, OSR-…"
         hint="Par référence, nom de conditionnement ou nom de produit."
-        champsCaches={{ kit: conditionnement.id }}
+        champsCaches={{ onglet: 'prix', kit: conditionnement.id }}
       />
 
       <ReponseRecherche

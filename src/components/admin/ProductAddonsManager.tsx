@@ -159,6 +159,8 @@ function AjoutComplement({
         label="Chercher un produit"
         placeholder="Adaptateur, décodeur, W5W…"
         hint="Par nom, adresse, culot ou référence. Le catalogue est trop grand pour une liste."
+        /* La recherche navigue : sans l'onglet, elle retomberait sur le premier. */
+        champsCaches={{ onglet: 'fiche' }}
       />
 
       <ReponseRecherche

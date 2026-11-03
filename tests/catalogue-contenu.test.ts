@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ACCROCHE_MAX,
   CULOT_MAX,
   DESCRIPTION_MAX,
   FAQ_MAX,
@@ -141,6 +142,7 @@ describe('parseTemperature', () => {
 
 const IDENTITE = {
   name: 'Pack LED H7 Golf 7',
+  tagline: 'Deux ampoules et leur adaptateur',
   brand: 'Lumera',
   bulbBase: 'h7',
   temperature: '6000 K',
@@ -155,6 +157,7 @@ describe('parseIdentite', () => {
       ok: true,
       value: {
         name: 'Pack LED H7 Golf 7',
+        tagline: 'Deux ampoules et leur adaptateur',
         brand: 'Lumera',
         bulbBase: 'H7',
         colorTemperature: 6000,
@@ -167,6 +170,17 @@ describe('parseIdentite', () => {
   it('écrit null plutôt qu’une chaîne vide pour la marque', () => {
     const resultat = parseIdentite({ ...IDENTITE, brand: '  ' })
     expect(resultat.ok && resultat.value.brand).toBeNull()
+  })
+
+  it('écrit null plutôt qu’une chaîne vide pour l’accroche', () => {
+    const resultat = parseIdentite({ ...IDENTITE, tagline: '   ' })
+    expect(resultat.ok && resultat.value.tagline).toBeNull()
+  })
+
+  it('refuse une accroche trop longue pour la ligne qu’elle occupe', () => {
+    const resultat = parseIdentite({ ...IDENTITE, tagline: 'a'.repeat(ACCROCHE_MAX + 1) })
+    expect(resultat.ok).toBe(false)
+    if (!resultat.ok) expect(resultat.error).toContain('accroche')
   })
 
   it('exige un nom : c’est l’intitulé des lignes de commande', () => {

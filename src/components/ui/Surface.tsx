@@ -9,15 +9,19 @@ export function Card({
   children,
   className,
   interactive,
+  id,
 }: {
   as?: 'div' | 'article' | 'li' | 'section'
   children: ReactNode
   className?: string
   /** Ajoute un état de survol pour les cartes cliquables. */
   interactive?: boolean
+  /** Ancre, pour les liens qui pointent vers une section précise. */
+  id?: string
 }) {
   return (
     <Tag
+      id={id}
       className={cn(
         'rounded-md border border-line bg-white',
         interactive && 'transition-colors hover:border-line-strong',

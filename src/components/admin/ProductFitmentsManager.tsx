@@ -342,7 +342,7 @@ function AjoutCompatibilite({
         label="Chercher un véhicule"
         placeholder="Peugeot 208, Golf VII, Valeo 89010552…"
         hint="Par marque, modèle, génération, équipement ou référence de bloc optique."
-        champsCaches={{ compat: conditionnement.id }}
+        champsCaches={{ onglet: 'compat', compat: conditionnement.id }}
       />
 
       <ReponseRecherche

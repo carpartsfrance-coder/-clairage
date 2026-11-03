@@ -4,7 +4,8 @@ import { useActionState } from 'react'
 import {
   setProductStatus,
   updateMediaAlt,
-  updateProductInfo,
+  updateProductPublication,
+  updateProductSeo,
   type ProductEditState,
 } from '@/lib/actions/admin-catalogue'
 import { TextField } from '@/components/ui/Field'
@@ -17,15 +18,15 @@ import { Alert } from '@/components/ui/Surface'
  * L'écran était en lecture seule : il montrait les trous sans permettre de les
  * boucher, et corriger une rubrique manquante demandait une requête à la main.
  *
- * Ce formulaire ne couvre que ce que le relevé des manques reproche —
- * rubrique, accroche, référencement, textes alternatifs, statut. Le prix, le
- * stock, la composition et les compatibilités ont leurs propres écrans ou
- * leurs propres imports : les réunir ici donnerait un formulaire de trente
- * champs que personne ne relit avant d'enregistrer.
- *
  * Chaque bloc a sa propre action et son propre retour. Un seul gros
  * « Enregistrer » obligerait à tout renvoyer pour corriger un texte
  * alternatif, et ferait d'une correction de détail une réécriture complète.
+ *
+ * Deux formulaires vivent ici, séparés par le passage aux onglets : le
+ * référencement, qui a son propre onglet, et la publication — rubriques et
+ * mise en avant — qui reste dans la colonne de droite, visible pendant qu'on
+ * travaille ailleurs. Ils ne formaient qu'un seul formulaire tant que la fiche
+ * tenait sur une page.
  */
 
 function Retour({ state }: { state: ProductEditState }) {
@@ -46,60 +47,75 @@ function Retour({ state }: { state: ProductEditState }) {
   return null
 }
 
-export function ProductInfoForm({
+/** Titre et description de référencement : l'onglet SEO. */
+export function SeoForm({
   productId,
-  tagline,
   metaTitle,
   metaDescription,
-  categories,
-  selectedCategoryIds,
-  featured,
+  nomProduit,
 }: {
   productId: string
-  tagline: string | null
   metaTitle: string | null
   metaDescription: string | null
-  categories: Array<{ id: string; name: string; path: string }>
-  selectedCategoryIds: string[]
-  featured: boolean
+  /** Ce que les moteurs reprendront si le titre reste vide. */
+  nomProduit: string
 }) {
-  const [state, action, pending] = useActionState<ProductEditState, FormData>(updateProductInfo, {})
+  const [state, action, pending] = useActionState<ProductEditState, FormData>(updateProductSeo, {})
 
   return (
-    <form action={action} className="mt-3 rounded-lg border border-line p-4">
+    <form action={action}>
       <input type="hidden" name="productId" value={productId} />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <TextField
-          id="tagline"
-          name="tagline"
-          label="Accroche"
-          hint="La ligne sous le titre, en haut de la fiche."
-          defaultValue={tagline ?? ''}
-          maxLength={160}
-        />
-        <TextField
-          id="metaTitle"
-          name="metaTitle"
-          label="Titre de référencement"
-          hint="Repris par les moteurs. Laissé vide, c'est le nom du produit."
-          defaultValue={metaTitle ?? ''}
-          maxLength={120}
-        />
-      </div>
-
+      <TextField
+        id="metaTitle"
+        name="metaTitle"
+        label="Titre de référencement"
+        hint={`Repris par les moteurs. Laissé vide, c’est le nom du produit : « ${nomProduit} ».`}
+        defaultValue={metaTitle ?? ''}
+        maxLength={120}
+      />
       <TextField
         id="metaDescription"
         name="metaDescription"
         label="Description de référencement"
-        hint="Deux phrases. Vide, les moteurs reprennent un extrait au hasard."
+        hint="Deux phrases. Vide, les moteurs reprennent un extrait au hasard de la page."
         wrapperClassName="mt-4"
         defaultValue={metaDescription ?? ''}
         maxLength={320}
       />
 
-      <fieldset className="mt-5">
-        <legend className="text-sm font-semibold">Rubriques</legend>
+      <Button type="submit" className="mt-4" disabled={pending}>
+        {pending ? 'Enregistrement…' : 'Enregistrer le référencement'}
+      </Button>
+
+      <Retour state={state} />
+    </form>
+  )
+}
+
+/** Rubriques et mise en avant : la colonne de droite. */
+export function PublicationForm({
+  productId,
+  categories,
+  selectedCategoryIds,
+  featured,
+}: {
+  productId: string
+  categories: Array<{ id: string; name: string; path: string }>
+  selectedCategoryIds: string[]
+  featured: boolean
+}) {
+  const [state, action, pending] = useActionState<ProductEditState, FormData>(
+    updateProductPublication,
+    {},
+  )
+
+  return (
+    <form action={action}>
+      <input type="hidden" name="productId" value={productId} />
+
+      <fieldset>
+        <legend className="text-xs font-bold">Rubriques</legend>
         <p className="mt-1 text-xs text-muted-strong">
           Sans rubrique, le produit n’a pas de fil d’Ariane et n’apparaît dans aucun menu. La
           première cochée porte le fil d’Ariane.
@@ -109,9 +125,9 @@ export function ProductInfoForm({
           sur son contenu, et un chemin de rubrique long pousse la page entière
           en débordement horizontal sous 640 px.
         */}
-        <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+        <div className="mt-2 grid max-h-64 grid-cols-1 gap-1 overflow-y-auto pr-1">
           {categories.map((categorie) => (
-            <label key={categorie.id} className="flex min-h-9 items-center gap-2 text-sm">
+            <label key={categorie.id} className="flex min-h-9 items-center gap-2 text-xs">
               <input
                 type="checkbox"
                 name="categoryIds"
@@ -131,27 +147,24 @@ export function ProductInfoForm({
         le poser. Seul le jeu de démonstration en cochait — d'où une vitrine
         vide sur tout environnement installé sans démonstration.
       */}
-      <fieldset className="mt-5">
-        <legend className="text-sm font-semibold">Mise en avant</legend>
-        <label className="mt-2 flex min-h-9 items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            name="featured"
-            defaultChecked={featured}
-            className="mt-0.5 size-4 shrink-0"
-          />
-          <span className="min-w-0">
-            Afficher ce produit sur la page d’accueil
-            <span className="mt-0.5 block text-xs text-muted-strong">
-              La vitrine en montre quatre au plus. C’est un choix de mise en avant, pas un
-              classement : rien ici ne dit que le produit se vend mieux qu’un autre.
-            </span>
+      <label className="mt-4 flex min-h-9 items-start gap-2 border-t border-line pt-3 text-xs">
+        <input
+          type="checkbox"
+          name="featured"
+          defaultChecked={featured}
+          className="mt-0.5 size-4 shrink-0"
+        />
+        <span className="min-w-0">
+          Mettre en avant sur l’accueil
+          <span className="mt-0.5 block text-xs text-muted-strong">
+            La vitrine en montre quatre au plus. C’est un choix éditorial, pas un classement des
+            ventes.
           </span>
-        </label>
-      </fieldset>
+        </span>
+      </label>
 
-      <Button type="submit" className="mt-4" disabled={pending}>
-        {pending ? 'Enregistrement…' : 'Enregistrer la fiche'}
+      <Button type="submit" size="sm" className="mt-3" disabled={pending}>
+        {pending ? 'Enregistrement…' : 'Enregistrer'}
       </Button>
 
       <Retour state={state} />
