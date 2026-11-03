@@ -15,6 +15,7 @@ import { Alert, Card } from '@/components/ui/Surface'
 import { Button } from '@/components/ui/Button'
 import { Badge, FitmentBadge } from '@/components/ui/Badge'
 import { SelectField, TextField } from '@/components/ui/Field'
+import { RechercheLien, ReponseRecherche } from './LinkSearch'
 
 /**
  * Configurations d'une génération, et compatibilités de chacune.
@@ -34,6 +35,12 @@ import { SelectField, TextField } from '@/components/ui/Field'
  * - **Compatibilité de montage et homologation routière sont deux champs
  *   distincts.** Un kit peut se monter et n'être pas homologué ; aucun des
  *   deux ne se déduit de l'autre, et l'écran ne les fusionne pas.
+ * - **La référence se cherche, elle ne se déroule plus.** Le catalogue compte
+ *   9 905 références : les charger toutes dans un `<select>` pesait sur chaque
+ *   affichage de cet écran, pour une liste où l'on ne trouvait rien. Même
+ *   mécanique que la fiche produit — le terme vit dans l'adresse, avec
+ *   l'identifiant de ce qu'on remplit, sans quoi un même terme proposerait les
+ *   mêmes candidats sous chaque configuration de la page.
  */
 
 export type VariantOption = {
@@ -43,11 +50,26 @@ export type VariantOption = {
   draft: boolean
 }
 
+/**
+ * L'état de la recherche de référence, tel qu'il vient de l'adresse.
+ *
+ * `cible` est ce qu'on est en train de remplir : une configuration à laquelle
+ * on ajoute une compatibilité, ou une compatibilité à laquelle on ajoute un
+ * accessoire. Un seul bloc de la page propose donc des candidats à la fois.
+ */
+export type RechercheReference = {
+  terme: string
+  cible: string | null
+  candidats: VariantOption[]
+}
+
 export type EquipmentOption = { id: string; label: string; hint: string | null }
 export type PositionOption = { id: string; label: string; defaultQty: number }
 
 export type AccessoryRow = {
   id: string
+  /** La référence elle-même : elle n'est plus proposée une seconde fois. */
+  variantId: string
   label: string
   quantity: number
   required: boolean
@@ -101,36 +123,40 @@ function Cible({ level, intent }: { level: 'configuration' | 'fitment'; intent: 
   )
 }
 
-/** Liste déroulante des références, brouillons signalés. */
-function ChampReference({
-  id,
-  variants,
-  defaultValue,
-  label = 'Référence',
-}: {
-  id: string
-  variants: VariantOption[]
-  defaultValue?: string
-  label?: string
-}) {
+/**
+ * Les candidats d'une recherche, en boutons radio.
+ *
+ * Les brouillons sont proposés et signalés : documenter la compatibilité d'un
+ * produit avant de le publier est l'ordre normal du travail.
+ */
+function ChoixReference({ nom, candidats }: { nom: string; candidats: VariantOption[] }) {
   return (
-    <SelectField
-      id={id}
-      name="variantId"
-      label={label}
-      defaultValue={defaultValue}
-      fieldSize="sm"
-      wrapperClassName="min-w-0 flex-1 basis-[240px]"
-      required
-    >
-      <option value="">Choisir…</option>
-      {variants.map((variant) => (
-        <option key={variant.id} value={variant.id}>
-          {variant.label}
-          {variant.draft ? ' — brouillon' : ''}
-        </option>
-      ))}
-    </SelectField>
+    <fieldset>
+      <legend className="text-[11px] font-bold">Référence</legend>
+      <ul className="mt-1.5 flex flex-col gap-1.5">
+        {candidats.map((candidat) => (
+          <li key={candidat.id}>
+            <label
+              htmlFor={`${nom}-${candidat.id}`}
+              className="flex min-h-9 items-start gap-2 rounded-[7px] border border-[#e0e0e0] bg-white px-2.5 py-2 text-[11px]"
+            >
+              <input
+                id={`${nom}-${candidat.id}`}
+                type="radio"
+                name="variantId"
+                value={candidat.id}
+                className="mt-0.5 size-4 shrink-0"
+                required
+              />
+              <span className="min-w-0">
+                {candidat.label}
+                {candidat.draft ? <Badge tone="warn" className="ml-2">brouillon</Badge> : null}
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+    </fieldset>
   )
 }
 
@@ -266,13 +292,24 @@ function ChampsCompatibilite({ fitment }: { fitment?: FitmentRow }) {
 
 function Accessoires({
   fitment,
-  variants,
+  recherche,
   dispatch,
 }: {
   fitment: FitmentRow
-  variants: VariantOption[]
+  recherche: RechercheReference
   dispatch: Dispatch
 }) {
+  /*
+    Les accessoires déjà rattachés sont retirés des candidats : la table porte
+    une contrainte d'unicité sur (compatibilité, référence), et proposer ce
+    qu'on ne peut pas accepter n'est pas une proposition.
+  */
+  const deja = new Set(fitment.accessories.map((accessoire) => accessoire.variantId))
+  const candidats =
+    recherche.cible === fitment.id
+      ? recherche.candidats.filter((candidat) => !deja.has(candidat.id))
+      : []
+  const terme = recherche.cible === fitment.id ? recherche.terme : ''
   return (
     <div className="mt-3 border-t border-line pt-3">
       <h5 className="text-[11px] font-bold">Accessoires exigés par ce montage</h5>
@@ -310,14 +347,30 @@ function Accessoires({
         </ul>
       )}
 
+      <div className="mt-2">
+        <RechercheLien
+          nomChamp="ref"
+          terme={terme}
+          label="Ajouter un accessoire"
+          placeholder="Adaptateur, décodeur, OSR-…"
+          hint="Par référence, nom de conditionnement ou nom de produit."
+          champsCaches={{ pour: fitment.id }}
+        />
+        <ReponseRecherche
+          terme={terme}
+          nombre={candidats.length}
+          invitation="Cherchez la pièce que ce montage exige : adaptateur, décodeur, entretoise."
+          aucunResultat="Les accessoires déjà rattachés à cette compatibilité ne sont pas proposés."
+        />
+      </div>
+
+      {candidats.length === 0 ? null : (
       <form action={dispatch.action} className="mt-2 flex flex-wrap items-end gap-2">
         <Cible level="fitment" intent="accessory.add" />
         <input type="hidden" name="fitmentId" value={fitment.id} />
-        <ChampReference
-          id={`acc-variant-${fitment.id}`}
-          variants={variants}
-          label="Ajouter un accessoire"
-        />
+        <div className="basis-full">
+          <ChoixReference nom={`acc-${fitment.id}`} candidats={candidats} />
+        </div>
         <TextField
           id={`acc-qty-${fitment.id}`}
           name="quantity"
@@ -352,6 +405,7 @@ function Accessoires({
           Ajouter
         </button>
       </form>
+      )}
     </div>
   )
 }
@@ -362,15 +416,24 @@ function Accessoires({
 
 function BlocCompatibilite({
   fitment,
-  variants,
+  recherche,
   dispatch,
 }: {
   fitment: FitmentRow
-  variants: VariantOption[]
+  recherche: RechercheReference
   dispatch: Dispatch
 }) {
   return (
-    <details className="rounded-[7px] border border-[#e0e0e0] bg-surface-soft">
+    /*
+      Le dépliant s'ouvre quand la recherche d'accessoire vise cette
+      compatibilité : la recherche navigue, et une page rechargée referme ses
+      dépliants. Sans cela, on chercherait un accessoire pour voir le panneau
+      se refermer sur le résultat.
+    */
+    <details
+      open={recherche.cible === fitment.id || undefined}
+      className="rounded-[7px] border border-[#e0e0e0] bg-surface-soft"
+    >
       <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5 text-[12px]">
         <span className="font-semibold">{fitment.positionLabel}</span>
         <span className="min-w-0 flex-1 text-muted-strong">{fitment.variantLabel}</span>
@@ -401,7 +464,7 @@ function BlocCompatibilite({
           </div>
         </form>
 
-        <Accessoires fitment={fitment} variants={variants} dispatch={dispatch} />
+        <Accessoires fitment={fitment} recherche={recherche} dispatch={dispatch} />
 
         <form action={dispatch.action} className="mt-3 border-t border-line pt-3">
           <Cible level="fitment" intent="delete" />
@@ -430,14 +493,18 @@ function BlocCompatibilite({
 function BlocConfiguration({
   configuration,
   positions,
-  variants,
+  recherche,
   dispatch,
 }: {
   configuration: ConfigurationRow
   positions: PositionOption[]
-  variants: VariantOption[]
+  recherche: RechercheReference
   dispatch: Dispatch
 }) {
+  // Un seul bloc de la page propose des candidats : celui que l'adresse désigne.
+  const candidats = recherche.cible === configuration.id ? recherche.candidats : []
+  const terme = recherche.cible === configuration.id ? recherche.terme : ''
+
   const précisions = [
     configuration.trimName ? `finition ${configuration.trimName}` : null,
     configuration.headlampRef ? `bloc optique ${configuration.headlampRef}` : null,
@@ -500,52 +567,76 @@ function BlocConfiguration({
         <ul className="mt-2 flex flex-col gap-2">
           {configuration.fitments.map((fitment) => (
             <li key={fitment.id}>
-              <BlocCompatibilite fitment={fitment} variants={variants} dispatch={dispatch} />
+              <BlocCompatibilite
+                fitment={fitment}
+                recherche={recherche}
+                dispatch={dispatch}
+              />
             </li>
           ))}
         </ul>
       )}
 
-      <form
-        action={dispatch.action}
-        className="mt-3 rounded-[7px] border border-dashed border-[#c4c4c4] p-3"
-      >
-        <Cible level="fitment" intent="create" />
-        <input type="hidden" name="configurationId" value={configuration.id} />
+      <div className="mt-3 rounded-[7px] border border-dashed border-[#c4c4c4] p-3">
         <p className="text-[11px] font-bold">Ajouter une compatibilité</p>
 
-        <div className="mt-2 flex flex-wrap items-end gap-2">
-          <SelectField
-            id={`new-fit-position-${configuration.id}`}
-            name="positionId"
-            label="Emplacement"
-            fieldSize="sm"
-            wrapperClassName="min-w-0 flex-1 basis-[180px]"
-            required
-          >
-            <option value="">Choisir…</option>
-            {positions.map((position) => (
-              <option key={position.id} value={position.id}>
-                {position.label}
-              </option>
-            ))}
-          </SelectField>
-          <ChampReference id={`new-fit-variant-${configuration.id}`} variants={variants} />
-        </div>
+        {/*
+          La recherche est hors du formulaire d'écriture : elle navigue, elle
+          n'enregistre rien. Deux formulaires imbriqués n'existent pas en HTML.
+        */}
+        <RechercheLien
+          nomChamp="ref"
+          terme={terme}
+          label="Chercher une référence"
+          placeholder="H7, kit LED, LUM-…"
+          hint="Par référence, nom de conditionnement ou nom de produit."
+          champsCaches={{ pour: configuration.id }}
+        />
+        <ReponseRecherche
+          terme={terme}
+          nombre={candidats.length}
+          invitation="Cherchez la référence qui équipe ce véhicule. Les brouillons sont proposés : on documente souvent avant de publier."
+          aucunResultat="Seules les références actives sont proposées."
+        />
 
-        <div className="mt-2">
-          <ChampsCompatibilite />
-        </div>
+        {candidats.length === 0 ? null : (
+          <form action={dispatch.action} className="mt-2">
+            <Cible level="fitment" intent="create" />
+            <input type="hidden" name="configurationId" value={configuration.id} />
 
-        <Button
-          type="submit"
-          size="sm"
-          disabled={dispatch.pending}
-          className="mt-3 text-[11px]"
-        >
-          Ajouter la compatibilité
-        </Button>
-      </form>
+            <ChoixReference nom={`fit-${configuration.id}`} candidats={candidats} />
+
+            <SelectField
+              id={`new-fit-position-${configuration.id}`}
+              name="positionId"
+              label="Emplacement"
+              fieldSize="sm"
+              wrapperClassName="mt-2 min-w-0 basis-[180px]"
+              required
+            >
+              <option value="">Choisir…</option>
+              {positions.map((position) => (
+                <option key={position.id} value={position.id}>
+                  {position.label}
+                </option>
+              ))}
+            </SelectField>
+
+            <div className="mt-2">
+              <ChampsCompatibilite />
+            </div>
+
+            <Button
+              type="submit"
+              size="sm"
+              disabled={dispatch.pending}
+              className="mt-3 text-[11px]"
+            >
+              Ajouter la compatibilité
+            </Button>
+          </form>
+        )}
+      </div>
     </Card>
   )
 }
@@ -559,13 +650,16 @@ export function GenerationCompatibilities({
   configurations,
   equipments,
   positions,
-  variants,
+  recherche,
+  catalogueVide,
 }: {
   generationId: string
   configurations: ConfigurationRow[]
   equipments: EquipmentOption[]
   positions: PositionOption[]
-  variants: VariantOption[]
+  recherche: RechercheReference
+  /** Aucune référence active dans tout le catalogue : rien à rattacher. */
+  catalogueVide: boolean
 }) {
   const [state, action, pending] = useActionState<VehicleAdminState, FormData>(
     manageCompatibility,
@@ -591,7 +685,7 @@ export function GenerationCompatibilities({
           key={configuration.id}
           configuration={configuration}
           positions={positions}
-          variants={variants}
+          recherche={recherche}
           dispatch={dispatch}
         />
       ))}
@@ -606,7 +700,7 @@ export function GenerationCompatibilities({
           configurations sans rien distinguer.
         </p>
 
-        {variants.length === 0 ? (
+        {catalogueVide ? (
           <Alert tone="warn" className="mt-3">
             Aucune référence sélectionnable dans le catalogue : créez un produit et ses
             conditionnements avant de documenter des compatibilités.

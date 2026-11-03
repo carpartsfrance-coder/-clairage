@@ -467,8 +467,7 @@ function mots(terme: string): string[] {
  *
  * Pourquoi une recherche plutôt qu'une liste : le catalogue compte près de dix
  * mille produits. Les charger tous dans une liste déroulante alourdirait
- * chaque affichage de la fiche — c'est ce que fait encore `listVariantOptions`
- * pour l'écran Véhicules, et cette page en porte le poids.
+ * chaque affichage de la fiche, pour une liste où l'on ne trouve rien.
  *
  * Les brouillons sont proposés : un complément se prépare souvent avant sa
  * publication, et l'écran dit alors qu'il ne se voit pas encore. Les archivés
@@ -523,15 +522,22 @@ export async function chercherComplements(
  */
 export async function chercherVariantes(
   terme: string,
-  options: { varianteId: string; exclureIds: readonly string[] },
+  options: { varianteId?: string; exclureIds: readonly string[] },
 ) {
   if (!termeSuffisant(terme)) return []
+
+  /*
+    `varianteId` est la référence qui cherche — un kit ne se contient pas
+    lui-même. L'écran Véhicules n'a pas de « soi » à exclure : il part d'un
+    véhicule, pas d'une référence.
+  */
+  const exclus = [...(options.varianteId ? [options.varianteId] : []), ...options.exclureIds]
 
   try {
     return await prisma.productVariant.findMany({
       where: {
         active: true,
-        id: { notIn: [options.varianteId, ...options.exclureIds] },
+        id: { notIn: exclus },
         product: { status: { not: 'ARCHIVED' } },
         AND: mots(terme).map((mot) => ({
           OR: [
@@ -768,28 +774,28 @@ export async function listLightPositions() {
 }
 
 /**
- * Références sélectionnables dans une compatibilité.
+ * Existe-t-il seulement une référence à rattacher ?
  *
- * Les brouillons sont inclus, avec leur statut : documenter la compatibilité
- * d'un produit avant de le publier est l'ordre normal du travail. Les
- * variantes désactivées sont écartées — les rattacher créerait une ligne que
- * le site public ignore de toute façon.
+ * Cette fonction remplace une liste de toutes les références sélectionnables :
+ * le catalogue en compte 9 905, et les charger pour remplir une liste
+ * déroulante pesait sur chaque affichage de l'écran Véhicules — pour une liste
+ * dans laquelle, de toute façon, on ne trouve rien. Les références se
+ * cherchent maintenant (`chercherVariantes`), et il ne reste à savoir qu'une
+ * chose : si le catalogue est vide, l'écran le dit au lieu d'ouvrir une
+ * recherche qui ne rendra jamais rien.
  */
-export async function listVariantOptions() {
+export async function existeDesReferences(): Promise<boolean> {
   try {
-    return await prisma.productVariant.findMany({
+    const une = await prisma.productVariant.findFirst({
       where: { active: true, product: { status: { not: 'ARCHIVED' } } },
-      orderBy: [{ product: { name: 'asc' } }, { position: 'asc' }],
-      select: {
-        id: true,
-        sku: true,
-        name: true,
-        product: { select: { name: true, status: true } },
-      },
+      select: { id: true },
     })
+    return une !== null
   } catch (error) {
     console.error('[admin] références indisponibles', error)
-    return []
+    // Dans le doute on n'annonce pas un catalogue vide : le message serait faux
+    // et détournerait du vrai problème, qui est la base injoignable.
+    return true
   }
 }
 

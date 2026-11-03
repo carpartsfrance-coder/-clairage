@@ -11,10 +11,10 @@ import { RAISON_TERME_COURT, normaliserTerme, termeSuffisant } from '@/lib/admin
  *
  * **Pourquoi une recherche et non une liste déroulante.** Le catalogue compte
  * près de dix mille produits et autant de références, et le référentiel
- * véhicule 2 180 configurations. L'écran Véhicules, lui, charge encore toutes
- * les références dans un `<select>` (`listVariantOptions`) : la page en porte
- * le poids à chaque affichage, et la liste est de toute façon trop longue pour
- * qu'on y trouve quoi que ce soit.
+ * véhicule 2 180 configurations. Les charger tous dans un `<select>` pèse sur
+ * chaque affichage de la page, pour une liste de toute façon trop longue pour
+ * qu'on y trouve quoi que ce soit — c'est ce que faisait l'écran Véhicules,
+ * qui cherche désormais lui aussi.
  *
  * **Pourquoi `next/form` et non le `<form method="get">` utilisé ailleurs dans
  * l'administration.** Les filtres du catalogue sont en haut de leur page ; ces

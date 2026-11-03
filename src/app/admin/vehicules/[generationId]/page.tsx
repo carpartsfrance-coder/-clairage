@@ -4,10 +4,11 @@ import { notFound } from 'next/navigation'
 import { requireStaff } from '@/lib/admin/guard'
 import { can } from '@/lib/admin/permissions'
 import {
+  chercherVariantes,
+  existeDesReferences,
   getAdminGeneration,
   listLightPositions,
   listLightingEquipments,
-  listVariantOptions,
 } from '@/lib/queries/admin'
 import { periodLabel, typePath, vehiclePackPath, type VehicleTypeValue } from '@/lib/admin/vehicles'
 import { Alert, Card } from '@/components/ui/Surface'
@@ -15,6 +16,7 @@ import { Badge, FitmentBadge } from '@/components/ui/Badge'
 import {
   GenerationCompatibilities,
   type ConfigurationRow,
+  type VariantOption,
 } from '@/components/admin/GenerationCompatibilities'
 
 /**
@@ -25,6 +27,11 @@ import {
  * d'origine — et que cette configuration porte des compatibilités. Les deux se
  * saisissent ici, avec les règles qui les gouvernent affichées à côté des
  * champs plutôt que cachées dans la validation.
+ *
+ * La référence à rattacher se cherche (`ref` dans l'adresse, `pour` disant à
+ * quoi on l'ajoute) : elle se choisissait dans une liste déroulante qui
+ * chargeait les 9 905 références du catalogue à chaque affichage de cette
+ * page, et dans laquelle on ne trouvait rien.
  */
 
 export const metadata: Metadata = {
@@ -39,17 +46,34 @@ function dateDeChamp(date: Date | null): string | null {
 
 export default async function AdminGenerationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ generationId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const staff = await requireStaff('vehicles.view')
   const { generationId } = await params
 
-  const [generation, equipments, positions, variants] = await Promise.all([
+  /*
+    `ref` est le terme cherché, `pour` ce qu'on est en train de remplir : une
+    configuration à laquelle on ajoute une compatibilité, ou une compatibilité
+    à laquelle on ajoute un accessoire. Un identifiant inconnu ne casse rien —
+    aucun bloc ne se reconnaît, donc aucun ne propose de candidat.
+  */
+  const requete = await searchParams
+  const unSeul = (cle: string): string => {
+    const valeur = requete[cle]
+    if (Array.isArray(valeur)) return valeur[0] ?? ''
+    return valeur ?? ''
+  }
+  const terme = unSeul('ref')
+  const cible = unSeul('pour') || null
+
+  const [generation, equipments, positions, catalogueNonVide] = await Promise.all([
     getAdminGeneration(generationId),
     listLightingEquipments(),
     listLightPositions(),
-    listVariantOptions(),
+    existeDesReferences(),
   ])
   if (!generation) notFound()
 
@@ -87,6 +111,7 @@ export default async function AdminGenerationPage({
       verifiedAt: dateDeChamp(fitment.verifiedAt),
       accessories: fitment.accessories.map((accessoire) => ({
         id: accessoire.id,
+        variantId: accessoire.variantId,
         label: `${accessoire.variant.product.name} — ${accessoire.variant.name} (${accessoire.variant.sku})`,
         quantity: accessoire.quantity,
         required: accessoire.required,
@@ -94,6 +119,20 @@ export default async function AdminGenerationPage({
       })),
     })),
   }))
+
+  /*
+    La recherche n'est lancée que si l'on cherche quelque chose, et seulement
+    pour qui peut écrire : sans cela chaque affichage de la page interrogerait
+    le catalogue pour rien.
+  */
+  const candidats: VariantOption[] =
+    can(staff.role, 'vehicles.edit') && cible && terme
+      ? (await chercherVariantes(terme, { exclureIds: [] })).map((variante) => ({
+          id: variante.id,
+          label: `${variante.product.name} — ${variante.name} (${variante.sku})`,
+          draft: variante.product.status !== 'PUBLISHED',
+        }))
+      : []
 
   const total = configurations.reduce(
     (somme, configuration) => somme + configuration.fitments.length,
@@ -164,11 +203,8 @@ export default async function AdminGenerationPage({
             label: position.label,
             defaultQty: position.defaultQty,
           }))}
-          variants={variants.map((variant) => ({
-            id: variant.id,
-            label: `${variant.product.name} — ${variant.name} (${variant.sku})`,
-            draft: variant.product.status !== 'PUBLISHED',
-          }))}
+          recherche={{ terme, cible, candidats }}
+          catalogueVide={!catalogueNonVide}
         />
       ) : (
         <CompatibilitesEnLecture configurations={configurations} />
