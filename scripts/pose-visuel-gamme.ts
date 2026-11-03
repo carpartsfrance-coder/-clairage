@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { PrismaClient } from '@prisma/client'
-import { inspectUpload, putFile, storageStatus } from '../src/lib/storage/driver'
+import { driverName, inspectUpload, putFile, storageStatus } from '../src/lib/storage/driver'
 
 const prisma = new PrismaClient()
 
@@ -147,6 +147,41 @@ async function main() {
   const empreinte = createHash('sha256').update(controle.bytes).digest('hex').slice(0, 12)
   const suffixe = `-${empreinte}.${controle.extension}`
   let media = await prisma.media.findFirst({ where: { storageKey: { endsWith: suffixe } } })
+
+  /*
+    Garde-fou : le stockage doit être celui de la base visée.
+
+    Rien, dans DATABASE_URL et MEDIA_DRIVER, n'oblige les deux à désigner le
+    même environnement. Lancer cette commande depuis un poste de développement
+    contre la base de production déposerait le fichier sur le disque du poste,
+    puis écrirait en base mille trois cent quarante et un visuels pointant vers
+    `/uploads/…` — des chemins que la production ne sert pas. Mille fiches
+    illustrées d'un carré vide, sans la moindre erreur au passage.
+
+    On compare donc le dernier média enregistré au pilote courant : un `/uploads/`
+    face à un pilote `s3`, ou l'inverse, trahit l'attelage.
+  */
+  if (!media) {
+    const temoin = await prisma.media.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { url: true },
+    })
+    if (temoin) {
+      const baseEnLocal = temoin.url.startsWith('/uploads/')
+      const pilote = driverName()
+      if (baseEnLocal !== (pilote === 'local')) {
+        console.error(
+          `Stockage « ${pilote} » et base ne vont pas ensemble.\n` +
+            `Les médias déjà enregistrés sont servis depuis ${baseEnLocal ? 'le disque local (/uploads/…)' : 'un stockage objet'}, ` +
+            `alors que ce pilote écrirait ${pilote === 'local' ? 'sur le disque local' : 'dans un stockage objet'}.\n` +
+            'Aucun visuel déposé : il pointerait vers un fichier absent de cet environnement.\n' +
+            'Renseignez les variables MEDIA_* de la base visée, ou lancez la commande depuis le service qui les porte.',
+        )
+        process.exitCode = 1
+        return
+      }
+    }
+  }
 
   if (media) {
     /*
