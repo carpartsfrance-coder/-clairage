@@ -41,6 +41,19 @@ export function sansAnnees(segment: string): string {
   return segment.slice(0, trouve.index)
 }
 
+/**
+ * Marques dont le suivi photo et le catalogue n'écrivent pas le slug pareil.
+ *
+ * Le suivi dit « mercedes », le catalogue « mercedes-benz ». Un seul mot, et
+ * 759 lignes de suivi qui ne retombaient sur rien — au point de faire croire
+ * que la marque était absente alors que ses 62 générations étaient en base.
+ * Une table explicite vaut mieux qu'un rapprochement approximatif, qui
+ * finirait par confondre deux marques voisines.
+ */
+export const ALIAS_MARQUE: Record<string, string> = {
+  mercedes: 'mercedes-benz',
+}
+
 export type CleVehicule = { marque: string; generation: string }
 
 /**
@@ -52,7 +65,7 @@ export function cleDuDossier(dossier: string): CleVehicule | null {
   if (parts.length < 3) return null
   const [marque, modele] = parts
   if (!marque || !modele) return null
-  return { marque, generation: sansAnnees(modele) }
+  return { marque: ALIAS_MARQUE[marque] ?? marque, generation: sansAnnees(modele) }
 }
 
 /**

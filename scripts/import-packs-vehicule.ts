@@ -48,9 +48,16 @@ const prisma = new PrismaClient()
  * deviendront des produits composés (`KIT` + `KitComponent`) et leur stock
  * découlera de leurs composants.
  *
+ * **Le jeu peut venir d'un autre fichier.** Le relevé d'origine a sauté des
+ * marques entières — Mercedes-Benz, dont les 62 générations étaient pourtant en
+ * base sans un seul pack. Les compléments sont relevés à part, dans leur propre
+ * fichier avec leur propre provenance, plutôt que mêlés au premier : deux
+ * relevés faits autrement ne doivent pas se confondre dans un même `_source`.
+ *
  *   npm run import:packs-vehicule                        → tout le jeu
  *   npm run import:packs-vehicule -- --vehicule audi/a3-8v → un seul véhicule
  *   npm run import:packs-vehicule -- --remplacer         → réécrit les prix posés
+ *   npm run import:packs-vehicule -- --jeu <fichier>     → un autre relevé
  */
 
 type Pack = {
@@ -223,10 +230,19 @@ function corps(pack: Pack): string {
   return morceaux.filter(Boolean).join('\n\n') + '\n'
 }
 
+/** Le relevé à importer, relatif à la racine du dépôt. */
+function cheminDuJeu(): string {
+  const i = process.argv.indexOf('--jeu')
+  return i >= 0 && process.argv[i + 1]
+    ? process.argv[i + 1]
+    : path.join('prisma', 'packs-vehicule.json')
+}
+
 async function main() {
-  const jeu: Jeu = JSON.parse(
-    await readFile(path.join(process.cwd(), 'prisma', 'packs-vehicule.json'), 'utf8'),
-  )
+  const fichier = cheminDuJeu()
+  const jeu: Jeu = JSON.parse(await readFile(path.join(process.cwd(), fichier), 'utf8'))
+  console.log(`Relevé : ${fichier}`)
+  if (jeu._source) console.log(`  ${jeu._source}`)
 
   const stock = storageStatus()
   if (!stock.ok && !sansMedia) {

@@ -49,6 +49,19 @@ describe('cleDuDossier', () => {
     })
   })
 
+  it('traduit les marques que les deux côtés n’écrivent pas pareil', () => {
+    // « mercedes » d'un côté, « mercedes-benz » de l'autre : sans la table,
+    // 759 lignes de suivi ne retombent sur rien et la marque paraît absente.
+    expect(cleDuDossier('mercedes/classe-c-w203-2000-2007/pack-p1')).toEqual({
+      marque: 'mercedes-benz',
+      generation: 'classe-c-w203',
+    })
+  })
+
+  it('laisse intactes les marques qui s’écrivent pareil', () => {
+    expect(cleDuDossier('land-rover/range-rover-l322-2002-2012/pack-p2')?.marque).toBe('land-rover')
+  })
+
   it('refuse un chemin incomplet plutôt que d’en inventer un', () => {
     expect(cleDuDossier('dacia/duster-2010-2017')).toBeNull()
     expect(cleDuDossier('dacia')).toBeNull()

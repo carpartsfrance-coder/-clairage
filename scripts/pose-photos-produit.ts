@@ -62,6 +62,12 @@ const cheminSuivi = option('--suivi') ?? path.join(RACINE_PAR_DEFAUT, 'suivi.csv
 const racinePhotos = option('--photos') ?? path.dirname(cheminSuivi)
 const limite = Number(option('--limite') ?? '0') || Infinity
 
+/** Les relevés qui donnent le slug d'une fiche. Le second est facultatif. */
+const RELEVES = [
+  path.join('prisma', 'packs-vehicule.json'),
+  path.join('prisma', 'packs-vehicule-complement.json'),
+]
+
 type Pack = {
   make: string
   generation: string
@@ -178,11 +184,25 @@ async function main() {
   }
 
   // ---- Le pont : marque / génération / position → slug de la fiche ---------
-  const releve = JSON.parse(
-    await readFile(path.join(process.cwd(), 'prisma', 'packs-vehicule.json'), 'utf8'),
-  ) as { packs: Pack[] }
+  /*
+    Les deux relevés, pas seulement le premier. Le complément porte les packs
+    que le parcours d'origine avait sautés — Mercedes-Benz en entier. Ne lire
+    que `packs-vehicule.json` laisserait leurs photos sans fiche alors que les
+    fiches existent.
+  */
   const parCle = new Map<string, Pack>()
-  for (const p of releve.packs) parCle.set(`${p.make}|${p.generation}|${p.position}`, p)
+  for (const fichier of RELEVES) {
+    let brut: string
+    try {
+      brut = await readFile(path.join(process.cwd(), fichier), 'utf8')
+    } catch {
+      // Le complément peut ne pas exister : ce n'est pas une erreur.
+      continue
+    }
+    const releve = JSON.parse(brut) as { packs: Pack[] }
+    for (const p of releve.packs) parCle.set(`${p.make}|${p.generation}|${p.position}`, p)
+    console.log(`Relevé lu : ${fichier} (${releve.packs.length} packs)`)
+  }
 
   // ---- Le suivi photo ------------------------------------------------------
   const table = parseCsv(await readFile(cheminSuivi, 'utf8'), ';')
