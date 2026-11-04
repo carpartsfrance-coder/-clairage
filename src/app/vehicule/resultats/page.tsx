@@ -14,6 +14,7 @@ import { ButtonLink } from '@/components/ui/Button'
 import { formatPrice } from '@/lib/identity'
 import { Alert, EmptyState } from '@/components/ui/Surface'
 import { IconCar } from '@/components/ui/icons'
+import { ARGS_COUVERTURE, couverture } from '@/lib/media-couverture'
 
 export const metadata: Metadata = {
   title: 'Les éclairages pour votre véhicule',
@@ -101,9 +102,7 @@ async function getByPosition(configurationId: string): Promise<PositionGroup[] |
             product: {
               include: {
                 media: {
-                  where: { role: 'PRODUCT' },
-                  orderBy: { position: 'asc' },
-                  take: 1,
+                  ...ARGS_COUVERTURE,
                   include: { media: true },
                 },
               },
@@ -131,7 +130,7 @@ async function getByPosition(configurationId: string): Promise<PositionGroup[] |
         product = {
           productSlug: slug,
           productName: row.variant.product.name,
-          imageUrl: row.variant.product.media[0]?.media.url ?? null,
+          imageUrl: couverture(row.variant.product.media)?.media.url ?? null,
           status: row.status,
           lines: [],
         }

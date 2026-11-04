@@ -33,9 +33,11 @@ const prisma = new PrismaClient()
  *    « Visuel d'illustration — il ne montre pas un montage réalisé ». C'est le
  *    prix de l'honnêteté, et c'est la seule mention exacte.
  *
- * 3. **La vignette du catalogue n'est pas touchée.** La carte prend le premier
- *    média de rôle `PRODUCT` ; nos photos sont des `RESULT`. Changer la vignette
- *    est une autre décision, qui se prendra en voyant le résultat.
+ * 3. **La vignette du catalogue devient le gros plan.** La carte montre le
+ *    visuel de couverture (`lib/media-couverture.ts`), qui préfère un rendu au
+ *    packshot quand la fiche en a un, et la première des trois vues est le gros
+ *    plan du feu concerné. Rien n'est écrasé pour autant : les visuels produit
+ *    restent en place, un rang plus bas.
  *
  * 4. **Rien n'est détaché.** Les visuels déjà en place restent. Un `RESULT`
  *    étranger déjà posé descend après les nôtres au lieu de disparaître.
@@ -355,7 +357,9 @@ async function main() {
   if (compte.sansFichier) console.log(`${compte.sansFichier} fiche(s) laissées : images introuvables sur le disque.`)
   if (compte.sansFiche) console.log(`${compte.sansFiche} fiche(s) laissées : slug absent de cette base.`)
   if (compte.refusees) console.log(`${compte.refusees} image(s) refusées par le contrôle de fichier.`)
-  console.log('Aucun visuel existant n’a été retiré ; la vignette du catalogue est inchangée.')
+  console.log(
+    'Aucun visuel existant n’a été retiré ; la vignette montre désormais le gros plan.',
+  )
 }
 
 main()

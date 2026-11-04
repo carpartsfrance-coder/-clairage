@@ -118,16 +118,18 @@ describe('meilleurRang', () => {
 })
 
 describe('VUES', () => {
-  it('met le comparatif en tête', () => {
+  it('met le gros plan en tête', () => {
+    // C'est lui qui part ailleurs : la carte du catalogue, les résultats
+    // véhicule, le panier et l'accueil ne montrent que le premier.
     expect(VUES.map((v) => v.fichier)).toEqual([
-      '01-avant-apres.jpg',
       '03-gros-plan.jpg',
+      '01-avant-apres.jpg',
       '02-vehicule-complet.jpg',
     ])
   })
 
   it('écrit un alt qui nomme la voiture et la position', () => {
-    const alt = VUES[0].alt('éclairage de plaque', 'Peugeot 308 II')
+    const alt = VUES[1].alt('éclairage de plaque', 'Peugeot 308 II')
     expect(alt).toContain('éclairage de plaque')
     expect(alt).toContain('Peugeot 308 II')
   })

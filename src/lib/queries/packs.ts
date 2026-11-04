@@ -3,6 +3,7 @@ import { prisma } from '../db'
 import { recommendPackaging } from '../recommendation'
 import { availabilityForKit, availabilityForVariant, isPurchasable } from '../stock'
 import type { FitmentStatus } from '../fitment'
+import { ARGS_COUVERTURE, couverture } from '../media-couverture'
 
 /**
  * Parcours « packs par véhicule » : marque → modèle → génération → éclairages.
@@ -286,9 +287,7 @@ export async function getPackGeneration(
                     product: {
                       include: {
                         media: {
-                          where: { role: 'PRODUCT' },
-                          orderBy: { position: 'asc' },
-                          take: 1,
+                          ...ARGS_COUVERTURE,
                           include: { media: true },
                         },
                       },
@@ -379,7 +378,7 @@ export async function getPackGeneration(
         if (existant) {
           existant.candidats.push(candidat)
         } else {
-          const cover = fitment.variant.product.media[0]?.media
+          const cover = couverture(fitment.variant.product.media)?.media
           groupe.produits.set(slug, {
             productSlug: slug,
             productName: fitment.variant.product.name,

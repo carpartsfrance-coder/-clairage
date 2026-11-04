@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '../db'
+import { ARGS_COUVERTURE, couverture } from '../media-couverture'
 
 /**
  * Lectures de l'espace client.
@@ -44,9 +45,7 @@ export async function getMyOrders(userId: string): Promise<AccountOrderSummary[]
                 product: {
                   include: {
                     media: {
-                      where: { role: 'PRODUCT' },
-                      orderBy: { position: 'asc' },
-                      take: 1,
+                      ...ARGS_COUVERTURE,
                       include: { media: true },
                     },
                   },
@@ -59,7 +58,7 @@ export async function getMyOrders(userId: string): Promise<AccountOrderSummary[]
     })
 
     return orders.map((order) => {
-      const cover = order.lines[0]?.variant?.product.media[0]?.media
+      const cover = couverture(order.lines[0]?.variant?.product.media ?? [])?.media
       return {
         id: order.id,
         reference: order.reference,

@@ -1,6 +1,7 @@
 import 'server-only'
 import { prisma } from '@/lib/db'
 import { demoHomeBlocks } from '../../../prisma/demo-data'
+import { ARGS_COUVERTURE, couverture } from '../media-couverture'
 
 /**
  * Lectures de la page d'accueil.
@@ -86,7 +87,7 @@ export const VITRINE_RUBRIQUES = [
 /** Ce que la requête doit charger pour composer une carte de vitrine. */
 const CARTE_VITRINE = {
   variants: { where: { active: true }, orderBy: { priceCents: 'asc' } },
-  media: { where: { role: 'PRODUCT' }, orderBy: { position: 'asc' }, take: 1, include: { media: true } },
+  media: { ...ARGS_COUVERTURE, include: { media: true } },
   categories: { include: { category: true }, take: 1 },
 } as const
 
@@ -127,7 +128,7 @@ export async function getFeaturedProducts(limit = 4): Promise<HomeProduct[]> {
       .filter((product) => product.variants.length > 0)
       .map((product) => {
         const cheapest = product.variants[0]
-        const cover = product.media[0]?.media
+        const cover = couverture(product.media)?.media
         const category = product.categories[0]?.category
         return {
           slug: product.slug,

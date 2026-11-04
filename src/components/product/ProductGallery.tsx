@@ -98,10 +98,15 @@ export function ProductGallery({
     conditionnementVu.current = id
     if (premier || !change) return
 
+    /*
+      Changer de conditionnement ramène au visuel qui le représente : le contenu
+      du kit pour un kit, sinon le premier de la liste — celui que montre aussi
+      la carte du catalogue. Viser le rôle « produit » renverrait au packshot
+      alors que la fiche s'ouvre sur le rendu, et le client verrait l'image
+      reculer d'un cran à chaque clic.
+    */
     const estKit = (configuration?.selected?.components.length ?? 0) > 0
-    const cible = items.findIndex((item) =>
-      estKit ? item.role === 'KIT_CONTENT' : item.role === 'PRODUCT',
-    )
+    const cible = estKit ? items.findIndex((item) => item.role === 'KIT_CONTENT') : 0
     if (cible >= 0) setVue(cible)
   }, [configuration?.selectedId, configuration?.selected, items])
 

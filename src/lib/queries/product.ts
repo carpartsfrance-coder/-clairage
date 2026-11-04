@@ -139,7 +139,14 @@ const THUMB_LABELS: Record<GalleryItem['role'], string> = {
   INSTALL: 'Le montage',
 }
 
-const ROLE_ORDER: GalleryItem['role'][] = ['PRODUCT', 'RESULT', 'KIT_CONTENT', 'INSTALL']
+/*
+  Le rendu ouvre la galerie quand il y en a un : la fiche montre d'abord le feu
+  concerné allumé, puis le produit lui-même. C'est le même ordre que celui des
+  cartes du catalogue (`lib/media-couverture.ts`) — une fiche qui s'ouvrirait
+  sur un autre visuel que sa vignette donnerait l'impression de s'être trompé
+  de lien.
+*/
+const ROLE_ORDER: GalleryItem['role'][] = ['RESULT', 'PRODUCT', 'KIT_CONTENT', 'INSTALL']
 
 export async function getProduct(
   slug: string,

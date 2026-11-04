@@ -71,9 +71,11 @@ export function cleDuDossier(dossier: string): CleVehicule | null {
 /**
  * Les trois vues, dans l'ordre où la fiche les montre.
  *
- * Le comparatif passe devant : c'est l'argument, le reste l'explique. Vient
- * ensuite le gros plan, qui montre la pièce allumée, puis la voiture entière,
- * qui situe. Les trois portent le rôle « rendu » — elles ne montrent pas le
+ * **Le gros plan passe devant**, parce que c'est lui qui part ailleurs : la
+ * carte du catalogue, les résultats véhicule, le panier et l'accueil ne
+ * montrent que le premier. Un client qui parcourt le catalogue doit y voir le
+ * feu concerné, allumé, et non deux culots sur fond blanc. Vient ensuite le
+ * comparatif, qui est l'argument, puis la voiture entière, qui situe. Les trois portent le rôle « rendu » — elles ne montrent pas le
  * produit mais son effet — et la nature « illustration », qui fait afficher au
  * client « Visuel d'illustration — il ne montre pas un montage réalisé ».
  * C'est exact : ces images sont fabriquées, pas photographiées.
@@ -96,15 +98,15 @@ export type Vue = {
 
 export const VUES: Vue[] = [
   {
+    fichier: '03-gros-plan.jpg',
+    legende: 'Gros plan',
+    alt: (p, v) => `Gros plan sur une ${v} — ${p} en LED blanche.`,
+  },
+  {
     fichier: '01-avant-apres.jpg',
     legende: 'Avant et après',
     alt: (p, v) =>
       `Comparatif avant et après sur une ${v} — ${p} : ampoules d'origine en haut, lumière jaune ; LED en bas, lumière blanche.`,
-  },
-  {
-    fichier: '03-gros-plan.jpg',
-    legende: 'Gros plan',
-    alt: (p, v) => `Gros plan sur une ${v} — ${p} en LED blanche.`,
   },
   {
     fichier: '02-vehicule-complet.jpg',

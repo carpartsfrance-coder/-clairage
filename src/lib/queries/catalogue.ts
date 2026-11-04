@@ -14,6 +14,7 @@ import {
   type Availability,
 } from '../stock'
 import { recommendPackaging, recommendationReason } from '../recommendation'
+import { ARGS_COUVERTURE, couverture } from '../media-couverture'
 
 /**
  * Lectures du catalogue : index des catégories, listes filtrées, recherche.
@@ -289,9 +290,7 @@ export async function listProducts(
             include: { components: { include: { component: true } } },
           },
           media: {
-            where: { role: 'PRODUCT' },
-            orderBy: { position: 'asc' },
-            take: 1,
+            ...ARGS_COUVERTURE,
             include: { media: true },
           },
           categories: { include: { category: true }, take: 1 },
@@ -331,7 +330,7 @@ export async function listProducts(
             )
           : product.variants
         const cheapest = eligible[0] ?? product.variants[0]
-        const cover = product.media[0]?.media
+        const cover = couverture(product.media)?.media
         const category = product.categories[0]?.category
 
         // La disponibilité affichée est celle du conditionnement le moins cher :

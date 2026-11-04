@@ -14,6 +14,7 @@ import {
   type CartConflict,
   type MissingCartAccessory,
 } from './fitment'
+import { ARGS_COUVERTURE, couverture } from './media-couverture'
 
 /**
  * Lecture du panier.
@@ -113,9 +114,7 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
                 product: {
                   include: {
                     media: {
-                      where: { role: 'PRODUCT' },
-                      orderBy: { position: 'asc' },
-                      take: 1,
+                      ...ARGS_COUVERTURE,
                       include: { media: true },
                     },
                   },
@@ -149,7 +148,7 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
           )
         : availabilityForVariant(variant)
 
-      const cover = variant.product.media[0]?.media
+      const cover = couverture(variant.product.media)?.media
 
       return {
         id: line.id,
