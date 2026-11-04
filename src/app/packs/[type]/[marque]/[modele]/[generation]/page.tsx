@@ -213,13 +213,20 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                       produit.status === 'INCOMPATIBLE' && 'opacity-75',
                     )}
                   >
-                    <span className="relative size-[86px] shrink-0 overflow-hidden rounded-md bg-surface-paper">
+                    {/*
+                      La vignette fait la moitié de la carte, pas un timbre.
+                      Elle montre le feu concerné allumé : à 86 px on ne
+                      distinguait pas un plafonnier d'un antibrouillard, et il
+                      fallait lire le surtitre pour savoir de quoi il
+                      s'agissait — c'est-à-dire que l'image ne servait à rien.
+                    */}
+                    <span className="relative size-[106px] shrink-0 overflow-hidden rounded-md bg-surface-paper fiche:size-[124px]">
                       {produit.image ? (
                         <Image
                           src={produit.image.url}
                           alt=""
                           fill
-                          sizes="86px"
+                          sizes="(min-width: 801px) 124px, 106px"
                           className="object-contain p-1"
                         />
                       ) : null}
@@ -231,7 +238,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                         lui qu'on parcourt des yeux : il passe donc au-dessus du
                         nom, en surtitre, et non en pastille parmi d'autres.
                       */}
-                      <span className="text-[9px] font-bold tracking-[0.7px] text-accent uppercase">
+                      <span className="text-[10px] font-bold tracking-[0.7px] text-accent uppercase">
                         {emplacements.join(' · ')}
                       </span>
                       <span className="mt-0.5 text-[12px] leading-[1.35] font-bold">
