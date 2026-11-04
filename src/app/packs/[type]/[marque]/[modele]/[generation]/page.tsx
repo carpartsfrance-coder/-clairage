@@ -16,6 +16,7 @@ import { FitmentBadge } from '@/components/ui/Badge'
 import { ButtonLink } from '@/components/ui/Button'
 import { IconArrowRight, IconInfo } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
+import { nomDuConditionnement, produitsSitues, totalVehicule } from '@/lib/packs-vue'
 
 type PageProps = {
   params: Promise<{ type: string; marque: string; modele: string; generation: string }>
@@ -32,8 +33,16 @@ type PageProps = {
  *
  * Les cartes portent le prix du conditionnement conseillé par la règle
  * partagée (`lib/recommendation.ts`) : le même que la fiche produit et les
- * résultats véhicule. Un produit documenté sur plusieurs emplacements apparaît
- * dans chacun, mais la fiche reste unique — aucun doublon de stock ni de prix.
+ * résultats véhicule.
+ *
+ * **Une seule grille, l'emplacement sur la carte.** La page donnait à chaque
+ * emplacement sa section, titre et compteur compris. Sur 10 178 couples
+ * (génération, emplacement), 10 068 ne portent qu'un seul produit : le titre
+ * coûtait plus de hauteur que ce qu'il annonçait, et sept emplacements
+ * tenaient sur trois écrans et demi de téléphone. L'emplacement se lit
+ * maintenant sur la carte, ce qui le dit aussi bien et laisse les produits se
+ * suivre. Un produit documenté sur deux emplacements n'apparaît qu'une fois,
+ * et les nomme tous les deux.
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { type, marque, modele, generation } = await params
@@ -76,7 +85,9 @@ export default async function PacksGenerationPage({ params }: PageProps) {
   if (lecture.state === 'absent') notFound()
 
   const data = lecture.data
-  const totalProduits = data.groups.reduce((somme, groupe) => somme + groupe.products.length, 0)
+  const situes = produitsSitues(data.groups)
+  const totalProduits = situes.length
+  const total = totalVehicule(data.groups)
   const plusieursEquipements = data.equipments.length > 1
 
   return (
@@ -157,85 +168,109 @@ export default async function PacksGenerationPage({ params }: PageProps) {
           action={{ label: 'Faire vérifier mon véhicule', href: '/verification' }}
         />
       ) : (
-        <div className="mt-7 flex flex-col gap-8">
-          {data.groups.map((groupe) => (
-            <section key={groupe.code} aria-labelledby={`emplacement-${groupe.code}`}>
-              <h2
-                id={`emplacement-${groupe.code}`}
-                className="text-[14px] font-bold fiche:text-[16px]"
-              >
-                {groupe.label}
-                <span className="ml-2 text-[10px] font-normal text-[#828282]">
-                  {groupe.products.length === 1
-                    ? '1 référence'
-                    : `${groupe.products.length} références`}
-                </span>
-              </h2>
+        <>
+          {/*
+            Ce que coûte l'éclairage complet.
 
-              <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 min-[1101px]:grid-cols-3">
-                {groupe.products.map((produit) => (
-                  <li key={`${groupe.code}-${produit.productSlug}`}>
-                    <Link
-                      href={`/p/${produit.productSlug}`}
-                      className={cn(
-                        'flex h-full gap-3 rounded-[9px] border border-[#e1e1e1] p-3 transition-colors hover:border-slate-ink',
-                        produit.status === 'INCOMPATIBLE' && 'opacity-75',
-                      )}
-                    >
-                      <span className="relative size-[86px] shrink-0 overflow-hidden rounded-md bg-surface-paper">
-                        {produit.image ? (
-                          <Image
-                            src={produit.image.url}
-                            alt=""
-                            fill
-                            sizes="86px"
-                            className="object-contain p-1"
-                          />
-                        ) : null}
+            La page alignait cinq prix sans jamais les additionner, alors que
+            c'est la question de qui équipe sa voiture. Le total est celui des
+            prix affichés juste en dessous, incompatibles exclus : un client qui
+            additionne les cartes doit retomber dessus, sans quoi il doutera du
+            reste de la page.
+          */}
+          {total.produits > 1 ? (
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-[9px] border border-[#e1e1e1] bg-surface-paper px-4 py-3.5">
+              <div className="min-w-0">
+                <p className="text-[13px] font-bold fiche:text-[14px]">
+                  Tout l&apos;éclairage de votre {data.makeName} {data.generationName}
+                </p>
+                <p className="mt-0.5 text-[10px] text-[#828282]">
+                  {total.emplacements} emplacement{total.emplacements > 1 ? 's' : ''} ·{' '}
+                  {total.produits} référence{total.produits > 1 ? 's' : ''} · prix des packs
+                  conseillés
+                </p>
+              </div>
+              <strong className="text-[19px] tracking-[-0.5px] fiche:text-[21px]">
+                {formatPrice(total.totalCents)}
+              </strong>
+            </div>
+          ) : null}
+
+          {/*
+            Le même découpage que la liste d'une rubrique (`/c/[slug]`), et les
+            mêmes seuils : deux écrans du site qui alignent des cartes de
+            produits ne doivent pas se répondre à des largeurs différentes.
+          */}
+          <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {situes.map(({ produit, emplacements }) => {
+              const conditionnement = nomDuConditionnement(produit)
+              return (
+                <li key={produit.productSlug}>
+                  <Link
+                    href={`/p/${produit.productSlug}`}
+                    className={cn(
+                      'flex h-full gap-3 rounded-[9px] border border-[#e1e1e1] p-3 transition-colors hover:border-slate-ink',
+                      produit.status === 'INCOMPATIBLE' && 'opacity-75',
+                    )}
+                  >
+                    <span className="relative size-[86px] shrink-0 overflow-hidden rounded-md bg-surface-paper">
+                      {produit.image ? (
+                        <Image
+                          src={produit.image.url}
+                          alt=""
+                          fill
+                          sizes="86px"
+                          className="object-contain p-1"
+                        />
+                      ) : null}
+                    </span>
+
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      {/*
+                        L'emplacement, là où était le titre de section. C'est
+                        lui qu'on parcourt des yeux : il passe donc au-dessus du
+                        nom, en surtitre, et non en pastille parmi d'autres.
+                      */}
+                      <span className="text-[9px] font-bold tracking-[0.7px] text-accent uppercase">
+                        {emplacements.join(' · ')}
                       </span>
-
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <FitmentBadge status={produit.status} short className="mb-1 w-fit" />
-                        <span className="text-[12px] leading-[1.35] font-bold">
-                          {produit.productName}
-                        </span>
-                        {produit.tagline ? (
-                          <span className="mt-0.5 line-clamp-2 text-[9px] leading-[1.6] text-[#828282]">
-                            {produit.tagline}
-                          </span>
-                        ) : null}
-
-                        {/* Contenu essentiel du conditionnement conseillé. */}
-                        {produit.contents.length > 0 ? (
-                          <span className="mt-1 line-clamp-2 text-[9px] text-[#828282]">
-                            {produit.contents.join(' + ')}
-                          </span>
-                        ) : null}
-
-                        <span className="mt-auto pt-2">
-                          {produit.recommended ? (
-                            <>
-                              <span className="block text-[9px] text-[#898989]">
-                                {produit.recommended.name}
-                              </span>
-                              <strong className="block text-[15px] tracking-[-0.4px]">
-                                {formatPrice(produit.recommended.priceCents)}
-                              </strong>
-                            </>
-                          ) : (
-                            <strong className="block text-[15px] tracking-[-0.4px]">
-                              {formatPrice(produit.fromPriceCents)}
-                            </strong>
-                          )}
-                        </span>
+                      <span className="mt-0.5 text-[12px] leading-[1.35] font-bold">
+                        {produit.productName}
                       </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+                      {/*
+                        L'accroche ne figure pas ici. Elle dit « Pour les
+                        antibrouillards de votre Peugeot 207 » : le surtitre
+                        donne déjà l'emplacement, le nom donne déjà le véhicule,
+                        et le titre de la page le redonne une troisième fois.
+                        Deux lignes de téléphone par carte pour rien.
+                      */}
+                      {/* Contenu essentiel du conditionnement conseillé. */}
+                      {produit.contents.length > 0 ? (
+                        <span className="mt-1 line-clamp-2 text-[9px] text-[#828282]">
+                          {produit.contents.join(' + ')}
+                        </span>
+                      ) : null}
+
+                      <span className="mt-auto flex items-end justify-between gap-2 pt-2">
+                        <span className="min-w-0">
+                          {conditionnement ? (
+                            <span className="block text-[9px] text-[#898989]">
+                              {conditionnement}
+                            </span>
+                          ) : null}
+                          <strong className="block text-[15px] tracking-[-0.4px]">
+                            {formatPrice(produit.recommended?.priceCents ?? produit.fromPriceCents)}
+                          </strong>
+                        </span>
+                        <FitmentBadge status={produit.status} short className="shrink-0" />
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </>
       )}
     </div>
   )

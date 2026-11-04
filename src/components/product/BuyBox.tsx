@@ -14,6 +14,7 @@ import { StockAlertForm } from './StockAlertForm'
 import { cn } from '@/lib/cn'
 import { Alert } from '@/components/ui/Surface'
 import { RoadApprovalNote } from '@/components/ui/Badge'
+import { nomUtileDuConditionnement } from '@/lib/nom-conditionnement'
 import {
   IconCart,
   IconMinus,
@@ -176,6 +177,8 @@ export function BuyBox({
   if (!selected) return null
 
   const total = selected.priceCents + accessoriesTotal
+  /* Le nom du conditionnement ne s'affiche que s'il dit autre chose que le titre. */
+  const conditionnementAffiche = nomUtileDuConditionnement(selected.name, productName)
 
   // L'accroche de livraison suit le total réel : passer du kit aux ampoules
   // seules peut faire repasser sous le seuil de franchise, et cela doit se voir
@@ -467,7 +470,7 @@ export function BuyBox({
             {formatPrice(total)}
           </strong>
           <span className="mt-[5px] block text-[10px] text-[#8e8e8e] min-[1450px]:text-[11px]">
-            TTC · {selected.name.toLowerCase()}
+            TTC{conditionnementAffiche ? ` · ${conditionnementAffiche.toLowerCase()}` : null}
             {accessoriesTotal > 0 ? ' et accessoires cochés' : null}
           </span>
           {/*
