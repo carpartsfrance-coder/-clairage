@@ -20,6 +20,22 @@
       "priceSourceCents": 2790
     },
     {
+      "make": "ford",
+      "model": "ka",
+      "generation": "ka",
+      "source": "TURN_FRONT",
+      "position": "TURN_FRONT",
+      "name": "Pack LED clignotants pour Ford Ka",
+      "slug": "pack-led-clignotants-ford-ka",
+      "sku": "LUM-PK-TURN-FORD-KA-3BB6",
+      "priceCents": 2690,
+      "vehicleLabel": "Ford Ka",
+      "positionLabel": "clignotants",
+      "sourcePage": "https://www.ledperf.com/pack-clignotants-avant-led-pour-ford-ka-p-8894.html",
+      "image": null,
+      "priceSourceCents": 2790
+    },
+    {
       "make": "hyundai",
       "model": "ix20",
       "generation": "ix20",
@@ -1044,6 +1060,22 @@
       "priceSourceCents": 3490
     },
     {
+      "make": "peugeot",
+      "model": "206",
+      "generation": "206",
+      "source": "TURN_FRONT",
+      "position": "TURN_FRONT",
+      "name": "Pack LED clignotants pour Peugeot 206",
+      "slug": "pack-led-clignotants-peugeot-206",
+      "sku": "LUM-PK-TURN-PEUGEOT-206-4754",
+      "priceCents": 3590,
+      "vehicleLabel": "Peugeot 206",
+      "positionLabel": "clignotants",
+      "sourcePage": "https://www.ledperf.com/pack-clignotants-avant-led-pour-peugeot-206-p-7260.html",
+      "image": null,
+      "priceSourceCents": 3790
+    },
+    {
       "make": "porsche",
       "model": "911",
       "generation": "911-996",
@@ -1122,6 +1154,22 @@
       "sourcePage": "https://www.ledperf.com/pack-eclairage-de-plaque-a-leds-blanc-xenon-pour-ferrari-360-ms-p-4291.html",
       "image": null,
       "priceSourceCents": 1780
+    },
+    {
+      "make": "ford",
+      "model": "ka",
+      "generation": "ka",
+      "source": "PLATE",
+      "position": "PLATE",
+      "name": "Pack LED éclairage de plaque pour Ford Ka",
+      "slug": "pack-led-eclairage-de-plaque-ford-ka",
+      "sku": "LUM-PK-PLAT-FORD-KA-7C57",
+      "priceCents": 1290,
+      "vehicleLabel": "Ford Ka",
+      "positionLabel": "éclairage de plaque",
+      "sourcePage": "https://www.ledperf.com/pack-eclairage-de-plaque-a-leds-blanc-xenon-pour-ford-ka-p-10277.html",
+      "image": null,
+      "priceSourceCents": 1380
     },
     {
       "make": "hyundai",
@@ -2116,6 +2164,22 @@
       "priceSourceCents": 1980
     },
     {
+      "make": "peugeot",
+      "model": "206",
+      "generation": "206",
+      "source": "PLATE",
+      "position": "PLATE",
+      "name": "Pack LED éclairage de plaque pour Peugeot 206",
+      "slug": "pack-led-eclairage-de-plaque-peugeot-206",
+      "sku": "LUM-PK-PLAT-PEUGEOT-206-1F63",
+      "priceCents": 690,
+      "vehicleLabel": "Peugeot 206",
+      "positionLabel": "éclairage de plaque",
+      "sourcePage": "https://www.ledperf.com/pack-eclairage-de-plaque-a-leds-blanc-xenon-pour-peugeot-206-p-1264.html",
+      "image": null,
+      "priceSourceCents": 780
+    },
+    {
       "make": "subaru",
       "model": "subaru-outback",
       "generation": "subaru-outback-iii",
@@ -2146,6 +2210,22 @@
       "sourcePage": "https://www.ledperf.com/pack-leds-blanc-6000k-feux-de-recul-pour-fiat-500-l-p-8584.html",
       "image": null,
       "priceSourceCents": 2290
+    },
+    {
+      "make": "ford",
+      "model": "ka",
+      "generation": "ka",
+      "source": "REVERSE",
+      "position": "REVERSE",
+      "name": "Pack LED feux de recul pour Ford Ka",
+      "slug": "pack-led-feux-de-recul-ford-ka",
+      "sku": "LUM-PK-REVE-FORD-KA-59F1",
+      "priceCents": 2490,
+      "vehicleLabel": "Ford Ka",
+      "positionLabel": "feux de recul",
+      "sourcePage": "https://www.ledperf.com/pack-leds-blanc-6000k-feux-de-recul-pour-ford-ka-p-28349.html",
+      "image": null,
+      "priceSourceCents": 2580
     },
     {
       "make": "hyundai",
@@ -3300,6 +3380,22 @@
       "priceSourceCents": 3690
     },
     {
+      "make": "ford",
+      "model": "ka",
+      "generation": "ka",
+      "source": "INTERIOR_DOME",
+      "position": "INTERIOR_DOME",
+      "name": "Pack LED habitacle pour Ford Ka",
+      "slug": "pack-led-habitacle-ford-ka",
+      "sku": "LUM-PK-INTE-FORD-KA-8F62",
+      "priceCents": 1890,
+      "vehicleLabel": "Ford Ka",
+      "positionLabel": "habitacle",
+      "sourcePage": "https://www.ledperf.com/pack-interieur-luxe-full-leds-blanc-pur-pour-ford-ka-p-29395.html",
+      "image": null,
+      "priceSourceCents": 1990
+    },
+    {
       "make": "hyundai",
       "model": "ix20",
       "generation": "ix20",
@@ -4245,6 +4341,22 @@
     },
     {
       "make": "peugeot",
+      "model": "206",
+      "generation": "206",
+      "source": "INTERIOR_DOME",
+      "position": "INTERIOR_DOME",
+      "name": "Pack LED habitacle pour Peugeot 206",
+      "slug": "pack-led-habitacle-peugeot-206",
+      "sku": "LUM-PK-INTE-PEUGEOT-206-4E82",
+      "priceCents": 1590,
+      "vehicleLabel": "Peugeot 206",
+      "positionLabel": "habitacle",
+      "sourcePage": "https://www.ledperf.com/pack-interieur-luxe-full-leds-blanc-pur-pour-peugeot-206-p-394.html",
+      "image": null,
+      "priceSourceCents": 1690
+    },
+    {
+      "make": "peugeot",
       "model": "3008",
       "generation": "3008-ii",
       "source": "INTERIOR_DOME",
@@ -4322,6 +4434,22 @@
       "sourcePage": "https://www.ledperf.com/ballast-xenon-pour-ferrari-f360-ms-type-d8s-hella-5db-007-760-71-4b0-941-471-p-134307.html",
       "image": null,
       "priceSourceCents": 5990
+    },
+    {
+      "make": "ford",
+      "model": "ka",
+      "generation": "ka",
+      "source": "LOW_BEAM",
+      "position": "LOW_BEAM",
+      "name": "Pack LED phares pour Ford Ka",
+      "slug": "pack-led-phares-ford-ka",
+      "sku": "LUM-PK-HEAD-FORD-KA-A24E",
+      "priceCents": 10890,
+      "vehicleLabel": "Ford Ka",
+      "positionLabel": "phares",
+      "sourcePage": "https://www.ledperf.com/kit-ampoules-led-pour-ford-ka-haute-performance-p-28344.html",
+      "image": null,
+      "priceSourceCents": 11490
     },
     {
       "make": "mazda",
@@ -5284,6 +5412,22 @@
       "priceSourceCents": 2970
     },
     {
+      "make": "peugeot",
+      "model": "206",
+      "generation": "206",
+      "source": "LOW_BEAM",
+      "position": "LOW_BEAM",
+      "name": "Pack LED phares pour Peugeot 206",
+      "slug": "pack-led-phares-peugeot-206",
+      "sku": "LUM-PK-HEAD-PEUGEOT-206-4861",
+      "priceCents": 1990,
+      "vehicleLabel": "Peugeot 206",
+      "positionLabel": "phares",
+      "sourcePage": "https://www.ledperf.com/pack-ampoules-de-phares-xenon-effects-pour-peugeot-206-phares-lisses-p-6202.html",
+      "image": null,
+      "priceSourceCents": 2080
+    },
+    {
       "make": "subaru",
       "model": "subaru-outback",
       "generation": "subaru-outback-iii",
@@ -5586,6 +5730,22 @@
       "sourcePage": "https://www.ledperf.com/pack-veilleuses-a-led-blanc-xenon-pour-ferrari-360-ms-p-4288.html",
       "image": null,
       "priceSourceCents": 1180
+    },
+    {
+      "make": "ford",
+      "model": "ka",
+      "generation": "ka",
+      "source": "SIDELIGHT",
+      "position": "SIDELIGHT",
+      "name": "Pack LED veilleuses pour Ford Ka",
+      "slug": "pack-led-veilleuses-ford-ka",
+      "sku": "LUM-PK-SIDE-FORD-KA-450F",
+      "priceCents": 890,
+      "vehicleLabel": "Ford Ka",
+      "positionLabel": "veilleuses",
+      "sourcePage": "https://www.ledperf.com/pack-veilleuses-a-led-blanc-xenon-pour-ford-ka-p-10437.html",
+      "image": null,
+      "priceSourceCents": 980
     },
     {
       "make": "hyundai",

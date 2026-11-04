@@ -108,3 +108,49 @@ export function prixCatalogue(
 ): number | null {
   return precedents.get(sourceCents) ?? PRIX_SANS_PRECEDENT[sourceCents] ?? null
 }
+
+/**
+ * La génération que désigne un slug de pack, ou `null` s'il ne la désigne pas.
+ *
+ * Sert à déceler les slugs qui mentent. Le générateur d'origine raccourcissait
+ * certaines générations — « 206-plus » devenait « 206 », « ka-plus » devenait
+ * « ka » — ce qui restait sans conséquence tant que la vraie 206 n'avait pas de
+ * pack à cette position. Dès qu'elle en a un, deux voitures se disputent la
+ * même adresse, et c'est la mauvaise qui répond.
+ */
+export function generationDuSlug(
+  slug: string,
+  position: Position,
+  marque: string,
+): string | null {
+  const prefixe = `pack-led-${enSlug(POSITIONS[position].label)}-${marque}-`
+  return slug.startsWith(prefixe) ? slug.slice(prefixe.length) : null
+}
+
+export type PackSitue = { slug: string; position: Position; make: string; generation: string }
+
+/**
+ * Les packs dont le slug désigne une autre voiture que la leur.
+ *
+ * `generationsEnBase` donne, par marque, les générations qui existent : un slug
+ * raccourci n'est ambigu que si la génération qu'il nomme existe vraiment. Sans
+ * ce filtre, on renommerait des centaines de packs dont le slug est seulement
+ * plus court que leur génération, sans rien désigner d'autre.
+ */
+export function slugsAmbigus(
+  packs: PackSitue[],
+  generationsEnBase: Map<string, Set<string>>,
+): Array<{ pack: PackSitue; slugCorrige: string; revendiquePar: string }> {
+  const trouves: Array<{ pack: PackSitue; slugCorrige: string; revendiquePar: string }> = []
+  for (const pack of packs) {
+    const designee = generationDuSlug(pack.slug, pack.position, pack.make)
+    if (designee === null || designee === pack.generation) continue
+    if (!generationsEnBase.get(pack.make)?.has(designee)) continue
+    trouves.push({
+      pack,
+      slugCorrige: slugDuPack(pack.position, pack.make, pack.generation),
+      revendiquePar: designee,
+    })
+  }
+  return trouves
+}

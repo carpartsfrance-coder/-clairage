@@ -3,10 +3,12 @@ import {
   POSITIONS,
   PRIX_SANS_PRECEDENT,
   enSlug,
+  generationDuSlug,
   nomDuPack,
   prixCatalogue,
   skuDuPack,
   slugDuPack,
+  slugsAmbigus,
 } from '../src/lib/admin/packs-manquants'
 
 /**
@@ -116,5 +118,71 @@ describe('prixCatalogue', () => {
     for (const valeur of Object.values(PRIX_SANS_PRECEDENT)) {
       expect(valeur % 100).toBe(90)
     }
+  })
+})
+
+describe('slugsAmbigus', () => {
+  const enBase = new Map([
+    ['peugeot', new Set(['206', '206-plus', '308-ii'])],
+    ['yamaha', new Set(['mt-07-2014'])],
+  ])
+
+  it('lit la génération que le slug désigne', () => {
+    expect(generationDuSlug('pack-led-eclairage-de-plaque-peugeot-206', 'PLATE', 'peugeot')).toBe(
+      '206',
+    )
+    // Un slug d'une autre position ou d'une autre marque ne désigne rien ici.
+    expect(generationDuSlug('pack-led-phares-peugeot-206', 'PLATE', 'peugeot')).toBeNull()
+  })
+
+  it('repère le pack dont le slug désigne une autre voiture', () => {
+    const trouves = slugsAmbigus(
+      [
+        {
+          slug: 'pack-led-eclairage-de-plaque-peugeot-206',
+          position: 'PLATE',
+          make: 'peugeot',
+          generation: '206-plus',
+        },
+      ],
+      enBase,
+    )
+    expect(trouves).toHaveLength(1)
+    expect(trouves[0].slugCorrige).toBe('pack-led-eclairage-de-plaque-peugeot-206-plus')
+    expect(trouves[0].revendiquePar).toBe('206')
+  })
+
+  it('laisse tranquille un slug simplement plus court', () => {
+    // « mt-07 » n'existe pas comme génération : le slug ne désigne personne
+    // d'autre, il est juste abrégé. Le renommer casserait une URL pour rien.
+    expect(
+      slugsAmbigus(
+        [
+          {
+            slug: 'pack-led-veilleuses-yamaha-mt-07',
+            position: 'SIDELIGHT',
+            make: 'yamaha',
+            generation: 'mt-07-2014',
+          },
+        ],
+        enBase,
+      ),
+    ).toHaveLength(0)
+  })
+
+  it('laisse tranquille un slug juste', () => {
+    expect(
+      slugsAmbigus(
+        [
+          {
+            slug: 'pack-led-eclairage-de-plaque-peugeot-308-ii',
+            position: 'PLATE',
+            make: 'peugeot',
+            generation: '308-ii',
+          },
+        ],
+        enBase,
+      ),
+    ).toHaveLength(0)
   })
 })

@@ -38,7 +38,8 @@
     "stock:minimum": "tsx scripts/pose-stock-minimum.ts",
     "rubriques:packs": "tsx scripts/range-packs-rubriques.ts",
     "photos:produits": "tsx scripts/pose-photos-produit.ts",
-    "packs:manquants": "tsx scripts/releve-packs-manquants.ts"
+    "packs:manquants": "tsx scripts/releve-packs-manquants.ts",
+    "slugs:ambigus": "tsx scripts/corrige-slugs-ambigus.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1152.0",

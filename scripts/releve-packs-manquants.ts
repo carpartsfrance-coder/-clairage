@@ -36,6 +36,12 @@ const prisma = new PrismaClient()
  *    `import:packs-vehicule -- --jeu` importe ensuite. Relever et créer sont
  *    deux gestes, et le fichier se relit entre les deux.
  *
+ * 2 bis. **Le complément s'ajoute à lui-même.** C'est un relevé, pas une liste
+ *    de restes : ce qui y figure déjà est recopié tel quel, même une fois créé
+ *    en base. Repartir de ce qui manque encore viderait le fichier au deuxième
+ *    passage — et le relevé de 412 packs tiendrait dans l'historique de git
+ *    plutôt que dans le dépôt.
+ *
  * 3. **Le véhicule doit déjà exister.** On ne crée ni marque, ni modèle, ni
  *    génération : une voiture inventée depuis un nom de dossier serait une
  *    compatibilité affirmée sans preuve.
@@ -87,7 +93,24 @@ async function main() {
     await readFile(path.join(process.cwd(), 'prisma', 'packs-vehicule.json'), 'utf8'),
   ) as { packs: Pack[] }
 
-  const existants = new Set(origine.packs.map((p) => `${p.make}|${p.generation}|${p.position}`))
+  /*
+    Le complément déjà relevé, s'il existe : ses packs sont recopiés tels quels
+    et leurs clés comptent comme existantes.
+  */
+  let dejaReleves: Pack[] = []
+  try {
+    const brut = await readFile(path.join(process.cwd(), SORTIE), 'utf8')
+    dejaReleves = (JSON.parse(brut) as { packs: Pack[] }).packs
+    console.log(`Complément existant : ${dejaReleves.length} packs, repris tels quels.`)
+  } catch {
+    // Premier passage : il n'y a rien à reprendre.
+  }
+
+  const existants = new Set(
+    [...origine.packs, ...dejaReleves].map((p) => `${p.make}|${p.generation}|${p.position}`),
+  )
+  /* Les slugs que le complément occupe déjà sont les siens, pas des obstacles. */
+  const siens = new Set(dejaReleves.map((p) => p.slug))
   const precedents = new Map<number, number>()
   for (const p of origine.packs) {
     if (p.priceSourceCents) precedents.set(p.priceSourceCents, p.priceCents)
@@ -113,7 +136,9 @@ async function main() {
     qui arbitre, et elle contient aussi les produits saisis à la main.
   */
   const prisEnBase = new Set(
-    (await prisma.product.findMany({ select: { slug: true } })).map((p) => p.slug),
+    (await prisma.product.findMany({ select: { slug: true } }))
+      .map((p) => p.slug)
+      .filter((slug) => !siens.has(slug)),
   )
 
   // ---- Le suivi photo ------------------------------------------------------
@@ -167,10 +192,10 @@ async function main() {
   }
 
   // ---- Fabrication ---------------------------------------------------------
-  const packs: Pack[] = []
+  const packs: Pack[] = [...dejaReleves]
   const sansPrix: { nom: string; prix: number }[] = []
   const slugPris: { slug: string; nom: string }[] = []
-  const vus = new Set<string>()
+  const vus = new Set<string>(siens)
 
   for (const { position, vehicule, lignes: l } of groupes.values()) {
     const meilleure = meilleurRang(l)
@@ -236,7 +261,10 @@ async function main() {
   const parMarque = new Map<string, number>()
   for (const p of packs) parMarque.set(p.make, (parMarque.get(p.make) ?? 0) + 1)
 
-  console.log(`\n${packs.length} pack(s) manquant(s) relevés → ${SORTIE}`)
+  console.log(
+    `\n${packs.length} pack(s) au complément → ${SORTIE}` +
+      ` (${packs.length - dejaReleves.length} nouveau(x))`,
+  )
   for (const [marque, n] of [...parMarque].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${marque.padEnd(18)} ${n}`)
   }
