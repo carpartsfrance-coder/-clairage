@@ -27,6 +27,12 @@ const prisma = new PrismaClient()
  * 3. **Le relevé est corrigé aussi.** Sinon le prochain import, qui cherche par
  *    slug, ne retrouverait pas la fiche renommée et en créerait une seconde.
  *
+ * 4. **C'est la base qu'on examine, par le SKU.** Le slug change, le SKU non :
+ *    c'est lui qui relie un pack du relevé à sa fiche, quel que soit l'état de
+ *    l'un ou de l'autre. Juger sur le relevé laisserait la base en arrière dès
+ *    qu'on l'a corrigé une première fois — et c'est l'inverse qu'on veut : le
+ *    relevé suit la base, qui suit la règle.
+ *
  *   npm run slugs:ambigus -- --essai   → n'écrit rien, dit ce qu'il ferait
  *   npm run slugs:ambigus              → renomme
  */
@@ -34,7 +40,7 @@ const prisma = new PrismaClient()
 const essai = process.argv.includes('--essai')
 const RELEVE = path.join('prisma', 'packs-vehicule.json')
 
-type Pack = PackSitue & Record<string, unknown>
+type Pack = PackSitue & { sku: string } & Record<string, unknown>
 
 function baseVisee(): string {
   const brut = process.env.DATABASE_URL
@@ -64,17 +70,34 @@ async function main() {
     parMarque.get(marque)!.add(g.slug)
   }
 
-  const ambigus = slugsAmbigus(
-    jeu.packs.map((p) => ({
-      slug: p.slug,
-      position: p.position as Position,
-      make: p.make,
-      generation: p.generation,
-    })),
-    parMarque,
-  )
+  /*
+    Le slug tel que la base le porte, retrouvé par le SKU. Un seul aller-retour :
+    dix mille recherches une par une tiendraient la base occupée pour rien.
+  */
+  const variantes = await prisma.productVariant.findMany({
+    select: { sku: true, product: { select: { slug: true } } },
+  })
+  const slugParSku = new Map(variantes.map((v) => [v.sku, v.product.slug]))
 
-  console.log(`Packs relevés : ${jeu.packs.length}`)
+  const ambigus = slugsAmbigus(
+    jeu.packs
+      .map((p) => ({
+        slug: slugParSku.get(p.sku) ?? p.slug,
+        position: p.position as Position,
+        make: p.make,
+        generation: p.generation,
+        sku: p.sku,
+      }))
+      .filter((p) => slugParSku.has(p.sku)),
+    parMarque,
+  ) as Array<{
+    pack: PackSitue & { sku: string }
+    slugCorrige: string
+    revendiquePar: string
+  }>
+
+  const retrouves = jeu.packs.filter((p) => slugParSku.has(p.sku)).length
+  console.log(`Packs relevés : ${jeu.packs.length}, dont ${retrouves} retrouvés en base par leur SKU.`)
   console.log(`Slugs qui désignent une autre voiture : ${ambigus.length}`)
   if (ambigus.length === 0) return
 
@@ -121,7 +144,7 @@ async function main() {
     une seconde fiche sous l'ancien slug — celle-là même qu'on vient de libérer.
   */
   for (const pack of jeu.packs) {
-    const corrige = ambigus.find((a) => a.pack.slug === pack.slug && a.pack.make === pack.make)
+    const corrige = ambigus.find((a) => a.pack.sku === pack.sku)
     if (corrige) pack.slug = corrige.slugCorrige
   }
   await writeFile(path.join(process.cwd(), RELEVE), JSON.stringify(jeu, null, 2) + '\n', 'utf8')
