@@ -170,6 +170,13 @@ const RUBRIQUES: Entree[] = [
   déclinaison de culot ou de couleur.
 */
 const SOUS_FAMILLES: Entree[] = [
+  // Phares. Le pack générique « Pack LED phares » reste dans la rubrique mère ;
+  // ces deux sous-familles existent parce que le catalogue les distingue déjà
+  // par le nom, et qu'elles pèsent lourd — 1 785 packs d'antibrouillards, soit
+  // la troisième famille du catalogue, qui n'avait nulle part où aller.
+  { slug: 'antibrouillards', kicker: null, name: 'Antibrouillards', family: 'HEADLIGHT', position: 10, parent: 'phares-led' },
+  { slug: 'feux-de-route', kicker: null, name: 'Feux de route', family: 'HEADLIGHT', position: 20, parent: 'phares-led' },
+
   // LED au détail : la distinction tient au format, pas au culot.
   { slug: 'led-cms', kicker: null, name: 'LED CMS', family: 'OTHER', position: 10, parent: 'led-detail' },
   { slug: 'led-cablees', kicker: null, name: 'LED câblées 12 V', family: 'OTHER', position: 20, parent: 'led-detail' },
