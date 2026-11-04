@@ -20,7 +20,7 @@ import { nomUtileDuConditionnement } from './nom-conditionnement'
 export type ProduitSitue = {
   produit: PackProduct
   /** Un produit peut servir à deux endroits : on les nomme tous. */
-  emplacements: string[]
+  emplacements: Array<{ code: string; label: string }>
 }
 
 /**
@@ -37,10 +37,15 @@ export function produitsSitues(groupes: PackPositionGroup[]): ProduitSitue[] {
     for (const produit of groupe.products) {
       const vu = parSlug.get(produit.productSlug)
       if (vu) {
-        if (!vu.emplacements.includes(groupe.label)) vu.emplacements.push(groupe.label)
+        if (!vu.emplacements.some((e) => e.label === groupe.label)) {
+          vu.emplacements.push({ code: groupe.code, label: groupe.label })
+        }
         continue
       }
-      parSlug.set(produit.productSlug, { produit, emplacements: [groupe.label] })
+      parSlug.set(produit.productSlug, {
+        produit,
+        emplacements: [{ code: groupe.code, label: groupe.label }],
+      })
     }
   }
   return [...parSlug.values()]
@@ -70,7 +75,7 @@ export function totalVehicule(groupes: PackPositionGroup[]): TotalVehicule {
   )
   return {
     produits: retenus.length,
-    emplacements: new Set(retenus.flatMap((situe) => situe.emplacements)).size,
+    emplacements: new Set(retenus.flatMap((situe) => situe.emplacements.map((e) => e.label))).size,
     totalCents: retenus.reduce(
       (somme, situe) =>
         somme + (situe.produit.recommended?.priceCents ?? situe.produit.fromPriceCents),
@@ -84,4 +89,60 @@ export function nomDuConditionnement(
   produit: Pick<PackProduct, 'productName' | 'recommended'>,
 ): string | null {
   return nomUtileDuConditionnement(produit.recommended?.name, produit.productName)
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Zones de la voiture, pour filtrer la liste.
+ *
+ * Trois, pas huit : « avant / arrière / intérieur » est la question que se pose
+ * celui qui vient changer une ampoule, et elle se répond d'un regard sur sa
+ * voiture. Filtrer par emplacement n'aurait servi à rien — il y en a un par
+ * carte, le filtre aurait rendu une carte.
+ *
+ * La répartition suit l'endroit d'où la lumière se voit, pas la famille de
+ * pièce : des veilleuses sont à l'avant, une plaque à l'arrière, même quand le
+ * schéma les range ailleurs.
+ */
+export const ZONES = [
+  { cle: 'tout', label: 'Tout' },
+  { cle: 'avant', label: 'Avant' },
+  { cle: 'arriere', label: 'Arrière' },
+  { cle: 'interieur', label: 'Intérieur' },
+] as const
+
+export type Zone = (typeof ZONES)[number]['cle']
+
+const ZONE_PAR_EMPLACEMENT: Record<string, Exclude<Zone, 'tout'>> = {
+  LOW_BEAM: 'avant',
+  HIGH_BEAM: 'avant',
+  FOG: 'avant',
+  SIDELIGHT: 'avant',
+  TURN_FRONT: 'avant',
+  PLATE: 'arriere',
+  REVERSE: 'arriere',
+  INTERIOR_DOME: 'interieur',
+}
+
+/** La zone d'un emplacement, « avant » à défaut — c'est là que tout se voit. */
+export function zoneDeLEmplacement(code: string): Exclude<Zone, 'tout'> {
+  return ZONE_PAR_EMPLACEMENT[code] ?? 'avant'
+}
+
+const LIBELLE_ZONE: Record<Exclude<Zone, 'tout'>, string> = {
+  avant: 'Éclairage avant',
+  arriere: 'Éclairage arrière',
+  interieur: 'Éclairage intérieur',
+}
+
+/** « Éclairage avant », sous le nom de l'emplacement. */
+export function libelleDeLaZone(zone: Exclude<Zone, 'tout'>): string {
+  return LIBELLE_ZONE[zone]
+}
+
+/** Les zones réellement représentées, dans l'ordre, « Tout » en tête. */
+export function zonesPresentes(codes: string[]): typeof ZONES[number][] {
+  const vues = new Set(codes.map(zoneDeLEmplacement))
+  return ZONES.filter((zone) => zone.cle === 'tout' || vues.has(zone.cle as Exclude<Zone, 'tout'>))
 }

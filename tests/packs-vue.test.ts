@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { PackPositionGroup, PackProduct } from '../src/lib/queries/packs'
-import { nomDuConditionnement, produitsSitues, totalVehicule } from '../src/lib/packs-vue'
+import {
+  libelleDeLaZone,
+  nomDuConditionnement,
+  produitsSitues,
+  totalVehicule,
+  zoneDeLEmplacement,
+  zonesPresentes,
+} from '../src/lib/packs-vue'
 import { nomUtileDuConditionnement } from '../src/lib/nom-conditionnement'
 
 /**
@@ -49,7 +56,7 @@ describe('produitsSitues', () => {
       groupe('DAY', 'Feux de jour', [partout]),
     ])
     expect(situes).toHaveLength(1)
-    expect(situes[0].emplacements).toEqual(['Veilleuses', 'Feux de jour'])
+    expect(situes[0].emplacements.map((e) => e.label)).toEqual(['Veilleuses', 'Feux de jour'])
   })
 
   it('ne répète pas un emplacement portant le même nom', () => {
@@ -58,7 +65,7 @@ describe('produitsSitues', () => {
       groupe('SIDE', 'Veilleuses', [partout]),
       groupe('SIDE2', 'Veilleuses', [partout]),
     ])
-    expect(situes[0].emplacements).toEqual(['Veilleuses'])
+    expect(situes[0].emplacements.map((e) => e.label)).toEqual(['Veilleuses'])
   })
 })
 
@@ -166,5 +173,44 @@ describe('nomUtileDuConditionnement', () => {
     expect(nomUtileDuConditionnement(null, 'Pack')).toBeNull()
     expect(nomUtileDuConditionnement(undefined, 'Pack')).toBeNull()
     expect(nomUtileDuConditionnement('', 'Pack')).toBeNull()
+  })
+})
+
+describe('zones', () => {
+  it('place chaque emplacement là où sa lumière se voit', () => {
+    expect(zoneDeLEmplacement('LOW_BEAM')).toBe('avant')
+    expect(zoneDeLEmplacement('FOG')).toBe('avant')
+    expect(zoneDeLEmplacement('TURN_FRONT')).toBe('avant')
+    // Des veilleuses relèvent de l'avant, même si le schéma les range dans
+    // leur propre famille de pièces.
+    expect(zoneDeLEmplacement('SIDELIGHT')).toBe('avant')
+    expect(zoneDeLEmplacement('PLATE')).toBe('arriere')
+    expect(zoneDeLEmplacement('REVERSE')).toBe('arriere')
+    expect(zoneDeLEmplacement('INTERIOR_DOME')).toBe('interieur')
+  })
+
+  it('range un emplacement inconnu à l’avant plutôt que nulle part', () => {
+    // Un nouvel emplacement ne doit pas disparaître de la liste filtrée.
+    expect(zoneDeLEmplacement('REPEATER')).toBe('avant')
+  })
+
+  it('n’offre que les zones réellement présentes', () => {
+    expect(zonesPresentes(['PLATE', 'REVERSE']).map((z) => z.cle)).toEqual(['tout', 'arriere'])
+    expect(zonesPresentes(['LOW_BEAM', 'PLATE', 'INTERIOR_DOME']).map((z) => z.cle)).toEqual([
+      'tout',
+      'avant',
+      'arriere',
+      'interieur',
+    ])
+  })
+
+  it('n’offre rien à filtrer sur une page vide', () => {
+    expect(zonesPresentes([]).map((z) => z.cle)).toEqual(['tout'])
+  })
+
+  it('nomme la zone comme la carte l’écrit', () => {
+    expect(libelleDeLaZone('avant')).toBe('Éclairage avant')
+    expect(libelleDeLaZone('arriere')).toBe('Éclairage arrière')
+    expect(libelleDeLaZone('interieur')).toBe('Éclairage intérieur')
   })
 })

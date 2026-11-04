@@ -238,6 +238,8 @@ export type PackGeneration = {
   generationName: string
   years: string
   phase: string | null
+  /** Photo de la génération, pour que la page montre la voiture dont elle parle. */
+  photo: { url: string; alt: string } | null
   /** Équipements d'origine documentés pour cette génération. */
   equipments: Array<{ configurationId: string; code: string; label: string; hint: string | null }>
   /** Produits groupés par emplacement, toutes configurations confondues. */
@@ -273,6 +275,7 @@ export async function getPackGeneration(
       },
       include: {
         model: { include: { make: true } },
+        photo: { select: { url: true, alt: true } },
         configurations: {
           where: { active: true },
           include: {
@@ -438,6 +441,9 @@ export async function getPackGeneration(
         generationName: generation.name,
         years: yearsLabel(generation.yearFrom, generation.yearTo),
         phase: generation.phase,
+        photo: generation.photo
+          ? { url: generation.photo.url, alt: generation.photo.alt ?? generation.name }
+          : null,
         equipments: generation.configurations.map((configuration) => ({
           configurationId: configuration.id,
           code: configuration.equipment.code,
