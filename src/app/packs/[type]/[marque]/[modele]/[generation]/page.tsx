@@ -14,9 +14,8 @@ import { EmptyState } from '@/components/ui/Surface'
 import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { ButtonLink } from '@/components/ui/Button'
 import { IconArrowRight, IconCheckCircle, IconHeadset, IconInfo } from '@/components/ui/icons'
-import { cartesDesPacks, totalDesCartes } from '@/lib/packs-vue'
-import { phaseUtile } from '@/lib/resultats-vue'
-import { EclairagesParZone } from '@/components/vehicule/EclairagesParZone'
+import { produitsSitues, totalVehicule } from '@/lib/packs-vue'
+import { PacksParZone } from '@/components/packs/PacksParZone'
 
 type PageProps = {
   params: Promise<{ type: string; marque: string; modele: string; generation: string }>
@@ -85,9 +84,9 @@ export default async function PacksGenerationPage({ params }: PageProps) {
   if (lecture.state === 'absent') notFound()
 
   const data = lecture.data
-  const cartes = cartesDesPacks(data.groups)
-  const totalProduits = cartes.length
-  const total = totalDesCartes(cartes)
+  const situes = produitsSitues(data.groups)
+  const totalProduits = situes.length
+  const total = totalVehicule(data.groups)
   const plusieursEquipements = data.equipments.length > 1
   /*
     Le véhicule retenu est-il celui de cette page ? On compare la configuration
@@ -147,7 +146,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
             Éclairage {data.makeName} {data.generationName}
             <span className="block font-normal text-[#686c67]">{data.years}</span>
           </h1>
-          {phaseUtile(data.phase, data.generationName) ? (
+          {data.phase ? (
             <p className="mt-1 text-[11px] text-muted-strong">{data.phase}</p>
           ) : null}
 
@@ -282,7 +281,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
             </div>
           ) : null}
 
-          <EclairagesParZone cartes={cartes} />
+          <PacksParZone produits={situes} />
         </>
       )}
     </div>
