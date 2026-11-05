@@ -114,89 +114,76 @@ export default async function PacksGenerationPage({ params }: PageProps) {
       {/*
         Le bandeau véhicule.
 
-        La page parlait d'une voiture sans jamais la montrer, et annonçait en
-        petits caractères gris qu'un autre véhicule était retenu — un Duster
-        sur la page d'une A8. La photo dit de quelle voiture il s'agit avant
-        qu'on ait lu le titre, et l'état de sélection se lit d'un coup d'œil :
-        choisie, ou à choisir.
+        Il était en dégradé gris, la voiture détourée posée en grand sur la
+        droite — 46 % d'un conteneur de 1 376 px, soit 633 px. Les 1 110 photos
+        de véhicule du référentiel mesurent 220 × 147 px : c'était un
+        agrandissement de près de trois fois, et la voiture s'affichait floue.
+        Elle tient maintenant dans une tuile à sa taille, et le fond gris cède
+        au blanc du reste de la page. La page des résultats porte le même
+        bandeau : les deux montrent la même voiture au même client.
       */}
-      <section className="relative mt-2 overflow-hidden rounded-xl bg-gradient-to-br from-[#f7f7f8] to-[#e9eaec] px-5 py-5 fiche:px-8 fiche:py-8">
-        {/*
-          Sur téléphone la photo est dans le bandeau, au-dessus du titre : la
-          poser en dessous ajoutait un bloc entier à faire défiler avant
-          d'atteindre le premier kit.
-        */}
-        {data.photo ? (
-          <div className="relative mb-2 h-[112px] fiche:hidden">
-            <Image
-              src={data.photo.url}
-              alt={data.photo.alt}
-              fill
-              sizes="100vw"
-              className="object-contain"
-              priority
-            />
-          </div>
-        ) : null}
+      <section className="mt-2 rounded-xl border border-line bg-white px-5 py-5 fiche:px-7 fiche:py-6">
+        <div className="flex flex-col-reverse gap-5 fiche:flex-row fiche:items-center fiche:justify-between fiche:gap-8">
+          <div className="min-w-0 fiche:max-w-[560px]">
+            <p className="text-[10px] font-bold tracking-[1.2px] text-muted-strong uppercase">
+              Votre véhicule
+            </p>
+            <h1 className="mt-1.5 text-[24px] leading-[1.1] font-bold tracking-[-0.9px] fiche:text-[30px] fiche:tracking-[-1.1px]">
+              Éclairage {data.makeName} {data.generationName}
+              <span className="ml-2 font-normal text-[#8a8d8f]">{data.years}</span>
+            </h1>
+            {phaseUtile(data.phase, data.generationName) ? (
+              <p className="mt-1.5 text-[11px] text-muted-strong">{data.phase}</p>
+            ) : null}
 
-        <div className="relative z-[1] max-w-[520px]">
-          <p className="text-[10px] font-bold tracking-[1.2px] text-muted-strong uppercase">
-            Votre véhicule
-          </p>
-          <h1 className="mt-1.5 text-[25px] leading-[1.1] font-bold tracking-[-0.9px] fiche:text-[32px] fiche:tracking-[-1.2px]">
-            Éclairage {data.makeName} {data.generationName}
-            <span className="block font-normal text-[#686c67]">{data.years}</span>
-          </h1>
-          {phaseUtile(data.phase, data.generationName) ? (
-            <p className="mt-1 text-[11px] text-muted-strong">{data.phase}</p>
-          ) : null}
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            {vehiculeChoisi ? (
-              <>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bfe3c8] bg-[#eef8f0] px-3 py-1.5 text-[12px] font-semibold text-[#216b33]">
-                  <IconCheckCircle className="size-4 shrink-0" />
-                  Véhicule sélectionné
-                </span>
-                <Link
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {vehiculeChoisi ? (
+                <>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bfe3c8] bg-[#eef8f0] px-3 py-1.5 text-[12px] font-semibold text-[#216b33]">
+                    <IconCheckCircle className="size-4 shrink-0" />
+                    Véhicule sélectionné
+                  </span>
+                  <Link
+                    href="/vehicule"
+                    className="text-[12px] font-semibold text-slate-ink underline underline-offset-4 decoration-line-strong hover:decoration-brand hover:text-brand"
+                  >
+                    Modifier
+                  </Link>
+                </>
+              ) : (
+                <ButtonLink
                   href="/vehicule"
-                  className="text-[12px] font-semibold text-slate-ink underline underline-offset-4 decoration-line-strong hover:decoration-brand hover:text-brand"
+                  className="min-h-[43px] gap-4 rounded-[7px] px-[17px] text-[12px]"
+                  iconRight={<IconArrowRight className="size-4" />}
                 >
-                  Modifier
-                </Link>
-              </>
-            ) : (
-              <ButtonLink
-                href="/vehicule"
-                className="min-h-[43px] gap-4 rounded-[7px] px-[17px] text-[12px]"
-                iconRight={<IconArrowRight className="size-4" />}
-              >
-                {plusieursEquipements
-                  ? "Indiquer mon équipement d'origine"
-                  : 'Choisir ce véhicule'}
-              </ButtonLink>
-            )}
+                  {plusieursEquipements
+                    ? "Indiquer mon équipement d'origine"
+                    : 'Choisir ce véhicule'}
+                </ButtonLink>
+              )}
+            </div>
+
+            <p className="mt-3 text-[13px] text-[#4f5356]">
+              {totalProduits > 0
+                ? 'Choisissez l’éclairage à remplacer.'
+                : 'Aucun éclairage n’est encore documenté pour cette génération.'}
+            </p>
           </div>
 
-          <p className="mt-3 text-[13px] text-[#4f5356]">
-            {totalProduits > 0
-              ? 'Choisissez l’éclairage à remplacer.'
-              : 'Aucun éclairage n’est encore documenté pour cette génération.'}
-          </p>
+          {data.photo ? (
+            <div className="shrink-0 self-center rounded-lg bg-surface-paper px-4 py-3 fiche:self-auto">
+              <Image
+                src={data.photo.url}
+                alt={data.photo.alt}
+                width={220}
+                height={147}
+                sizes="220px"
+                className="h-auto w-[180px] fiche:w-[210px]"
+                priority
+              />
+            </div>
+          ) : null}
         </div>
-
-        {data.photo ? (
-          <div className="pointer-events-none absolute top-1/2 right-0 hidden h-[78%] w-[46%] -translate-y-1/2 fiche:block">
-            <Image
-              src={data.photo.url}
-              alt={data.photo.alt}
-              fill
-              sizes="46vw"
-              className="object-contain object-right"
-              priority
-            />
-          </div>
-        ) : null}
       </section>
 
       {/*

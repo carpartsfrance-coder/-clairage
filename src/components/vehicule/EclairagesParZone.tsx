@@ -85,12 +85,16 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
       ) : null}
 
       {/*
-        Deux colonnes dès le téléphone. Une seule donnait des cartes de 336 px
-        et cinq écrans et demi à faire défiler pour sept kits ; à deux, la
-        vignette reste deux fois plus grande que l'ancienne et on en voit
-        quatre d'un coup.
+        Le nombre de colonnes est dicté par les images, pas par le goût.
+
+        Les 1 148 visuels du catalogue mesurent 219 × 183 px. Sur trois
+        colonnes, la carte faisait 420 px : l'image y était soit étirée du
+        double, soit posée au milieu d'un grand vide. À cinq colonnes la tuile
+        fait environ 258 px, l'image la remplit à sa taille — nette, et sans
+        marge perdue. C'est aussi la densité des catalogues qui en vivent :
+        on voit la gamme entière du véhicule sans faire défiler.
       */}
-      <ul className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
+      <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {visibles.map((carte) => {
           const zonePrincipale = zoneDeLEmplacement(carte.emplacements[0].code)
           const incompatible = carte.status === 'INCOMPATIBLE'
@@ -103,14 +107,33 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
                   incompatible && 'opacity-75',
                 )}
               >
-                <span className="relative block aspect-[16/10] overflow-hidden bg-surface-paper sm:aspect-[3/2]">
+                {/*
+                  La vignette est contenue, sur fond blanc, et jamais agrandie.
+
+                  Elle était en plein cadre, rognée : sur un écran large, la
+                  carte faisait 420 px et l'image était tirée jusque-là. Or les
+                  1 148 visuels du catalogue mesurent 219 × 183 px et les 1 110
+                  photos de véhicule 220 × 147 px — c'était donc un
+                  agrandissement de deux à trois fois, avant même l'écran à
+                  haute densité. Flou, pixelisé, et rogné par-dessus.
+
+                  Le cadre est donc plus bas que la hauteur native : l'image y
+                  entre entière et légèrement réduite, jamais étirée. Le fond
+                  blanc fait le reste du travail d'unité, que le catalogue ne
+                  fait pas lui-même — la moitié des visuels sont des produits
+                  détourés sur blanc, l'autre des photos de feux allumés sur
+                  fond noir. Côte à côte et rognées, elles donnaient un
+                  patchwork ; contenues sur le même fond, elles s'alignent.
+                */}
+                <span className="relative block aspect-[6/5] overflow-hidden rounded-t-xl border-b border-line bg-white p-2">
                   {carte.image ? (
                     <Image
                       src={carte.image.url}
                       alt=""
-                      fill
-                      sizes="(min-width: 1280px) 420px, (min-width: 640px) 50vw, 100vw"
-                      className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      width={219}
+                      height={183}
+                      sizes="(min-width: 1280px) 240px, (min-width: 640px) 25vw, 50vw"
+                      className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]"
                     />
                   ) : null}
                   {carte.status !== 'CONFIRMED' ? (
@@ -191,27 +214,32 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
         })}
 
         {/*
-          La case du conseiller comble la dernière place de la grille. Elle n'y
-          est pas pour meubler : une page de véhicule s'adresse à quelqu'un qui
-          hésite, et c'est le moment où il hésite.
+          Le conseiller : une bande qui ferme la grille, et non une tuile.
+
+          En tuile, elle comblait « la dernière place » — une règle qui
+          supposait trois colonnes. Il y en a maintenant deux à cinq selon
+          l'écran, et elle se retrouvait seule sur une rangée, à moitié vide.
+          En bande sur toute la largeur, elle est juste à tous les formats.
         */}
-        {visibles.length % 3 !== 0 || visibles.length === 0 ? (
-          <li className="col-span-2 xl:col-span-1">
-            <div className="flex h-full flex-col items-center justify-center gap-2 rounded-xl border border-line bg-surface-paper p-8 text-center">
-              <IconHeadset className="size-7 text-[#696969]" strokeWidth={1.5} />
-              <p className="text-[17px] font-bold">Besoin d&apos;un conseil ?</p>
-              <p className="text-[12px] text-muted-strong">
-                Nous vous aidons à choisir votre éclairage.
-              </p>
-              <Link
-                href="/contact"
-                className="mt-2 inline-flex h-10 items-center rounded-sm border border-line-strong bg-white px-4 text-[13px] font-semibold text-slate-ink transition-colors hover:border-slate-ink"
-              >
-                Contacter un conseiller
-              </Link>
+        <li className="col-span-full">
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border border-line bg-surface-paper px-5 py-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <IconHeadset className="size-6 shrink-0 text-[#696969]" strokeWidth={1.5} />
+              <div className="min-w-0">
+                <p className="text-[14px] font-bold">Besoin d&apos;un conseil ?</p>
+                <p className="text-[11px] text-muted-strong">
+                  Nous vous aidons à choisir l&apos;éclairage qui convient à votre véhicule.
+                </p>
+              </div>
             </div>
-          </li>
-        ) : null}
+            <Link
+              href="/contact"
+              className="inline-flex h-10 shrink-0 items-center rounded-sm border border-line-strong bg-white px-4 text-[12px] font-semibold text-slate-ink transition-colors hover:border-slate-ink"
+            >
+              Contacter un conseiller
+            </Link>
+          </div>
+        </li>
       </ul>
     </>
   )
