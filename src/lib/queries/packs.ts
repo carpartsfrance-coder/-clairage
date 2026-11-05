@@ -218,8 +218,14 @@ export type PackProduct = {
   image: { url: string; alt: string } | null
   /** Statut le plus favorable parmi les conditionnements documentés. */
   status: FitmentStatus
-  /** Conditionnement conseillé, selon la règle partagée. `null` si aucun. */
-  recommended: { name: string; priceCents: number } | null
+  /**
+   * Conditionnement conseillé, selon la règle partagée. `null` si aucun.
+   *
+   * L'identifiant en fait partie : c'est lui qu'on met au panier quand le
+   * client ajoute d'un coup tout l'éclairage de son véhicule. Sans lui, la
+   * bande de total afficherait une somme qu'aucun bouton ne saurait acheter.
+   */
+  recommended: { id: string; name: string; priceCents: number } | null
   /** Prix d'entrée, quel que soit le conditionnement conseillé. */
   fromPriceCents: number
   /** Composition du conditionnement conseillé, pour dire ce que le pack contient. */
@@ -425,7 +431,9 @@ export async function getPackGeneration(
               tagline: produit.tagline,
               image: produit.image,
               status: meilleurStatut,
-              recommended: retenu ? { name: retenu.name, priceCents: retenu.priceCents } : null,
+              recommended: retenu
+                ? { id: retenu.id, name: retenu.name, priceCents: retenu.priceCents }
+                : null,
               fromPriceCents: Math.min(...candidats.map((candidat) => candidat.priceCents)),
               contents: candidats.find((candidat) => candidat.id === retenu?.id)?.contents ?? [],
             }

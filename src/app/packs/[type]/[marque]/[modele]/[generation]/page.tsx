@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
@@ -8,15 +7,23 @@ import {
   getPackGeneration,
 } from '@/lib/queries/packs'
 import { getSelectedVehicle } from '@/lib/session'
-import { formatPrice } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { EmptyState } from '@/components/ui/Surface'
 import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { ButtonLink } from '@/components/ui/Button'
-import { IconArrowRight, IconCheckCircle, IconHeadset, IconInfo } from '@/components/ui/icons'
+import {
+  IconArrowRight,
+  IconCheckCircle,
+  IconChevronDown,
+  IconHeadset,
+  IconInfo,
+} from '@/components/ui/icons'
 import { cartesDesPacks, totalDesCartes } from '@/lib/packs-vue'
 import { phaseUtile } from '@/lib/resultats-vue'
+import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
+import { BarreVehicule } from '@/components/vehicule/BarreVehicule'
 import { EclairagesParZone } from '@/components/vehicule/EclairagesParZone'
+import { TotalEclairage } from '@/components/vehicule/TotalEclairage'
 
 type PageProps = {
   params: Promise<{ type: string; marque: string; modele: string; generation: string }>
@@ -111,80 +118,55 @@ export default async function PacksGenerationPage({ params }: PageProps) {
         ]}
       />
 
-      {/*
-        Le bandeau véhicule.
+      <BandeauVehicule
+        surtitre={`${data.makeName} ${data.generationName} · ${data.years}`}
+        titre="Éclairage LED"
+        sousTitre={`pour ${data.makeName} ${data.generationName}`}
+        description={
+          totalProduits > 0
+            ? 'Trouvez le bon pack, des phares au plafonnier.'
+            : 'Aucun éclairage n’est encore documenté pour cette génération.'
+        }
+        photo={data.photo}
+        action={
+          totalProduits > 0 ? (
+            <ButtonLink
+              href="#packs"
+              className="min-h-[43px] gap-2.5 rounded-lg px-[15px] text-[12px]"
+              iconRight={<IconArrowRight className="size-4 rotate-90" />}
+            >
+              Voir les {totalProduits} pack{totalProduits > 1 ? 's' : ''}
+            </ButtonLink>
+          ) : null
+        }
+      />
 
-        Il était en dégradé gris, la voiture détourée posée en grand sur la
-        droite — 46 % d'un conteneur de 1 376 px, soit 633 px. Les 1 110 photos
-        de véhicule du référentiel mesurent 220 × 147 px : c'était un
-        agrandissement de près de trois fois, et la voiture s'affichait floue.
-        Elle tient maintenant dans une tuile à sa taille, et le fond gris cède
-        au blanc du reste de la page. La page des résultats porte le même
-        bandeau : les deux montrent la même voiture au même client.
-      */}
-      <section className="mt-2 rounded-xl border border-line bg-white px-5 py-5 fiche:px-7 fiche:py-6">
-        <div className="flex flex-col-reverse gap-5 fiche:flex-row fiche:items-center fiche:justify-between fiche:gap-8">
-          <div className="min-w-0 fiche:max-w-[560px]">
-            <p className="text-[10px] font-bold tracking-[1.2px] text-muted-strong uppercase">
-              Votre véhicule
-            </p>
-            <h1 className="mt-1.5 text-[24px] leading-[1.1] font-bold tracking-[-0.9px] fiche:text-[30px] fiche:tracking-[-1.1px]">
-              Éclairage {data.makeName} {data.generationName}
-              <span className="ml-2 font-normal text-[#8a8d8f]">{data.years}</span>
-            </h1>
-            {phaseUtile(data.phase, data.generationName) ? (
-              <p className="mt-1.5 text-[11px] text-muted-strong">{data.phase}</p>
-            ) : null}
+      <BarreVehicule
+        nom={`${data.makeName} ${data.generationName}`}
+        annees={data.years}
+        nombreDePacks={totalProduits}
+        moto={vehicleType === 'MOTORCYCLE'}
+        action={
+          vehiculeChoisi ? (
+            <span className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-ok-border bg-ok-soft px-3 text-[12px] font-bold text-ok">
+              <IconCheckCircle className="size-4 shrink-0" />
+              Véhicule sélectionné
+            </span>
+          ) : (
+            <ButtonLink
+              href="/vehicule"
+              variant="secondary"
+              className="min-h-10 gap-2 rounded-lg px-3 text-[12px]"
+            >
+              {plusieursEquipements ? "Indiquer mon équipement" : 'Choisir ce véhicule'}
+            </ButtonLink>
+          )
+        }
+      />
 
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              {vehiculeChoisi ? (
-                <>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bfe3c8] bg-[#eef8f0] px-3 py-1.5 text-[12px] font-semibold text-[#216b33]">
-                    <IconCheckCircle className="size-4 shrink-0" />
-                    Véhicule sélectionné
-                  </span>
-                  <Link
-                    href="/vehicule"
-                    className="text-[12px] font-semibold text-slate-ink underline underline-offset-4 decoration-line-strong hover:decoration-brand hover:text-brand"
-                  >
-                    Modifier
-                  </Link>
-                </>
-              ) : (
-                <ButtonLink
-                  href="/vehicule"
-                  className="min-h-[43px] gap-4 rounded-[7px] px-[17px] text-[12px]"
-                  iconRight={<IconArrowRight className="size-4" />}
-                >
-                  {plusieursEquipements
-                    ? "Indiquer mon équipement d'origine"
-                    : 'Choisir ce véhicule'}
-                </ButtonLink>
-              )}
-            </div>
-
-            <p className="mt-3 text-[13px] text-[#4f5356]">
-              {totalProduits > 0
-                ? 'Choisissez l’éclairage à remplacer.'
-                : 'Aucun éclairage n’est encore documenté pour cette génération.'}
-            </p>
-          </div>
-
-          {data.photo ? (
-            <div className="shrink-0 self-center rounded-lg bg-surface-paper px-4 py-3 fiche:self-auto">
-              <Image
-                src={data.photo.url}
-                alt={data.photo.alt}
-                width={220}
-                height={147}
-                sizes="220px"
-                className="h-auto w-[180px] fiche:w-[210px]"
-                priority
-              />
-            </div>
-          ) : null}
-        </div>
-      </section>
+      {phaseUtile(data.phase, data.generationName) ? (
+        <p className="mt-2 text-[12px] text-muted-strong">{data.phase}</p>
+      ) : null}
 
       {/*
         L'avertissement qui empêche cette page de mentir.
@@ -226,50 +208,74 @@ export default async function PacksGenerationPage({ params }: PageProps) {
         />
       ) : (
         <>
-          <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 fiche:mt-8">
-            <h2 className="text-[20px] leading-tight font-bold tracking-[-0.6px] fiche:text-[23px]">
-              Les kits pour votre {data.makeName} {data.generationName}
-              <span className="ml-2.5 text-[13px] font-normal text-[#828282]">
-                {totalProduits} kit{totalProduits > 1 ? 's' : ''}
-              </span>
-            </h2>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 text-[12px] font-semibold text-slate-ink underline underline-offset-4 decoration-line-strong hover:decoration-brand hover:text-brand"
-            >
-              <IconHeadset className="size-4 shrink-0" strokeWidth={1.5} />
-              Un doute sur votre montage ?
-            </Link>
-          </div>
-
-          {/*
-            Ce que coûte l'éclairage complet.
-
-            La page alignait les prix sans jamais les additionner, alors que
-            c'est la question de qui équipe sa voiture. Le total est celui des
-            prix affichés juste en dessous, incompatibles exclus : un client qui
-            additionne les cartes doit retomber dessus, sans quoi il doutera du
-            reste de la page.
-          */}
-          {total.produits > 1 ? (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-[9px] border border-line bg-surface-paper px-4 py-3.5">
-              <div className="min-w-0">
-                <p className="text-[13px] font-bold fiche:text-[14px]">
-                  Tout l&apos;éclairage de votre {data.makeName} {data.generationName}
-                </p>
-                <p className="mt-0.5 text-[10px] text-[#828282]">
-                  {total.emplacements} emplacement{total.emplacements > 1 ? 's' : ''} ·{' '}
-                  {total.produits} référence{total.produits > 1 ? 's' : ''} · prix des packs
-                  conseillés
-                </p>
-              </div>
-              <strong className="text-[19px] tracking-[-0.5px] fiche:text-[21px]">
-                {formatPrice(total.totalCents)}
-              </strong>
+          <section id="packs" className="mt-[25px] scroll-mt-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-3.5">
+              <h2 className="text-[clamp(24px,2.9vw,34px)] leading-[1.15] font-extrabold tracking-[-0.048em]">
+                Choisissez votre éclairage
+              </h2>
+              <p className="text-[13px] whitespace-nowrap text-muted-strong">
+                {totalProduits} pack{totalProduits > 1 ? 's' : ''}
+              </p>
             </div>
-          ) : null}
 
-          <EclairagesParZone cartes={cartes} />
+            <EclairagesParZone cartes={cartes} />
+
+            {total.produits > 1 ? (
+              <TotalEclairage
+                titre={`${data.makeName} ${data.generationName}`}
+                produits={total.produits}
+                emplacements={total.emplacements}
+                totalCents={total.totalCents}
+                variantIds={total.variantIds}
+              />
+            ) : null}
+
+            <div className="mt-[29px] grid gap-5 border-t border-line pt-[22px] pb-[26px] fiche:grid-cols-[1fr_1.3fr] fiche:gap-x-8">
+              <div>
+                <h2 className="text-[20px] font-extrabold tracking-[-0.035em]">
+                  Un doute sur votre éclairage ?
+                </h2>
+                <p className="mt-1 text-[13px] text-muted-strong">
+                  Retrouvez les repères pour choisir le bon pack.
+                </p>
+                <Link
+                  href="/contact"
+                  className="mt-3 inline-flex items-center gap-2 text-[12px] font-bold text-slate-ink underline decoration-line-strong underline-offset-4 hover:text-brand hover:decoration-brand"
+                >
+                  <IconHeadset className="size-4 shrink-0" strokeWidth={1.5} />
+                  Contacter un conseiller
+                </Link>
+              </div>
+
+              <div>
+                <details className="border-b border-line">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-bold marker:content-none">
+                    Quel emplacement choisir ?
+                    <IconChevronDown className="size-4 shrink-0" />
+                  </summary>
+                  <p className="pr-2.5 pb-3 text-[13px] text-muted-strong">
+                    Chaque pack correspond à une lumière précise de la voiture : les feux de
+                    croisement éclairent la route, les veilleuses signalent votre présence, le
+                    plafonnier éclaire l&apos;habitacle. Le nom de l&apos;emplacement et ce
+                    qu&apos;il éclaire sont écrits sur chaque vignette.
+                  </p>
+                </details>
+                <details className="border-b border-line">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-bold marker:content-none">
+                    Comment vérifier la compatibilité ?
+                    <IconChevronDown className="size-4 shrink-0" />
+                  </summary>
+                  <p className="pr-2.5 pb-3 text-[13px] text-muted-strong">
+                    Cette page montre ce qui est documenté pour la génération. Indiquez votre
+                    équipement d&apos;origine pour que les compatibilités valent pour votre
+                    véhicule : un phare halogène et un xénon n&apos;acceptent pas les mêmes
+                    pièces. La compatibilité de montage ne préjuge pas de l&apos;homologation
+                    routière, indiquée séparément sur chaque fiche produit.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </section>
         </>
       )}
     </div>
