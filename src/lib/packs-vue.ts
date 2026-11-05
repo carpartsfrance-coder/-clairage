@@ -1,3 +1,4 @@
+import type { FitmentStatus } from './fitment'
 import type { PackPositionGroup, PackProduct } from './queries/packs'
 import { nomUtileDuConditionnement } from './nom-conditionnement'
 
@@ -51,6 +52,68 @@ export function produitsSitues(groupes: PackPositionGroup[]): ProduitSitue[] {
   return [...parSlug.values()]
 }
 
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Une carte d'éclairage, telle que les deux pages véhicule la dessinent.
+ *
+ * Il y en a deux : la page d'une génération (`/packs/...`), qui montre ce qui
+ * est **documenté** pour le modèle, et la page des résultats
+ * (`/vehicule/resultats`), qui montre ce qui est **confirmé** pour la
+ * configuration retenue. Elles répondent à deux questions différentes, mais
+ * elles montrent les mêmes pièces au même client : les dessiner autrement ne
+ * lui apprenait rien et donnait deux sites.
+ *
+ * Ce modèle est donc volontairement pauvre — ce qu'une vignette peut porter,
+ * et rien de plus. Les champs facultatifs ne sont pas des ornements : ils sont
+ * vides presque partout, et c'est ce qui permet de les afficher dès qu'ils
+ * sont remplis, au lieu de réserver sur chaque carte la place d'une
+ * information que cinq fiches sur dix mille possèdent.
+ */
+export type CarteEclairage = {
+  /** Le slug du produit : clé de liste, et destination du clic. */
+  slug: string
+  /** Les emplacements que ce produit équipe, tous nommés. */
+  emplacements: Array<{ code: string; label: string }>
+  image: { url: string; alt: string } | null
+  status: FitmentStatus
+  /** Le prix montré : celui du conditionnement conseillé. */
+  prixCents: number
+  /** Le conditionnement, seulement quand son nom apprend quelque chose. */
+  conditionnement: string | null
+  /** Les autres conditionnements documentés, s'il y en a. */
+  autres: Array<{ nom: string; prixCents: number }>
+  /**
+   * Réserve de montage propre à ce produit — « adaptateurs nécessaires, non
+   * inclus ». Elle appartient à SON conditionnement : mise en commun, elle se
+   * lirait comme valant aussi pour le kit complet, qui les contient.
+   */
+  reserve: string | null
+  /** Provenance de la vérification, déjà rédigée. */
+  verifie: string | null
+  /**
+   * Nombre d'exemplaires nécessaires à l'emplacement, quand il en faut plus
+   * d'un. `null` le reste du temps : « 1 nécessaire » n'apprend rien.
+   */
+  quantite: number | null
+}
+
+/** Les cartes d'une génération, dans l'ordre des emplacements. */
+export function cartesDesPacks(groupes: PackPositionGroup[]): CarteEclairage[] {
+  return produitsSitues(groupes).map(({ produit, emplacements }) => ({
+    slug: produit.productSlug,
+    emplacements,
+    image: produit.image,
+    status: produit.status,
+    prixCents: produit.recommended?.priceCents ?? produit.fromPriceCents,
+    conditionnement: nomDuConditionnement(produit),
+    autres: [],
+    reserve: null,
+    verifie: null,
+    quantite: null,
+  }))
+}
+
 export type TotalVehicule = {
   produits: number
   emplacements: number
@@ -70,17 +133,22 @@ export type TotalVehicule = {
  * prix, qui ferait douter des deux autres.
  */
 export function totalVehicule(groupes: PackPositionGroup[]): TotalVehicule {
-  const retenus = produitsSitues(groupes).filter(
-    (situe) => situe.produit.status !== 'INCOMPATIBLE',
-  )
+  return totalDesCartes(cartesDesPacks(groupes))
+}
+
+/**
+ * Le même total, à partir des cartes — donc des prix réellement affichés.
+ *
+ * Les deux pages véhicule l'appellent : c'est la seule façon de garantir que
+ * le chiffre annoncé en tête soit celui qu'on obtient en additionnant les
+ * vignettes du dessous.
+ */
+export function totalDesCartes(cartes: CarteEclairage[]): TotalVehicule {
+  const retenues = cartes.filter((carte) => carte.status !== 'INCOMPATIBLE')
   return {
-    produits: retenus.length,
-    emplacements: new Set(retenus.flatMap((situe) => situe.emplacements.map((e) => e.label))).size,
-    totalCents: retenus.reduce(
-      (somme, situe) =>
-        somme + (situe.produit.recommended?.priceCents ?? situe.produit.fromPriceCents),
-      0,
-    ),
+    produits: retenues.length,
+    emplacements: new Set(retenues.flatMap((carte) => carte.emplacements.map((e) => e.label))).size,
+    totalCents: retenues.reduce((somme, carte) => somme + carte.prixCents, 0),
   }
 }
 

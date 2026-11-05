@@ -8,7 +8,7 @@ import { IconHeadset } from '@/components/ui/icons'
 import { formatPrice } from '@/lib/identity'
 import { cn } from '@/lib/cn'
 import {
-  type ProduitSitue,
+  type CarteEclairage,
   type Zone,
   libelleDeLaZone,
   zoneDeLEmplacement,
@@ -17,6 +17,11 @@ import {
 
 /**
  * Les éclairages d'un véhicule, en cartes, filtrables par zone.
+ *
+ * La grille des deux pages véhicule : celle d'une génération, qui montre ce
+ * qui est documenté pour le modèle, et celle des résultats, qui montre ce qui
+ * est confirmé pour la configuration retenue. Deux questions, les mêmes
+ * pièces, le même client : une seule vignette.
  *
  * **La carte est titrée par l'emplacement, pas par le produit.** Sur la page
  * d'une Audi A2, « Pack LED antibrouillards pour Audi A2 » dit trois fois la
@@ -28,25 +33,32 @@ import {
  * répond d'un regard sur sa voiture ; filtrer par emplacement n'aurait servi à
  * rien, puisqu'il y en a un par carte — le filtre aurait rendu une carte.
  *
- * **La pastille de compatibilité ne s'affiche que si elle alerte.** Quand tout
- * est confirmé, la répéter sur chaque carte n'apprend rien ; dès qu'un
- * éclairage est « à vérifier » ou incompatible, il se détache au milieu des
- * autres au lieu de se fondre dans une rangée de pastilles vertes.
+ * **La pastille de compatibilité ne s'affiche que si elle alerte.** Sur les
+ * 10 295 compatibilités du catalogue, 10 293 sont confirmées : répéter
+ * « Confirmé » sur chaque carte n'apprend rien, et noie les deux qui comptent.
+ * Dès qu'un éclairage est « à vérifier » ou incompatible, il se détache au
+ * milieu des autres au lieu de se fondre dans une rangée de pastilles vertes.
+ *
+ * **Les mentions rares ne tiennent pas de place quand elles manquent.** Cinq
+ * compatibilités sur 10 295 portent une réserve de montage, cinq une date de
+ * vérification, une seule un deuxième conditionnement. Leur réserver un bloc
+ * bordé sur chaque carte — ce que faisait la page des résultats — donnait dix
+ * mille cartes à trous pour en servir cinq.
  */
-export function PacksParZone({ produits }: { produits: ProduitSitue[] }) {
+export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
   const [zone, setZone] = useState<Zone>('tout')
 
   const zones = useMemo(
-    () => zonesPresentes(produits.flatMap((p) => p.emplacements.map((e) => e.code))),
-    [produits],
+    () => zonesPresentes(cartes.flatMap((c) => c.emplacements.map((e) => e.code))),
+    [cartes],
   )
 
   const visibles = useMemo(
     () =>
       zone === 'tout'
-        ? produits
-        : produits.filter((p) => p.emplacements.some((e) => zoneDeLEmplacement(e.code) === zone)),
-    [produits, zone],
+        ? cartes
+        : cartes.filter((c) => c.emplacements.some((e) => zoneDeLEmplacement(e.code) === zone)),
+    [cartes, zone],
   )
 
   return (
@@ -79,30 +91,31 @@ export function PacksParZone({ produits }: { produits: ProduitSitue[] }) {
         quatre d'un coup.
       */}
       <ul className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
-        {visibles.map(({ produit, emplacements }) => {
-          const zonePrincipale = zoneDeLEmplacement(emplacements[0].code)
+        {visibles.map((carte) => {
+          const zonePrincipale = zoneDeLEmplacement(carte.emplacements[0].code)
+          const incompatible = carte.status === 'INCOMPATIBLE'
           return (
-            <li key={produit.productSlug}>
+            <li key={carte.slug}>
               <Link
-                href={`/p/${produit.productSlug}`}
+                href={`/p/${carte.slug}`}
                 className={cn(
                   'group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-white transition-shadow hover:shadow-soft',
-                  produit.status === 'INCOMPATIBLE' && 'opacity-75',
+                  incompatible && 'opacity-75',
                 )}
               >
                 <span className="relative block aspect-[16/10] overflow-hidden bg-surface-paper sm:aspect-[3/2]">
-                  {produit.image ? (
+                  {carte.image ? (
                     <Image
-                      src={produit.image.url}
+                      src={carte.image.url}
                       alt=""
                       fill
                       sizes="(min-width: 1280px) 420px, (min-width: 640px) 50vw, 100vw"
                       className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     />
                   ) : null}
-                  {produit.status !== 'CONFIRMED' ? (
+                  {carte.status !== 'CONFIRMED' ? (
                     <FitmentBadge
-                      status={produit.status}
+                      status={carte.status}
                       short
                       className="absolute top-2.5 left-2.5 bg-white/95"
                     />
@@ -111,25 +124,66 @@ export function PacksParZone({ produits }: { produits: ProduitSitue[] }) {
 
                 <span className="flex flex-1 flex-col p-3.5 fiche:p-4">
                   <span className="text-[13px] leading-tight font-bold fiche:text-[15px]">
-                    {emplacements.map((e) => e.label).join(' · ')}
+                    {carte.emplacements.map((e) => e.label).join(' · ')}
                   </span>
                   <span className="mt-1 text-[10px] text-muted-strong fiche:text-[11px]">
                     Kit LED • {libelleDeLaZone(zonePrincipale)}
+                    {carte.quantite ? ` • ${carte.quantite} nécessaires` : null}
                   </span>
 
+                  {/* Le conditionnement ne se nomme que lorsqu'il distingue
+                      deux offres : partout ailleurs, il répète le titre. */}
+                  {carte.conditionnement ? (
+                    <span className="mt-1.5 text-[11px] font-semibold text-slate-ink">
+                      {carte.conditionnement}
+                    </span>
+                  ) : null}
+
                   {/*
-                      `mt-auto` colle le prix au bas de la carte : sans lui, un
-                      intitulé qui passe sur deux lignes décale son bouton et
-                      la rangée part en escalier.
-                    */}
-                    <span className="mt-auto flex flex-col items-start gap-2 pt-3 fiche:flex-row fiche:items-center fiche:justify-between fiche:gap-3 fiche:pt-4">
+                    `mt-auto` colle le prix au bas de la carte : sans lui, un
+                    intitulé qui passe sur deux lignes décale son bouton et la
+                    rangée part en escalier.
+                  */}
+                  <span className="mt-auto flex flex-col items-start gap-2 pt-3 fiche:flex-row fiche:items-center fiche:justify-between fiche:gap-3 fiche:pt-4">
                     <strong className="text-[17px] tracking-[-0.5px] fiche:text-[19px]">
-                      {formatPrice(produit.recommended?.priceCents ?? produit.fromPriceCents)}
+                      {formatPrice(carte.prixCents)}
                     </strong>
-                    <span className="inline-flex h-9 w-full items-center justify-center rounded-sm bg-brand px-3 text-[12px] font-semibold text-white transition-colors group-hover:bg-brand-dark fiche:h-10 fiche:w-auto fiche:px-4 fiche:text-[13px]">
-                      Voir le kit
+                    <span
+                      className={cn(
+                        'inline-flex h-9 w-full items-center justify-center rounded-sm px-3 text-[12px] font-semibold transition-colors fiche:h-10 fiche:w-auto fiche:px-4 fiche:text-[13px]',
+                        incompatible
+                          ? 'border border-line-strong bg-white text-slate-ink group-hover:border-slate-ink'
+                          : 'bg-brand text-white group-hover:bg-brand-dark',
+                      )}
+                    >
+                      {incompatible ? 'Voir pourquoi' : 'Voir le kit'}
                     </span>
                   </span>
+
+                  {carte.autres.length > 0 ? (
+                    <span className="mt-2 block text-[10px] text-muted-strong fiche:text-[11px]">
+                      {carte.autres.map((autre) => (
+                        <span key={autre.nom} className="block">
+                          {autre.nom}{' '}
+                          <span className="font-semibold text-slate-ink">
+                            {formatPrice(autre.prixCents)}
+                          </span>
+                        </span>
+                      ))}
+                    </span>
+                  ) : null}
+
+                  {/* La réserve appartient à SON conditionnement : « adaptateurs
+                      non inclus » ne vaut pas pour le kit qui les contient. */}
+                  {carte.reserve ? (
+                    <span className="mt-2 block rounded-[5px] bg-warn-soft px-2 py-1.5 text-[10px] leading-snug text-[#8d5420] fiche:text-[11px]">
+                      {carte.reserve}
+                    </span>
+                  ) : null}
+
+                  {carte.verifie ? (
+                    <span className="mt-2 block text-[10px] text-[#9a9a9a]">{carte.verifie}</span>
+                  ) : null}
                 </span>
               </Link>
             </li>
