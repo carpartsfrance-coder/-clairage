@@ -244,8 +244,14 @@ export type PackGeneration = {
   generationName: string
   years: string
   phase: string | null
-  /** Photo de la génération, pour que la page montre la voiture dont elle parle. */
-  photo: { url: string; alt: string } | null
+  /**
+   * Logo du constructeur, quand l'exploitant en a téléversé un.
+   *
+   * Facultatif par nature : un logo de constructeur est une marque déposée, et
+   * l'afficher relève d'un droit qu'il détient ou non. Sans lui, le bandeau
+   * pose le monogramme de `BrandMark`, jamais une case vide.
+   */
+  makeLogo: { url: string; alt: string } | null
   /** Équipements d'origine documentés pour cette génération. */
   equipments: Array<{ configurationId: string; code: string; label: string; hint: string | null }>
   /** Produits groupés par emplacement, toutes configurations confondues. */
@@ -280,8 +286,7 @@ export async function getPackGeneration(
         model: { slug: modelSlug, active: true, make: { slug: makeSlug, type, active: true } },
       },
       include: {
-        model: { include: { make: true } },
-        photo: { select: { url: true, alt: true } },
+        model: { include: { make: { include: { logo: { select: { url: true, alt: true } } } } } },
         configurations: {
           where: { active: true },
           include: {
@@ -445,13 +450,16 @@ export async function getPackGeneration(
       state: 'found',
       data: {
         makeName: generation.model.make.name,
+        makeLogo: generation.model.make.logo
+          ? {
+              url: generation.model.make.logo.url,
+              alt: generation.model.make.logo.alt ?? `Logo ${generation.model.make.name}`,
+            }
+          : null,
         modelName: generation.model.name,
         generationName: generation.name,
         years: yearsLabel(generation.yearFrom, generation.yearTo),
         phase: generation.phase,
-        photo: generation.photo
-          ? { url: generation.photo.url, alt: generation.photo.alt ?? generation.name }
-          : null,
         equipments: generation.configurations.map((configuration) => ({
           configurationId: configuration.id,
           code: configuration.equipment.code,

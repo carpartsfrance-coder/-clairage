@@ -65,7 +65,8 @@ type VehiculeAffiche = {
    * distingue une absence d'un équipement, pas la lecture de son libellé.
    */
   equipmentCode: string | null
-  photo: { url: string; alt: string } | null
+  /** Logo du constructeur, s'il a été téléversé. */
+  logo: { url: string; alt: string } | null
 }
 
 async function getVehiculeAffiche(configurationId: string): Promise<VehiculeAffiche | null> {
@@ -76,8 +77,9 @@ async function getVehiculeAffiche(configurationId: string): Promise<VehiculeAffi
         equipment: true,
         generation: {
           include: {
-            photo: { select: { url: true, alt: true } },
-            model: { include: { make: true } },
+            model: {
+              include: { make: { include: { logo: { select: { url: true, alt: true } } } } },
+            },
           },
         },
       },
@@ -94,8 +96,11 @@ async function getVehiculeAffiche(configurationId: string): Promise<VehiculeAffi
       phase: phaseUtile(generation.phase, generation.name),
       equipmentLabel: config.equipment.label,
       equipmentCode: config.equipment.code,
-      photo: generation.photo
-        ? { url: generation.photo.url, alt: generation.photo.alt ?? generation.name }
+      logo: generation.model.make.logo
+        ? {
+            url: generation.model.make.logo.url,
+            alt: generation.model.make.logo.alt ?? `Logo ${generation.model.make.name}`,
+          }
         : null,
     }
   } catch (error) {
@@ -298,7 +303,8 @@ export default async function Page() {
             ? 'Les compatibilités ci-dessous valent pour ce véhicule précis.'
             : 'Aucune compatibilité n’est encore documentée pour ce véhicule.'
         }
-        photo={affiche?.photo ?? null}
+        marque={affiche?.makeName ?? vehicle.label}
+        logo={affiche?.logo ?? null}
         action={
           cartes.length > 0 ? (
             <ButtonLink

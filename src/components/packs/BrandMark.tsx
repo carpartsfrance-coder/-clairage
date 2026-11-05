@@ -50,6 +50,20 @@ const TAILLES = {
   sm: { boite: 'size-7 rounded-md', texte: 'text-[9px]', marge: 'p-0.5', sizes: '28px' },
   md: { boite: 'size-10 rounded-md', texte: 'text-[11px]', marge: 'p-0.5', sizes: '40px' },
   lg: { boite: 'size-[60px] rounded-lg', texte: 'text-[15px]', marge: 'p-[7px]', sizes: '60px' },
+  /*
+    `xl` est la plaque du bandeau véhicule, posée sur le fond sombre. Elle
+    reste blanche pour la même raison que les autres : sur les 90 logos
+    téléversés, les uns sont des tracés transparents, souvent très foncés,
+    les autres des images déjà détourées sur blanc. Posés à même le fond
+    sombre, les premiers disparaîtraient et les seconds montreraient leur
+    rectangle. Le blanc les accueille tous.
+  */
+  xl: {
+    boite: 'size-[88px] rounded-2xl fiche:size-[132px]',
+    texte: 'text-[26px] fiche:text-[38px]',
+    marge: 'p-4 fiche:p-6',
+    sizes: '132px',
+  },
 } as const
 
 export function BrandMark({
@@ -60,7 +74,7 @@ export function BrandMark({
 }: {
   name: string
   logo?: { url: string; alt: string } | null
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }) {
   const taille = TAILLES[size]

@@ -127,7 +127,8 @@ export default async function PacksGenerationPage({ params }: PageProps) {
             ? 'Trouvez le bon pack, des phares au plafonnier.'
             : 'Aucun éclairage n’est encore documenté pour cette génération.'
         }
-        photo={data.photo}
+        marque={data.makeName}
+        logo={data.makeLogo}
         action={
           totalProduits > 0 ? (
             <ButtonLink
