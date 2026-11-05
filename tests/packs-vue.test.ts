@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { PackPositionGroup, PackProduct } from '../src/lib/queries/packs'
 import {
+  cartesDesPacks,
   libelleDeLaZone,
   nomDuConditionnement,
   produitsSitues,
+  totalDesCartes,
   totalVehicule,
   zoneDeLEmplacement,
   zonesPresentes,
@@ -212,5 +214,63 @@ describe('zones', () => {
     expect(libelleDeLaZone('avant')).toBe('Éclairage avant')
     expect(libelleDeLaZone('arriere')).toBe('Éclairage arrière')
     expect(libelleDeLaZone('interieur')).toBe('Éclairage intérieur')
+  })
+})
+
+describe('cartesDesPacks', () => {
+  it('porte le prix du conditionnement conseillé', () => {
+    const cartes = cartesDesPacks([
+      groupe('LOW', 'Feux de croisement', [
+        produit('phares', 10390, {
+          recommended: { name: 'Le kit complet', priceCents: 10390 },
+          fromPriceCents: 6990,
+        }),
+      ]),
+    ])
+    expect(cartes[0].prixCents).toBe(10390)
+    expect(cartes[0].conditionnement).toBe('Le kit complet')
+  })
+
+  it('retombe sur le prix d’entrée faute de conseil', () => {
+    const cartes = cartesDesPacks([
+      groupe('LOW', 'Feux de croisement', [
+        produit('phares', 10390, { recommended: null, fromPriceCents: 9990 }),
+      ]),
+    ])
+    expect(cartes[0].prixCents).toBe(9990)
+    expect(cartes[0].conditionnement).toBeNull()
+  })
+
+  it('laisse vides les mentions que la page d’une génération ne connaît pas', () => {
+    // Réserve, provenance et quantité sont propres aux résultats véhicule :
+    // la carte doit les porter sans que cette page ait à les inventer.
+    const [carte] = cartesDesPacks([
+      groupe('LOW', 'Feux de croisement', [produit('phares', 2890)]),
+    ])
+    expect(carte.autres).toEqual([])
+    expect(carte.reserve).toBeNull()
+    expect(carte.verifie).toBeNull()
+    expect(carte.quantite).toBeNull()
+  })
+})
+
+describe('totalDesCartes', () => {
+  it('additionne les prix que les cartes affichent', () => {
+    // Les deux pages véhicule appellent ce calcul : c'est la seule façon que
+    // le chiffre annoncé soit celui qu'on obtient en additionnant les
+    // vignettes du dessous.
+    const cartes = cartesDesPacks([
+      groupe('LOW', 'Feux de croisement', [produit('phares', 10390)]),
+      groupe('PLATE', 'Éclairage de plaque', [produit('plaque', 1490)]),
+    ])
+    expect(totalDesCartes(cartes)).toEqual({ produits: 2, emplacements: 2, totalCents: 11880 })
+  })
+
+  it('écarte les incompatibles, quelle que soit la page', () => {
+    const cartes = cartesDesPacks([
+      groupe('LOW', 'Feux de croisement', [produit('phares', 10390)]),
+      groupe('FOG', 'Antibrouillards', [produit('brouillard', 2790, { status: 'INCOMPATIBLE' })]),
+    ])
+    expect(totalDesCartes(cartes)).toEqual({ produits: 1, emplacements: 1, totalCents: 10390 })
   })
 })
