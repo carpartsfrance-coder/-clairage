@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { PackPositionGroup, PackProduct } from '../src/lib/queries/packs'
 import {
   cartesDesPacks,
-  libelleDeLaZone,
+  nomDeLaZone,
   nomDuConditionnement,
   produitsSitues,
   totalDesCartes,
@@ -29,7 +29,7 @@ function produit(slug: string, prix: number, extra: Partial<PackProduct> = {}): 
     tagline: null,
     image: null,
     status: 'CONFIRMED',
-    recommended: { name: `Pack ${slug}`, priceCents: prix },
+    recommended: { id: `v-${slug}`, name: `Pack ${slug}`, priceCents: prix },
     fromPriceCents: prix,
     contents: [],
     ...extra,
@@ -82,7 +82,7 @@ describe('totalVehicule', () => {
 
   it('additionne les prix affichés', () => {
     // Les cinq prix de l'Audi A8 D2, tels que la page les montre.
-    expect(totalVehicule(groupes)).toEqual({
+    expect(totalVehicule(groupes)).toMatchObject({
       produits: 5,
       emplacements: 5,
       totalCents: 22950,
@@ -105,7 +105,7 @@ describe('totalVehicule', () => {
       groupe('LOW', 'Feux de croisement', [produit('phares', 10390)]),
       groupe('FOG', 'Antibrouillards', [produit('brouillard', 2790, { status: 'INCOMPATIBLE' })]),
     ])
-    expect(total).toEqual({ produits: 1, emplacements: 1, totalCents: 10390 })
+    expect(total).toMatchObject({ produits: 1, emplacements: 1, totalCents: 10390 })
   })
 
   it('garde les « à vérifier », qui restent achetables', () => {
@@ -125,7 +125,12 @@ describe('totalVehicule', () => {
   })
 
   it('ne fabrique pas de total sur une page vide', () => {
-    expect(totalVehicule([])).toEqual({ produits: 0, emplacements: 0, totalCents: 0 })
+    expect(totalVehicule([])).toEqual({
+      produits: 0,
+      emplacements: 0,
+      totalCents: 0,
+      variantIds: [],
+    })
   })
 })
 
@@ -134,7 +139,7 @@ describe('nomDuConditionnement', () => {
     expect(
       nomDuConditionnement({
         productName: 'Pack LED phares pour Peugeot 207',
-        recommended: { name: 'Pack LED phares pour Peugeot 207', priceCents: 2890 },
+        recommended: { id: 'v1', name: 'Pack LED phares pour Peugeot 207', priceCents: 2890 },
       }),
     ).toBeNull()
   })
@@ -143,7 +148,7 @@ describe('nomDuConditionnement', () => {
     expect(
       nomDuConditionnement({
         productName: 'Pack LED phares pour Peugeot 207',
-        recommended: { name: 'Le kit complet', priceCents: 4890 },
+        recommended: { id: 'v2', name: 'Le kit complet', priceCents: 4890 },
       }),
     ).toBe('Le kit complet')
   })
@@ -210,10 +215,12 @@ describe('zones', () => {
     expect(zonesPresentes([]).map((z) => z.cle)).toEqual(['tout'])
   })
 
-  it('nomme la zone comme la carte l’écrit', () => {
-    expect(libelleDeLaZone('avant')).toBe('Éclairage avant')
-    expect(libelleDeLaZone('arriere')).toBe('Éclairage arrière')
-    expect(libelleDeLaZone('interieur')).toBe('Éclairage intérieur')
+  it('nomme la zone comme la pastille de la vignette l’écrit', () => {
+    // « Habitacle » et non « Intérieur » : c'est le mot de la maquette, et
+    // celui qu'emploie déjà la navigation du site.
+    expect(nomDeLaZone('avant')).toBe('Avant')
+    expect(nomDeLaZone('arriere')).toBe('Arrière')
+    expect(nomDeLaZone('interieur')).toBe('Habitacle')
   })
 })
 
@@ -222,7 +229,7 @@ describe('cartesDesPacks', () => {
     const cartes = cartesDesPacks([
       groupe('LOW', 'Feux de croisement', [
         produit('phares', 10390, {
-          recommended: { name: 'Le kit complet', priceCents: 10390 },
+          recommended: { id: 'v3', name: 'Le kit complet', priceCents: 10390 },
           fromPriceCents: 6990,
         }),
       ]),
@@ -263,7 +270,13 @@ describe('totalDesCartes', () => {
       groupe('LOW', 'Feux de croisement', [produit('phares', 10390)]),
       groupe('PLATE', 'Éclairage de plaque', [produit('plaque', 1490)]),
     ])
-    expect(totalDesCartes(cartes)).toEqual({ produits: 2, emplacements: 2, totalCents: 11880 })
+    expect(totalDesCartes(cartes)).toEqual({
+      produits: 2,
+      emplacements: 2,
+      totalCents: 11880,
+      // Le bouton « ajouter tous les packs » n'achète que ces deux-là.
+      variantIds: ['v-phares', 'v-plaque'],
+    })
   })
 
   it('écarte les incompatibles, quelle que soit la page', () => {
@@ -271,6 +284,11 @@ describe('totalDesCartes', () => {
       groupe('LOW', 'Feux de croisement', [produit('phares', 10390)]),
       groupe('FOG', 'Antibrouillards', [produit('brouillard', 2790, { status: 'INCOMPATIBLE' })]),
     ])
-    expect(totalDesCartes(cartes)).toEqual({ produits: 1, emplacements: 1, totalCents: 10390 })
+    expect(totalDesCartes(cartes)).toEqual({
+      produits: 1,
+      emplacements: 1,
+      totalCents: 10390,
+      variantIds: ['v-phares'],
+    })
   })
 })

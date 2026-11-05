@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { getSelectedVehicle } from '@/lib/session'
@@ -7,13 +6,21 @@ import { fitmentSortWeight } from '@/lib/fitment'
 import { availabilityForKit, availabilityForVariant, isPurchasable } from '@/lib/stock'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { ButtonLink } from '@/components/ui/Button'
-import { formatPrice } from '@/lib/identity'
 import { Alert, EmptyState } from '@/components/ui/Surface'
-import { IconArrowRight, IconCar, IconCheckCircle, IconHeadset, IconInfo } from '@/components/ui/icons'
+import {
+  IconArrowRight,
+  IconCar,
+  IconCheckCircle,
+  IconChevronDown,
+  IconHeadset,
+} from '@/components/ui/icons'
 import { ARGS_COUVERTURE, couverture } from '@/lib/media-couverture'
 import { cartesDesResultats, phaseUtile, type GroupeResultat } from '@/lib/resultats-vue'
 import { totalDesCartes } from '@/lib/packs-vue'
+import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
+import { BarreVehicule } from '@/components/vehicule/BarreVehicule'
 import { EclairagesParZone } from '@/components/vehicule/EclairagesParZone'
+import { TotalEclairage } from '@/components/vehicule/TotalEclairage'
 
 export const metadata: Metadata = {
   title: 'Les éclairages pour votre véhicule',
@@ -49,7 +56,17 @@ type VehiculeAffiche = {
   years: string
   phase: string | null
   equipmentLabel: string | null
-  photo: { url: string; alt: string } | null
+  /**
+   * Le code de l'équipement, et non son seul intitulé.
+   *
+   * « Équipement d'origine non précisé » EST un intitulé du référentiel :
+   * composé dans une phrase, il donnait « Compatibilités vérifiées pour
+   * Équipement d'origine non précisé ». C'est le code `NON_PRECISE` qui
+   * distingue une absence d'un équipement, pas la lecture de son libellé.
+   */
+  equipmentCode: string | null
+  /** Logo du constructeur, s'il a été téléversé. */
+  logo: { url: string; alt: string } | null
 }
 
 async function getVehiculeAffiche(configurationId: string): Promise<VehiculeAffiche | null> {
@@ -60,8 +77,9 @@ async function getVehiculeAffiche(configurationId: string): Promise<VehiculeAffi
         equipment: true,
         generation: {
           include: {
-            photo: { select: { url: true, alt: true } },
-            model: { include: { make: true } },
+            model: {
+              include: { make: { include: { logo: { select: { url: true, alt: true } } } } },
+            },
           },
         },
       },
@@ -77,8 +95,12 @@ async function getVehiculeAffiche(configurationId: string): Promise<VehiculeAffi
         : `depuis ${generation.yearFrom}`,
       phase: phaseUtile(generation.phase, generation.name),
       equipmentLabel: config.equipment.label,
-      photo: generation.photo
-        ? { url: generation.photo.url, alt: generation.photo.alt ?? generation.name }
+      equipmentCode: config.equipment.code,
+      logo: generation.model.make.logo
+        ? {
+            url: generation.model.make.logo.url,
+            alt: generation.model.make.logo.alt ?? `Logo ${generation.model.make.name}`,
+          }
         : null,
     }
   } catch (error) {
@@ -153,6 +175,7 @@ async function getByPosition(configurationId: string): Promise<GroupeResultat[] 
 
       product.lines.push({
         id: row.id,
+        variantId: row.variantId,
         status: row.status,
         quantity: row.quantity,
         restrictions: row.restrictions,
@@ -263,74 +286,74 @@ export default async function Page() {
       />
 
       {/*
-        Le bandeau véhicule, celui de la page d'une génération.
+        Le bandeau et la barre véhicule, les mêmes que sur la page d'une
+        génération : les deux pages montrent la même voiture au même client,
+        et les dessiner autrement ne lui apprenait rien.
 
-        La page annonçait son véhicule en une ligne grise au-dessus d'une
-        enfilade de sections : rien ne montrait la voiture, et la sélection —
-        qui est pourtant ce qui donne sa valeur à la page, puisque c'est elle
-        qui transforme « documenté » en « confirmé pour vous » — se lisait en
-        petits caractères.
+        La différence est dans ce qu'elles affirment, et elle se lit à la
+        barre : ici l'équipement d'origine est connu, donc les statuts valent
+        pour CE véhicule. C'est ce que la page apporte, et c'est écrit.
       */}
-      <section className="relative mt-2 overflow-hidden rounded-xl bg-gradient-to-br from-[#f7f7f8] to-[#e9eaec] px-5 py-5 fiche:px-8 fiche:py-8">
-        {affiche?.photo ? (
-          <div className="relative mb-2 h-[112px] fiche:hidden">
-            <Image
-              src={affiche.photo.url}
-              alt={affiche.photo.alt}
-              fill
-              sizes="100vw"
-              className="object-contain"
-              priority
-            />
-          </div>
-        ) : null}
-
-        <div className="relative z-[1] max-w-[520px]">
-          <p className="text-[10px] font-bold tracking-[1.2px] text-muted-strong uppercase">
-            Votre véhicule
-          </p>
-          <h1 className="mt-1.5 text-[25px] leading-[1.1] font-bold tracking-[-0.9px] fiche:text-[32px] fiche:tracking-[-1.2px]">
-            Éclairage {titre}
-            {affiche ? <span className="block font-normal text-[#686c67]">{affiche.years}</span> : null}
-          </h1>
-          <p className="mt-1 text-[11px] text-muted-strong">
-            {[affiche?.phase, affiche?.equipmentLabel].filter(Boolean).join(' · ') ||
-              'Équipement d’origine non précisé'}
-          </p>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bfe3c8] bg-[#eef8f0] px-3 py-1.5 text-[12px] font-semibold text-[#216b33]">
-              <IconCheckCircle className="size-4 shrink-0" />
-              Véhicule sélectionné
-            </span>
-            <Link
-              href="/vehicule"
-              className="text-[12px] font-semibold text-slate-ink underline underline-offset-4 decoration-line-strong hover:decoration-brand hover:text-brand"
+      <BandeauVehicule
+        surtitre={affiche ? `${titre} · ${affiche.years}` : titre}
+        titre="Éclairage LED"
+        sousTitre={`pour ${titre}`}
+        description={
+          cartes.length > 0
+            ? 'Les compatibilités ci-dessous valent pour ce véhicule précis.'
+            : 'Aucune compatibilité n’est encore documentée pour ce véhicule.'
+        }
+        marque={affiche?.makeName ?? vehicle.label}
+        logo={affiche?.logo ?? null}
+        action={
+          cartes.length > 0 ? (
+            <ButtonLink
+              href="#packs"
+              className="min-h-[43px] gap-2.5 rounded-lg px-[15px] text-[12px]"
+              iconRight={<IconArrowRight className="size-4 rotate-90" />}
             >
-              Changer de véhicule
-            </Link>
-          </div>
+              Voir les {cartes.length} pack{cartes.length > 1 ? 's' : ''}
+            </ButtonLink>
+          ) : null
+        }
+      />
 
-          <p className="mt-3 text-[13px] text-[#4f5356]">
-            {cartes.length > 0
-              ? 'Les compatibilités ci-dessous valent pour ce véhicule précis.'
-              : 'Choisissez l’éclairage à remplacer.'}
-          </p>
-        </div>
+      <BarreVehicule
+        nom={titre}
+        annees={affiche?.years ?? ''}
+        nombreDePacks={cartes.length}
+        moto={vehicle.type === 'MOTORCYCLE'}
+        action={
+          <ButtonLink
+            href="/vehicule"
+            variant="secondary"
+            className="min-h-10 gap-2 rounded-lg px-3 text-[12px]"
+          >
+            Changer de véhicule
+          </ButtonLink>
+        }
+      />
 
-        {affiche?.photo ? (
-          <div className="pointer-events-none absolute top-1/2 right-0 hidden h-[78%] w-[46%] -translate-y-1/2 fiche:block">
-            <Image
-              src={affiche.photo.url}
-              alt={affiche.photo.alt}
-              fill
-              sizes="46vw"
-              className="object-contain object-right"
-              priority
-            />
-          </div>
-        ) : null}
-      </section>
+      {affiche?.equipmentCode && affiche.equipmentCode !== 'NON_PRECISE' ? (
+        <p className="mt-2 text-[12px] text-muted-strong">
+          <IconCheckCircle className="mr-1.5 inline size-3.5 align-[-2px] text-ok" />
+          Compatibilités vérifiées pour{' '}
+          <span className="font-bold text-slate-ink">{affiche.equipmentLabel}</span>
+          {affiche.phase ? ` · ${affiche.phase}` : null}
+        </p>
+      ) : (
+        <p className="mt-2 text-[12px] text-muted-strong">
+          <span className="font-bold text-slate-ink">Équipement d’origine non précisé.</span>{' '}
+          Un phare halogène et un xénon n’acceptent pas les mêmes pièces :{' '}
+          <Link
+            href="/vehicule"
+            className="font-bold text-slate-ink underline decoration-line-strong underline-offset-4 hover:text-brand hover:decoration-brand"
+          >
+            précisez-le
+          </Link>{' '}
+          pour affiner les compatibilités.
+        </p>
+      )}
 
       {groups === null ? (
         <Alert
@@ -360,100 +383,93 @@ export default async function Page() {
         </div>
       ) : (
         <>
-          <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 fiche:mt-8">
-            <h2 className="text-[20px] leading-tight font-bold tracking-[-0.6px] fiche:text-[23px]">
-              Les kits pour votre {titre}
-              <span className="ml-2.5 text-[13px] font-normal text-[#828282]">
-                {cartes.length} kit{cartes.length > 1 ? 's' : ''}
-              </span>
-            </h2>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 text-[12px] font-semibold text-slate-ink underline underline-offset-4 decoration-line-strong hover:decoration-brand hover:text-brand"
-            >
-              <IconHeadset className="size-4 shrink-0" strokeWidth={1.5} />
-              Un doute sur votre montage ?
-            </Link>
-          </div>
+          <section id="packs" className="mt-[25px] scroll-mt-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-3.5">
+              <h2 className="text-[clamp(24px,2.9vw,34px)] leading-[1.15] font-extrabold tracking-[-0.048em]">
+                Choisissez votre éclairage
+              </h2>
+              <p className="text-[13px] whitespace-nowrap text-muted-strong">
+                {cartes.length} pack{cartes.length > 1 ? 's' : ''}
+              </p>
+            </div>
 
-          {/*
-            Ce que coûte l'éclairage complet : le total des prix affichés juste
-            en dessous, incompatibles exclus. Un client qui additionne les
-            cartes doit retomber dessus, sans quoi il doutera du reste.
-          */}
-          {total.produits > 1 ? (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-[9px] border border-line bg-surface-paper px-4 py-3.5">
-              <div className="min-w-0">
-                <p className="text-[13px] font-bold fiche:text-[14px]">
-                  Tout l&apos;éclairage de votre {titre}
+            <EclairagesParZone cartes={cartes} />
+
+            {total.produits > 1 ? (
+              <TotalEclairage
+                titre={titre}
+                produits={total.produits}
+                emplacements={total.emplacements}
+                totalCents={total.totalCents}
+                variantIds={total.variantIds}
+              />
+            ) : null}
+
+            <div className="mt-[29px] grid gap-5 border-t border-line pt-[22px] pb-[26px] fiche:grid-cols-[1fr_1.3fr] fiche:gap-x-8">
+              <div>
+                <h2 className="text-[20px] font-extrabold tracking-[-0.035em]">
+                  Un doute sur votre éclairage ?
+                </h2>
+                <p className="mt-1 text-[13px] text-muted-strong">
+                  Retrouvez les repères pour choisir le bon pack.
                 </p>
-                <p className="mt-0.5 text-[10px] text-[#828282]">
-                  {total.emplacements} emplacement{total.emplacements > 1 ? 's' : ''} ·{' '}
-                  {total.produits} référence{total.produits > 1 ? 's' : ''} · prix des packs
-                  conseillés
-                </p>
+                <Link
+                  href="/contact"
+                  className="mt-3 inline-flex items-center gap-2 text-[12px] font-bold text-slate-ink underline decoration-line-strong underline-offset-4 hover:text-brand hover:decoration-brand"
+                >
+                  <IconHeadset className="size-4 shrink-0" strokeWidth={1.5} />
+                  Contacter un conseiller
+                </Link>
               </div>
-              <strong className="text-[19px] tracking-[-0.5px] fiche:text-[21px]">
-                {formatPrice(total.totalCents)}
-              </strong>
+
+              <div>
+                <details className="border-b border-line">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-bold marker:content-none">
+                    Quel emplacement choisir ?
+                    <IconChevronDown className="size-4 shrink-0" />
+                  </summary>
+                  <p className="pr-2.5 pb-3 text-[13px] text-muted-strong">
+                    Chaque pack correspond à une lumière précise de la voiture : les feux de
+                    croisement éclairent la route, les veilleuses signalent votre présence, le
+                    plafonnier éclaire l&apos;habitacle. Le nom de l&apos;emplacement et ce
+                    qu&apos;il éclaire sont écrits sur chaque vignette.
+                  </p>
+                </details>
+
+                {/*
+                  L'explication des statuts, repliée.
+
+                  Dépliée en tête de page, elle repoussait les produits sous la
+                  ligne de flottaison : on lisait un mode d'emploi avant de voir
+                  une seule ampoule. Les statuts qui alertent sont de toute
+                  façon nommés en toutes lettres sur la vignette concernée.
+                */}
+                <details className="border-b border-line">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-bold marker:content-none">
+                    Comment lire les statuts de compatibilité ?
+                    <IconChevronDown className="size-4 shrink-0" />
+                  </summary>
+                  <div className="pr-2.5 pb-3 text-[13px] leading-[1.6] text-muted-strong">
+                    <p>
+                      <strong className="text-slate-ink">Compatibilité confirmée</strong> : le
+                      montage a été vérifié pour cette configuration précise — c&apos;est le cas
+                      de la quasi-totalité des éclairages ci-dessus, et la pastille
+                      n&apos;apparaît donc que lorsqu&apos;elle alerte.{' '}
+                      <strong className="text-slate-ink">Informations insuffisantes</strong> :
+                      nous n&apos;avons pas de quoi trancher — ce n&apos;est pas une
+                      confirmation, et ce n&apos;est pas un refus.{' '}
+                      <strong className="text-slate-ink">Incompatible</strong> : le produit ne
+                      convient pas à cette configuration.
+                    </p>
+                    <p className="mt-2">
+                      La compatibilité de montage ne préjuge pas de l&apos;homologation routière :
+                      elle est indiquée séparément sur chaque fiche produit.
+                    </p>
+                  </div>
+                </details>
+              </div>
             </div>
-          ) : null}
-
-          <EclairagesParZone cartes={cartes} />
-
-          {/*
-            L'explication des statuts, repliée et en bas.
-
-            Dépliée en tête, elle occupait le haut de la page et repoussait les
-            produits sous la ligne de flottaison : on lisait un mode d'emploi
-            avant de voir une seule ampoule. Elle reste à un clic, et les
-            statuts qui alertent sont de toute façon nommés en toutes lettres
-            sur la carte concernée.
-
-            `<details>` plutôt qu'un composant : le pliage, le clavier et la
-            restitution aux lecteurs d'écran sont natifs, et cela fonctionne
-            sans JavaScript.
-          */}
-          <details className="mt-8 max-w-3xl rounded-[9px] border border-line bg-surface-paper">
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[12px] font-semibold marker:content-none">
-              <IconInfo className="size-4 shrink-0 text-muted-strong" />
-              <span className="underline decoration-line-strong underline-offset-4">
-                Comment lire les statuts de compatibilité
-              </span>
-            </summary>
-            <div className="border-t border-line px-4 py-3 text-[12px] leading-[1.7] text-muted-strong">
-              <p>
-                <strong className="text-slate-ink">Compatibilité confirmée</strong> : le montage a
-                été vérifié pour cette configuration précise — c&apos;est le cas de la quasi-totalité
-                des éclairages ci-dessus, et la pastille n&apos;apparaît donc que lorsqu&apos;elle
-                alerte. <strong className="text-slate-ink">Informations insuffisantes</strong> :
-                nous n&apos;avons pas de quoi trancher — ce n&apos;est pas une confirmation, et ce
-                n&apos;est pas un refus. <strong className="text-slate-ink">Incompatible</strong> :
-                le produit ne convient pas à cette configuration.
-              </p>
-              <p className="mt-2">
-                La compatibilité de montage ne préjuge pas de l&apos;homologation routière : elle
-                est indiquée séparément sur chaque fiche produit.
-              </p>
-            </div>
-          </details>
-
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-white px-5 py-4">
-            <p className="text-[13px] text-muted-strong">
-              Ce véhicule n&apos;est pas le bon ?{' '}
-              <span className="font-semibold text-slate-ink">
-                Les compatibilités changent avec l&apos;équipement d&apos;origine.
-              </span>
-            </p>
-            <ButtonLink
-              href="/vehicule"
-              variant="secondary"
-              className="min-h-[41px] gap-3 rounded-[7px] px-4 text-[12px]"
-              iconRight={<IconArrowRight className="size-4" />}
-            >
-              Changer de véhicule
-            </ButtonLink>
-          </div>
+          </section>
         </>
       )}
     </div>

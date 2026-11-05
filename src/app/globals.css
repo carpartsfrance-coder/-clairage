@@ -281,6 +281,32 @@
 }
 
 /* Le lien « Aller au contenu » n'apparaît qu'au clavier. */
+/* --------------------------------------------------------------------------
+   Bandeau véhicule — relevé sur la maquette d'Audi A2
+   --------------------------------------------------------------------------
+   Deux règles qui ne s'écrivent pas en utilitaires sans devenir illisibles :
+   le dégradé du fond et le fondu de la photo. Les valeurs sont celles de la
+   maquette, au chiffre près.
+   -------------------------------------------------------------------------- */
+
+@utility bandeau-vehicule {
+  background: radial-gradient(ellipse at 79% -8%, #393b40 0, #222428 43%, #161719 85%);
+  border: 1px solid #2f3034;
+}
+
+/*
+  La photo entre dans le bandeau par la droite et s'efface vers la gauche.
+  Sans ce fondu, un bord net couperait la voiture en plein milieu du dégradé.
+*/
+@utility photo-fondue-gauche {
+  mask-image: linear-gradient(90deg, transparent, #000 19%);
+}
+
+/* Sur un écran étroit la photo passe au-dessus du texte : le fondu tourne. */
+@utility photo-fondue-haut {
+  mask-image: linear-gradient(180deg, transparent, #000 17%);
+}
+
 @utility skip-link {
   position: absolute;
   left: 1rem;

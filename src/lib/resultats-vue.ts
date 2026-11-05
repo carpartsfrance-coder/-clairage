@@ -30,7 +30,10 @@ import type { CarteEclairage } from './packs-vue'
 
 /** Un conditionnement documenté pour un emplacement. */
 export type LigneResultat = {
+  /** L'identifiant de la compatibilité, et la clé de la ligne. */
   id: string
+  /** La variante elle-même : c'est elle qu'on met au panier. */
+  variantId: string
   status: FitmentStatus
   quantity: number
   restrictions: string | null
@@ -130,6 +133,7 @@ export function cartesDesResultats(groupes: GroupeResultat[]): CarteEclairage[] 
 
       parSlug.set(produit.productSlug, {
         slug: produit.productSlug,
+        variantId: conseille.variantId,
         emplacements: [{ code: groupe.code, label: groupe.label }],
         image: produit.image,
         status: produit.status,

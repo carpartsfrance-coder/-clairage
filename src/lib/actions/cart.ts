@@ -139,6 +139,62 @@ export async function addToCart(input: unknown): Promise<CartActionResult> {
   }
 }
 
+/**
+ * Tout l'éclairage d'un véhicule, d'un seul geste.
+ *
+ * La bande de total annonce une somme ; ce bouton achète exactement ce
+ * qu'elle additionne — les conditionnements conseillés des vignettes, pas une
+ * référence de plus.
+ *
+ * **L'ajout passe par `addToCart`, une variante après l'autre.** C'est une
+ * poignée de requêtes de plus qu'un ajout groupé, pour sept articles au
+ * maximum, et cela garantit qu'aucune règle ne diverge : les bornes de stock,
+ * la vente à découvert, les produits dépubliés et le rattachement au véhicule
+ * sont ceux de l'ajout unitaire, sans copie à maintenir.
+ *
+ * Un article indisponible n'annule pas les autres : on ajoute ce qui peut
+ * l'être, et on dit ce qui a été écarté. Tout refuser parce qu'un plafonnier
+ * manque reviendrait à punir le client d'une rupture qui n'est pas la sienne.
+ */
+const packsSchema = z.object({
+  variantIds: z.array(z.string().min(1)).min(1).max(12),
+})
+
+export async function addPacksToCart(input: unknown): Promise<CartActionResult> {
+  const parsed = packsSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, error: 'Demande invalide.' }
+
+  // Un même produit peut équiper deux emplacements : il ne s'achète qu'une
+  // fois, et la bande de total ne l'a compté qu'une fois.
+  const variantIds = [...new Set(parsed.data.variantIds)]
+
+  let ajoutes = 0
+  let itemCount = 0
+  const ecartes: string[] = []
+
+  for (const variantId of variantIds) {
+    const resultat = await addToCart({ variantId, quantity: 1 })
+    if (resultat.ok) {
+      ajoutes += 1
+      itemCount = resultat.itemCount
+    } else {
+      ecartes.push(resultat.error)
+    }
+  }
+
+  if (ajoutes === 0) {
+    return { ok: false, error: ecartes[0] ?? "L'ajout au panier a échoué." }
+  }
+
+  return {
+    ok: true,
+    itemCount,
+    message: ecartes.length
+      ? `${ajoutes} pack${ajoutes > 1 ? 's' : ''} ajouté${ajoutes > 1 ? 's' : ''}. ${ecartes.length} référence${ecartes.length > 1 ? 's' : ''} indisponible${ecartes.length > 1 ? 's' : ''}.`
+      : undefined,
+  }
+}
+
 const updateSchema = z.object({
   lineId: z.string().min(1),
   quantity: z.number().int().min(0).max(99),

@@ -15,6 +15,7 @@ import { cartesDesResultats, phaseUtile, provenance } from '../src/lib/resultats
 function ligne(id: string, prix: number, extra: Partial<LigneResultat> = {}): LigneResultat {
   return {
     id,
+    variantId: `v-${id}`,
     status: 'CONFIRMED',
     quantity: 1,
     restrictions: null,
@@ -78,6 +79,7 @@ describe('cartesDesResultats', () => {
       ]),
     ])
     expect(cartes[0].prixCents).toBe(9990)
+    expect(cartes[0].variantId).toBe('v-kit')
     expect(cartes[0].conditionnement).toBe('Le kit complet')
     expect(cartes[0].autres).toEqual([{ nom: 'Les ampoules seules', prixCents: 6990 }])
   })

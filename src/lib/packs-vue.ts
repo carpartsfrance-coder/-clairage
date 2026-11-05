@@ -73,6 +73,14 @@ export function produitsSitues(groupes: PackPositionGroup[]): ProduitSitue[] {
 export type CarteEclairage = {
   /** Le slug du produit : clé de liste, et destination du clic. */
   slug: string
+  /**
+   * La variante conseillée — celle dont le prix s'affiche.
+   *
+   * C'est elle qu'on met au panier quand le client ajoute d'un coup tout
+   * l'éclairage de son véhicule : la bande de total ne doit pas pouvoir
+   * acheter autre chose que ce que les cartes annoncent.
+   */
+  variantId: string | null
   /** Les emplacements que ce produit équipe, tous nommés. */
   emplacements: Array<{ code: string; label: string }>
   image: { url: string; alt: string } | null
@@ -102,6 +110,7 @@ export type CarteEclairage = {
 export function cartesDesPacks(groupes: PackPositionGroup[]): CarteEclairage[] {
   return produitsSitues(groupes).map(({ produit, emplacements }) => ({
     slug: produit.productSlug,
+    variantId: produit.recommended?.id ?? null,
     emplacements,
     image: produit.image,
     status: produit.status,
@@ -118,6 +127,16 @@ export type TotalVehicule = {
   produits: number
   emplacements: number
   totalCents: number
+  /**
+   * Les conditionnements qui composent la somme.
+   *
+   * Le bouton « ajouter tous les packs » n'achète que ceux-là : une bande qui
+   * annonce un total et met autre chose au panier serait pire que pas de
+   * bande du tout. Une carte sans conditionnement conseillé — un produit en
+   * rupture, par exemple — compte dans le total affiché mais n'a rien à
+   * mettre au panier, et le bouton ne l'invente pas.
+   */
+  variantIds: string[]
 }
 
 /**
@@ -149,6 +168,9 @@ export function totalDesCartes(cartes: CarteEclairage[]): TotalVehicule {
     produits: retenues.length,
     emplacements: new Set(retenues.flatMap((carte) => carte.emplacements.map((e) => e.label))).size,
     totalCents: retenues.reduce((somme, carte) => somme + carte.prixCents, 0),
+    variantIds: retenues
+      .map((carte) => carte.variantId)
+      .filter((id): id is string => id !== null),
   }
 }
 
@@ -174,10 +196,10 @@ export function nomDuConditionnement(
  * schéma les range ailleurs.
  */
 export const ZONES = [
-  { cle: 'tout', label: 'Tout' },
-  { cle: 'avant', label: 'Avant' },
-  { cle: 'arriere', label: 'Arrière' },
-  { cle: 'interieur', label: 'Intérieur' },
+  { cle: 'tout', label: 'Tous les packs', court: 'Tous' },
+  { cle: 'avant', label: 'Avant', court: 'Avant' },
+  { cle: 'arriere', label: 'Arrière', court: 'Arrière' },
+  { cle: 'interieur', label: 'Habitacle', court: 'Habitacle' },
 ] as const
 
 export type Zone = (typeof ZONES)[number]['cle']
@@ -198,15 +220,81 @@ export function zoneDeLEmplacement(code: string): Exclude<Zone, 'tout'> {
   return ZONE_PAR_EMPLACEMENT[code] ?? 'avant'
 }
 
-const LIBELLE_ZONE: Record<Exclude<Zone, 'tout'>, string> = {
-  avant: 'Éclairage avant',
-  arriere: 'Éclairage arrière',
-  interieur: 'Éclairage intérieur',
+const NOM_ZONE: Record<Exclude<Zone, 'tout'>, string> = {
+  avant: 'Avant',
+  arriere: 'Arrière',
+  interieur: 'Habitacle',
 }
 
-/** « Éclairage avant », sous le nom de l'emplacement. */
-export function libelleDeLaZone(zone: Exclude<Zone, 'tout'>): string {
-  return LIBELLE_ZONE[zone]
+/** « Avant », tel que la pastille de la vignette l'écrit. */
+export function nomDeLaZone(zone: Exclude<Zone, 'tout'>): string {
+  return NOM_ZONE[zone]
+}
+
+/**
+ * Ce que l'emplacement éclaire, en une ligne sous son nom.
+ *
+ * « Feux de croisement » nomme la pièce ; « Éclairage principal à l'avant »
+ * dit à quoi elle sert. Les deux ensemble répondent à la question du client,
+ * qui ne connaît pas toujours le nom de la lumière qu'il veut changer.
+ *
+ * Rien pour un emplacement inconnu : mieux vaut une ligne en moins qu'une
+ * description inventée pour un emplacement que le catalogue vient d'ajouter.
+ */
+const SOUS_TITRE_PAR_EMPLACEMENT: Record<string, string> = {
+  LOW_BEAM: 'Éclairage principal à l’avant',
+  HIGH_BEAM: 'Éclairage longue portée',
+  FOG: 'Éclairage antibrouillard',
+  INTERIOR_DOME: 'Éclairage intérieur',
+  PLATE: 'Éclairage de la plaque arrière',
+  REVERSE: 'Éclairage en marche arrière',
+  SIDELIGHT: 'Feux de position avant',
+  TURN_FRONT: 'Signalisation à l’avant',
+}
+
+export function sousTitreDeLEmplacement(code: string): string | null {
+  return SOUS_TITRE_PAR_EMPLACEMENT[code] ?? null
+}
+
+/* -------------------------------------------------------------------------- */
+
+/** Les trois tris offerts par la barre d'outils. */
+export const TRIS = [
+  { cle: 'conseilles', label: 'Recommandés' },
+  { cle: 'prix-croissant', label: 'Prix croissant' },
+  { cle: 'prix-decroissant', label: 'Prix décroissant' },
+] as const
+
+export type Tri = (typeof TRIS)[number]['cle']
+
+/** L'ordre des zones : on fait le tour de la voiture, pas du catalogue. */
+const ORDRE_ZONE: Record<Exclude<Zone, 'tout'>, number> = { avant: 0, arriere: 1, interieur: 2 }
+
+/**
+ * Les cartes triées.
+ *
+ * « Recommandés » regroupe par zone — tout l'avant, puis l'arrière, puis
+ * l'habitacle — et garde dans chaque zone l'ordre du référentiel, qui suit le
+ * schéma d'éclairage d'une voiture. Le catalogue, lui, range le plafonnier en
+ * quatrième position, entre les antibrouillards et la plaque : la grille
+ * passait donc de l'avant à l'habitacle puis revenait à l'arrière. Grouper
+ * suit le regard de celui qui fait le tour de sa voiture, et les trois
+ * pastilles de zone retrouvent un sens, puisqu'elles ne s'entremêlent plus.
+ *
+ * Le tri ne modifie jamais le tableau reçu : la grille redessinerait mal si
+ * React retrouvait la même référence.
+ */
+export function cartesTriees(cartes: CarteEclairage[], tri: Tri): CarteEclairage[] {
+  if (tri === 'conseilles') {
+    // `sort` est stable : à zone égale, l'ordre d'arrivée est conservé.
+    return [...cartes].sort(
+      (a, b) =>
+        ORDRE_ZONE[zoneDeLEmplacement(a.emplacements[0].code)] -
+        ORDRE_ZONE[zoneDeLEmplacement(b.emplacements[0].code)],
+    )
+  }
+  const sens = tri === 'prix-croissant' ? 1 : -1
+  return [...cartes].sort((a, b) => sens * (a.prixCents - b.prixCents))
 }
 
 /** Les zones réellement représentées, dans l'ordre, « Tout » en tête. */
