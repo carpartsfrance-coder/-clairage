@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { connection } from 'next/server'
 import { siteConfig } from '@/lib/identity'
 import {
   listSitemapCategories,
@@ -21,22 +22,28 @@ import { STATIC_PAGES } from '@/lib/sitemap-pages'
  * porte un jeton d'accès.
  */
 
-export const revalidate = 3600
+/*
+  Construit à la demande, jamais pendant le build.
 
-
+  Le 7 novembre 2026, deux déploiements ont échoué sur ce plan : pré-rendu au
+  build, il lisait la base pendant que d'autres pages la lisaient aussi, et la
+  petite base PostgreSQL de Render (256 Mo) a lâché — connexions coupées, puis
+  serveur injoignable. Le build s'arrêtait, et le site en ligne ralentissait.
+  Lu à la demande, une erreur de base ne casse plus un déploiement ; et les
+  lectures se font l'une après l'autre, pour ne tenir qu'une connexion.
+*/
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection()
   const now = new Date()
 
   if (siteConfig.demoBanner) {
     return [{ url: siteConfig.url, lastModified: now, changeFrequency: 'daily', priority: 1 }]
   }
 
-  const [products, categories, guides, packs] = await Promise.all([
-    listSitemapProducts(),
-    listSitemapCategories(),
-    listSitemapGuides(),
-    listSitemapPacks(),
-  ])
+  const products = await listSitemapProducts()
+  const categories = await listSitemapCategories()
+  const guides = await listSitemapGuides()
+  const packs = await listSitemapPacks()
 
   return [
     ...STATIC_PAGES.map((page) => ({

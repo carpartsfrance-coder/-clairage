@@ -10,11 +10,12 @@ const nextConfig: NextConfig = {
       ouvre son pool de connexions à la base, la petite base PostgreSQL sature
       et coupe les connexions (« Server has closed the connection », P1017) :
       le plan du site, qui doit lire la base, échouait et le build avec lui.
-      Quatre processus, quatre pages à la fois chacun, et deux nouvelles
-      tentatives par page avant d'abandonner.
+      Deux processus, deux pages à la fois chacun, et deux nouvelles
+      tentatives par page avant d'abandonner (le plan du site, lui, n'est plus
+      pré-rendu : voir src/app/sitemap.ts).
     */
-    cpus: 4,
-    staticGenerationMaxConcurrency: 4,
+    cpus: 2,
+    staticGenerationMaxConcurrency: 2,
     staticGenerationRetryCount: 2,
     serverActions: {
       // Deux actions reçoivent des fichiers : l'import de catalogue (5 Mo au
