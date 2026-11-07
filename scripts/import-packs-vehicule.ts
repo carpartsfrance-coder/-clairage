@@ -222,7 +222,7 @@ function corps(pack: Pack): string {
     savoir: '',
   }
   const morceaux = [
-    `Pack d'éclairage LED composé pour la ${pack.vehicleLabel}. ${note.quoi}`,
+    `Pack d'éclairage LED composé pour votre ${pack.vehicleLabel}. ${note.quoi}`,
     note.savoir,
     `## Ce que couvre ce pack\n\nLes ${pack.positionLabel}, et rien d'autre. Les autres emplacements de votre ${pack.vehicleLabel} ont chacun le leur — vous les retrouvez sur la page du véhicule.`,
     `## Avant de commander\n\nCe pack est composé pour cette génération précise. Si votre véhicule a reçu un bloc optique différent de celui monté en sortie d'usine, dites-le-nous : nous préférons une vérification de plus à un démontage pour rien.`,
@@ -330,12 +330,17 @@ async function main() {
     const donnees = {
       name: pack.name,
       tagline: `Pour les ${pack.positionLabel} de votre ${pack.vehicleLabel}`,
-      description: `Pack LED pour les ${pack.positionLabel} de ${pack.vehicleLabel}. Compatibilité à vérifier avant commande.`,
+      description: `Pack LED pour les ${pack.positionLabel} de votre ${pack.vehicleLabel}, composé pour ce véhicule.`,
       body: corps(pack),
       status: 'PUBLISHED' as const,
       vehicleType: 'CAR' as const,
-      metaTitle: `${pack.name} — LUMERA`,
-      metaDescription: `Pack LED pour les ${pack.positionLabel} de ${pack.vehicleLabel}. Compatibilité à vérifier avant commande.`.slice(0, 158),
+      // Titre et description de référencement : le nom et la description
+      // courte, recopiés. La fiche les reconnaît comme posés par l'import et
+      // construit à la place une version avec les années du véhicule et les
+      // conditions de livraison (`src/lib/seo-fiche.ts`). Un texte écrit au
+      // back-office, lui, est affiché tel quel.
+      metaTitle: pack.name,
+      metaDescription: `Pack LED pour les ${pack.positionLabel} de votre ${pack.vehicleLabel}, composé pour ce véhicule.`,
       publishedAt: new Date(),
     }
 

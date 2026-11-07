@@ -1,6 +1,7 @@
 import { identity, siteConfig } from '@/lib/identity'
 import type { AvailabilityState } from '@/lib/stock'
 import type { ProductView } from '@/lib/queries/product'
+import { buildDeliveryTeaser, type ShippingOffer } from '@/lib/delivery-teaser'
 
 /**
  * Données structurées (schema.org, JSON-LD).
@@ -62,7 +63,54 @@ export const AVAILABILITY_URLS: Record<AvailabilityState, string> = {
   OUT_OF_STOCK: 'https://schema.org/OutOfStock',
 }
 
-export function ProductStructuredData({ product }: { product: ProductView }) {
+/**
+ * Frais de port déclarés pour une offre : ceux qu'un client paierait en
+ * commandant ce seul conditionnement — la même règle que l'accroche du bloc
+ * d'achat (`buildDeliveryTeaser`), franchise comprise.
+ *
+ * Le délai n'est pas déclaré : la boutique connaît une estimation globale
+ * (« 3 à 5 jours ouvrés »), pas la part préparation / transport que
+ * schema.org demande. Une répartition au hasard serait une invention.
+ */
+export function shippingDetails(offers: ShippingOffer[], priceCents: number) {
+  const teaser = buildDeliveryTeaser(offers, priceCents)
+  if (!teaser) return undefined
+  return {
+    '@type': 'OfferShippingDetails',
+    shippingRate: {
+      '@type': 'MonetaryAmount',
+      value: (teaser.priceCents / 100).toFixed(2),
+      currency: identity.locale.currency,
+    },
+    // `getShippingOffers` lit les méthodes de la France : c'est la seule
+    // destination déclarée.
+    shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'FR' },
+  }
+}
+
+/** Politique de retour : déclarée seulement quand un délai est configuré. */
+export function returnPolicy(returnWindowDays: number | null) {
+  if (!returnWindowDays) return undefined
+  return {
+    '@type': 'MerchantReturnPolicy',
+    applicableCountry: 'FR',
+    returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+    merchantReturnDays: returnWindowDays,
+  }
+}
+
+export function ProductStructuredData({
+  product,
+  description,
+  shippingOffers = [],
+  returnWindowDays = null,
+}: {
+  product: ProductView
+  /** La description de la fiche, la même que la balise meta (`lib/seo-fiche`). */
+  description?: string
+  shippingOffers?: ShippingOffer[]
+  returnWindowDays?: number | null
+}) {
   if (siteConfig.demoBanner) return null
   // Deuxième barrière, la même que celle du plan de site : une fiche de
   // démonstration ne doit pas être déclarée à un moteur de recherche avec un
@@ -84,6 +132,8 @@ export function ProductStructuredData({ product }: { product: ProductView }) {
     availability: AVAILABILITY_URLS[variant.availability.state],
     itemCondition: 'https://schema.org/NewCondition',
     seller: { '@type': 'Organization', name: identity.name },
+    shippingDetails: shippingDetails(shippingOffers, variant.priceCents),
+    hasMerchantReturnPolicy: returnPolicy(returnWindowDays),
   }))
 
   // Note moyenne : calculée depuis les avis publiés, et absente s'il n'y en a
@@ -100,28 +150,31 @@ export function ProductStructuredData({ product }: { product: ProductView }) {
         }
       : undefined
 
+  // Caractéristiques techniques réelles, pas de valeur de remplissage. Une
+  // liste vide n'est pas émise.
+  const additionalProperty = [
+    product.bulbBase ? { '@type': 'PropertyValue', name: 'Culot', value: product.bulbBase } : null,
+    product.colorTemperature
+      ? {
+          '@type': 'PropertyValue',
+          name: 'Température de couleur',
+          value: `${product.colorTemperature} K`,
+        }
+      : null,
+  ].filter(Boolean)
+
   const data = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
     url,
-    description: product.metaDescription ?? product.description ?? product.tagline ?? undefined,
+    description: description ?? product.description ?? product.tagline ?? undefined,
     image: product.gallery.map((item) => absolute(item.url)),
     // Renseignée seulement si la fiche porte une marque. Le nom de la boutique
     // n'est pas la marque de la pièce.
     brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
     category: product.category?.name,
-    // Caractéristiques techniques réelles, pas de valeur de remplissage.
-    additionalProperty: [
-      product.bulbBase ? { '@type': 'PropertyValue', name: 'Culot', value: product.bulbBase } : null,
-      product.colorTemperature
-        ? {
-            '@type': 'PropertyValue',
-            name: 'Température de couleur',
-            value: `${product.colorTemperature} K`,
-          }
-        : null,
-    ].filter(Boolean),
+    additionalProperty: additionalProperty.length > 0 ? additionalProperty : undefined,
     offers,
     aggregateRating,
   }
