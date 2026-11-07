@@ -214,6 +214,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
   const sections = [
     ...(aEnBref ? [{ href: '#en-bref', label: 'Le pack en bref' }] : []),
+    ...(complementaires ? [{ href: '#completer', label: 'Toute la voiture' }] : []),
     ...(aSectionContenu
       ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans la boîte' : 'Caractéristiques' }]
       : []),
@@ -372,19 +373,6 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           <ListePromesses promesses={promesses} className="grid" />
         </div>
 
-        {/*
-          Complétez l'éclairage — juste après l'achat, tant que le client a le
-          porte-monnaie à la main. Les autres packs confirmés pour ce véhicule.
-        */}
-        {complementaires ? (
-          <PacksComplementaires
-            vehicule={complementaires.vehicule}
-            packs={complementaires.packs}
-            prixDuPackCents={prixDuPackCents}
-            seuilFranchiseCents={seuilFranchiseCents}
-          />
-        ) : null}
-
         {/* ---------------- .section-nav ---------------- */}
         {/* Une seule ancre ne sert à rien : la barre n'apparaît qu'à partir de deux sections. */}
         {sections.length > 1 ? <SectionNav items={sections} /> : null}
@@ -497,6 +485,21 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               ) : null}
             </div>
           </section>
+        ) : null}
+
+        {/*
+          ---------------- #completer ----------------
+          Les autres packs confirmés pour ce véhicule. Placée juste après « Le
+          pack en bref » : le client vient de voir l'avant / après, c'est là
+          qu'il a envie d'équiper toute la voiture.
+        */}
+        {complementaires ? (
+          <PacksComplementaires
+            vehicule={complementaires.vehicule}
+            packs={complementaires.packs}
+            prixDuPackCents={prixDuPackCents}
+            seuilFranchiseCents={seuilFranchiseCents}
+          />
         ) : null}
 
         {/* ---------------- #dans-votre-kit ---------------- */}
