@@ -19,6 +19,7 @@ import {
   type SortKey,
 } from '@/lib/queries/catalogue'
 import { getSelectedVehicle } from '@/lib/session'
+import { prisma } from '@/lib/db'
 
 /**
  * Liste d'une catégorie.
@@ -151,6 +152,20 @@ export async function generateMetadata({
 
   const filters = parseFilters(await searchParams)
   const narrowed = activeCount(filters) > 0 || filters.page > 1
+  /*
+    Une rubrique sans produit en ligne reste ouverte (un lien ancien ne doit
+    pas tomber sur une erreur), mais hors index : une page « aucun produit »
+    proposée par Google déçoit le visiteur et pèse sur la qualité du site.
+    Les sous-rubriques comptent (la taxonomie a deux niveaux).
+  */
+  const enLigne = await prisma.product
+    .count({
+      where: {
+        status: 'PUBLISHED',
+        categories: { some: { category: { OR: [{ slug }, { parent: { slug } }] } } },
+      },
+    })
+    .catch(() => 1)
 
   return {
     title: category.metaTitle ?? category.name,
@@ -158,7 +173,7 @@ export async function generateMetadata({
     // La canonique ignore les filtres : une combinaison de cases cochées ne
     // doit pas devenir une page de plus à indexer.
     alternates: { canonical: `/c/${slug}` },
-    ...(narrowed ? { robots: { index: false, follow: true } } : {}),
+    ...(narrowed || enLigne === 0 ? { robots: { index: false, follow: true } } : {}),
   }
 }
 

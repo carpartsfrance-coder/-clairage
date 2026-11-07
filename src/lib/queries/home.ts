@@ -92,25 +92,88 @@ const universEnCache = lectureCatalogue('accueil-univers-v1', lireUnivers)
 async function lireUnivers(limit: number): Promise<HomeUniverse[]> {
   const [categories, racinesFournies] = await Promise.all([
     prisma.category.findMany({
-      where: { published: true, parentId: null, heroMediaId: { not: null } },
+      where: { published: true, parentId: null },
       orderBy: { position: 'asc' },
       include: { heroMedia: true },
     }),
     racinesAvecProduits(),
   ])
 
-  return categories
-    .filter((category) => racinesFournies.has(category.id))
-    .slice(0, limit)
-    .map((category) => ({
+  const retenues = categories.filter((category) => racinesFournies.has(category.id)).slice(0, limit)
+
+  /*
+    Visuel de repli : la couverture d'un produit de la rubrique.
+
+    Le visuel d'univers se rattache en base (`heroMediaId`), mais aucun écran
+    ne le règle encore : en production, aucune rubrique n'en avait, et
+    l'accueil affichait « Les univers seront affichés ici » à la place des
+    tuiles. La couverture d'un produit de la famille — le feu allumé sur le
+    véhicule — dit la même chose qu'un visuel de rubrique, et c'est une vraie
+    image du catalogue. Un visuel rattaché en base reste prioritaire.
+  */
+  const visuels = await Promise.all(
+    retenues.map((category) =>
+      category.heroMedia
+        ? null
+        : prisma.product.findFirst({
+            where: {
+              status: 'PUBLISHED',
+              media: { some: { role: { in: ['RESULT', 'PRODUCT'] } } },
+              categories: {
+                some: { category: { OR: [{ id: category.id }, { parentId: category.id }] } },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+            select: { name: true, media: { ...ARGS_COUVERTURE, include: { media: true } } },
+          }),
+    ),
+  )
+
+  return retenues.map((category, index) => {
+    const repli = couverture(visuels[index]?.media ?? [])?.media
+    return {
       slug: category.slug,
       name: category.name,
       description: category.description,
       image: category.heroMedia
         ? { url: category.heroMedia.url, alt: category.heroMedia.alt ?? category.name }
-        : null,
-    }))
+        : repli
+          ? { url: repli.url, alt: repli.alt ?? category.name }
+          : null,
+    }
+  })
 }
+
+/**
+ * Les familles du catalogue qui ont des produits en ligne, dans l'ordre du
+ * back-office : raccourcis de la vitrine d'accueil et source de son repli.
+ *
+ * La liste était écrite en dur (« Phares LED », « Intérieur », « Plaque &
+ * recul », « Xénon ») : deux des quatre raccourcis ouvraient une rubrique
+ * vide en production. Elle suit désormais le catalogue.
+ */
+export async function getRubriquesVitrine(): Promise<Array<{ slug: string; label: string }>> {
+  try {
+    return await rubriquesEnCache()
+  } catch (error) {
+    console.error('[accueil] rubriques indisponibles', error)
+    return []
+  }
+}
+
+const rubriquesEnCache = lectureCatalogue('accueil-rubriques-v1', async () => {
+  const [categories, racinesFournies] = await Promise.all([
+    prisma.category.findMany({
+      where: { published: true, parentId: null },
+      orderBy: [{ position: 'asc' }, { name: 'asc' }],
+      select: { id: true, slug: true, name: true },
+    }),
+    racinesAvecProduits(),
+  ])
+  return categories
+    .filter((category) => racinesFournies.has(category.id))
+    .map((category) => ({ slug: category.slug, label: category.name }))
+})
 
 /**
  * Les catégories racines qui mènent à au moins un produit en ligne,
@@ -154,21 +217,6 @@ async function racinesAvecProduits(): Promise<Set<string>> {
 
   return racines
 }
-
-/**
- * Rubriques de la vitrine d'accueil.
- *
- * Elles servent deux fois : les raccourcis affichés au-dessus des cartes, et
- * le repli qui remplit la vitrine quand aucun produit n'est mis en avant. Les
- * tenir ici évite que les deux listes divergent — ce qui arriverait le jour
- * où l'une est modifiée sans l'autre.
- */
-export const VITRINE_RUBRIQUES = [
-  { slug: 'phares-led', label: 'Phares LED' },
-  { slug: 'interieur', label: 'Intérieur' },
-  { slug: 'plaque-recul', label: 'Plaque & recul' },
-  { slug: 'xenon', label: 'Xénon' },
-] as const
 
 /** Ce que la requête doit charger pour composer une carte de vitrine. */
 const CARTE_VITRINE = {
@@ -261,8 +309,9 @@ async function lireVitrine(limit: number): Promise<HomeProduct[]> {
  * C'est un ordre stable et vérifiable, qui n'affirme rien sur les ventes.
  */
 async function echantillonParRubrique(limit: number) {
+  const rubriques = await rubriquesEnCache()
   const parRubrique = await Promise.all(
-    VITRINE_RUBRIQUES.map((rubrique) =>
+    rubriques.map((rubrique) =>
       prisma.product.findFirst({
         where: {
           status: 'PUBLISHED',

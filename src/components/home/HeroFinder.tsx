@@ -103,12 +103,14 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
               priority
               sizes="(min-width: 1024px) 1070px, 100vw"
               /*
-                Calé à gauche au-delà du téléphone, et c'est mesuré : centré,
-                le recadrage plaçait les ampoules entre 50 et 85 % du panneau,
-                c'est-à-dire sous la colonne de texte. Calé à gauche elles
-                occupent 59 à 94 % et lui laissent la place.
+                Calé aux trois quarts au-delà du téléphone. Calé à gauche, il
+                ne valait que pour un panneau aussi large que la maquette : en
+                production, la carte véhicule rend le panneau plus haut, la
+                photo s'agrandit et, à 1 280 px, on ne voyait plus qu'un bord
+                d'ampoule. Aux trois quarts, les deux ampoules restent entières
+                de 1 024 à 1 920 px, à droite du texte (contrôlé en capture).
               */
-              className="object-cover object-[70%_center] sm:object-left"
+              className="object-cover object-[70%_center] sm:object-[76%_center]"
             />
           </div>
 
@@ -133,9 +135,12 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
               /*
                 Mesuré sur la maquette : les deux lignes du titre y font 62 et
                 65 px de haut de capitale pour un interligne de 72 px, ce qui
-                place le corps autour de 80 px à 1536 px de large.
+                place le corps autour de 80 px à 1536 px de large. Mais à ce
+                corps, la colonne de texte (54 % du panneau) coupait le titre
+                en quatre lignes jusqu'à 1 535 px : 60 px puis 68 px le
+                gardent sur deux.
               */
-              className="m-0 mt-3 text-[38px] leading-[0.98] font-extrabold tracking-[-1.6px] text-white sm:text-[54px] sm:tracking-[-2.4px] xl:text-[76px] xl:tracking-[-3.4px]"
+              className="m-0 mt-3 text-[38px] leading-[0.98] font-extrabold tracking-[-1.6px] text-white sm:text-[54px] sm:tracking-[-2.4px] xl:text-[60px] xl:tracking-[-2.8px] 2xl:text-[68px] 2xl:tracking-[-3px]"
             >
               <span className="whitespace-pre-line">{hero.title}</span>
             </h1>

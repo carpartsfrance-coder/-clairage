@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import {
-  VITRINE_RUBRIQUES,
   getFeaturedProducts,
+  getRubriquesVitrine,
   getHomeBlocks,
   getHomeFaq,
   getUniverses,
 } from '@/lib/queries/home'
 import { getSelectedVehicle } from '@/lib/session'
+import { getNavigation } from '@/lib/queries/navigation'
 import { HeroFinder } from '@/components/home/HeroFinder'
 import { ReassuranceBand } from '@/components/home/ReassuranceBand'
 import { UniversesSection } from '@/components/home/UniversesSection'
@@ -32,11 +33,15 @@ export const metadata: Metadata = {
  * section isolément.
  */
 export default async function HomePage() {
-  const [blocks, universes, products, faq, vehicle] = await Promise.all([
+  const [blocks, universes, products, faq, rubriques, navigation, vehicle] = await Promise.all([
     getHomeBlocks(),
     getUniverses(6),
     getFeaturedProducts(4),
     getHomeFaq(4),
+    getRubriquesVitrine(),
+    // Sert seulement à savoir si le parcours moto existe : le menu ne
+    // l'affiche que si une marque moto mène à des produits.
+    getNavigation(),
     // Le bandeau de sélection s'ouvre sur le véhicule déjà retenu plutôt que
     // de redemander ce que l'en-tête affiche.
     getSelectedVehicle(),
@@ -66,14 +71,18 @@ export default async function HomePage() {
            forcément les mêmes. */
         filters={[
           { label: 'Tout découvrir', href: '/c' },
-          ...VITRINE_RUBRIQUES.map((rubrique) => ({
+          ...rubriques.slice(0, 4).map((rubrique) => ({
             label: rubrique.label,
             href: `/c/${rubrique.slug}`,
           })),
         ]}
       />
       <MethodSection content={blocks.method} />
-      <MotoSection content={blocks.moto} />
+      {/* Pas de mise en avant moto tant qu'aucun pack moto n'est en ligne :
+          son bouton menait à « Aucune marque moto n'est encore référencée ». */}
+      {navigation.some((section) => section.key === 'packs-moto') ? (
+        <MotoSection content={blocks.moto} />
+      ) : null}
       <FaqHelpSection faq={faq} help={blocks.help} />
     </>
   )
