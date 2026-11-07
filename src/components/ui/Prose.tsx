@@ -27,10 +27,13 @@ import { Fragment, type ReactNode } from 'react'
  */
 
 /** Découpe une ligne sur les `**…**` et rend les segments en gras. */
-function emphases(ligne: string, cle: string): ReactNode[] {
+function emphases(ligne: string, cle: string, sombre = false): ReactNode[] {
   return ligne.split(/(\*\*[^*]+\*\*)/g).map((morceau, index) =>
     morceau.startsWith('**') && morceau.endsWith('**') && morceau.length > 4 ? (
-      <strong key={`${cle}-${index}`} className="font-bold text-slate-ink">
+      <strong
+        key={`${cle}-${index}`}
+        className={sombre ? 'font-bold text-white' : 'font-bold text-slate-ink'}
+      >
         {morceau.slice(2, -2)}
       </strong>
     ) : (
@@ -49,7 +52,20 @@ function celluleDeTableau(ligne: string): [string, string] | null {
   return [cellules[0], cellules[1]]
 }
 
-export function Prose({ children, className }: { children: string; className?: string }) {
+export function Prose({
+  children,
+  className,
+  sombre = false,
+}: {
+  children: string
+  className?: string
+  /**
+   * Texte posé sur un fond sombre (« Le pack en bref » de la fiche produit) :
+   * couleurs claires et corps plus grand. Les autres pages gardent le rendu
+   * clair par défaut.
+   */
+  sombre?: boolean
+}) {
   const blocs = children.split(/\n{2,}/).filter((bloc) => bloc.trim().length > 0)
 
   return (
@@ -66,15 +82,27 @@ export function Prose({ children, className }: { children: string; className?: s
           return (
             <dl
               key={index}
-              className="my-5 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-line pt-4 fiche:grid-cols-[auto_1fr]"
+              className={`my-5 grid grid-cols-1 gap-x-6 gap-y-2 border-t pt-4 fiche:grid-cols-[auto_1fr] ${sombre ? 'border-[#2a2d32]' : 'border-line'}`}
             >
               {retenues.map(([terme, valeur], i) => (
                 <Fragment key={`${index}-${i}`}>
-                  <dt className="text-[10px] font-bold tracking-[0.3px] text-[#7a7b77] uppercase">
+                  <dt
+                    className={
+                      sombre
+                        ? 'text-[12px] font-bold tracking-[0.3px] text-[#a9adb4] uppercase'
+                        : 'text-[10px] font-bold tracking-[0.3px] text-[#7a7b77] uppercase'
+                    }
+                  >
                     {terme}
                   </dt>
-                  <dd className="mb-2 text-[12px] leading-[1.7] text-slate-ink fiche:mb-0">
-                    {emphases(valeur, `${index}-${i}`)}
+                  <dd
+                    className={
+                      sombre
+                        ? 'mb-2 text-[15px] leading-[1.7] text-[#e7e8ea] fiche:mb-0'
+                        : 'mb-2 text-[12px] leading-[1.7] text-slate-ink fiche:mb-0'
+                    }
+                  >
+                    {emphases(valeur, `${index}-${i}`, sombre)}
                   </dd>
                 </Fragment>
               ))}
@@ -86,7 +114,11 @@ export function Prose({ children, className }: { children: string; className?: s
           return (
             <h3
               key={index}
-              className="mt-7 mb-2.5 text-[15px] leading-[1.3] font-bold tracking-[-0.3px] fiche:text-[17px]"
+              className={
+                sombre
+                  ? 'mt-7 mb-2.5 text-[18px] leading-[1.3] font-bold tracking-[-0.3px] text-white fiche:text-[20px]'
+                  : 'mt-7 mb-2.5 text-[15px] leading-[1.3] font-bold tracking-[-0.3px] fiche:text-[17px]'
+              }
             >
               {bloc.slice(3).trim()}
             </h3>
@@ -94,11 +126,18 @@ export function Prose({ children, className }: { children: string; className?: s
         }
 
         return (
-          <p key={index} className="mb-3.5 text-[12px] leading-[1.85] text-[#4c4c4c] fiche:text-[13px]">
+          <p
+            key={index}
+            className={
+              sombre
+                ? 'mb-4 text-[16px] leading-[1.7] text-[#c9ccd1] fiche:text-[17px]'
+                : 'mb-3.5 text-[12px] leading-[1.85] text-[#4c4c4c] fiche:text-[13px]'
+            }
+          >
             {lignes.map((ligne, i) => (
               <Fragment key={`${index}-${i}`}>
                 {i > 0 ? <br /> : null}
-                {emphases(ligne, `${index}-${i}`)}
+                {emphases(ligne, `${index}-${i}`, sombre)}
               </Fragment>
             ))}
           </p>

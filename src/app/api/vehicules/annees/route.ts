@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { GENERATION_VISIBLE } from '@/lib/queries/vehicules-visibles'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * Années couvertes par les générations d'un modèle.
  * Une génération encore produite (yearTo nul) est bornée à l'année courante.
+ *
+ * Seules les générations visibles comptent : une année qui ne mène qu'à des
+ * véhicules sans produit serait un cul-de-sac proposé en toute confiance.
  */
 export async function GET(request: Request) {
   const modelId = new URL(request.url).searchParams.get('modelId')
   if (!modelId) return NextResponse.json({ items: [] })
   try {
     const generations = await prisma.vehicleGeneration.findMany({
-      where: { modelId, active: true },
+      where: { modelId, ...GENERATION_VISIBLE },
       select: { yearFrom: true, yearTo: true },
     })
     const currentYear = new Date().getFullYear()

@@ -1,4 +1,5 @@
 import 'server-only'
+import { visuelsDeLaFiche } from '../media-couverture'
 import { prisma } from '../db'
 import {
   resolveFitments,
@@ -305,7 +306,7 @@ export async function getProduct(
         )
       : null
 
-    const gallery: GalleryItem[] = product.media
+    const gallery: GalleryItem[] = visuelsDeLaFiche(product.media)
       .map((entry) => ({
         url: entry.media.url,
         alt: entry.media.alt ?? product.name,

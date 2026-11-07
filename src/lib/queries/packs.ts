@@ -4,6 +4,7 @@ import { recommendPackaging } from '../recommendation'
 import { availabilityForKit, availabilityForVariant, isPurchasable } from '../stock'
 import type { FitmentStatus } from '../fitment'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
+import { GENERATION_VISIBLE, MARQUE_VISIBLE, MODELE_VISIBLE } from './vehicules-visibles'
 
 /**
  * Parcours « packs par véhicule » : marque → modèle → génération → éclairages.
@@ -41,7 +42,7 @@ export const LIBELLE_PAR_CHEMIN: Record<string, { court: string; long: string }>
 export type PackMake = {
   slug: string
   name: string
-  /** Modèles actifs : ce que la page de la marque ouvrira. */
+  /** Modèles visibles : ce que la page de la marque ouvrira, et rien de plus. */
   modelCount: number
   /**
    * Logo rattaché à la marque, s'il y en a un.
@@ -107,7 +108,10 @@ export function yearsLabel(yearFrom: number, yearTo: number | null): string {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Marques d'un type donné, avec au moins un modèle actif.
+ * Marques d'un type donné qui mènent à au moins un produit en ligne.
+ *
+ * Le filtre est calculé, jamais listé — voir `vehicules-visibles.ts`. Une
+ * marque dont les fiches repassent en ligne réapparaît d'elle-même.
  *
  * Renvoie `null` si la lecture échoue — et c'est tout l'intérêt de la
  * distinction. Cette fonction rendait `[]` dans les deux cas, si bien qu'une
@@ -119,10 +123,10 @@ export function yearsLabel(yearFrom: number, yearTo: number | null): string {
 export async function listPackMakes(type: PackVehicleType): Promise<PackMake[] | null> {
   try {
     const makes = await prisma.vehicleMake.findMany({
-      where: { type, active: true, models: { some: { active: true } } },
+      where: { type, ...MARQUE_VISIBLE },
       orderBy: [{ position: 'asc' }, { name: 'asc' }],
       include: {
-        _count: { select: { models: { where: { active: true } } } },
+        _count: { select: { models: { where: MODELE_VISIBLE } } },
         // Relation en `SET NULL` : supprimer un média détache le logo, il ne
         // fait pas disparaître la marque, et l'affichage reprend le monogramme.
         logo: { select: { url: true, alt: true } },
@@ -153,14 +157,14 @@ export async function getPackMake(
 ): Promise<PackLookup<PackMakeDetail>> {
   try {
     const make = await prisma.vehicleMake.findFirst({
-      where: { slug, type, active: true },
+      where: { slug, type, ...MARQUE_VISIBLE },
       include: {
         models: {
-          where: { active: true },
+          where: MODELE_VISIBLE,
           orderBy: { name: 'asc' },
           include: {
             generations: {
-              where: { active: true },
+              where: GENERATION_VISIBLE,
               orderBy: { yearFrom: 'asc' },
               include: {
                 _count: { select: { configurations: { where: { active: true } } } },
@@ -199,7 +203,9 @@ export async function getPackMake(
                 : null,
             })),
           }))
-          // Un modèle sans génération active n'ouvre sur rien.
+          // Un modèle sans génération visible n'ouvre sur rien. Le filtre
+          // Prisma l'écarte déjà, mais une relation vide est si peu coûteuse à
+          // relire qu'on préfère la vérifier que de la supposer.
           .filter((model) => model.generations.length > 0),
       },
     }
@@ -282,8 +288,12 @@ export async function getPackGeneration(
     const generation = await prisma.vehicleGeneration.findFirst({
       where: {
         slug: generationSlug,
-        active: true,
-        model: { slug: modelSlug, active: true, make: { slug: makeSlug, type, active: true } },
+        ...GENERATION_VISIBLE,
+        model: {
+          slug: modelSlug,
+          ...MODELE_VISIBLE,
+          make: { slug: makeSlug, type, ...MARQUE_VISIBLE },
+        },
       },
       include: {
         model: { include: { make: { include: { logo: { select: { url: true, alt: true } } } } } },

@@ -5,7 +5,7 @@ import { getProduct } from '@/lib/queries/product'
 import { getSelectedVehicle } from '@/lib/session'
 import { getStaffUser } from '@/lib/admin/guard'
 import { getShippingOffers } from '@/lib/shipping'
-import { commercialTerms, siteConfig } from '@/lib/identity'
+import { commercialTerms, identity, siteConfig } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import {
   BreadcrumbStructuredData,
@@ -22,20 +22,27 @@ import { OptionalAddons } from '@/components/product/OptionalAddons'
 import { ProductConfigurationProvider } from '@/components/product/ProductConfiguration'
 import { SectionNav } from '@/components/product/SectionNav'
 import { Prose } from '@/components/ui/Prose'
-import { ToneComparison } from '@/components/product/ToneComparison'
-import { Card, EmptyState } from '@/components/ui/Surface'
-import { ButtonLink } from '@/components/ui/Button'
-import { IconCar, IconHeadset, IconShield, IconWrench } from '@/components/ui/icons'
+import { ToneSlider } from '@/components/product/ToneSlider'
+import { Card } from '@/components/ui/Surface'
+import {
+  IconCar,
+  IconCheck,
+  IconHeadset,
+  IconPack,
+  IconReturn,
+  IconWrench,
+} from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 
 /**
  * Fiche produit — `reference-site/product.html` du dossier de référence.
  *
- * L'ordre des sections est celui de la référence : contexte véhicule, galerie
- * et achat, réassurance, ancres, comparaison, contenu du kit, installation,
- * compléments, questions, assistance. Les valeurs de `styles.css` sont
- * reprises telles quelles — la bascule en colonne unique se fait à 800 px
- * (préfixe `fiche:`), pas au `lg` de Tailwind.
+ * Refonte LEDVROOM (novembre 2026), d'après la maquette validée par
+ * l'exploitant : galerie carrée et promesses à gauche, titre et achat compacts
+ * à droite (prix et bouton visibles sans défiler), puis « Le pack en bref »
+ * (description et rendu), le contenu du pack, les compléments et les
+ * questions. La section Installation n'existe plus sur la fiche. La bascule
+ * en colonne unique reste à 800 px (préfixe `fiche:`).
  *
  * Deux choses traversent toute la page :
  *
@@ -55,15 +62,6 @@ type PageProps = {
   params: Promise<{ slug: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
-
-const DIFFICULTY_LABELS: Record<string, string> = {
-  EASY: 'Niveau accessible',
-  MEDIUM: 'Niveau intermédiaire',
-  HARD: 'Niveau confirmé',
-}
-
-/** Nombre de barres allumées dans la pastille de niveau. */
-const DIFFICULTY_BARS: Record<string, number> = { EASY: 1, MEDIUM: 2, HARD: 3 }
 
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
@@ -161,7 +159,6 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     de page comme dans le bloc d'achat.
   */
   const aContenuKit = Boolean(kitVariant) || product.specs.length > 0
-  const aContenuMontage = product.guides.length > 0 || product.difficulty !== 'UNKNOWN'
   const aContenuQuestions = product.faq.length > 0 || product.reviews.length > 0
 
   /*
@@ -185,17 +182,72 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     avec les caractéristiques, dont il est le développement, plutôt que
     d'ouvrir la page sur un pavé de texte.
   */
+  /*
+    Refonte LEDVROOM — l'ordre suit la décision d'achat : ce que fait le pack
+    (et son rendu), ce qu'on reçoit, puis les questions.
+
+    La section Installation est retirée de la fiche, à la demande de
+    l'exploitant. Ce qu'elle portait d'indispensable — ce que le
+    conditionnement choisi ne fournit pas, et ses restrictions de montage —
+    passe avec le contenu du pack, où il se lit au moment de choisir.
+  */
+  const aEnBref = aDescription || Boolean(rendu)
+  const aRestrictions = product.variants.some(
+    (variant) => variant.missingAccessories.length > 0 || Boolean(variant.fitment.restrictions),
+  )
+  const aSectionContenu = aContenuKit || aRestrictions
+
   const sections = [
-    ...(aContenuKit
-      ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans votre pack' : 'Caractéristiques' }]
+    ...(aEnBref ? [{ href: '#en-bref', label: 'Le pack en bref' }] : []),
+    ...(aSectionContenu
+      ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans la boîte' : 'Caractéristiques' }]
       : []),
-    ...(rendu ? [{ href: '#rendu', label: 'Le rendu' }] : []),
-    ...(aDescription ? [{ href: '#description', label: 'La référence' }] : []),
-    ...(aContenuMontage ? [{ href: '#montage', label: 'Installation' }] : []),
+    ...(product.optionalAddons.length > 0 ? [{ href: '#complements', label: 'Compléments' }] : []),
     ...(aContenuQuestions ? [{ href: '#questions', label: 'Vos questions' }] : []),
   ]
 
-  const barres = DIFFICULTY_BARS[product.difficulty] ?? 0
+  /*
+    Les promesses de la fiche, posées sous la photo.
+
+    Elles valent pour toute référence du catalogue. « Tout est dans la boîte »
+    n'est dit que d'un produit vendu en kit : sur un conditionnement sans
+    composition, la promesse serait fausse, et la place revient au délai de
+    retour.
+  */
+  const promesses: Promesse[] = [
+    {
+      Icon: IconCar,
+      titre: 'Pensé pour votre véhicule',
+      texte: 'Compatibilité indiquée par emplacement',
+    },
+    {
+      Icon: IconWrench,
+      titre: 'Sans modifier le câblage',
+      texte: 'Adaptateurs nécessaires signalés',
+    },
+    ...(kitVariant
+      ? [
+          {
+            Icon: IconPack,
+            titre: 'Tout est dans la boîte',
+            texte: 'Ampoules et accessoires nécessaires',
+          },
+        ]
+      : commercialTerms.returnWindowDays
+        ? [
+            {
+              Icon: IconReturn,
+              titre: `Retours sous ${commercialTerms.returnWindowDays} jours`,
+              texte: 'Le temps de changer d’avis',
+            },
+          ]
+        : []),
+    {
+      Icon: IconHeadset,
+      titre: 'Un humain vous aide',
+      texte: 'Du choix jusqu’au montage',
+    },
+  ]
 
   return (
     <ProductConfigurationProvider
@@ -204,17 +256,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     >
       {/*
         La barre d'achat fixe occupe le bas de l'écran : on lui réserve sa
-        hauteur, plus la zone de sécurité des téléphones à encoche, pour
-        qu'elle ne recouvre jamais la fin de la page.
+        hauteur, plus la zone de sécurité des téléphones à encoche.
       */}
-      <div className="pb-[calc(77px+env(safe-area-inset-bottom))] fiche:pb-[78px]">
+      <div className="pb-[calc(76px+env(safe-area-inset-bottom))] fiche:pb-[78px]">
         {/*
           Données structurées : voir StructuredData.tsx — rien n'y est émis en
-          préproduction, et rien n'y est affirmé qui ne soit en base.
-
-          Rien non plus en aperçu : une fiche en brouillon n'a ni prix ni
-          disponibilité à déclarer à un moteur, et le `noindex` de la page ne
-          suffit pas — un balisage reste lisible par tout ce qui lit la page.
+          préproduction, ni en aperçu.
         */}
         {apercu ? null : (
           <>
@@ -224,14 +271,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           </>
         )}
 
-        {/*
-          Bandeau d'aperçu : il dit ce qu'on regarde et ce qu'il reste à faire.
-          Sans lui, une fiche en brouillon est indiscernable d'une fiche en
-          ligne, et on finit par croire qu'elle est publiée.
-        */}
+        {/* Bandeau d'aperçu : une fiche en brouillon ne se confond pas avec une fiche en ligne. */}
         {apercu ? (
           <div className="border-b border-warn-border bg-warn-soft">
-            <div className="container-page flex flex-wrap items-center gap-3 py-2.5 text-[11px] text-warn">
+            <div className="container-page flex flex-wrap items-center gap-3 py-2.5 text-[13px] text-warn">
               <strong className="font-bold">Aperçu — fiche non publiée</strong>
               <span>Cette page n’est visible que par l’équipe, et n’est pas indexée.</span>
               <Link
@@ -247,340 +290,246 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         <div className="container-page">
           <Breadcrumb items={breadcrumbItems} />
 
-          {/*
-            Masqué sous le basculement : le header mobile porte déjà un bandeau
-            véhicule, et le bloc d'achat nomme le véhicule ET dit ce qu'il
-            implique pour cette référence. Trois rappels empilés sur un écran de
-            téléphone, c'est deux de trop — la référence, elle, n'a pas de
-            bandeau véhicule dans son header.
-          */}
-          <VehicleBar vehicle={vehicle} className="mb-[27px] max-fiche:hidden" />
+          {/* Masqué sur téléphone : le header mobile porte déjà le véhicule. */}
+          <VehicleBar vehicle={vehicle} className="mb-6 max-fiche:hidden" />
 
           {/*
-            .product-hero — galerie à gauche (1,07fr), titre et achat à droite
-            (1fr), 62 px d'écart. Sous 800 px la maquette passe en colonne
-            unique : le titre vient AVANT la galerie, puis le bloc d'achat.
-            Même résultat ici par placement explicite en grille.
+            .product-hero — refonte LEDVROOM.
 
-            Sans aucun visuel, la grille se réduit à une colonne. Le cadre
-            affichait « Aucun visuel disponible » sur 435 px de haut : une
-            moitié d'écran pour annoncer une absence, sur une fiche
-            d'accessoire qui n'a souvent rien à montrer. Un visuel manquant est
-            une tâche d'administration, pas une information pour le client.
+            Galerie carrée à gauche, avec les promesses dessous ; titre et achat
+            à droite, prix et bouton visibles sans défiler. Sur téléphone : le
+            titre, puis la photo, puis l'achat — les promesses passent après le
+            bouton.
           */}
           <section
             aria-label={product.name}
             className={cn(
-              'flex flex-col pt-[6px] pb-[27px] fiche:items-start fiche:pt-[9px] fiche:pb-10',
+              'flex flex-col pt-1.5 pb-8 fiche:items-start fiche:pt-2 fiche:pb-14',
               aVisuel
-                ? 'fiche:grid fiche:grid-cols-[minmax(0,1.07fr)_minmax(0,1fr)] fiche:gap-x-[36px] min-[1101px]:gap-x-[62px] min-[1450px]:gap-x-[74px]'
+                ? 'fiche:grid fiche:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] fiche:gap-x-10 min-[1101px]:gap-x-14 min-[1450px]:gap-x-16'
                 : 'fiche:max-w-[620px]',
             )}
           >
-            {/* .gallery */}
             {aVisuel ? (
-              <div className="order-2 mt-1 fiche:order-none fiche:mt-0">
+              <div className="order-2 mt-4 fiche:order-none fiche:mt-0">
                 <ProductGallery items={product.gallery} productName={product.name} />
+                <ListePromesses promesses={promesses} className="mt-6 hidden fiche:grid" />
               </div>
             ) : null}
 
             {/*
-              .purchase — un seul enfant de grille sur grand écran, pour que le
-              titre et le bloc d'achat se suivent sans l'écart de 58 px de la
-              grille. Sous le basculement, `display:contents` le dissout : ses
-              deux enfants redeviennent des éléments de la colonne, et leur
-              ordre place le titre avant la galerie, comme dans la référence.
+              Un seul enfant de grille sur grand écran ; sous le basculement,
+              `display:contents` le dissout et le titre passe avant la galerie.
             */}
             <div className="contents fiche:block">
-            {/*
-              .product-title-block — la V2 remonte la température de couleur du
-              titre vers la ligne de caractéristiques, où elle voisine le
-              conditionnement et la présence des accessoires. Le titre reprend
-              le nom tel qu'il est au catalogue : le découper en deux lignes
-              comme la maquette supposerait d'y deviner une césure, et un nom
-              de produit n'en porte pas.
-            */}
-            <ProductTitle
-              eyebrow={eyebrow}
-              name={product.name}
-              secondLine={
-                product.colorTemperature
-                  ? `Blanc ${product.colorTemperature.toLocaleString('fr-FR')} K`
-                  : null
-              }
-              tagline={product.tagline}
-            />
-
-            {/* .buybox */}
-            <div className="order-3 mt-6 fiche:mt-0">
-              <BuyBox
-                productName={product.name}
-                thumbnail={
-                  product.gallery[0]
-                    ? { url: product.gallery[0].url, alt: product.gallery[0].alt }
+              <ProductTitle
+                eyebrow={eyebrow}
+                name={product.name}
+                secondLine={
+                  product.colorTemperature
+                    ? `Blanc ${product.colorTemperature.toLocaleString('fr-FR')} K`
                     : null
                 }
-                variants={product.variants}
-                recommendedVariantId={product.recommendedVariantId}
-                vehicleLabel={vehicle?.label ?? null}
-                shippingOffers={shippingOffers}
-                returnWindowDays={commercialTerms.returnWindowDays}
+                tagline={product.tagline}
               />
-            </div>
+
+              <div className="order-3 mt-5 fiche:mt-6">
+                <BuyBox
+                  productName={product.name}
+                  thumbnail={
+                    product.gallery[0]
+                      ? { url: product.gallery[0].url, alt: product.gallery[0].alt }
+                      : null
+                  }
+                  variants={product.variants}
+                  recommendedVariantId={product.recommendedVariantId}
+                  vehicleLabel={vehicle?.label ?? null}
+                  shippingOffers={shippingOffers}
+                  returnWindowDays={commercialTerms.returnWindowDays}
+                />
+              </div>
             </div>
           </section>
         </div>
 
-        {/* ---------------- .assurance-strip ---------------- */}
-        <section
-          aria-label="Nos engagements"
-          className="border-t border-[#ececec] border-b-[#e9eee0] bg-[#f5f5f5]"
-        >
-          <div className="container-page grid gap-[17px] py-[21px] fiche:flex fiche:min-h-[87px] fiche:items-center fiche:justify-between fiche:gap-5 fiche:py-0 min-[1101px]:gap-[25px]">
-            {[
-              {
-                Icon: IconCar,
-                title: 'Pensé pour votre véhicule',
-                text: 'La compatibilité est indiquée par emplacement, avec sa source.',
-              },
-              {
-                Icon: IconWrench,
-                title: 'Sans modifier le câblage',
-                text: "Quand le montage l'exige, les adaptateurs sont signalés.",
-              },
-              {
-                Icon: IconShield,
-                title: 'Accompagné de A à Z',
-                text: 'Du choix du kit à son installation.',
-              },
-            ].map(({ Icon, title, text }) => (
-              <div key={title} className="flex items-center gap-3 min-[1101px]:gap-3.5">
-                <Icon
-                  className="size-[23px] shrink-0 text-[#656565] min-[1101px]:size-[25px]"
-                  strokeWidth={1.3}
-                />
-                <span className="min-w-0">
-                  <strong className="block text-[11px] font-semibold min-[1450px]:text-[12px]">
-                    {title}
-                  </strong>
-                  <small className="mt-[2px] block text-[10px] text-[#8a8a8a] fiche:mt-[3px] min-[1101px]:text-[9px] min-[1281px]:text-[10px] min-[1450px]:text-[11px] min-[1450px]:text-[#7c7c7c]">
-                    {text}
-                  </small>
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Les promesses sur téléphone (et sur une fiche sans visuel) : après le bouton. */}
+        <div className={cn('container-page pb-10', aVisuel && 'fiche:hidden')}>
+          <ListePromesses promesses={promesses} className="grid" />
+        </div>
 
         {/* ---------------- .section-nav ---------------- */}
-        {sections.length > 0 ? <SectionNav items={sections} /> : null}
+        {/* Une seule ancre ne sert à rien : la barre n'apparaît qu'à partir de deux sections. */}
+        {sections.length > 1 ? <SectionNav items={sections} /> : null}
 
-        {/* ---------------- #dans-votre-kit ---------------- */}
-        {aContenuKit ? (
-        <>
-        {/*
-          La référence nomme cette section `#contenu`. Cet identifiant est déjà
-          pris ici : le lien d'évitement du gabarit pointe sur `<main
-          id="contenu">`. Deux éléments portaient donc le même identifiant, et
-          « Voir le contenu » comme l'onglet renvoyaient en haut de page au lieu
-          de la section. D'où ce nom distinct.
-        */}
-        <section
-          id="dans-votre-kit"
-          aria-labelledby="titre-contenu"
-          className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
-        >
-          {/* .section-heading : titre à gauche, précision à droite. */}
-          <div className="mb-[22px] block justify-between fiche:mb-[30px] fiche:flex fiche:items-end">
-            <div>
-              <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
-                Tout est prévu
-              </p>
-              <h2
-                id="titre-contenu"
-                className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]"
-              >
-                {kitVariant ? 'Ouvrez. Installez. Profitez.' : 'Caractéristiques'}
-              </h2>
-            </div>
-            <p className="mt-[11px] text-[10px] leading-[1.7] text-[#828282] fiche:mt-0 fiche:text-right fiche:text-[11px]">
-              Ce que réunit le conditionnement
-              <span className="hidden fiche:inline">
-                <br />
-              </span>{' '}
-              retenu dans le bloc d&apos;achat.
-            </p>
-          </div>
-
-          <KitContents
-            image={visuelKit?.url ?? null}
-            imageAlt={visuelKit?.alt ?? `${product.name} — contenu`}
-          />
-
-          {product.specs.length > 0 ? (
-            <div className={cn(kitVariant && 'mt-10')}>
-              <h3 className="text-[12px] font-bold">Caractéristiques</h3>
-              <dl className="mt-3 grid gap-x-12 border-t border-line fiche:grid-cols-2">
-                {product.specs.map((spec) => (
-                  <div
-                    key={spec.label}
-                    className="flex gap-4 border-b border-line py-2.5 text-[11px]"
-                  >
-                    <dt className="w-40 shrink-0 text-[#828282]">{spec.label}</dt>
-                    <dd className="font-semibold">{spec.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          ) : null}
-        </section>
-        </>
-        ) : null}
-
-        {/* ---------------- #rendu ---------------- */}
-        {rendu ? (
-          <ToneComparison
-            title={'Votre voiture.\nUn autre regard.'}
-            subtitle={product.description}
-            image={rendu.url}
-            imageAlt={rendu.alt}
-          />
-        ) : null}
-
-        {/* ---------------- #description ---------------- */}
-        {aDescription ? (
+        {/* ---------------- #en-bref : la description, et le rendu ---------------- */}
+        {aEnBref ? (
           <section
-            id="description"
-            aria-labelledby="titre-description"
-            className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
+            id="en-bref"
+            aria-labelledby="titre-en-bref"
+            className="on-dark scroll-mt-32 bg-[#111214] text-white"
           >
-            <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
-              La référence
-            </p>
-            <h2
-              id="titre-description"
-              className="mb-[22px] text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:mb-[25px] fiche:text-[29px] fiche:tracking-[-1px]"
-            >
-              {product.name}
-            </h2>
-            <Prose className="max-w-[680px]">{product.body ?? ''}</Prose>
+            <div className="container-page flex flex-col gap-14 py-12 fiche:py-20">
+              <div
+                className={cn(
+                  'flex flex-col gap-10',
+                  rendu && 'fiche:grid fiche:grid-cols-2 fiche:items-center fiche:gap-14',
+                )}
+              >
+                <div className={cn(!rendu && 'max-w-[760px]')}>
+                  <p className="mb-3 text-[12px] font-bold tracking-[1.4px] text-brand-on-dark uppercase">
+                    Le pack en bref
+                  </p>
+                  <h2
+                    id="titre-en-bref"
+                    className="text-[28px] leading-[1.12] font-bold tracking-[-0.8px] fiche:text-[38px] fiche:tracking-[-1.2px]"
+                  >
+                    {product.tagline ?? product.name}
+                  </h2>
+                  {/*
+                    Le rédactionnel long de la fiche. Sans lui, l'accroche
+                    courte du rendu prend sa place.
+                  */}
+                  {aDescription ? (
+                    <Prose sombre className="mt-6">
+                      {product.body ?? ''}
+                    </Prose>
+                  ) : product.description ? (
+                    <p className="mt-5 text-[16px] leading-[1.7] text-[#c9ccd1] fiche:text-[17px]">
+                      {product.description}
+                    </p>
+                  ) : null}
+                </div>
+
+                {rendu ? <ToneSlider image={rendu.url} imageAlt={rendu.alt} /> : null}
+              </div>
+
+              {/*
+                Pourquoi un pack plutôt que des ampoules « universelles ».
+                Chaque ligne dit ce que la boutique fait réellement pour toute
+                référence montée sur un véhicule — rien de plus. Montré
+                seulement pour un produit lié à un emplacement d'éclairage.
+              */}
+              {position ? (
+                <div className="flex flex-col gap-8 border-t border-[#2a2d32] pt-12 fiche:grid fiche:grid-cols-[0.8fr_1.2fr] fiche:items-start fiche:gap-14">
+                  <div>
+                    <p className="mb-3 text-[12px] font-bold tracking-[1.4px] text-brand-on-dark uppercase">
+                      Pourquoi un pack {identity.name}
+                    </p>
+                    <h3 className="text-[24px] leading-[1.15] font-bold tracking-[-0.6px] fiche:text-[30px]">
+                      Des LED qui vont vraiment sur votre voiture.
+                    </h3>
+                    <p className="mt-4 text-[16px] leading-[1.7] text-[#c9ccd1]">
+                      Des ampoules LED, on en trouve partout. Savoir lesquelles rentrent dans
+                      votre phare, sans erreur au tableau de bord, c’est notre métier.
+                    </p>
+                  </div>
+
+                  <table className="w-full border-collapse text-[14px] fiche:text-[15px]">
+                    <thead>
+                      <tr>
+                        <th scope="col" className="py-3 text-left">
+                          <span className="sr-only">Critère</span>
+                        </th>
+                        <th
+                          scope="col"
+                          className="w-[30%] px-2 py-3 text-center font-semibold text-[#a9adb4]"
+                        >
+                          LED « universelles »
+                        </th>
+                        <th scope="col" className="w-[30%] px-2 py-3 text-center font-bold">
+                          Pack {identity.name}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { critere: 'Compatibilité vérifiée pour votre véhicule', ailleurs: 'À vérifier vous-même' },
+                        { critere: 'Équipement d’origine pris en compte (halogène, xénon, LED)', ailleurs: 'À vérifier vous-même' },
+                        { critere: 'Adaptateurs nécessaires signalés', ailleurs: 'À trouver ailleurs' },
+                        { critere: 'Un conseiller avant et après l’achat', ailleurs: '—' },
+                      ].map((ligne) => (
+                        <tr key={ligne.critere} className="border-t border-[#2a2d32]">
+                          <th scope="row" className="py-3.5 pr-3 text-left font-medium text-[#e7e8ea]">
+                            {ligne.critere}
+                          </th>
+                          <td className="px-2 py-3.5 text-center text-[#a9adb4]">{ligne.ailleurs}</td>
+                          <td className="px-2 py-3.5 text-center">
+                            <span className="inline-grid size-7 place-items-center rounded-full bg-ok text-white">
+                              <IconCheck className="size-4" strokeWidth={2.5} />
+                            </span>
+                            <span className="sr-only">Oui</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </div>
           </section>
         ) : null}
 
-        {/* ---------------- #montage ---------------- */}
-        {aContenuMontage ? (
-        <section
-          id="montage"
-          aria-labelledby="titre-montage"
-          className="scroll-mt-32 border-y border-[#ececec] bg-surface-paper py-[35px] fiche:py-[50px]"
-        >
-          {/* .install-layout : texte à gauche (.85fr), étapes à droite. */}
-          <div className="container-page block fiche:grid fiche:grid-cols-[0.85fr_1.15fr] fiche:items-center fiche:gap-[40px] min-[1101px]:gap-[76px]">
-            <div>
-              <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
-                Du choix au premier allumage
-              </p>
-              <h2
-                id="titre-montage"
-                className="mb-4 text-[28px] leading-[1.12] font-bold tracking-[-0.9px] fiche:text-[32px]"
-              >
-                Le montage,
-                <br />
-                bien accompagné.
-              </h2>
-              <p className="max-w-full text-[11px] leading-[1.8] text-[#767676] fiche:max-w-[310px]">
-                Retrouvez les étapes et les points à vérifier avant de commencer.
-              </p>
-
-              {/* .level-pill : le niveau réellement enregistré, ou son absence. */}
-              <p className="mt-3.5 flex items-center gap-2 text-[9px] text-[#626262] fiche:mt-[18px]">
-                <span aria-hidden="true" className="flex items-end gap-0.5">
-                  {[6, 9, 12].map((hauteur, index) => (
-                    <i
-                      key={hauteur}
-                      style={{ height: `${hauteur}px` }}
-                      className={cn(
-                        'block w-1 rounded-[1px]',
-                        index < barres ? 'bg-[#363e34]' : 'bg-[#d3d3d3]',
-                      )}
-                    />
-                  ))}
-                </span>
-                {DIFFICULTY_LABELS[product.difficulty] ??
-                  'Difficulté de montage non évaluée pour cette référence'}
-              </p>
-
-              {/* Le bouton ne s'affiche que s'il mène quelque part : sans
-                  guide publié, il ouvrait une page vide. */}
-              {product.guides.length > 0 ? (
-                <ButtonLink
-                  href="/guides"
-                  variant="secondary"
-                  className="mt-4 min-h-[42px] gap-4 rounded-md px-[17px] text-[11px] fiche:mt-5"
+        {/* ---------------- #dans-votre-kit ---------------- */}
+        {aSectionContenu ? (
+          /*
+            La référence nomme cette section `#contenu` ; cet identifiant est
+            pris par le lien d'évitement du gabarit (`<main id="contenu">`),
+            d'où ce nom distinct.
+          */
+          <section
+            id="dans-votre-kit"
+            aria-labelledby="titre-contenu"
+            className="container-page scroll-mt-32 py-12 fiche:py-20"
+          >
+            <div className="mb-6 fiche:mb-8 fiche:flex fiche:items-end fiche:justify-between fiche:gap-8">
+              <div>
+                <p className="mb-2 text-[12px] font-bold tracking-[1.4px] text-brand uppercase">
+                  Tout est prévu
+                </p>
+                <h2
+                  id="titre-contenu"
+                  className="text-[26px] leading-[1.2] font-bold tracking-[-0.6px] fiche:text-[32px]"
                 >
-                  Découvrir les guides
-                </ButtonLink>
-              ) : null}
+                  {kitVariant ? 'Dans la boîte' : 'Caractéristiques'}
+                </h2>
+              </div>
+              <p className="mt-2 text-[14px] text-[#5f6266] fiche:mt-0 fiche:text-right">
+                Ce que réunit le conditionnement retenu dans le bloc d&apos;achat.
+              </p>
             </div>
 
-            <div className="mt-[30px] fiche:mt-0">
-              {product.guides.length > 0 ? (
-                <ol>
-                  {product.guides.map((guide, index) => (
-                    /* .step : pastille numérotée, filet de liaison, intitulé. */
-                    <li key={guide.slug} className="relative flex gap-[17px] pb-[23px] fiche:pb-[26px]">
-                      {index < product.guides.length - 1 ? (
-                        <span
-                          aria-hidden="true"
-                          className="absolute top-8 bottom-0 left-[15px] w-px bg-[#d8d8d8]"
-                        />
-                      ) : null}
-                      <span className="relative grid size-[31px] shrink-0 place-items-center rounded-full border border-[#c6c6c6] bg-surface-paper text-[11px]">
-                        {index + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="mt-[3px] mb-[5px] text-[12px] font-bold">
-                          <Link
-                            href={`/guides/${guide.slug}`}
-                            className="underline-offset-[3px] hover:underline"
-                          >
-                            {guide.title}
-                          </Link>
-                        </h3>
-                        <p className="max-w-[360px] text-[10px] text-[#7c7c7c]">
-                          {guide.durationMinutes
-                            ? `Environ ${guide.durationMinutes} minutes.`
-                            : 'Durée non indiquée.'}
-                        </p>
-                      </div>
-                    </li>
+            {aContenuKit ? (
+              <KitContents
+                image={visuelKit?.url ?? null}
+                imageAlt={visuelKit?.alt ?? `${product.name} — contenu`}
+              />
+            ) : null}
+
+            {/* Ce que le conditionnement choisi ne fournit pas, et ses restrictions. */}
+            <ConfigurationContents />
+
+            {product.specs.length > 0 ? (
+              <div className={cn(kitVariant && 'mt-12')}>
+                {kitVariant ? <h3 className="text-[18px] font-bold">Caractéristiques</h3> : null}
+                <dl
+                  className={cn(
+                    'grid gap-x-12 border-t border-line fiche:grid-cols-2',
+                    kitVariant && 'mt-4',
+                  )}
+                >
+                  {product.specs.map((spec) => (
+                    <div
+                      key={spec.label}
+                      className="flex justify-between gap-6 border-b border-line py-3.5 text-[15px]"
+                    >
+                      <dt className="text-[#5f6266]">{spec.label}</dt>
+                      <dd className="text-right font-semibold">{spec.value}</dd>
+                    </div>
                   ))}
-                </ol>
-              ) : null}
-
-              {/*
-                Contenu et restrictions du conditionnement CHOISI : ce que le
-                conditionnement retenu n'apporte PAS, et qui manquerait au
-                moment du montage.
-              */}
-              <ConfigurationContents />
-
-              {/* .help-inline */}
-              <Link
-                href="/contact"
-                className="mt-4 flex w-full items-center gap-3 rounded-[7px] border border-[#e2e2e2] bg-white px-3 py-3.5 text-[10px] text-[#767676] hover:border-slate-ink fiche:px-4"
-              >
-                <IconHeadset className="size-[19px] shrink-0 text-[#393939]" />
-                <span>
-                  Un doute à une étape ?
-                  <strong className="ml-0 block font-semibold text-[#323232] fiche:ml-[3px] fiche:inline">
-                    Demandez-nous conseil ↗
-                  </strong>
-                </span>
-              </Link>
-            </div>
-          </div>
-        </section>
+                </dl>
+              </div>
+            ) : null}
+          </section>
         ) : null}
 
         {/* ---------------- #complements ---------------- */}
@@ -588,174 +537,197 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           <section
             id="complements"
             aria-labelledby="titre-complements"
-            className="container-page scroll-mt-32 py-[38px] fiche:pt-[61px] fiche:pb-[59px]"
+            className="container-page scroll-mt-32 border-t border-line py-12 fiche:py-20"
           >
-            <div className="mb-[22px] block justify-between fiche:mb-[30px] fiche:flex fiche:items-end">
+            <div className="mb-6 fiche:mb-8 fiche:flex fiche:items-end fiche:justify-between fiche:gap-8">
               <div>
-                <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
+                <p className="mb-2 text-[12px] font-bold tracking-[1.4px] text-brand uppercase">
                   Pour aller plus loin
                 </p>
                 <h2
                   id="titre-complements"
-                  className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]"
+                  className="text-[26px] leading-[1.2] font-bold tracking-[-0.6px] fiche:text-[32px]"
                 >
                   Le blanc, jusque dans les détails.
                 </h2>
               </div>
-              <p className="mt-[11px] text-[10px] leading-[1.7] text-[#828282] fiche:mt-0 fiche:text-right fiche:text-[11px]">
-                Des compléments facultatifs.
-                <span className="hidden fiche:inline">
-                  <br />
-                </span>{' '}
-                Votre kit principal reste complet.
+              <p className="mt-2 text-[14px] text-[#5f6266] fiche:mt-0 fiche:text-right">
+                Des compléments facultatifs. Votre kit principal reste complet.
               </p>
             </div>
 
-            <OptionalAddons
-              addons={product.optionalAddons}
-              vehicleSelected={Boolean(vehicle)}
-            />
+            <OptionalAddons addons={product.optionalAddons} vehicleSelected={Boolean(vehicle)} />
 
-            <p className="mt-3 text-[8px] leading-[1.7] text-[#969696]">
+            <p className="mt-4 text-[13px] leading-[1.6] text-[#6b6d70]">
               Les adaptateurs et décodeurs exigés par votre kit ne sont pas ici : ils figurent dans
               le bloc d&apos;achat, avec le conditionnement qui les contient.
             </p>
           </section>
         ) : null}
 
-        {/* ---------------- #questions ---------------- */}
+        {/* ---------------- #questions : questions, avis, et un humain ---------------- */}
         {aContenuQuestions ? (
-        <section
-          id="questions"
-          aria-labelledby="titre-questions"
-          className="container-page block scroll-mt-32 pb-[35px] fiche:grid fiche:grid-cols-[0.72fr_1.28fr] fiche:gap-[40px] fiche:pt-2.5 fiche:pb-[63px] min-[1101px]:gap-[70px]"
-        >
-          <div>
-            <p className="mb-2.5 text-[8px] font-bold tracking-[1.2px] text-brand uppercase fiche:text-[9px] fiche:tracking-[1.6px]">
-              On vous répond
-            </p>
-            <h2
-              id="titre-questions"
-              className="text-[28px] leading-[1.12] font-bold tracking-[-0.9px] fiche:text-[33px] fiche:tracking-[-1px]"
-            >
-              Avant de
-              <span className="hidden fiche:inline">
-                <br />
-              </span>{' '}
-              passer au blanc.
-            </h2>
-            <p className="mt-3 mb-[23px] text-[10px] leading-[1.9] text-[#808080] fiche:mt-5 fiche:mb-0 fiche:text-[11px]">
-              Encore une question ?
-              <Link
-                href="/contact"
-                className="ml-[5px] inline-flex min-h-11 items-center text-[10px] font-bold text-ink hover:underline fiche:ml-0 fiche:mt-1.5 fiche:flex fiche:min-h-0 fiche:text-[11px]"
-              >
-                Parlons de votre véhicule ↗
-              </Link>
-            </p>
-          </div>
+          <section
+            id="questions"
+            aria-labelledby="titre-questions"
+            className="scroll-mt-32 border-t border-line"
+          >
+            <div className="container-page py-12 fiche:grid fiche:grid-cols-[0.75fr_1.25fr] fiche:gap-14 fiche:py-20">
+              <div>
+                <p className="mb-2 text-[12px] font-bold tracking-[1.4px] text-brand uppercase">
+                  On vous répond
+                </p>
+                <h2
+                  id="titre-questions"
+                  className="text-[26px] leading-[1.15] font-bold tracking-[-0.6px] fiche:text-[32px]"
+                >
+                  Vos questions
+                </h2>
+                <p className="mt-3 text-[15px] leading-[1.6] text-[#5f6266]">
+                  Les réponses aux questions qu’on nous pose le plus.
+                </p>
+                <CarteConseil className="mt-6 hidden fiche:flex" />
+              </div>
 
-          <div>
-            {product.faq.length > 0 ? (
-              <ul className="border-t border-line">
-                {product.faq.map((item) => (
-                  <li key={item.question} className="border-b border-line py-4">
-                    <details className="group">
-                      <summary className="flex cursor-pointer list-none items-center justify-between gap-2.5 text-[11px] font-semibold [&::-webkit-details-marker]:hidden fiche:gap-[15px] fiche:text-[12px]">
-                        {item.question}
-                        <span
-                          aria-hidden="true"
-                          className="shrink-0 text-[17px] leading-[26px] font-normal text-[#8a8a8a] transition-transform group-open:rotate-45"
-                        >
-                          +
-                        </span>
-                      </summary>
-                      <p className="mt-3 max-w-[580px] text-[10px] leading-[1.8] text-[#7a7a7a] fiche:text-[11px]">
-                        {item.answer}
-                      </p>
-                    </details>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+              <div className="mt-6 fiche:mt-0">
+                {product.faq.length > 0 ? (
+                  <ul className="border-t border-line">
+                    {product.faq.map((item) => (
+                      <li key={item.question} className="border-b border-line">
+                        <details className="group">
+                          <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-[16px] font-bold [&::-webkit-details-marker]:hidden">
+                            {item.question}
+                            <span
+                              aria-hidden="true"
+                              className="grid size-8 shrink-0 place-items-center rounded-full bg-[#f5f6f7] text-[18px] font-normal transition-transform group-open:rotate-45"
+                            >
+                              +
+                            </span>
+                          </summary>
+                          <p className="max-w-[640px] pb-5 text-[15px] leading-[1.7] text-[#3c4047]">
+                            {item.answer}
+                          </p>
+                        </details>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
 
-            {/*
-              Les avis n'existent pas dans la référence. Ils restent une
-              fonction réelle de la boutique — mais le bloc ne s'affiche que
-              s'il y en a. Annoncer « Aucun avis pour le moment » occupait un
-              écran pour ne rien dire, et aucun avis n'est fabriqué pour le
-              remplir.
-            */}
-            {product.reviews.length > 0 ? (
-              <>
-                <h3 className="mt-10 text-[12px] font-bold">Avis</h3>
-                <ul className="mt-3 grid gap-3 fiche:grid-cols-2">
-                  {product.reviews.map((review, index) => (
-                    <li key={index}>
-                      <Card className="h-full p-4">
-                        <p className="text-[12px] font-bold">
-                          {review.title ?? review.authorName}
-                        </p>
-                        <p className="mt-1 text-[10px] leading-[1.8] text-[#7a7a7a]">
-                          {review.body}
-                        </p>
-                        <p className="mt-2 text-[9px] text-muted">
-                          {review.authorName}
-                          {review.verifiedPurchase ? ' · achat vérifié' : null}
-                        </p>
-                      </Card>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-          </div>
-        </section>
-        ) : null}
+                {/*
+                  Les avis ne s'affichent que s'il y en a : aucun avis n'est
+                  fabriqué pour remplir le bloc.
+                */}
+                {product.reviews.length > 0 ? (
+                  <>
+                    <h3 className={cn('text-[18px] font-bold', product.faq.length > 0 && 'mt-12')}>
+                      Avis clients
+                    </h3>
+                    <ul className="mt-4 grid gap-3 fiche:grid-cols-2">
+                      {product.reviews.map((review, index) => (
+                        <li key={index}>
+                          <Card className="h-full p-5">
+                            <p className="text-[15px] font-bold">
+                              {review.title ?? review.authorName}
+                            </p>
+                            <p className="mt-1.5 text-[14px] leading-[1.6] text-[#3c4047]">
+                              {review.body}
+                            </p>
+                            <p className="mt-3 text-[13px] text-[#6b6d70]">
+                              {review.authorName}
+                              {review.verifiedPurchase ? ' · achat vérifié' : null}
+                            </p>
+                          </Card>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
 
-        {/* ---------------- #assistance ---------------- */}
-        <section
-          id="assistance"
-          aria-labelledby="titre-assistance"
-          className="container-page"
-        >
-          <div className="mb-9 block rounded-lg bg-[#f2f2f2] p-[23px] fiche:mb-14 fiche:flex fiche:items-center fiche:gap-[22px] fiche:rounded-[10px] fiche:px-8 fiche:py-[29px]">
-            <span className="mb-4 grid size-10 shrink-0 place-items-center rounded-full bg-white fiche:mb-0 fiche:size-[52px]">
-              <IconHeadset className="size-[21px] text-slate-ink fiche:size-6" />
-            </span>
-
-            <div className="min-w-0 flex-1">
-              <p className="mb-[7px] text-[7px] font-bold tracking-[1.2px] text-brand uppercase">
-                Un humain à vos côtés
-              </p>
-              <h2
-                id="titre-assistance"
-                className="text-[22px] leading-[1.25] font-bold tracking-[-0.5px] fiche:text-[21px] fiche:leading-normal"
-              >
-                Le bon kit commence par le bon conseil.
-              </h2>
-              <p className="mt-1.5 text-[10px] text-[#808080]">
-                Une question sur votre véhicule ou son installation ?
-              </p>
+                <CarteConseil className="mt-8 flex fiche:hidden" />
+              </div>
             </div>
-
-            <ButtonLink
-              href="/contact"
-              variant="secondary"
-              className="mt-[18px] w-full shrink-0 gap-4 rounded-md px-[17px] text-[11px] whitespace-nowrap fiche:mt-0 fiche:ml-auto fiche:w-auto"
-            >
-              Demander conseil
-            </ButtonLink>
-          </div>
-        </section>
+          </section>
+        ) : (
+          /* Sans questions ni avis, l'assistance reste joignable en bas de page. */
+          <section id="assistance" aria-label="Assistance" className="container-page py-12">
+            <CarteConseil bandeau className="flex" />
+          </section>
+        )}
 
         {siteConfig.demoBanner ? (
-          <p className="container-page pb-6 text-[8px] leading-[1.7] text-[#969696]">
+          <p className="container-page pb-6 text-[12px] leading-[1.6] text-[#6b6d70]">
             {siteConfig.demoBannerLabel} — visuels illustratifs, prix et compatibilités à remplacer
             avant ouverture.
           </p>
         ) : null}
       </div>
     </ProductConfigurationProvider>
+  )
+}
+
+type Promesse = {
+  Icon: typeof IconCar
+  titre: string
+  texte: string
+}
+
+/** Les promesses de la fiche, en cartes de deux colonnes. */
+function ListePromesses({ promesses, className }: { promesses: Promesse[]; className?: string }) {
+  return (
+    <ul aria-label="Nos engagements" className={cn('grid-cols-2 gap-2.5 fiche:gap-3', className)}>
+      {promesses.map(({ Icon, titre, texte }) => (
+        <li
+          key={titre}
+          className="flex flex-col items-start gap-2.5 rounded-xl bg-[#f5f6f7] p-3.5 min-[480px]:flex-row min-[480px]:gap-3 fiche:p-4"
+        >
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-white text-brand">
+            <Icon className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <strong className="block text-[13px] leading-[1.3] fiche:text-[14px]">{titre}</strong>
+            <span className="mt-0.5 block text-[12px] leading-[1.4] text-[#5f6266] fiche:text-[13px]">
+              {texte}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/**
+ * « Un humain à vos côtés » — la carte sombre qui mène au conseil.
+ * En `bandeau`, elle s'étale sur une ligne sur grand écran : texte à gauche,
+ * bouton à droite.
+ */
+function CarteConseil({ className, bandeau = false }: { className?: string; bandeau?: boolean }) {
+  return (
+    <div
+      className={cn(
+        'on-dark flex-col gap-3 rounded-2xl bg-[#111214] p-6 text-white',
+        bandeau && 'fiche:flex-row fiche:items-center fiche:gap-6 fiche:px-8',
+        className,
+      )}
+    >
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#2a1617] text-brand-on-dark">
+        <IconHeadset className="size-5" />
+      </span>
+      <div className={cn('flex flex-col gap-2', bandeau && 'fiche:flex-1')}>
+        <strong className="text-[18px]">Un doute sur vos phares ?</strong>
+        <p className="text-[14px] leading-[1.6] text-[#c9ccd1]">
+          Décrivez-nous votre véhicule : un conseiller vous dit quel pack prendre, et vous aide
+          jusqu’au montage.
+        </p>
+      </div>
+      <Link
+        href="/contact"
+        className={cn(
+          'mt-1 flex min-h-12 items-center justify-center rounded-xl bg-white px-6 text-[15px] font-bold text-ink transition-colors hover:bg-[#e7e8ea]',
+          bandeau && 'fiche:mt-0 fiche:shrink-0',
+        )}
+      >
+        Demander conseil
+      </Link>
+    </div>
   )
 }

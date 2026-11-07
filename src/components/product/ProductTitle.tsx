@@ -1,7 +1,5 @@
 'use client'
 
-import { formatPrice } from '@/lib/identity'
-import { availabilityLabel, isPurchasable } from '@/lib/stock'
 import { cn } from '@/lib/cn'
 import { useProductConfiguration } from './ProductConfiguration'
 
@@ -19,11 +17,9 @@ import { useProductConfiguration } from './ProductConfiguration'
  *    fourni. Elle suit le conditionnement choisi : annoncer « Accessoires
  *    inclus » quand le client a basculé sur les ampoules seules serait faux au
  *    moment précis où cela coûte un retour.
- * 2. Sur téléphone, le prix et la disponibilité remontent sous le titre. Le
- *    bloc d'achat arrive après la galerie, soit un écran et demi plus bas : la
- *    première question du client restait sans réponse pendant tout ce temps.
- *    Sur grand écran, le bloc d'achat est à droite, immédiatement lisible — ce
- *    rappel n'a donc pas lieu d'être et disparaît.
+ * 2. (Refonte LEDVROOM) Le rappel du prix sous le titre, sur téléphone, est
+ *    retiré : la barre d'achat fixe le montre déjà en bas de l'écran, et le
+ *    même prix apparaissait trois fois sur un téléphone.
  *
  * Le libellé de disponibilité reste celui du catalogue (`availabilityLabel`) :
  * la maquette écrit « Disponible », la boutique distingue « En stock », « Plus
@@ -71,7 +67,7 @@ export function ProductTitle({
   return (
     <div className="order-1">
       {eyebrow.length > 0 ? (
-        <p className="mb-2 text-[8px] leading-[1.4] font-bold tracking-[1.25px] text-brand uppercase fiche:mb-[11px] fiche:text-[9px] fiche:tracking-[1.7px]">
+        <p className="mb-2 text-[11px] leading-[1.4] font-bold tracking-[1.2px] text-brand uppercase fiche:mb-2.5 fiche:text-[12px] fiche:tracking-[1.4px]">
           {eyebrow.map((partie, index) => (
             <span key={partie}>
               {index > 0 ? (
@@ -90,18 +86,18 @@ export function ProductTitle({
         puis ce qu'il équipe. Les deux parties restent dans le même `h1` — c'est
         un seul titre, et le découper en donnerait deux aux lecteurs d'écran.
       */}
-      <h1 className="text-[31px] leading-[1.12] font-[750] tracking-[-1.1px] max-[370px]:text-[29px] fiche:text-[35px] fiche:tracking-[-1.45px] min-[1101px]:text-[39px] min-[1101px]:tracking-[-1.65px] min-[1450px]:text-[42px]">
+      <h1 className="text-[28px] leading-[1.12] font-[750] tracking-[-0.8px] max-[370px]:text-[26px] fiche:text-[34px] fiche:tracking-[-1.1px] min-[1101px]:text-[38px] min-[1101px]:tracking-[-1.3px]">
         {name}
       </h1>
 
       {tagline ? (
-        <p className="mt-[10px] max-w-[335px] text-[12px] leading-[1.65] text-[#707070] fiche:mt-[14px] fiche:max-w-none fiche:text-[13px] min-[1450px]:text-[14px] min-[1450px]:text-[#676767]">
+        <p className="mt-2 text-[14px] leading-[1.6] text-[#5f6266] fiche:mt-2.5 fiche:text-[15px]">
           {tagline}
         </p>
       ) : null}
 
       {puces.length > 0 ? (
-        <p className="mt-[11px] flex items-center text-[9px] text-[#5c5c5c] fiche:mt-[14px] min-[1101px]:text-[10px] min-[1450px]:text-[11px] min-[1450px]:text-[#676767]">
+        <p className="mt-3 flex flex-wrap items-center gap-y-1 text-[12px] text-[#55585b] fiche:mt-3.5 fiche:text-[13px]">
           {puces.map((puce, index) => (
             <span
               key={puce.cle}
@@ -125,33 +121,6 @@ export function ProductTitle({
         </p>
       ) : null}
 
-      {/*
-        Prix et disponibilité sur téléphone seulement — voir l'en-tête de ce
-        fichier. `max-fiche:` est le miroir exact du `(max-width:800px)` de la
-        maquette.
-      */}
-      {selected ? (
-        <div className="mt-[15px] flex items-center justify-between gap-5 fiche:hidden">
-          <strong className="text-[27px] leading-[1.1] tracking-[-0.9px]">
-            {formatPrice(selected.priceCents)}
-          </strong>
-          <span
-            className={cn(
-              'inline-flex items-center gap-[6px] text-[10px] font-semibold whitespace-nowrap',
-              isPurchasable(selected.availability) ? 'text-ok' : 'text-muted-strong',
-            )}
-          >
-            <i
-              aria-hidden="true"
-              className={cn(
-                'size-[5px] rounded-full',
-                isPurchasable(selected.availability) ? 'bg-ok' : 'bg-muted',
-              )}
-            />
-            {availabilityLabel(selected.availability)}
-          </span>
-        </div>
-      ) : null}
     </div>
   )
 }

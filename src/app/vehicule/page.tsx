@@ -188,8 +188,16 @@ export default async function Page() {
                 sur ce que nous ne savons pas encore.
               </p>
               <div className="mt-5">
+                {/*
+                  Le sujet dans l'adresse : il présélectionne « Véhicule non
+                  listé » sur le formulaire, ce qui fait apparaître le champ
+                  « Votre véhicule ». Sans lui, cette section demandait au
+                  client de décrire sa voiture puis l'envoyait sur un
+                  formulaire qui ne lui en laissait pas la place, sinon au
+                  milieu du message.
+                */}
                 <ButtonLink
-                  href="/contact"
+                  href="/contact?sujet=vehicule"
                   variant="secondary"
                   iconRight={<IconArrowRight className="size-5" />}
                 >

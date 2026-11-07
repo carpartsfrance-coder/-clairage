@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
+import { GENERATION_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { VEHICLE_COOKIE } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
@@ -46,7 +47,15 @@ export async function POST(request: Request) {
     const generation = await prisma.vehicleGeneration.findFirst({
       where: {
         modelId,
-        active: true,
+        /*
+          La même règle que le sélecteur, et pas seulement `active` : les listes
+          sont filtrées côté lecture, mais c'est ici qu'on enregistre le
+          véhicule du client. Sans ce filtre, une requête forgée — ou un onglet
+          resté ouvert avant la dépublication — fixerait un véhicule masqué,
+          et la barre le porterait ensuite de page en page vers des résultats
+          vides.
+        */
+        ...GENERATION_VISIBLE,
         yearFrom: { lte: year },
         OR: [{ yearTo: null }, { yearTo: { gte: year } }],
       },

@@ -10,10 +10,17 @@ import { cn } from '@/lib/cn'
  * le reste, et pourquoi elle est `aria-hidden` : la relire à voix haute
  * n'apprendrait rien de plus que la ligne qu'elle accompagne.
  *
- * Sans visuel, la place est tenue par un cadre neutre plutôt que laissée vide.
- * Comme pour `BrandMark`, ce cadre est TOUJOURS rendu et l'image se pose par
- * dessus : entre la première peinture et le décodage, et pour un média
- * supprimé, la grille garde sa forme au lieu de montrer un trou.
+ * **Sans photo, rien n'est rendu — pas même un cadre.** Le cadre neutre était
+ * auparavant rendu dans tous les cas, pour que la grille garde sa forme entre
+ * la première peinture et le décodage de l'image. Cette raison ne vaut que
+ * lorsqu'il y a une image à décoder : depuis le retrait des visuels du
+ * fournisseur, plus aucune génération n'en porte, et chaque ligne affichait
+ * donc un rectangle gris vide — une case qui a l'air cassée, là où il n'y a
+ * tout simplement pas de photo.
+ *
+ * Le cadre reste rendu dès qu'une photo est attendue, et c'est lui qui tient
+ * la place pendant le décodage. La stabilité de la grille est donc conservée
+ * là où elle servait à quelque chose.
  */
 export function GenerationThumb({
   photo,
@@ -22,6 +29,8 @@ export function GenerationThumb({
   photo?: { url: string; alt: string } | null
   className?: string
 }) {
+  if (!photo) return null
+
   return (
     <span
       aria-hidden="true"
@@ -30,9 +39,7 @@ export function GenerationThumb({
         className,
       )}
     >
-      {photo ? (
-        <Image src={photo.url} alt="" fill sizes="68px" className="bg-white object-contain" />
-      ) : null}
+      <Image src={photo.url} alt="" fill sizes="68px" className="bg-white object-contain" />
     </span>
   )
 }

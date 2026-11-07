@@ -17,6 +17,14 @@ import { SelectField, TextField } from '@/components/ui/Field'
  * répondre, et chaque champ demandé est un champ qu'il faut remplir avant
  * d'obtenir de l'aide.
  *
+ * Un cinquième champ apparaît pour le seul sujet « Véhicule non listé », et
+ * disparaît pour les autres : là, le véhicule *est* la demande, et le
+ * demander à tout le monde reviendrait à réclamer une information que le
+ * message porte déjà dans les autres cas. Il est en texte libre, parce qu'un
+ * client dont la voiture n'est pas au catalogue ne peut pas la choisir dans
+ * une liste — lui proposer un sélecteur serait lui redemander ce qu'il vient
+ * précisément de ne pas trouver.
+ *
  * Les intitulés des sujets viennent de `CONTACT_SUBJECTS`, la même table que
  * celle relue par l'action : ce que le client lit ici est exactement ce qui
  * sera écrit sur sa demande.
@@ -115,6 +123,19 @@ export function ContactForm({
         hint="Facultatif. Indiquée dans votre confirmation de commande : elle rattache la demande au bon dossier."
       />
 
+      {subject === 'vehicule' ? (
+        <TextField
+          id="contact-vehicule"
+          name="vehicle"
+          label="Votre véhicule"
+          required
+          autoComplete="off"
+          maxLength={120}
+          placeholder="Peugeot 308 II, 2017"
+          hint="Marque, modèle et année. L’année sépare deux générations qui n’ont pas le même éclairage."
+        />
+      ) : null}
+
       <div className="flex flex-col gap-[7px]">
         <label htmlFor="contact-message" className="text-[11px] font-bold">
           Votre message
@@ -126,12 +147,17 @@ export function ContactForm({
           required
           minLength={10}
           maxLength={2000}
-          placeholder="Véhicule, référence du produit, ce que vous cherchez à obtenir…"
+          placeholder={
+            subject === 'vehicule'
+              ? 'Quels éclairages vous intéressent : phares, plaque, veilleuses, feux de recul…'
+              : 'Véhicule, référence du produit, ce que vous cherchez à obtenir…'
+          }
           className="w-full rounded-[7px] border border-[#d4d4d4] bg-white p-3 text-[13px] text-[#323232] placeholder:text-muted"
         />
         <p className="text-[10px] font-normal text-muted">
-          Le modèle exact du véhicule et la référence inscrite sur la pièce d&apos;origine sont ce
-          qui évite le plus souvent un aller-retour.
+          {subject === 'vehicule'
+            ? 'La finition et le type de phare d’origine (halogène, xénon) achèvent de trancher : deux versions d’un même modèle ne reçoivent pas les mêmes ampoules.'
+            : 'Le modèle exact du véhicule et la référence inscrite sur la pièce d’origine sont ce qui évite le plus souvent un aller-retour.'}
         </p>
       </div>
 
