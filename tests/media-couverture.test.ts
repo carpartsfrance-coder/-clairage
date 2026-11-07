@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ARGS_COUVERTURE, couverture } from '../src/lib/media-couverture'
+import { ARGS_COUVERTURE, couverture, visuelsDeLaFiche } from '../src/lib/media-couverture'
 
 /**
  * Choix du visuel de couverture.
@@ -52,5 +52,67 @@ describe('ARGS_COUVERTURE', () => {
     // Avec take: 1 trié par position, un visuel produit en position 0 sortirait
     // seul et le rendu ne serait jamais vu.
     expect(ARGS_COUVERTURE.take).toBeGreaterThan(1)
+  })
+})
+
+describe('visuelsDeLaFiche', () => {
+  const rendu = (caption: string) => ({ role: 'RESULT', media: { caption } })
+  const produit = () => ({ role: 'PRODUCT', media: { caption: null } })
+
+  it('écarte les visuels du fournisseur quand la fiche a ses rendus', () => {
+    // Les visuels « produit » encore rattachés sont les vignettes reprises du
+    // fournisseur, 219 × 183 à côté de rendus en 1024 × 1024. Elles partaient
+    // aussi dans les données structurées, donc vers Google Shopping.
+    const vus = visuelsDeLaFiche([
+      rendu('Gros plan'),
+      rendu('Avant et après'),
+      rendu('Véhicule entier'),
+      produit(),
+      produit(),
+    ])
+    expect(vus).toHaveLength(3)
+    expect(vus.every((entree) => entree.role === 'RESULT')).toBe(true)
+  })
+
+  it('garde les visuels produit quand la fiche n’a pas de rendu', () => {
+    // Sans cette réserve, une fiche sans rendu n'aurait plus aucune image.
+    const vus = visuelsDeLaFiche([produit(), produit()])
+    expect(vus).toHaveLength(2)
+  })
+
+  it('ne montre qu’une image par vue', () => {
+    // Deux fiches portaient deux jeux complets, l'ancienne série n'ayant pas
+    // été détachée à la repose. La fiche racontait deux fois la même histoire.
+    const vus = visuelsDeLaFiche([
+      rendu('Gros plan'),
+      rendu('Avant et après'),
+      rendu('Véhicule entier'),
+      rendu('Gros plan'),
+      rendu('Avant et après'),
+      rendu('Véhicule entier'),
+    ])
+    expect(vus.map((entree) => entree.media.caption)).toEqual([
+      'Gros plan',
+      'Avant et après',
+      'Véhicule entier',
+    ])
+  })
+
+  it('n’écarte jamais un visuel sans légende', () => {
+    // Une légende absente ne dit rien de la vue : on ne peut pas en conclure
+    // que c'est un doublon.
+    const sansLegende = { role: 'RESULT', media: { caption: null } }
+    const vus = visuelsDeLaFiche([rendu('Gros plan'), sansLegende, sansLegende])
+    expect(vus).toHaveLength(3)
+  })
+
+  it('garde le contenu du kit et le montage : ils disent autre chose', () => {
+    const vus = visuelsDeLaFiche([
+      rendu('Gros plan'),
+      { role: 'KIT_CONTENT', media: { caption: 'Le kit' } },
+      { role: 'INSTALL', media: { caption: 'Le montage' } },
+      produit(),
+    ])
+    expect(vus.map((entree) => entree.role)).toEqual(['RESULT', 'KIT_CONTENT', 'INSTALL'])
   })
 })
