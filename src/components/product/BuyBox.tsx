@@ -692,14 +692,25 @@ export function BuyBox({
         </Link>
       </div>
 
-      {/* ---- .road-note : l'homologation, dite telle qu'elle est connue ---- */}
-      <div className="mt-3 text-[13px]">
-        <RoadApprovalNote
-          status={selected.fitment.roadApproval}
-          market={selected.fitment.approvalMarket}
-          note={selected.fitment.approvalNote}
-        />
-      </div>
+      {/*
+        ---- .road-note : seulement quand l'article N'EST PAS homologué ----
+
+        Consigne de l'exploitant (7 novembre 2026) : l'homologation des
+        ampoules ne s'affiche pas sur les fiches. « Homologation à confirmer »,
+        qui sortait sur toutes les fiches faute de donnée, laissait en plus
+        croire l'inverse pour des ampoules qui le sont. Un article déclaré non
+        homologué en back-office, lui, reste signalé : le client doit le
+        savoir avant d'acheter.
+      */}
+      {selected.fitment.roadApproval === 'NOT_APPROVED' ? (
+        <div className="mt-3 text-[13px]">
+          <RoadApprovalNote
+            status={selected.fitment.roadApproval}
+            market={selected.fitment.approvalMarket}
+            note={selected.fitment.approvalNote}
+          />
+        </div>
+      ) : null}
 
       {/*
         .sticky-buy — posée en bas en mobile, révélée au défilement au-delà du
