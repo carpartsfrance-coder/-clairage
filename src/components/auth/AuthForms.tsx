@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useActionState } from 'react'
 import { login, register, type AuthState } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/Button'
+import { MentionDonnees } from '@/components/legal/MentionDonnees'
 import { Alert } from '@/components/ui/Surface'
 import { TextField } from '@/components/ui/Field'
 
@@ -161,6 +162,8 @@ export function RegisterForm() {
         <Button type="submit" size="lg" block disabled={pending}>
           {pending ? 'Création…' : 'Créer mon compte'}
         </Button>
+
+        <MentionDonnees usage="Vos informations servent à gérer votre compte et vos commandes." />
       </form>
 
       <div className="flex flex-col items-start border-t border-line pt-3">

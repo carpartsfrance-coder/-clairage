@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { requestStockAlert, type StockAlertState } from '@/lib/actions/stock-alert'
 import { IconCheckCircle, IconMail } from '@/components/ui/icons'
+import { MentionDonnees } from '@/components/legal/MentionDonnees'
 
 /**
  * Alerte de retour en stock, sur une référence en rupture.
@@ -80,6 +81,11 @@ export function StockAlertForm({
           {state.error}
         </p>
       ) : null}
+
+      <MentionDonnees
+        className="mt-2"
+        usage="Votre adresse ne sert qu’à vous prévenir du retour de cette référence."
+      />
     </form>
   )
 }

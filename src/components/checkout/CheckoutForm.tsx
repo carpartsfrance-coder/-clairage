@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useActionState, useState } from 'react'
 import { submitOrder, type CheckoutState } from '@/lib/actions/checkout'
 import { formatPrice } from '@/lib/identity'
+import { MentionDonnees } from '@/components/legal/MentionDonnees'
 import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Surface'
 import { SelectField, TextField } from '@/components/ui/Field'
@@ -424,6 +425,8 @@ export function CheckoutForm({
               />
               <span>Je souhaite recevoir les nouveautés et conseils par e-mail.</span>
             </label>
+
+            <MentionDonnees usage="Vos coordonnées servent à traiter, livrer et facturer votre commande." />
           </div>
 
           {paymentSimulated ? (
