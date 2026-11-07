@@ -68,9 +68,11 @@ async function seedReferenceData() {
     create: { ...demoShipping.zone },
   })
   for (const method of demoShipping.methods) {
+    // Création seulement : prix, délais et activation se règlent dans le
+    // back-office (page « Livraison ») et ne doivent pas être réécrits ici.
     await prisma.shippingMethod.upsert({
       where: { zoneId_code: { zoneId: zone.id, code: method.code } },
-      update: { ...method },
+      update: {},
       create: { ...method, zoneId: zone.id },
     })
   }

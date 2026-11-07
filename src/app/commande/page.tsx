@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { getCurrentUser } from '@/lib/auth/session'
 import { getCart } from '@/lib/cart'
 import { getSelectedVehicle } from '@/lib/session'
-import { getShippingOffers } from '@/lib/shipping'
+import { getOffresParPays } from '@/lib/shipping'
+import { trierLesPays } from '@/lib/livraison-pays'
 import { effectivePrice } from '@/lib/delivery-teaser'
 import { paymentIsSimulated } from '@/lib/payments'
 import { EmptyState } from '@/components/ui/Surface'
@@ -46,17 +47,23 @@ export default async function CommandePage() {
     )
   }
 
-  // Seule zone configurée pour l'instant ; le formulaire n'offre donc que la
-  // France, et les tarifs affichés sont ceux de cette zone.
-  const offers = await getShippingOffers('FR')
-  const shippingOptions: CheckoutShippingOption[] = offers.map((offer) => ({
-    code: offer.code,
-    label: offer.label,
-    carrier: offer.carrier,
-    effectivePriceCents: effectivePrice(offer, cart.subtotalCents),
-    minDays: offer.minDays,
-    maxDays: offer.maxDays,
-  }))
+  // Les pays proposés et leurs modes viennent des zones de livraison du
+  // back-office : un pays sans mode actif n'apparaît pas.
+  const offresParPays = await getOffresParPays()
+  const countries = trierLesPays(Object.keys(offresParPays)).map(({ code, nom }) => ({ code, nom }))
+  const shippingOptionsByCountry: Record<string, CheckoutShippingOption[]> = Object.fromEntries(
+    Object.entries(offresParPays).map(([pays, offers]) => [
+      pays,
+      offers.map((offer) => ({
+        code: offer.code,
+        label: offer.label,
+        carrier: offer.carrier,
+        effectivePriceCents: effectivePrice(offer, cart.subtotalCents),
+        minDays: offer.minDays,
+        maxDays: offer.maxDays,
+      })),
+    ]),
+  )
 
   return (
     <div className="container-page pb-10 fiche:pb-14">
@@ -84,7 +91,8 @@ export default async function CommandePage() {
           }))}
           subtotalCents={cart.subtotalCents}
           vatCents={cart.vatCents}
-          shippingOptions={shippingOptions}
+          countries={countries}
+          shippingOptionsByCountry={shippingOptionsByCountry}
           paymentSimulated={paymentIsSimulated()}
         />
       </div>

@@ -22,7 +22,7 @@ const addressSchema = z.object({
   company: z.string().trim().max(120).optional().nullable(),
   line1: z.string().trim().min(1, 'Adresse requise').max(160),
   line2: z.string().trim().max(160).optional().nullable(),
-  postalCode: z.string().trim().min(4, 'Code postal requis').max(12),
+  postalCode: z.string().trim().min(3, 'Code postal requis').max(12), // 3 : l'Islande
   city: z.string().trim().min(1, 'Ville requise').max(80),
   country: z.string().trim().length(2).default('FR'),
   phone: z.string().trim().max(32).optional().nullable(),

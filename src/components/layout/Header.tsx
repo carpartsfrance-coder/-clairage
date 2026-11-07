@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
-import { commercialTerms, formatPrice, identity, siteConfig } from '@/lib/identity'
+import { formatPrice, identity, siteConfig } from '@/lib/identity'
 import { getCartSummary, getSelectedVehicle } from '@/lib/session'
+import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { topNav } from '@/lib/navigation'
 import { getNavigation } from '@/lib/queries/navigation'
 import { MainNav } from './MainNav'
@@ -35,12 +36,14 @@ import { HeaderShell } from './HeaderShell'
  * (cookie + base). Aucun des deux n'est décoratif.
  */
 export async function Header() {
-  const [vehicle, cart, sections] = await Promise.all([
+  const [vehicle, cart, sections, seuilLivraisonOfferte] = await Promise.all([
     getSelectedVehicle(),
     getCartSummary(),
     // L'arborescence vient du catalogue : le menu ne peut pas promettre une
     // famille, une marque ou un culot que la base n'a pas.
     getNavigation(),
+    // Seuil réglé dans le back-office (page « Livraison »), pas une constante.
+    getSeuilLivraisonOfferte(),
   ])
 
   return (
@@ -60,8 +63,8 @@ export async function Header() {
           <p className="flex min-w-0 items-center gap-2">
             <IconTruck className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
             <span className="truncate">
-              {commercialTerms.freeShippingThresholdCents
-                ? `Livraison offerte dès ${formatPrice(commercialTerms.freeShippingThresholdCents)}`
+              {seuilLivraisonOfferte
+                ? `Livraison offerte dès ${formatPrice(seuilLivraisonOfferte)}`
                 : 'Livraison et retours'}
             </span>
           </p>

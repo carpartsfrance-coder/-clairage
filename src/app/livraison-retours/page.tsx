@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { commercialTerms, formatPrice, identity } from '@/lib/identity'
-import { getShippingOffers } from '@/lib/shipping'
+import { getZonesDeLivraison } from '@/lib/shipping'
+import { nomDuPays, trierLesPays } from '@/lib/livraison-pays'
 import { Article, PageLegale } from '@/components/legal/PageLegale'
 
 export const metadata: Metadata = {
@@ -29,12 +30,17 @@ const MISE_A_JOUR = '7 novembre 2026'
  * préparation n'est promis tant que `dispatchEstimate` n'est pas renseigné.
  */
 export default async function Page() {
-  const offres = await getShippingOffers()
+  // Toutes les zones livrées (page « Livraison » du back-office), la France
+  // d'abord : un client belge doit trouver ses tarifs, pas ceux de Lyon.
+  const zones = (await getZonesDeLivraison()).sort((a, b) =>
+    a.countries.includes('FR') ? -1 : b.countries.includes('FR') ? 1 : 0,
+  )
   const retour = commercialTerms.returnWindowDays ?? 14
-  const seuils = offres
+  const zoneFrance = zones.find((zone) => zone.countries.includes('FR'))
+  const seuils = (zoneFrance?.offres ?? [])
     .map((offre) => offre.freeFromCents)
     .filter((seuil): seuil is number => seuil !== null)
-  const seuil = seuils.length > 0 ? Math.min(...seuils) : commercialTerms.freeShippingThresholdCents
+  const seuil = seuils.length > 0 ? Math.min(...seuils) : null
   const contact = identity.contact
   const adresse = identity.legal.address
 
@@ -50,33 +56,46 @@ export default async function Page() {
             <strong>La livraison est offerte dès {formatPrice(seuil)} d’achat</strong>, en France.
           </p>
         ) : null}
-        {offres.length > 0 ? (
-          <table className="w-full border-collapse text-left text-[13px]">
-            <thead>
-              <tr className="border-b border-line">
-                <th scope="col" className="py-2 pr-3 font-semibold">Mode de livraison</th>
-                <th scope="col" className="py-2 pr-3 font-semibold">Prix</th>
-                <th scope="col" className="py-2 font-semibold">Délai estimé</th>
-              </tr>
-            </thead>
-            <tbody>
-              {offres.map((offre) => (
-                <tr key={offre.code} className="border-b border-line align-top">
-                  <td className="py-2 pr-3">
-                    {offre.label}
-                    {offre.carrier && !offre.label.includes(offre.carrier) ? ` (${offre.carrier})` : ''}
-                  </td>
-                  <td className="py-2 pr-3">
-                    {offre.priceCents === 0 ? 'Offerte' : formatPrice(offre.priceCents)}
-                    {offre.freeFromCents && offre.priceCents > 0
-                      ? `, offerte dès ${formatPrice(offre.freeFromCents)}`
-                      : ''}
-                  </td>
-                  <td className="py-2">{delai(offre.minDays, offre.maxDays)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {zones.length > 0 ? (
+          zones.map((zone) => (
+            <div key={zone.label} className="flex flex-col gap-2">
+              {zones.length > 1 || !zone.countries.includes('FR') ? (
+                <p className="font-semibold">
+                  {zone.countries.length === 1
+                    ? nomDuPays(zone.countries[0])
+                    : `${zone.label} : ${trierLesPays(zone.countries).map((p) => p.nom).join(', ')}`}
+                </p>
+              ) : null}
+              <table className="w-full border-collapse text-left text-[13px]">
+                <thead>
+                  <tr className="border-b border-line">
+                    <th scope="col" className="py-2 pr-3 font-semibold">Mode de livraison</th>
+                    <th scope="col" className="py-2 pr-3 font-semibold">Prix</th>
+                    <th scope="col" className="py-2 font-semibold">Délai estimé</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {zone.offres.map((offre) => (
+                    <tr key={offre.code} className="border-b border-line align-top">
+                      <td className="py-2 pr-3">
+                        {offre.label}
+                        {offre.carrier && !offre.label.includes(offre.carrier)
+                          ? ` (${offre.carrier})`
+                          : ''}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {offre.priceCents === 0 ? 'Offerte' : formatPrice(offre.priceCents)}
+                        {offre.freeFromCents && offre.priceCents > 0
+                          ? `, offerte dès ${formatPrice(offre.freeFromCents)}`
+                          : ''}
+                      </td>
+                      <td className="py-2">{delai(offre.minDays, offre.maxDays)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))
         ) : (
           <p>Le prix et le délai de livraison sont indiqués dans le panier, avant le paiement.</p>
         )}
