@@ -7,6 +7,7 @@ import {
   apparier,
   attelageCoherent,
   baseVisee,
+  ecritureDistanteAutorisee,
   lireReleves,
   lireSuivi,
   poseRendus,
@@ -49,6 +50,7 @@ const prisma = new PrismaClient()
  *   npm run publier                              publie la liste du lancement
  *   npm run publier -- --csv <chemin>            une autre liste
  *   npm run publier -- --quand-meme              publie même si des lignes manquent
+ *   npm run publier -- --base-distante           autorise une base hors de ce poste
  */
 
 const essai = process.argv.includes('--dry-run') || process.argv.includes('--essai')
@@ -68,6 +70,11 @@ const nb = (valeur: number) => valeur.toLocaleString('fr-FR')
 
 async function main() {
   console.log(`Base visée : ${baseVisee()}`)
+
+  if (!essai && !ecritureDistanteAutorisee(process.argv.includes('--base-distante'))) {
+    process.exitCode = 1
+    return
+  }
 
   const etat = storageStatus()
   if (!etat.ok) {

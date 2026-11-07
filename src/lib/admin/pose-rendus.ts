@@ -197,6 +197,57 @@ export function baseVisee(): string {
 }
 
 /**
+ * La base visée tourne-t-elle sur cette machine ?
+ *
+ * Le seul critère sûr est l'hôte : une base de développement est sur le poste,
+ * une base de production est au bout du réseau. Le nom de la base ne dit rien —
+ * rien n'empêche d'appeler une base hébergée « lumera_dev », et c'est
+ * justement la confusion qu'on veut rendre impossible.
+ */
+export function baseEnLocal(): boolean {
+  const brut = process.env.DATABASE_URL
+  if (!brut) return false
+  try {
+    const hote = new URL(brut).hostname
+    return (
+      hote === 'localhost' ||
+      hote === '127.0.0.1' ||
+      hote === '::1' ||
+      hote === '[::1]' ||
+      hote.endsWith('.localhost')
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Garde-fou : écrire en masse sur une base distante doit être dit.
+ *
+ * Ces commandes se lancent avec `DATABASE_URL` dans l'environnement. Une fois
+ * cette variable réglée sur la production pour une bascule, elle y reste pour
+ * tout ce qui est lancé ensuite dans le même terminal — et la commande
+ * suivante, tapée sans y penser, réécrit la boutique au lieu du poste. Rien
+ * dans la sortie ne l'aurait signalé : les deux bases répondent pareil.
+ *
+ * D'où le drapeau. Il ne dit pas « production » mais `--base-distante`, parce
+ * que c'est tout ce que le script peut constater : l'hôte n'est pas la machine.
+ */
+export function ecritureDistanteAutorisee(
+  confirmee: boolean,
+  erreur: (ligne: string) => void = console.error,
+): boolean {
+  if (baseEnLocal() || confirmee) return true
+  erreur(
+    `La base visée n'est pas sur cette machine : ${baseVisee()}\n` +
+      'Rien n’a été modifié. Si c’est voulu, relancez avec --base-distante ;\n' +
+      'sinon, vérifiez DATABASE_URL — c’est souvent elle qui est restée réglée\n' +
+      'sur un autre environnement par une commande précédente.',
+  )
+  return false
+}
+
+/**
  * Le stockage doit être celui de la base visée.
  *
  * Rien, dans DATABASE_URL et MEDIA_DRIVER, n'oblige les deux à désigner le même

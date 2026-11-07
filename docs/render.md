@@ -499,3 +499,90 @@ pas encore.
   veille, contrairement à l'offre gratuite.
 - **Les variables Render ne sont pas dans le dépôt.** Les changer demande un
   redéploiement, et c'est une action manuelle côté tableau de bord.
+
+## 9. Mettre en ligne une série de photos
+
+Le catalogue compte plus de dix mille fiches, et seules celles dont les trois
+images sont prêtes doivent être visibles. Ce n'est pas un réglage mais un
+état : à chaque nouvelle série de photos, on rejoue la bascule, et les fiches
+nouvellement prêtes entrent en ligne tandis que les autres restent en
+brouillon. Rien n'est jamais supprimé.
+
+```bash
+npm run bascule -- --dry-run        # déroule tous les contrôles sans rien écrire
+npm run bascule                     # sur ce poste
+npm run bascule -- --base-distante  # sur la base de la boutique
+```
+
+`scripts/bascule-production.ts` enchaîne quatre étapes, et son en-tête explique
+pourquoi dans cet ordre. La troisième, `VACUUM (ANALYZE)`, **n'est pas
+optionnelle** : après une bascule en masse des statuts, les statistiques du
+planificateur PostgreSQL décrivent encore l'ancien catalogue. Mesuré sur le
+poste, la requête qui décide des véhicules visibles passait de 7 ms à 2 648 ms,
+et revenait à 7 ms après analyse. Sans cette étape le site est lent sans raison
+lisible, et le réflexe serait d'ajouter un cache qui n'y changerait rien.
+
+### Ce que la commande exige
+
+**Les images doivent être sur la machine qui lance la commande.** La bascule ne
+se contente pas de changer des statuts : elle dépose les rendus manquants dans
+le stockage objet. Elle se lance donc depuis le poste qui porte
+`~/Desktop/Image ledvroom.com`, pas depuis un terminal Render.
+
+**Cinq variables**, dans l'environnement du terminal et nulle part ailleurs :
+
+| Variable | Où la prendre |
+| --- | --- |
+| `DATABASE_URL` | Render › lumera-db › Connect › **External** — l'adresse interne (`dpg-…-a`, sans domaine) ne répond que depuis Render |
+| `MEDIA_DRIVER=s3` | — |
+| `MEDIA_BUCKET`, `MEDIA_ACCESS_KEY_ID`, `MEDIA_SECRET_ACCESS_KEY`, `MEDIA_PUBLIC_HOST` | Render › lumera-web › Environment, recopiées telles quelles |
+
+Les deux derniers réglages de `MEDIA_*` (`MEDIA_ENDPOINT`, `MEDIA_REGION`) sont
+à recopier aussi si le service les renseigne.
+
+### Trois garde-fous, et ce qu'ils évitent
+
+- **Base distante sans `--base-distante` : refus.** `DATABASE_URL` réglée sur
+  la boutique pour une bascule *reste* réglée pour tout ce qui est lancé
+  ensuite dans le même terminal. La commande suivante, tapée sans y penser,
+  réécrirait la boutique au lieu du poste, et rien dans sa sortie ne l'aurait
+  signalé : les deux bases répondent pareil. Le drapeau ne dit pas
+  « production » mais `--base-distante`, parce que c'est tout ce que le script
+  peut constater — l'hôte n'est pas la machine.
+- **Base distante et stockage `local` : refus.** Les images iraient sur le
+  disque du poste, et la base en ligne garderait des adresses que personne ne
+  sert : des centaines de fiches à carré vide, sans une erreur au passage.
+- **Une fiche dont une des trois images manque n'est pas publiée.** Elle reste
+  en brouillon, nommée dans la sortie. Mieux vaut une fiche absente qu'une
+  fiche qui afficherait les visuels du fournisseur.
+
+### Avant, et après
+
+Sauvegarder d'abord — la bascule repasse en brouillon tout ce qui n'est pas
+dans la liste, et c'est une écriture de masse :
+
+```bash
+./scripts/backup.sh sauvegarder "$DATABASE_URL"
+```
+
+La quatrième étape recompte ce que le site montre et le confronte à
+`modeles-visibles.csv`. Elle doit afficher « Aucun écart ». Puis, sur le site
+en ligne :
+
+- une fiche publiée : trois images, le gros plan en couverture, aucun visuel
+  du fournisseur ;
+- une page de marque : des générations sans vignette, et aucune photo
+  `vehicules/…` dans la source ;
+- `sitemap.xml` : le nombre de `/p/` doit valoir le nombre de fiches publiées,
+  pas le catalogue entier.
+
+### Revenir en arrière
+
+Aucune donnée n'est détruite, mais les deux retours ne se font pas de la même
+façon :
+
+- **Les photos de véhicule** se remettent d'après leur registre, sans réseau :
+  `npm run photos:vehicule:retirer -- --restaurer --base-distante`.
+- **Les fiches** se republient en les relistant dans un CSV, puis en rejouant
+  la bascule. Une fiche en brouillon a tout gardé, jusqu'à sa date de première
+  publication.

@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { PrismaClient } from '@prisma/client'
-import { baseVisee } from '../src/lib/admin/pose-rendus'
+import { baseVisee, ecritureDistanteAutorisee } from '../src/lib/admin/pose-rendus'
 
 const prisma = new PrismaClient()
 
@@ -34,6 +34,7 @@ const prisma = new PrismaClient()
  *   npm run photos:vehicule:retirer -- --dry-run   n'écrit rien, dit ce qu'il ferait
  *   npm run photos:vehicule:retirer                détache et consigne
  *   npm run photos:vehicule:retirer -- --restaurer remet les photos d'après le registre
+ *   npm run photos:vehicule:retirer -- --base-distante  autorise une base hors de ce poste
  */
 
 const essai = process.argv.includes('--dry-run') || process.argv.includes('--essai')
@@ -176,6 +177,12 @@ async function remettre() {
 
 async function main() {
   console.log(`Base visée : ${baseVisee()}${essai ? '  —  ESSAI, rien ne sera écrit' : ''}`)
+
+  if (!essai && !ecritureDistanteAutorisee(process.argv.includes('--base-distante'))) {
+    process.exitCode = 1
+    return
+  }
+
   if (restaurer) await remettre()
   else await detacher()
 }
