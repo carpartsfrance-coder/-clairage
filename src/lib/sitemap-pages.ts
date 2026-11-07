@@ -7,8 +7,8 @@ import type { MetadataRoute } from 'next'
  * /confidentialite et /cookies alors qu'elles étaient des pages « en
  * préparation » fermées à l'indexation (`noindex`) : Google le signale comme
  * une erreur (« URL envoyée marquée noindex »). La confidentialité et les
- * cookies sont revenues le 7 novembre 2026, avec un vrai contenu ; /guides
- * reviendra de la même façon. tests/sitemap-pages.test.ts vérifie que
+ * cookies sont revenues le 7 novembre 2026, avec un vrai contenu, puis /guides
+ * et /paiement le même soir. tests/sitemap-pages.test.ts vérifie que
  * chaque page listée ici n'est pas en `noindex`.
  */
 export const STATIC_PAGES: Array<{ path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }> = [
@@ -20,7 +20,9 @@ export const STATIC_PAGES: Array<{ path: string; priority: number; changeFrequen
   { path: '/aide', priority: 0.4, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.4, changeFrequency: 'yearly' },
   { path: '/livraison-retours', priority: 0.4, changeFrequency: 'monthly' },
+  { path: '/guides', priority: 0.4, changeFrequency: 'monthly' },
   { path: '/garanties', priority: 0.3, changeFrequency: 'yearly' },
+  { path: '/paiement', priority: 0.2, changeFrequency: 'yearly' },
   { path: '/cgv', priority: 0.2, changeFrequency: 'yearly' },
   { path: '/mentions-legales', priority: 0.2, changeFrequency: 'yearly' },
   { path: '/confidentialite', priority: 0.2, changeFrequency: 'yearly' },

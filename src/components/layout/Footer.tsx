@@ -4,6 +4,7 @@ import { footerNav } from '@/lib/navigation'
 import { IconHeadset, IconReturn, IconTruck } from '@/components/ui/icons'
 import { commercialTerms, formatPrice, identity, siteConfig } from '@/lib/identity'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
+import { getNavigation } from '@/lib/queries/navigation'
 
 /**
  * Pied de page — `.home-footer` du code de référence.
@@ -24,8 +25,34 @@ import { getSeuilLivraisonOfferte } from '@/lib/shipping'
  */
 export async function Footer() {
   // Seuil réglé dans le back-office (page « Livraison »), pas une constante.
-  const seuilLivraisonOfferte = await getSeuilLivraisonOfferte()
+  const [seuilLivraisonOfferte, sections] = await Promise.all([
+    getSeuilLivraisonOfferte(),
+    getNavigation(),
+  ])
   const { legal, contact } = identity
+
+  /*
+    La colonne « Acheter » suit le menu, donc le catalogue : écrite en dur,
+    elle menait à quatre rubriques vides (moto, intérieur, xénon d'origine,
+    accessoires). Si la base ne répond pas, on garde la liste écrite.
+  */
+  const colonnes =
+    sections.length > 0
+      ? footerNav.map((column) =>
+          column.title === 'Acheter'
+            ? {
+                ...column,
+                items: [
+                  ...sections.map((section) => ({
+                    label: section.kicker === 'Packs par marque' ? `Packs ${section.label}` : section.label,
+                    href: section.href,
+                  })),
+                  { label: 'Toutes les catégories', href: '/c' },
+                ],
+              }
+            : column,
+        )
+      : footerNav
   const hasLegalIdentity = Boolean(legal.companyName)
   const year = new Date().getFullYear()
 
@@ -58,7 +85,7 @@ export async function Footer() {
             </p>
           </div>
 
-          {footerNav.map((column) => (
+          {colonnes.map((column) => (
             <nav key={column.title} aria-label={column.title}>
               <h2 className="mb-3 text-[10px] font-bold text-[#e2e7e8] lg:mb-3.5">
                 {column.title}

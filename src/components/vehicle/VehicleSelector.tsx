@@ -79,6 +79,26 @@ export function VehicleSelector({
     vide quand même. Ici, tant que le type n'a pas changé, il n'y a rien à
     vider — que l'effet soit rejoué ou non.
   */
+  /*
+    Le parcours moto n'est proposé que s'il mène quelque part. Tant qu'aucune
+    marque moto n'a de pack en ligne, l'onglet « Moto » ouvrait une liste de
+    marques vide. La réponse vient du même point d'accès que la liste (en
+    cache côté serveur) ; en attendant, l'onglet reste affiché comme avant.
+  */
+  const [motoDisponible, setMotoDisponible] = useState(true)
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/vehicules/marques?type=MOTORCYCLE')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('indisponible'))))
+      .then((data: { items?: Option[] }) => {
+        if (!cancelled) setMotoDisponible((data.items ?? []).length > 0)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const typePrecedent = useRef(type)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -281,6 +301,7 @@ export function VehicleSelector({
         à ne venir d'aucun jeton. La pilule n'a besoin d'aucun accent — c'est
         le fond blanc qui désigne l'onglet actif.
       */}
+      {motoDisponible || type === 'MOTORCYCLE' ? (
       <div
         role="radiogroup"
         aria-label="Type de véhicule"
@@ -344,6 +365,7 @@ export function VehicleSelector({
           )
         })}
       </div>
+      ) : null}
 
       {catalogueEmpty ? (
         <Alert tone="warn" title="Aucun véhicule n'est encore référencé.">

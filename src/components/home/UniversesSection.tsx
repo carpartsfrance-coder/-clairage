@@ -1,12 +1,20 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { IconArrowRight } from '@/components/ui/icons'
-import { EmptyState } from '@/components/ui/Surface'
 import type { HomeUniverse } from '@/lib/queries/home'
 
 export type UniversesSectionProps = {
   content: { eyebrow: string; title: string; subtitle?: string }
   universes: HomeUniverse[]
+}
+
+/** Une rangée pleine sur grand écran, quel que soit le nombre de rubriques. */
+const COLONNES_XL: Record<number, string> = {
+  1: 'xl:grid-cols-3',
+  2: 'xl:grid-cols-3',
+  3: 'xl:grid-cols-3',
+  4: 'xl:grid-cols-4',
+  5: 'xl:grid-cols-5',
 }
 
 /** Taille réelle d'une vignette : ~240 px sur xl, puis 3 puis 2 colonnes. */
@@ -25,6 +33,10 @@ const THUMB_SIZES = '(min-width: 1280px) 250px, (min-width: 768px) 30vw, 46vw'
  * tard.
  */
 export function UniversesSection({ content, universes }: UniversesSectionProps) {
+  // Pas de tuiles, pas de section : un cadre « Les univers seront affichés
+  // ici » sur l'accueil d'une boutique ouverte donnait l'air d'un chantier.
+  if (universes.length === 0) return null
+
   return (
     <section aria-labelledby="universes-heading" className="bg-white py-12 lg:py-16">
       <div className="container-page">
@@ -55,14 +67,7 @@ export function UniversesSection({ content, universes }: UniversesSectionProps) 
           </Link>
         </div>
 
-        {universes.length === 0 ? (
-          <EmptyState
-            className="mt-8"
-            title="Les univers seront affichés ici."
-            action={{ label: 'Voir tous les univers', href: '/c' }}
-          />
-        ) : (
-          <ul className="mt-8 grid list-none grid-cols-2 gap-4 p-0 md:grid-cols-3 xl:grid-cols-6">
+          <ul className={`mt-8 grid list-none grid-cols-2 gap-4 p-0 md:grid-cols-3 ${COLONNES_XL[universes.length] ?? 'xl:grid-cols-6'}`}>
             {universes.map((universe) => (
               <li key={universe.slug}>
                 <Link
@@ -107,7 +112,6 @@ export function UniversesSection({ content, universes }: UniversesSectionProps) 
               </li>
             ))}
           </ul>
-        )}
       </div>
     </section>
   )
