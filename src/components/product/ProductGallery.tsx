@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import type { GalleryItem } from '@/lib/queries/product'
 import { cn } from '@/lib/cn'
+import { estComparatifAvantApres } from '@/lib/media-comparatif'
 import { IconCheck, IconClose, IconInfo, IconPack, IconZoom } from '@/components/ui/icons'
 import { useProductConfiguration } from './ProductConfiguration'
 
@@ -120,6 +121,8 @@ export function ProductGallery({
   const index = vue === VUE_PACK ? 0 : Math.min(vue, items.length - 1)
   const current = items[index]
   const packshot = estPackshot(current.role)
+  /* Le comparatif est vertical : montré en entier, sur le fond anthracite des rendus. */
+  const comparatifAffiche = !(vue === VUE_PACK && composition.length > 0) && estComparatifAvantApres(current)
   const packAffiche = vue === VUE_PACK && avecPack
 
   /** Onglets : les visuels, puis la composition quand il y en a une. */
@@ -163,7 +166,12 @@ export function ProductGallery({
     <div>
       <div className="flex flex-col gap-2.5 fiche:flex-row-reverse fiche:items-start fiche:gap-3">
         {/* .main-visual */}
-        <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#f2f2f2] fiche:min-w-0 fiche:flex-1 fiche:rounded-2xl">
+        <div
+          className={cn(
+            'relative aspect-square w-full overflow-hidden rounded-xl fiche:min-w-0 fiche:flex-1 fiche:rounded-2xl',
+            comparatifAffiche ? 'bg-[#18191b]' : 'bg-[#f2f2f2]',
+          )}
+        >
           {packAffiche ? (
             /* .gallery-pack — la composition, dans le cadre du visuel. */
             <div className="flex h-full flex-col justify-center bg-[#f5f6f7] px-6 py-6 fiche:px-10 fiche:py-10">
@@ -211,7 +219,11 @@ export function ProductGallery({
                 priority
                 sizes="(min-width: 801px) 45vw, 100vw"
                 className={cn(
-                  packshot ? 'object-contain p-5 mix-blend-multiply fiche:p-8' : 'object-cover',
+                  packshot
+                    ? 'object-contain p-5 mix-blend-multiply fiche:p-8'
+                    : comparatifAffiche
+                      ? 'object-contain'
+                      : 'object-cover',
                 )}
               />
 
