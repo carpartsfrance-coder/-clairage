@@ -54,7 +54,32 @@ const EMPTY_CART: CartSummary = { id: null, itemCount: 0, totalCents: 0 }
  * Véhicule retenu pour la navigation. Il est stocké en cookie pour survivre à
  * la navigation anonyme, et re-résolu depuis la base pour que le libellé reste
  * juste si la configuration est renommée côté admin.
+ *
+ * **Un véhicule qui n'est plus proposé est abandonné**, comme une
+ * configuration désactivée. Les éclairages d'un véhicule peuvent repasser en
+ * brouillon après que le client l'a retenu : la barre continuait alors de
+ * porter « BMW M4 » de page en page, avec un bouton « Voir mes éclairages » qui
+ * menait à une liste vide. Le cookie n'est pas effacé pour autant — si ces
+ * fiches repassent en ligne, le véhicule réapparaît de lui-même.
  */
+/**
+ * La génération mène-t-elle encore à un produit en ligne ?
+ *
+ * Posée à part, et par identifiant : `GENERATION_VISIBLE` est un fragment de
+ * `where`, et la configuration a déjà été lue. Un second `count` borné à une
+ * ligne coûte moins qu'une jointure ajoutée à la lecture principale, qui elle
+ * sert à chaque page.
+ */
+async function generationVisible(generationId: string): Promise<boolean> {
+  const { prisma } = await import('./db')
+  const { GENERATION_VISIBLE } = await import('./queries/vehicules-visibles')
+  const trouvee = await prisma.vehicleGeneration.findFirst({
+    where: { id: generationId, ...GENERATION_VISIBLE },
+    select: { id: true },
+  })
+  return trouvee !== null
+}
+
 export async function getSelectedVehicle(): Promise<SelectedVehicle | null> {
   const store = await cookies()
   const raw = store.get(VEHICLE_COOKIE)?.value
@@ -71,6 +96,7 @@ export async function getSelectedVehicle(): Promise<SelectedVehicle | null> {
       },
     })
     if (!config || !config.active) return null
+    if (!(await generationVisible(config.generationId))) return null
 
     const { generation } = config
     const years = generation.yearTo

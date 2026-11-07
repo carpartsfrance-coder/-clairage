@@ -47,15 +47,41 @@ export async function getHomeBlocks(): Promise<typeof demoHomeBlocks> {
   }
 }
 
+/**
+ * Les univers de l'accueil : seulement ceux qui mènent à des produits.
+ *
+ * Une tuile d'univers est un grand visuel cliquable, au milieu de l'accueil :
+ * c'est une promesse. Elle ne doit pas ouvrir sur une rubrique vide. La
+ * sélection reste éditoriale — ce sont les catégories racines auxquelles un
+ * visuel a été rattaché en back-office — mais une rubrique sans produit en
+ * ligne est retirée de l'affichage, pas de la configuration : elle revient
+ * d'elle-même dès qu'un de ses produits repasse en ligne.
+ *
+ * Le comptage remonte l'arbre au lieu de s'arrêter aux produits rattachés
+ * directement à la racine, et c'est indispensable ici : « Plaque & recul » n'a
+ * aucun produit en propre et 451 dans ses sous-rubriques. Compter en direct
+ * l'aurait fait disparaître de l'accueil alors que c'est la rubrique la mieux
+ * fournie du catalogue. La remontée ne suppose aucune profondeur — elle suit
+ * les `parentId` tant qu'il y en a.
+ *
+ * `limit` s'applique **après** le filtre : sinon six rubriques choisies dont
+ * quatre sont vides n'en laisseraient que deux à l'écran.
+ */
 export async function getUniverses(limit = 6): Promise<HomeUniverse[]> {
   try {
-    const categories = await prisma.category.findMany({
-      where: { published: true, parentId: null, heroMediaId: { not: null } },
-      orderBy: { position: 'asc' },
-      take: limit,
-      include: { heroMedia: true },
-    })
-    return categories.map((category) => ({
+    const [categories, racinesFournies] = await Promise.all([
+      prisma.category.findMany({
+        where: { published: true, parentId: null, heroMediaId: { not: null } },
+        orderBy: { position: 'asc' },
+        include: { heroMedia: true },
+      }),
+      racinesAvecProduits(),
+    ])
+
+    return categories
+      .filter((category) => racinesFournies.has(category.id))
+      .slice(0, limit)
+      .map((category) => ({
       slug: category.slug,
       name: category.name,
       description: category.description,
@@ -67,6 +93,43 @@ export async function getUniverses(limit = 6): Promise<HomeUniverse[]> {
     console.error('[accueil] univers indisponibles', error)
     return []
   }
+}
+
+/**
+ * Les catégories racines qui mènent à au moins un produit en ligne,
+ * sous-rubriques comprises.
+ *
+ * Deux lectures seulement : l'arbre des catégories et les rattachements des
+ * produits publiés. On marque les catégories qui en portent, puis on remonte
+ * les `parentId` jusqu'à la racine. Aucune profondeur n'est supposée.
+ */
+async function racinesAvecProduits(): Promise<Set<string>> {
+  const [categories, rattachements] = await Promise.all([
+    prisma.category.findMany({ select: { id: true, parentId: true } }),
+    prisma.productCategory.findMany({
+      where: { product: { status: 'PUBLISHED' } },
+      select: { categoryId: true },
+      distinct: ['categoryId'],
+    }),
+  ])
+
+  const parentDe = new Map(categories.map((category) => [category.id, category.parentId]))
+  const racines = new Set<string>()
+
+  for (const { categoryId } of rattachements) {
+    let courant: string | null | undefined = categoryId
+    // Garde-fou : une boucle dans les parents ferait tourner sans fin.
+    for (let pas = 0; courant && pas <= categories.length; pas += 1) {
+      const parent: string | null | undefined = parentDe.get(courant)
+      if (!parent) {
+        racines.add(courant)
+        break
+      }
+      courant = parent
+    }
+  }
+
+  return racines
 }
 
 /**

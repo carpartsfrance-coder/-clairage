@@ -59,7 +59,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const lecture = await getPackGeneration(vehicleType, marque, modele, generation)
   // Une lecture en échec ne titre pas « introuvable » : on ne l'a pas constaté.
   if (lecture.state !== 'found') {
-    return { title: lecture.state === 'absent' ? 'Véhicule introuvable' : 'Packs par véhicule' }
+  /*
+    `noindex` sur l'absence, et sur elle seule.
+
+    Le 404 suffirait à tenir Google à l'écart, mais il n'est pas toujours lu
+    comme tel par les outils tiers, et le `noindex` global vient aujourd'hui du
+    mode préproduction : le jour où il s'éteindra, cette page le perdrait.
+    Deux mécanismes valent mieux qu'un sur une adresse qu'un véhicule
+    redeviendra peut-être.
+
+    Rien de tel sur `unavailable` : une base injoignable n'est pas une page
+    absente, et demander à Google de désindexer une page qui existe à cause
+    d'un incident de lecture coûterait des mois à rattraper.
+  */
+    return lecture.state === 'absent'
+      ? { title: 'Véhicule introuvable', robots: { index: false, follow: false } }
+      : { title: 'Packs par véhicule' }
   }
 
   const data = lecture.data
