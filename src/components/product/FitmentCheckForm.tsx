@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useActionState } from 'react'
 import { requestFitmentCheck, type FitmentCheckState } from '@/lib/actions/support'
+import { MentionDonnees } from '@/components/legal/MentionDonnees'
 import { Alert } from '@/components/ui/Surface'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/Field'
@@ -109,6 +110,8 @@ export function FitmentCheckForm({
       >
         {pending ? 'Envoi en cours…' : submitLabel}
       </Button>
+
+      <MentionDonnees usage="Votre adresse e-mail et votre message ne servent qu’à vous répondre." />
     </form>
   )
 }
