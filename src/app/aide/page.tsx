@@ -7,7 +7,9 @@ import { Card } from '@/components/ui/Surface'
 
 export const metadata: Metadata = {
   title: 'Aide & contact',
-  robots: { index: false, follow: false },
+  description:
+    "Suivi de commande, questions fréquentes et contact : l'aide pour choisir votre pack et suivre votre commande.",
+  alternates: { canonical: '/aide' },
 }
 
 /**

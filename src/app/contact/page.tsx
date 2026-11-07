@@ -8,7 +8,9 @@ import { ContactForm } from '@/components/support/ContactForm'
 
 export const metadata: Metadata = {
   title: 'Nous contacter',
-  robots: { index: false, follow: false },
+  description:
+    'Une question sur la compatibilité, une commande ou un retour : écrivez-nous, un conseiller vous répond.',
+  alternates: { canonical: '/contact' },
 }
 
 type PageProps = { searchParams: Promise<{ sujet?: string; commande?: string }> }

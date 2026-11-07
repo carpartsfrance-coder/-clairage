@@ -3,8 +3,10 @@ import { siteConfig } from '@/lib/identity'
 import {
   listSitemapCategories,
   listSitemapGuides,
+  listSitemapPacks,
   listSitemapProducts,
 } from '@/lib/queries/sitemap'
+import { STATIC_PAGES } from '@/lib/sitemap-pages'
 
 /**
  * Plan de site.
@@ -21,23 +23,6 @@ import {
 
 export const revalidate = 3600
 
-/** Pages fixes, avec la priorité relative qu'on leur accorde. */
-const STATIC_PAGES: Array<{ path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'] }> = [
-  { path: '/', priority: 1, changeFrequency: 'daily' },
-  { path: '/vehicule', priority: 0.9, changeFrequency: 'weekly' },
-  { path: '/guides', priority: 0.7, changeFrequency: 'weekly' },
-  // /faq n'y figure plus : l'adresse redirige vers /aide, qui porte les
-  // questions. Déclarer une redirection dans un plan de site est une erreur
-  // que Google signale.
-  { path: '/aide', priority: 0.4, changeFrequency: 'monthly' },
-  { path: '/contact', priority: 0.4, changeFrequency: 'yearly' },
-  { path: '/livraison-retours', priority: 0.4, changeFrequency: 'yearly' },
-  { path: '/garanties', priority: 0.3, changeFrequency: 'yearly' },
-  { path: '/cgv', priority: 0.2, changeFrequency: 'yearly' },
-  { path: '/mentions-legales', priority: 0.2, changeFrequency: 'yearly' },
-  { path: '/confidentialite', priority: 0.2, changeFrequency: 'yearly' },
-  { path: '/cookies', priority: 0.2, changeFrequency: 'yearly' },
-]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
@@ -46,10 +31,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [{ url: siteConfig.url, lastModified: now, changeFrequency: 'daily', priority: 1 }]
   }
 
-  const [products, categories, guides] = await Promise.all([
+  const [products, categories, guides, packs] = await Promise.all([
     listSitemapProducts(),
     listSitemapCategories(),
     listSitemapGuides(),
+    listSitemapPacks(),
   ])
 
   return [
@@ -60,6 +46,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: page.priority,
     })),
     ...categories.map((entry) => ({
+      url: `${siteConfig.url}${entry.path}`,
+      lastModified: entry.lastModified,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    })),
+    // Les pages véhicule (« Éclairage Renault Clio 4 ») : celles qui reçoivent
+    // les recherches « led + modèle ».
+    ...packs.map((entry) => ({
       url: `${siteConfig.url}${entry.path}`,
       lastModified: entry.lastModified,
       changeFrequency: 'weekly' as const,
