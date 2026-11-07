@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { commercialTerms, formatPrice, identity } from '@/lib/identity'
+import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import {
   AComplete,
   Article,
@@ -32,9 +33,10 @@ const MISE_A_JOUR = '24 octobre 2026'
  * reformuler à la baisse serait une clause abusive. Le texte renvoie donc aux
  * articles et en donne la portée exacte.
  */
-export default function Page() {
+export default async function Page() {
   const l = identity.legal
-  const seuil = commercialTerms.freeShippingThresholdCents
+  // Seuil réglé dans le back-office (page « Livraison »).
+  const seuil = await getSeuilLivraisonOfferte()
   const retractation = commercialTerms.returnWindowDays ?? 14
 
   const manquants = [

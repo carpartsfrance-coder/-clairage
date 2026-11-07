@@ -3,6 +3,7 @@ import { Logo } from '@/components/brand/Logo'
 import { footerNav } from '@/lib/navigation'
 import { IconHeadset, IconReturn, IconTruck } from '@/components/ui/icons'
 import { commercialTerms, formatPrice, identity, siteConfig } from '@/lib/identity'
+import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 
 /**
  * Pied de page — `.home-footer` du code de référence.
@@ -21,7 +22,9 @@ import { commercialTerms, formatPrice, identity, siteConfig } from '@/lib/identi
  *   n'est pas rendue — on ne comble pas un champ d'identité par une formule
  *   générique — et l'absence est dite au visiteur.
  */
-export function Footer() {
+export async function Footer() {
+  // Seuil réglé dans le back-office (page « Livraison »), pas une constante.
+  const seuilLivraisonOfferte = await getSeuilLivraisonOfferte()
   const { legal, contact } = identity
   const hasLegalIdentity = Boolean(legal.companyName)
   const year = new Date().getFullYear()
@@ -29,10 +32,10 @@ export function Footer() {
   // .footer-manifesto : les repères de la référence, mais lus depuis les
   // conditions commerciales. Un seuil non renseigné ne s'affiche pas.
   const promises = [
-    commercialTerms.freeShippingThresholdCents
+    seuilLivraisonOfferte
       ? {
           icon: IconTruck,
-          text: `Livraison offerte dès ${formatPrice(commercialTerms.freeShippingThresholdCents)}`,
+          text: `Livraison offerte dès ${formatPrice(seuilLivraisonOfferte)}`,
         }
       : null,
     commercialTerms.returnWindowDays

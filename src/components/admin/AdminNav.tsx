@@ -59,6 +59,8 @@ const ENTRIES: Entry[] = [
   { href: '/admin/clients', label: 'Clients', permission: 'customers.view', Icon: IconUser },
   { href: '/admin/sav', label: 'SAV', permission: 'sav.view', Icon: IconHeadset },
   { href: '/admin/promotions', label: 'Promotions', permission: 'promotions.view', Icon: IconPencil },
+  // Zones, pays, prix et délais de livraison : ce que le tunnel de commande facture.
+  { href: '/admin/livraison', label: 'Livraison', permission: 'settings.view', Icon: IconTruck },
   { href: '/admin/emails', label: 'Messages', permission: 'settings.view', Icon: IconMail },
   { href: '/admin/parametres', label: 'Paramètres', permission: 'settings.view', Icon: IconGear },
 ]

@@ -51,7 +51,13 @@ type Props = {
   subtotalCents: number
   /** TVA contenue dans le sous-total des articles (les prix sont TTC). */
   vatCents: number
-  shippingOptions: CheckoutShippingOption[]
+  /**
+   * Pays ouverts à la livraison (zones du back-office), la France d'abord, et
+   * pour chacun ses modes. Le choix du pays de livraison change les modes
+   * proposés et leur prix.
+   */
+  countries: Array<{ code: string; nom: string }>
+  shippingOptionsByCountry: Record<string, CheckoutShippingOption[]>
   /** Vrai quand aucun prestataire n'est configuré : il faut le dire au client. */
   paymentSimulated: boolean
 }
@@ -84,9 +90,16 @@ const fieldsetClass = 'border-0 p-0'
 function AddressFields({
   prefix,
   fieldErrors,
+  countries,
+  country,
+  onCountryChange,
 }: {
   prefix: 'shipping' | 'billing'
   fieldErrors: Record<string, string> | undefined
+  countries: Array<{ code: string; nom: string }>
+  /** Pays choisi, quand le formulaire doit le suivre (adresse de livraison). */
+  country?: string
+  onCountryChange?: (code: string) => void
 }) {
   const error = (name: string) => fieldErrors?.[`${prefix}.${name}`]
   const id = (name: string) => `${prefix}-${name}`
@@ -163,21 +176,31 @@ function AddressFields({
       </div>
 
       {/*
-        Une seule option : la France est la seule zone de livraison configurée.
-        Le champ reste un select pour que l'ajout d'une zone côté admin n'oblige
-        pas à retoucher le formulaire, et pour que le pays envoyé soit explicite.
+        Les pays viennent des zones de livraison du back-office : un pays où
+        rien n'est livrable n'est pas proposé. Pour l'adresse de livraison, le
+        pays choisi décide des modes et des prix affichés plus bas.
       */}
       <SelectField
         id={id('country')}
         name={`${prefix}.country`}
         label="Pays"
-        defaultValue="FR"
-        hint="Seule zone de livraison configurée à ce jour."
+        {...(country !== undefined
+          ? { value: country, onChange: (event) => onCountryChange?.(event.target.value) }
+          : { defaultValue: countries[0]?.code ?? 'FR' })}
+        hint={
+          prefix === 'shipping' && countries.length <= 1
+            ? 'Seul pays livré à ce jour.'
+            : undefined
+        }
         autoComplete={auto('country')}
         error={error('country')}
         wrapperClassName="sm:max-w-xs"
       >
-        <option value="FR">France</option>
+        {(countries.length > 0 ? countries : [{ code: 'FR', nom: 'France' }]).map((pays) => (
+          <option key={pays.code} value={pays.code}>
+            {pays.nom}
+          </option>
+        ))}
       </SelectField>
     </div>
   )
@@ -188,13 +211,22 @@ export function CheckoutForm({
   lines,
   subtotalCents,
   vatCents,
-  shippingOptions,
+  countries,
+  shippingOptionsByCountry,
   paymentSimulated,
 }: Props) {
+  const [country, setCountry] = useState(countries[0]?.code ?? 'FR')
+  const shippingOptions = shippingOptionsByCountry[country] ?? []
   const [state, formAction, pending] = useActionState<CheckoutState, FormData>(submitOrder, {})
 
   const [billingSame, setBillingSame] = useState(true)
   const [methodCode, setMethodCode] = useState(shippingOptions[0]?.code ?? '')
+
+  /** Un autre pays, d'autres modes : on retient le premier de ce pays. */
+  const changerDePays = (code: string) => {
+    setCountry(code)
+    setMethodCode(shippingOptionsByCountry[code]?.[0]?.code ?? '')
+  }
 
   const fieldErrors = state.fieldErrors
   const selected = shippingOptions.find((option) => option.code === methodCode) ?? null
@@ -273,7 +305,13 @@ export function CheckoutForm({
           <fieldset className={fieldsetClass}>
             <legend className={legendClass}>Adresse de livraison</legend>
             <div className="mt-4">
-              <AddressFields prefix="shipping" fieldErrors={fieldErrors} />
+              <AddressFields
+                prefix="shipping"
+                fieldErrors={fieldErrors}
+                countries={countries}
+                country={country}
+                onCountryChange={changerDePays}
+              />
             </div>
           </fieldset>
 
@@ -298,7 +336,7 @@ export function CheckoutForm({
 
             {billingSame ? null : (
               <div className="mt-4">
-                <AddressFields prefix="billing" fieldErrors={fieldErrors} />
+                <AddressFields prefix="billing" fieldErrors={fieldErrors} countries={countries} />
               </div>
             )}
           </fieldset>
