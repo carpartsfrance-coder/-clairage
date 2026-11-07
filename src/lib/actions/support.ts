@@ -196,13 +196,14 @@ export async function requestContact(
     subject: formData.get('subject'),
     email: formData.get('email'),
     orderReference: formData.get('orderReference') ?? '',
+    vehicle: formData.get('vehicle') ?? '',
     message: formData.get('message') ?? '',
   })
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Demande incomplète.' }
   }
 
-  const { subject, email, orderReference, message } = parsed.data
+  const { subject, email, orderReference, vehicle, message } = parsed.data
 
   const limite = await throttle('contactRequest', email)
   if (!limite.allowed) return { error: throttleMessage(limite.retryAfterSeconds) }
@@ -263,6 +264,7 @@ export async function requestContact(
     const description = buildContactDescription({
       subject,
       message,
+      vehicle: vehicle || null,
       order: order ? { reference: order.reference, placedAt: order.placedAt } : null,
       account: user ? { email: user.email } : null,
     })
@@ -284,6 +286,10 @@ export async function requestContact(
             subject,
             orderId: order?.id ?? null,
             orderReference: order?.reference ?? null,
+            // À côté du texte comme le reste : les demandes « véhicule non
+            // listé » se relèvent ainsi d'un coup, pour savoir quelles photos
+            // produire en priorité.
+            vehicle: vehicle || null,
           },
         },
       })

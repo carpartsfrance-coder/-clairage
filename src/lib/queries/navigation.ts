@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '../db'
+import { MARQUE_VISIBLE, MODELE_VISIBLE } from './vehicules-visibles'
 
 /**
  * Arborescence de navigation, construite depuis le catalogue.
@@ -97,10 +98,13 @@ const MAX_MARQUES = 24
  */
 async function lireMarques(type: 'CAR' | 'MOTORCYCLE') {
   const makes = await prisma.vehicleMake.findMany({
-    where: { type, active: true, models: { some: { active: true } } },
+    where: { type, ...MARQUE_VISIBLE },
     orderBy: [{ position: 'asc' }, { name: 'asc' }],
     include: {
-      _count: { select: { models: { where: { active: true } } } },
+      // Les modèles comptés sont ceux que la page de la marque montrera. Les
+      // compter sur `active` seul annoncerait « 62 modèles » pour une marque
+      // qui n'en ouvre que quatre, et le client chercherait les 58 autres.
+      _count: { select: { models: { where: MODELE_VISIBLE } } },
       logo: { select: { url: true, alt: true } },
     },
   })

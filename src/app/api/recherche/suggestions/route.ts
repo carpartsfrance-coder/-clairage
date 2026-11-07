@@ -21,7 +21,18 @@ export async function GET(request: Request) {
         take: 6,
       }),
       prisma.productVariant.findMany({
-        where: { active: true, sku: { contains: query, mode: 'insensitive' } },
+        /*
+          `product.status` autant que `active` : une variante active peut
+          appartenir à une fiche en brouillon, et la suggestion menait alors à
+          une adresse qui répond 404. Le défaut ne se voyait pas tant que tout
+          le catalogue était publié ; il est apparu le jour où 9 325 fiches
+          sont repassées en brouillon.
+        */
+        where: {
+          active: true,
+          product: { status: 'PUBLISHED' },
+          sku: { contains: query, mode: 'insensitive' },
+        },
         select: { sku: true, product: { select: { slug: true, name: true } } },
         take: 4,
       }),

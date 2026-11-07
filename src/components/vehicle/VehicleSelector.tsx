@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { SelectField } from '@/components/ui/Field'
 import { Alert } from '@/components/ui/Surface'
 import { IconArrowRight, IconCar, IconMotorcycle } from '@/components/ui/icons'
+import { LienVehiculeAbsent } from './LienVehiculeAbsent'
 
 /**
  * Sélecteur de véhicule : marque → modèle → année.
@@ -489,6 +490,17 @@ export function VehicleSelector({
           {error}
         </Alert>
       ) : null}
+
+      {/*
+        La sortie de secours du parcours.
+
+        Le sélecteur ne liste que les véhicules qui mènent à un produit en
+        ligne : sans ce lien, le client dont la voiture manque n'a rien à
+        conclure et repart. Il est placé sous les champs, pas au-dessus — on ne
+        propose pas d'écrire avant d'avoir laissé chercher. `mt-2` en ligne
+        parce que cette disposition annule le `gap` du formulaire.
+      */}
+      <LienVehiculeAbsent className={inline ? 'mt-2' : undefined} />
     </form>
   )
 }

@@ -29,6 +29,19 @@ export const CONTACT_SUBJECTS = [
     hint: 'Suivi, modification, colis reçu.',
   },
   {
+    /*
+      Ce sujet existe pour une raison précise : le site ne montre que les
+      véhicules pour lesquels un éclairage est effectivement en ligne, et le
+      référentiel en compte bien davantage. Un client dont la voiture n'est pas
+      proposée n'a donc rien à conclure — ni qu'elle n'existe pas au
+      référentiel, ni qu'aucun produit ne lui conviendrait. Il faut pouvoir le
+      demander, et ces demandes disent aussi quelles photos produire ensuite.
+    */
+    key: 'vehicule',
+    label: 'Véhicule non listé',
+    hint: "Votre voiture n'apparaît pas dans le sélecteur.",
+  },
+  {
     key: 'autre',
     label: 'Autre demande',
     hint: 'Tout le reste.',
@@ -60,6 +73,15 @@ export const contactSchema = z.object({
   subject: z.enum(SUBJECT_KEYS, { message: 'Choisissez le sujet de votre demande.' }),
   email: z.string().trim().email('Adresse e-mail invalide').max(160),
   orderReference: z.string().trim().max(40).optional(),
+  /*
+    Le véhicule en texte libre, et facultatif.
+    
+    Facultatif parce qu'il ne concerne pas toutes les demandes, et en texte
+    libre parce qu'un client dont le véhicule n'est pas au catalogue ne peut
+    précisément pas le choisir dans une liste. Lui proposer un sélecteur ici
+    serait lui redemander ce qu'il vient de ne pas trouver.
+  */
+  vehicle: z.string().trim().max(120).optional(),
   message: z
     .string()
     .trim()
@@ -83,6 +105,8 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' })
 export function buildContactDescription(input: {
   subject: ContactSubjectKey
   message: string
+  /** Véhicule tel que le client l'a écrit, quand il l'a renseigné. */
+  vehicle?: string | null
   /** Commande retrouvée en base, ou null quand il n'y en a pas. */
   order: { reference: string; placedAt: Date } | null
   /** Compte connecté au moment de l'envoi, ou null. */
@@ -101,6 +125,13 @@ export function buildContactDescription(input: {
     input.account
       ? `Compte : ${input.account.email}`
       : 'Compte : aucun (demande envoyée sans être connecté)',
+    /*
+      Le véhicule est le seul champ repris mot pour mot du formulaire, et il
+      est annoncé comme tel : il désigne justement ce que la base ne connaît
+      pas, donc rien ne peut le relire. L'équipe doit lire une déclaration du
+      client, pas la croire vérifiée.
+    */
+    input.vehicle ? `Véhicule indiqué par le client : ${input.vehicle}` : null,
     '',
     'Message du client :',
     input.message,

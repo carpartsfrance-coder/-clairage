@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
+import { GENERATION_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { VEHICLE_COOKIE } from '@/lib/session'
 import { identity } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
@@ -34,7 +35,14 @@ import { cn } from '@/lib/cn'
 const getGeneration = cache(async function getGeneration(id: string) {
   try {
     const generation = await prisma.vehicleGeneration.findFirst({
-      where: { id, active: true },
+      /*
+        `GENERATION_VISIBLE` et non `active` seul : une génération sans produit
+        en ligne n'est plus proposée nulle part, et son adresse directe doit
+        répondre 404 comme les pages de marque et de modèle. Sans ce filtre,
+        l'étape d'équipement restait la seule porte ouverte sur un véhicule
+        masqué, et menait à une page de résultats vide.
+      */
+      where: { id, ...GENERATION_VISIBLE },
       include: {
         model: { include: { make: true } },
         configurations: {
