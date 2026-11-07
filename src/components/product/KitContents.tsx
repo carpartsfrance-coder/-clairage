@@ -43,10 +43,10 @@ export function KitContents({
   */
   if (composants.length === 0) {
     return (
-      <p className="max-w-[580px] text-[11px] leading-[1.8] text-[#7a7a7a]">
+      <p className="max-w-[640px] text-[15px] leading-[1.7] text-[#5f6266]">
         <strong className="text-slate-ink">{selected.name}</strong> — ce conditionnement ne
         contient que le produit lui-même, sans accessoire de montage. Ce que votre véhicule exige
-        en plus est indiqué dans le bloc d&apos;achat et à l&apos;étape Installation.
+        en plus est indiqué dans le bloc d&apos;achat.
       </p>
     )
   }
@@ -59,7 +59,7 @@ export function KitContents({
     <div className="flex flex-col gap-[11px] fiche:grid fiche:grid-cols-[0.85fr_1.15fr] fiche:items-center fiche:gap-[49px]">
       {image ? (
         /* .kit-visual : 280 px, fond papier, étiquette en bas. */
-        <div className="relative h-[250px] overflow-hidden rounded-[9px] bg-surface-paper fiche:h-[280px]">
+        <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-surface-paper">
           <Image
             src={image}
             alt={imageAlt}
@@ -67,9 +67,9 @@ export function KitContents({
             sizes="(min-width: 801px) 40vw, 100vw"
             className="object-cover mix-blend-multiply"
           />
-          <span className="absolute right-[18px] bottom-3.5 left-[18px] flex justify-between border-t border-[#ddd] pt-2.5 text-[8px] tracking-[1px] uppercase">
+          <span className="absolute right-4 bottom-4 left-4 flex justify-between gap-3 rounded-lg bg-white/90 px-3 py-2 text-[12px] font-semibold">
             {selected.name}
-            <strong className="text-[10px] tracking-normal normal-case">
+            <strong className="text-[13px] whitespace-nowrap">
               {formatPrice(selected.priceCents)} TTC
             </strong>
           </span>
@@ -86,13 +86,13 @@ export function KitContents({
             >
               <span
                 aria-hidden="true"
-                className="mt-[3px] self-start text-[11px] tracking-[1px] text-[#a0a0a0]"
+                className="mt-[3px] self-start text-[13px] tracking-[1px] text-[#6b6d70]"
               >
                 {String(index + 1).padStart(2, '0')}
               </span>
 
               <div className="min-w-0 flex-1">
-                <strong className="text-[12px]">
+                <strong className="text-[16px]">
                   {composant.quantity > 1 ? `${composant.quantity} × ` : ''}
                   <Link
                     href={`/p/${composant.productSlug}`}
@@ -101,13 +101,13 @@ export function KitContents({
                     {composant.productName}
                   </Link>
                 </strong>
-                <p className="my-[3px] text-[10px] text-[#828282]">
+                <p className="my-[3px] text-[13px] text-[#5f6266]">
                   {composant.variantName}
                   {!composant.required ? ' · facultatif' : null}
                 </p>
               </div>
 
-              <span className="shrink-0 text-[11px] font-bold whitespace-nowrap">
+              <span className="shrink-0 text-[15px] font-bold whitespace-nowrap">
                 {formatPrice(composant.priceCents)}
               </span>
             </li>
@@ -118,7 +118,7 @@ export function KitContents({
           Le chiffre que la référence n'affiche pas, et qui change la lecture :
           ce que coûtent les mêmes pièces achetées séparément.
         */}
-        <p className="flex items-baseline justify-between gap-4 border-b border-line py-[15px] text-[10px] text-[#828282] fiche:py-[17px]">
+        <p className="flex items-baseline justify-between gap-4 border-b border-line py-[15px] text-[14px] text-[#5f6266] fiche:py-[17px]">
           <span>
             Les mêmes pièces achetées séparément
             {economie > 0 ? ` — soit ${formatPrice(economie)} de plus` : null}
@@ -130,16 +130,16 @@ export function KitContents({
 
         {/* .included-help : l'accompagnement, qui vient avec. */}
         <Link
-          href="/guides"
-          className="flex items-center gap-2.5 py-4 text-[#40664b] hover:underline"
+          href="/contact"
+          className="flex items-center gap-2.5 py-4 text-[#2f6a45] hover:underline"
         >
           <IconHeadset className="size-5 shrink-0" />
           <span className="flex-1">
-            <strong className="block text-[10px]">
+            <strong className="block text-[14px]">
               Et vous n&apos;êtes pas seul pour le montage.
             </strong>
-            <small className="mt-0.5 block text-[9px] text-[#828282]">
-              Guides de montage et assistance avant comme après l&apos;achat.
+            <small className="mt-0.5 block text-[13px] text-[#5f6266]">
+              Un conseiller vous répond, avant comme après l&apos;achat.
             </small>
           </span>
           <IconChevronRight className="size-4 shrink-0" />

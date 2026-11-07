@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import type { GalleryItem } from '@/lib/queries/product'
 import { cn } from '@/lib/cn'
-import { IconCheck, IconClose, IconHeadset, IconInfo, IconPack, IconZoom } from '@/components/ui/icons'
+import { IconCheck, IconClose, IconInfo, IconPack, IconZoom } from '@/components/ui/icons'
 import { useProductConfiguration } from './ProductConfiguration'
 
 /**
@@ -112,7 +111,7 @@ export function ProductGallery({
 
   if (items.length === 0) {
     return (
-      <div className="grid h-[290px] place-items-center rounded-[9px] border border-line bg-surface-muted text-sm text-muted fiche:h-[380px] fiche:rounded-xl min-[1101px]:h-[435px] min-[1450px]:h-[480px]">
+      <div className="grid aspect-square place-items-center rounded-xl border border-line bg-surface-muted text-sm text-muted">
         Aucun visuel disponible
       </div>
     )
@@ -134,10 +133,13 @@ export function ProductGallery({
   ]
 
   function surTouche(event: React.KeyboardEvent, position: number) {
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+    // Gauche/droite sur téléphone, haut/bas quand les vignettes sont en colonne.
+    const avance = event.key === 'ArrowRight' || event.key === 'ArrowDown'
+    const recule = event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+    if (!avance && !recule) return
     event.preventDefault()
     const suivant =
-      event.key === 'ArrowRight'
+      avance
         ? (position + 1) % onglets.length
         : (position - 1 + onglets.length) % onglets.length
     setVue(onglets[suivant].vue)
@@ -145,138 +147,155 @@ export function ProductGallery({
   }
 
   return (
-    /* .gallery : collée sous l'en-tête, et seulement face au bloc d'achat.
-       Sous 800 px la maquette la remet dans le flux (`position:static`). */
-    <div className="fiche:sticky fiche:top-[150px]">
-      {/* .main-visual */}
-      <div className="relative h-[290px] overflow-hidden rounded-[9px] bg-[#f2f2f2] max-[370px]:h-[265px] fiche:h-[380px] fiche:rounded-xl min-[1101px]:h-[435px] min-[1450px]:h-[480px]">
-        {packAffiche ? (
-          /* .gallery-pack — la composition, dans le cadre du visuel. */
-          <div className="flex h-full flex-col justify-center bg-[linear-gradient(120deg,#eff2e7,#f7f7f7)] px-6 py-[22px] fiche:px-[35px] fiche:pt-12 fiche:pb-[25px]">
-            <span className="mb-[14px] grid size-[45px] place-items-center rounded-xl border border-[#e0e0e0] bg-white text-[#787878]">
-              <IconPack className="size-[19px]" />
-            </span>
-            <h3 className="mb-[13px] text-[22px] leading-[1.15] tracking-[-0.8px] fiche:mb-6 fiche:text-[26px] fiche:leading-[1.2]">
-              Tout votre montage,
-              <br />
-              dans un seul pack.
-            </h3>
-            <ul>
-              {composition.map((composant, rang) => (
-                <li
-                  key={composant.sku}
-                  className="flex items-center gap-[11px] border-b border-[#dcdcdc] py-2 text-[10px] fiche:gap-[14px] fiche:py-[10px] fiche:text-[12px]"
-                >
-                  <span className="text-[9px] text-[#878787]">
-                    {String(rang + 1).padStart(2, '0')}
-                  </span>
-                  <strong>
-                    {composant.quantity > 1 ? `${composant.quantity} ` : ''}
-                    {composant.productName}
-                  </strong>
-                  <IconCheck className="ml-auto size-[15px] shrink-0 text-ok" />
-                </li>
-              ))}
-            </ul>
-            <small className="mt-[9px] text-[7px] text-[#8a8a8a] fiche:mt-[13px] fiche:text-[8px]">
-              Composition du conditionnement retenu, détaillée plus bas.
-            </small>
-          </div>
-        ) : (
-          <>
-            <Image
-              key={current.url}
-              src={current.url}
-              alt={current.alt}
-              fill
-              priority
-              sizes="(min-width: 801px) 50vw, 100vw"
-              className={cn(
-                'object-contain p-[8px_5px_18px] fiche:p-[16px_12px_26px]',
-                packshot && 'mix-blend-multiply',
-              )}
-            />
+    /*
+      .gallery — refonte LEDVROOM : visuels carrés.
 
-            {/* .visual-label : l'intitulé de la vue qu'on regarde. */}
-            <span className="absolute top-[13px] left-[14px] z-[2] rounded-3xl border border-[#e3e3e3] bg-white/80 px-2 py-1 text-[7px] font-bold tracking-[1px] text-[#616161] uppercase fiche:top-[17px] fiche:left-[18px] fiche:px-[9px] fiche:py-[5px] fiche:text-[8px]">
-              {current.thumbLabel}
-            </span>
+      Les photos du catalogue sont carrées (1:1). Le cadre large de la V2 les
+      posait entre deux bandes grises ; le cadre est maintenant carré, comme
+      elles. Sur grand écran, les vignettes passent en colonne à gauche : la
+      photo reste grande sans allonger la page. Sur téléphone, elle prend toute
+      la largeur et les vignettes se rangent dessous.
 
-            {/* .visual-corner : la légende enregistrée du visuel. */}
-            {current.caption ? (
-              <span className="absolute bottom-[14px] left-[15px] z-[2] max-w-[75%] text-[6.5px] tracking-[0.8px] text-[#767676] uppercase fiche:bottom-[19px] fiche:left-5 fiche:text-[8px] fiche:tracking-[1.05px]">
-                {current.caption}
+      Elle n'est plus collée au défilement : les promesses de la fiche se
+      posent dessous, dans la même colonne, et une galerie collante viendrait
+      les recouvrir.
+    */
+    <div>
+      <div className="flex flex-col gap-2.5 fiche:flex-row-reverse fiche:items-start fiche:gap-3">
+        {/* .main-visual */}
+        <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#f2f2f2] fiche:min-w-0 fiche:flex-1 fiche:rounded-2xl">
+          {packAffiche ? (
+            /* .gallery-pack — la composition, dans le cadre du visuel. */
+            <div className="flex h-full flex-col justify-center bg-[#f5f6f7] px-6 py-6 fiche:px-10 fiche:py-10">
+              <span className="mb-4 grid size-11 place-items-center rounded-xl border border-[#e0e0e0] bg-white text-[#6b6d70]">
+                <IconPack className="size-5" />
               </span>
-            ) : null}
-
-            {/* .zoom-button */}
-            <button
-              type="button"
-              onClick={() => setZoomed(true)}
-              aria-label="Agrandir le visuel"
-              className="absolute top-4 right-[17px] z-[2] grid size-8 place-items-center rounded-full bg-white shadow-soft"
-            >
-              <IconZoom className="size-[14px] fiche:size-4" />
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* .gallery-tabs : trois colonnes, intitulé incrusté en bas. */}
-      {onglets.length > 1 ? (
-        <div
-          role="tablist"
-          aria-label="Vues du produit"
-          className={cn(
-            'mt-2 grid gap-2 fiche:mt-[10px] fiche:gap-[10px]',
-            /*
-              La maquette en aligne trois. On suit le nombre réel de vues,
-              parce qu'une quatrième — la composition — passerait sinon à la
-              ligne et laisserait deux cases vides à côté d'elle.
-            */
-            COLONNES[Math.min(onglets.length, 4)] ?? 'grid-cols-3',
-          )}
-        >
-          {onglets.map((onglet, position) => {
-            const actif = onglet.vue === vue
-            const visuel = onglet.vue === VUE_PACK ? null : items[onglet.vue as number]
-            return (
-              <button
-                key={onglet.cle}
-                id={`galerie-vignette-${position}`}
-                type="button"
-                role="tab"
-                aria-selected={actif}
-                tabIndex={actif ? 0 : -1}
-                onKeyDown={(event) => surTouche(event, position)}
-                onClick={() => setVue(onglet.vue)}
+              <h3 className="mb-4 text-[22px] leading-[1.15] font-bold tracking-[-0.6px] fiche:mb-6 fiche:text-[28px]">
+                Tout votre montage,
+                <br />
+                dans un seul pack.
+              </h3>
+              <ul>
+                {composition.map((composant, rang) => (
+                  <li
+                    key={composant.sku}
+                    className="flex items-center gap-3 border-b border-[#dcdcdc] py-2.5 text-[14px] fiche:gap-4 fiche:py-3 fiche:text-[15px]"
+                  >
+                    <span className="text-[12px] text-[#6b6d70]">
+                      {String(rang + 1).padStart(2, '0')}
+                    </span>
+                    <strong>
+                      {composant.quantity > 1 ? `${composant.quantity} ` : ''}
+                      {composant.productName}
+                    </strong>
+                    <IconCheck className="ml-auto size-4 shrink-0 text-ok" />
+                  </li>
+                ))}
+              </ul>
+              <small className="mt-3 text-[12px] text-[#6b6d70]">
+                Composition du conditionnement retenu, détaillée plus bas.
+              </small>
+            </div>
+          ) : (
+            <>
+              {/*
+                Un packshot sur fond clair reste contenu, avec sa marge : ses
+                extrémités sont ce que le client cherche à reconnaître. Une
+                photographie ou un rendu remplit le cadre carré.
+              */}
+              <Image
+                key={current.url}
+                src={current.url}
+                alt={current.alt}
+                fill
+                priority
+                sizes="(min-width: 801px) 45vw, 100vw"
                 className={cn(
-                  'relative grid h-16 place-items-center overflow-hidden rounded-[5px] bg-[#f2f2f2] transition-colors fiche:h-[77px] fiche:rounded-md min-[1450px]:h-[84px]',
-                  actif ? 'border-[1.7px] border-brand' : 'border border-[#e1e1e1] hover:border-line-strong',
+                  packshot ? 'object-contain p-5 mix-blend-multiply fiche:p-8' : 'object-cover',
                 )}
-              >
-                {visuel ? (
-                  <Image
-                    src={visuel.url}
-                    alt=""
-                    fill
-                    sizes="160px"
-                    className={cn(
-                      'object-cover',
-                      estPackshot(visuel.role) ? 'mix-blend-multiply' : 'brightness-[0.85]',
-                    )}
-                  />
-                ) : (
-                  <IconPack className="size-6 text-[#787878]" />
-                )}
-                <span className="absolute inset-x-0 bottom-0 bg-white/95 p-[2px] text-center text-[8px] text-ink fiche:p-[3px_4px] fiche:text-[9px]">
-                  {onglet.libelle}
+              />
+
+              {/* .visual-label : l'intitulé de la vue qu'on regarde. */}
+              <span className="absolute top-3 left-3 z-[2] rounded-full bg-white px-3 py-1.5 text-[12px] font-bold text-ink shadow-soft fiche:top-4 fiche:left-4">
+                {current.thumbLabel}
+              </span>
+
+              {/* .visual-corner : la légende enregistrée du visuel. */}
+              {current.caption ? (
+                <span className="absolute bottom-3 left-3 z-[2] max-w-[75%] rounded-full bg-white/90 px-3 py-1 text-[11px] text-[#55585b] fiche:bottom-4 fiche:left-4">
+                  {current.caption}
                 </span>
+              ) : null}
+
+              {/* .zoom-button — 44 px, la taille d'un doigt. */}
+              <button
+                type="button"
+                onClick={() => setZoomed(true)}
+                aria-label="Agrandir le visuel"
+                className="absolute top-2 right-2 z-[2] grid size-11 place-items-center rounded-full bg-white text-ink shadow-soft fiche:top-3 fiche:right-3"
+              >
+                <IconZoom className="size-5" />
               </button>
-            )
-          })}
+            </>
+          )}
         </div>
-      ) : null}
+
+        {/*
+          .gallery-tabs — vignettes carrées, comme les visuels. L'intitulé
+          n'est plus incrusté : il s'affiche sur la grande photo, et la
+          vignette le porte en nom accessible.
+        */}
+        {onglets.length > 1 ? (
+          <div
+            role="tablist"
+            aria-label="Vues du produit"
+            className={cn(
+              'grid gap-2',
+              COLONNES[Math.min(onglets.length, 4)] ?? 'grid-cols-3',
+              'fiche:flex fiche:w-[84px] fiche:shrink-0 fiche:flex-col fiche:gap-2.5',
+            )}
+          >
+            {onglets.map((onglet, position) => {
+              const actif = onglet.vue === vue
+              const visuel = onglet.vue === VUE_PACK ? null : items[onglet.vue as number]
+              return (
+                <button
+                  key={onglet.cle}
+                  id={`galerie-vignette-${position}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={actif}
+                  aria-label={onglet.libelle}
+                  title={onglet.libelle}
+                  tabIndex={actif ? 0 : -1}
+                  onKeyDown={(event) => surTouche(event, position)}
+                  onClick={() => setVue(onglet.vue)}
+                  className={cn(
+                    'relative grid aspect-square w-full place-items-center overflow-hidden rounded-lg bg-[#f2f2f2] transition-colors fiche:size-[84px] fiche:rounded-xl',
+                    actif ? 'border-2 border-brand' : 'border border-[#e1e1e1] hover:border-line-strong',
+                  )}
+                >
+                  {visuel ? (
+                    <Image
+                      src={visuel.url}
+                      alt=""
+                      fill
+                      sizes="96px"
+                      className={cn(
+                        estPackshot(visuel.role)
+                          ? 'object-contain p-1.5 mix-blend-multiply'
+                          : 'object-cover',
+                      )}
+                    />
+                  ) : (
+                    <IconPack className="size-6 text-[#6b6d70]" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        ) : null}
+      </div>
 
       {/*
         .visual-note — uniquement si le visuel affiché est une illustration ou
@@ -284,28 +303,13 @@ export function ProductGallery({
         s'excuser d'une vraie photo.
       */}
       {!packAffiche && (current.nature === 'ILLUSTRATION' || current.nature === 'DIAGRAM') ? (
-        <p className="mt-[9px] flex items-center justify-center gap-[5px] text-center text-[8px] leading-[1.5] text-[#929292] fiche:mt-3 fiche:gap-[6px] fiche:text-[9px]">
-          <IconInfo className="size-[11px] shrink-0 fiche:size-3" />
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[12px] leading-[1.5] text-[#6b6d70]">
+          <IconInfo className="size-3.5 shrink-0" />
           {current.nature === 'DIAGRAM'
             ? 'Schéma de principe — il situe le montage, il ne le représente pas.'
             : 'Visuel d’illustration — il ne montre pas un montage réalisé.'}
         </p>
       ) : null}
-
-      {/* .gallery-promise — masquée sous 800 px par la maquette. */}
-      <div className="mt-[21px] hidden items-center gap-[13px] border-t border-line pt-[23px] text-[11px] text-[#737373] fiche:flex">
-        <IconHeadset className="size-[25px] shrink-0 text-[#696969]" strokeWidth={1.5} />
-        <span>
-          Un doute sur votre montage ?
-          <br />
-          <Link
-            href="/contact"
-            className="mt-[2px] inline-block text-[11px] font-bold text-[#424242] underline-offset-[3px] hover:underline"
-          >
-            On vous accompagne, avant et après.<span className="ml-[7px]">↗</span>
-          </Link>
-        </span>
-      </div>
 
       {zoomed ? (
         <div

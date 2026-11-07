@@ -24,7 +24,7 @@ import {
   IconShield,
   IconCheckCircle,
   IconChevronRight,
-  IconClock,
+  IconReturn,
   IconTruck,
   IconWrench,
 } from '@/components/ui/icons'
@@ -183,7 +183,14 @@ export function BuyBox({
   // L'accroche de livraison suit le total réel : passer du kit aux ampoules
   // seules peut faire repasser sous le seuil de franchise, et cela doit se voir
   // tout de suite plutôt qu'au paiement.
-  const delivery = buildDeliveryTeaser(shippingOffers, total)
+  const sousTotal = total * quantite
+  const delivery = buildDeliveryTeaser(shippingOffers, sousTotal)
+  /* Remplissage de la jauge de livraison offerte, en pourcentage. */
+  const progressionFranchise = !delivery
+    ? 0
+    : delivery.missingForFreeCents
+      ? Math.min(100, Math.round((sousTotal / (sousTotal + delivery.missingForFreeCents)) * 100))
+      : 100
   const incompatible = selected.fitment.status === 'INCOMPATIBLE'
   /*
     Compatibilité non établie : l'achat reste autorisé — c'est la règle métier
@@ -201,20 +208,11 @@ export function BuyBox({
   const rupture = selected.availability.state === 'OUT_OF_STOCK' && !incompatible
   const lienVerification = `/verification?variante=${encodeURIComponent(selected.id)}`
 
-  /** « 2 × Ampoules LED H7 + 2 × Adaptateur… », construit depuis la vraie composition. */
-  const compositionSummary = selected.components
-    .map((component) =>
-      component.quantity > 1
-        ? `${component.quantity} × ${component.productName}`
-        : component.productName,
-    )
-    .join(' + ')
-
   const libelleBouton = pending
     ? 'Ajout en cours…'
     : incompatible
       ? 'Incompatible avec votre véhicule'
-      : `Ajouter ${selected.name.toLowerCase()}`
+      : 'Ajouter au panier'
 
   function submit() {
     setFeedback(null)
@@ -236,24 +234,27 @@ export function BuyBox({
 
   return (
     <div>
-      {/* ---- .fit-note : compatibilité pour le véhicule retenu ---- */}
+      {/*
+        .fit-note — refonte LEDVROOM : une seule ligne.
+
+        La composition (« 2 × … + 2 × … ») n'est plus répétée ici : elle est
+        dans la vue « Dans le pack » de la galerie et dans la section du
+        contenu, et elle allongeait le bloc d'achat avant même le prix.
+      */}
       {vehicleLabel && selected.fitment.status === 'CONFIRMED' ? (
-        <div className="mb-[19px] flex items-center gap-2.5 rounded-[7px] bg-ok-soft p-3 text-[#2a6441] fiche:mb-5 fiche:px-3 fiche:py-[11px]">
-          <span className="grid size-5 shrink-0 place-items-center rounded-full bg-ok text-white">
-            <IconCheck className="size-[13px]" strokeWidth={2} />
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-ok-border bg-ok-soft px-3.5 py-3 text-[14px] text-[#1f5a39]">
+          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ok text-white">
+            <IconCheck className="size-3.5" strokeWidth={2.5} />
           </span>
-          <div className="min-w-0">
-            <strong className="mb-px block text-[11px] min-[1101px]:text-[10px] min-[1281px]:text-[11px]">
-              La configuration pour votre {vehicleLabel}
-            </strong>
-            {compositionSummary ? (
-              <span className="block text-[10px] text-[#4a7359]">{compositionSummary}</span>
-            ) : selected.fitment.quantity > 1 ? (
-              <span className="block text-[10px] text-[#4a7359]">
-                {selected.fitment.quantity} nécessaires pour cet emplacement
-              </span>
-            ) : null}
-          </div>
+          <strong className="min-w-0 flex-1 leading-[1.35]">
+            Compatible avec votre {vehicleLabel}
+          </strong>
+          <Link
+            href="/vehicule"
+            className="shrink-0 font-semibold underline underline-offset-2 hover:text-ink"
+          >
+            Changer
+          </Link>
         </div>
       ) : null}
 
@@ -267,19 +268,19 @@ export function BuyBox({
         vérification qui devient l'action principale (plus bas).
       */}
       {vehicleLabel && inconnu ? (
-        <div className="mb-5 rounded-[7px] bg-warn-soft p-3 text-[#8d5420]">
-          <p className="flex items-center gap-2.5 text-[11px] font-bold">
+        <div className="mb-4 rounded-xl bg-warn-soft p-3.5 text-[#7a4a1c]">
+          <p className="flex items-center gap-2.5 text-[14px] font-bold">
             <IconInfo className="size-4 shrink-0" />
             Compatibilité à vérifier pour votre {vehicleLabel}.
           </p>
           <details className="group mt-1.5">
-            <summary className="inline-flex min-h-9 cursor-pointer list-none items-center text-[10px] underline underline-offset-2 [&::-webkit-details-marker]:hidden">
+            <summary className="inline-flex min-h-9 cursor-pointer list-none items-center text-[13px] underline underline-offset-2 [&::-webkit-details-marker]:hidden">
               Pourquoi
               <span aria-hidden="true" className="ml-1.5 transition-transform group-open:rotate-45">
                 +
               </span>
             </summary>
-            <p className="mt-1 text-[10px] leading-[1.7]">
+            <p className="mt-1 text-[13px] leading-[1.6]">
               Nous n&apos;avons pas l&apos;information nécessaire pour confirmer que cette
               référence convient à ce véhicule et à son équipement d&apos;origine. Une donnée
               manquante ne vaut pas compatibilité : nous préférons le dire et vérifier.
@@ -317,11 +318,11 @@ export function BuyBox({
       {/* ---- .pack-heading + .pack-options ---- */}
       {variants.length > 1 ? (
         <fieldset>
-          <div className="mb-2.5 flex items-center justify-between gap-4 text-[12px] font-bold fiche:text-[11px]">
+          <div className="mb-2.5 flex items-center justify-between gap-4 text-[15px] font-bold">
             <legend>Choisissez votre kit</legend>
             <a
               href={contentAnchor}
-              className="shrink-0 text-[10px] text-[#6b6d70] underline underline-offset-2 hover:text-ink"
+              className="shrink-0 text-[13px] font-normal text-[#55585b] underline underline-offset-2 hover:text-ink"
             >
               Voir le contenu
             </a>
@@ -336,12 +337,12 @@ export function BuyBox({
                 <label
                   key={variant.id}
                   className={cn(
-                    'flex cursor-pointer items-center gap-[11px] rounded-lg transition-colors fiche:gap-2.5',
+                    'flex cursor-pointer items-center gap-3 rounded-xl transition-colors',
                     // Le contour de focus de l'étiquette : voir globals.css.
                     'choix-conditionnement',
                     active
-                      ? 'border-[1.5px] border-brand bg-[#fdf6f5] px-[12.5px] py-[14.5px] fiche:px-[9.5px] fiche:py-[12.5px] min-[1101px]:px-[13.5px]'
-                      : 'border border-[#dcdcdc] px-[13px] py-[15px] fiche:px-2.5 fiche:py-[13px] min-[1101px]:px-3.5',
+                      ? 'border-2 border-brand bg-[#fdf6f5] px-[13px] py-[13px]'
+                      : 'border border-[#dcdcdc] px-[14px] py-[14px]',
                     !available && 'opacity-60',
                   )}
                 >
@@ -366,21 +367,21 @@ export function BuyBox({
                   <span
                     aria-hidden="true"
                     className={cn(
-                      'relative block size-[15px] shrink-0 rounded-full border',
+                      'relative block size-[18px] shrink-0 rounded-full border',
                       active
-                        ? 'border-brand after:absolute after:inset-[3px] after:rounded-full after:bg-brand'
+                        ? 'border-brand after:absolute after:inset-[4px] after:rounded-full after:bg-brand'
                         : 'border-[#b3b3b3]',
                     )}
                   />
 
                   <span className="flex min-w-0 flex-col gap-px">
                     {recommended ? (
-                      <span className="mb-0.5 text-[6.5px] font-bold tracking-[0.5px] text-brand uppercase fiche:text-[6px] min-[1101px]:text-[7px] min-[1101px]:tracking-[0.7px]">
+                      <span className="mb-0.5 text-[11px] font-bold tracking-[0.5px] text-brand uppercase">
                         Recommandé pour votre véhicule
                       </span>
                     ) : null}
-                    <strong className="text-[13px] fiche:text-[12px]">{variant.name}</strong>
-                    <small className="text-[10px] text-[#767676] fiche:text-[9px] min-[1281px]:text-[10px]">
+                    <strong className="text-[15px]">{variant.name}</strong>
+                    <small className="text-[13px] text-[#5f6266]">
                       {variant.components.length > 0
                         ? 'Ampoules + accessoires nécessaires'
                         : variant.missingAccessories.length > 0
@@ -388,13 +389,13 @@ export function BuyBox({
                           : PACKAGING_LABELS[variant.packaging]}
                     </small>
                     {!available ? (
-                      <small className="text-[10px] font-semibold text-muted">
+                      <small className="text-[13px] font-semibold text-muted">
                         {availabilityLabel(variant.availability)}
                       </small>
                     ) : null}
                   </span>
 
-                  <span className="ml-auto shrink-0 text-[13px] font-bold whitespace-nowrap">
+                  <span className="ml-auto shrink-0 text-[15px] font-bold whitespace-nowrap">
                     {formatPrice(variant.priceCents)}
                   </span>
                 </label>
@@ -405,10 +406,10 @@ export function BuyBox({
       ) : null}
 
       {/* .pack-explanation : réserve sa ligne même quand elle est vide. */}
-      <p className="my-[9px] mb-[19px] flex min-h-3.5 items-center gap-1.5 text-[9px] leading-[1.5] text-[#52705c] fiche:mb-[18px]">
+      <p className="mt-2.5 mb-4 flex items-center gap-1.5 text-[13px] leading-[1.5] text-[#2f6a45] empty:hidden">
         {selected.components.length > 0 ? (
           <>
-            <IconCheckCircle className="size-3 shrink-0" />
+            <IconCheckCircle className="size-4 shrink-0" />
             {selected.components
               .filter((component) => component.required)
               .map((component) => component.productName)
@@ -420,11 +421,11 @@ export function BuyBox({
 
       {/* ---- Accessoires nécessaires non inclus : proposés, jamais cochés ---- */}
       {accessories.length > 0 ? (
-        <fieldset className="mb-[18px] rounded-[7px] border border-warn-border bg-warn-soft px-3 py-3">
-          <legend className="px-1 text-[10px] font-bold">
+        <fieldset className="mb-4 rounded-xl border border-warn-border bg-warn-soft px-3.5 py-3">
+          <legend className="px-1 text-[13px] font-bold">
             Nécessaire pour ce montage, non inclus
           </legend>
-          <p className="mb-2 text-[10px] text-muted-strong">
+          <p className="mb-2 text-[13px] text-muted-strong">
             Ce conditionnement ne contient pas ces pièces. Elles ne sont ajoutées que si vous les
             cochez.
           </p>
@@ -443,7 +444,7 @@ export function BuyBox({
                   }
                   className="mt-0.5 size-4 shrink-0 accent-[var(--color-brand)]"
                 />
-                <span className="min-w-0 flex-1 text-[10px]">
+                <span className="min-w-0 flex-1 text-[13px]">
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="font-semibold">
                       {accessory.quantity > 1 ? `${accessory.quantity} × ` : ''}
@@ -464,59 +465,76 @@ export function BuyBox({
       ) : null}
 
       {/* ---- .price-row ---- */}
-      <div className="mb-[15px] flex items-center justify-between gap-5">
+      <div className="mb-3 flex items-end justify-between gap-5">
         <div>
-          <strong className="block text-[33px] leading-[1.1] font-bold tracking-[-1.5px] fiche:text-[35px]">
+          <strong className="block text-[34px] leading-[1.05] font-bold tracking-[-1.2px] fiche:text-[40px] fiche:tracking-[-1.5px]">
             {formatPrice(total)}
           </strong>
-          <span className="mt-[5px] block text-[10px] text-[#8e8e8e] min-[1450px]:text-[11px]">
+          <span className="mt-1.5 block text-[13px] text-[#6b6d70]">
             TTC{conditionnementAffiche ? ` · ${conditionnementAffiche.toLowerCase()}` : null}
             {accessoriesTotal > 0 ? ' et accessoires cochés' : null}
           </span>
           {/*
-            Le prix affiché reste celui d'UN conditionnement. Multiplier le
-            grand chiffre par la quantité ferait lire « 299,70 € » comme le
-            prix du pack, ce qu'il n'est pas ; le total part donc sur sa propre
-            ligne, nommé.
+            Le prix affiché reste celui d'UN conditionnement : le total part
+            sur sa propre ligne, nommé, quand la quantité dépasse un.
           */}
           {quantite > 1 ? (
-            <span className="mt-[3px] block text-[10px] font-semibold text-ink">
+            <span className="mt-1 block text-[13px] font-semibold text-ink">
               {quantite} × {formatPrice(total)} = {formatPrice(total * quantite)}
             </span>
           ) : null}
         </div>
         <span
           className={cn(
-            'flex shrink-0 items-center gap-1.5 text-[10px] fiche:text-[9px]',
+            'flex shrink-0 items-center gap-1.5 text-[14px] font-semibold',
             purchasable ? 'text-ok' : 'text-muted',
           )}
         >
           <span
             aria-hidden="true"
-            className={cn('size-[5px] rounded-full', purchasable ? 'bg-ok' : 'bg-line-strong')}
+            className={cn('size-2 rounded-full', purchasable ? 'bg-ok' : 'bg-line-strong')}
           />
           {availabilityLabel(selected.availability)}
         </span>
       </div>
 
       {/*
-        .primary.add-main — 51 px, pleine largeur.
+        Jauge de livraison offerte — refonte LEDVROOM.
 
-        Quand la compatibilité n'est pas établie, c'est la vérification qui
-        occupe cette place : proposer d'abord « Ajouter au panier » sur une
-        pièce dont on ignore si elle se monte revient à faire porter le risque
-        au client. L'achat reste possible juste en dessous, nommé pour ce
-        qu'il est.
+        Le seuil de franchise se lit AVANT le bouton : c'est là qu'il pèse sur
+        la décision. La jauge suit le total réel (conditionnement, accessoires
+        cochés, quantité) et disparaît quand aucune franchise n'est configurée.
       */}
-      {/*
-        L'ordre de ces trois cas est une décision, pas une commodité.
+      {delivery && (delivery.missingForFreeCents || delivery.priceCents === 0) ? (
+        <div className="mb-3.5 rounded-xl bg-[#f5f6f7] px-3.5 py-3 text-[14px]">
+          {delivery.missingForFreeCents ? (
+            <p>
+              Plus que <strong>{formatPrice(delivery.missingForFreeCents)}</strong> pour la
+              livraison offerte
+            </p>
+          ) : (
+            <p className="flex items-center gap-2 font-bold text-[#1f5a39]">
+              <IconTruck className="size-[18px] shrink-0" />
+              La livraison est offerte
+            </p>
+          )}
+          <div aria-hidden="true" className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e1e3e6]">
+            <div
+              className="h-full rounded-full bg-ok"
+              style={{ width: `${progressionFranchise}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
 
-        La rupture passe AVANT la compatibilité non établie : quand il n'y a
-        rien à vendre, proposer « Faire vérifier mon véhicule » puis
-        « Commander sans attendre la vérification » conduit le client vers un
-        bouton qui ne peut rien faire. L'alerte de retour est la seule action
-        utile des deux côtés, et la vérification reste joignable par le bloc
-        d'avertissement au-dessus.
+      {/*
+        .primary.add-main — 56 px, pleine largeur.
+
+        L'ordre des trois cas est une décision : la rupture passe avant la
+        compatibilité non établie (rien à vendre, l'alerte de retour est la
+        seule action utile), et une compatibilité non établie met la
+        vérification en avant — l'achat reste possible juste dessous, nommé
+        pour ce qu'il est.
       */}
       {rupture ? (
         <StockAlertForm variantId={selected.id} />
@@ -524,14 +542,14 @@ export function BuyBox({
         <div className="flex flex-col gap-2">
           <Link
             href={lienVerification}
-            className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-[7px] bg-brand px-[22px] py-3 text-[13px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-h-[51px]"
+            className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-brand px-5 py-3 text-[16px] font-bold text-white transition-colors hover:bg-brand-dark"
           >
-            <IconShield className="size-[19px] shrink-0" />
+            <IconShield className="size-5 shrink-0" />
             <span className="flex-1">Faire vérifier mon véhicule</span>
-            <IconChevronRight className="ml-auto size-[17px] shrink-0" />
+            <IconChevronRight className="ml-auto size-[18px] shrink-0" />
           </Link>
 
-          <div className="flex gap-[9px]">
+          <div className="flex gap-2.5">
             <SelecteurQuantite
               valeur={quantite}
               onChange={setQuantite}
@@ -543,16 +561,16 @@ export function BuyBox({
               type="button"
               disabled={!purchasable || pending}
               onClick={submit}
-              className="flex min-h-[50px] flex-1 items-center justify-center gap-3 rounded-md border border-[#c4c4c4] bg-white px-[17px] py-2.5 text-[11px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl border border-[#c4c4c4] bg-white px-4 py-2.5 text-[14px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <IconCart className="size-4 shrink-0" />
+              <IconCart className="size-[18px] shrink-0" />
               {pending ? 'Ajout en cours…' : 'Commander sans attendre la vérification'}
             </button>
           </div>
         </div>
       ) : (
         /* .buy-actions : la quantité à gauche, le bouton occupe le reste. */
-        <div className="flex gap-[9px] fiche:gap-[10px]">
+        <div className="flex gap-2.5">
           <SelecteurQuantite
             valeur={quantite}
             onChange={setQuantite}
@@ -564,11 +582,10 @@ export function BuyBox({
             type="button"
             disabled={!purchasable || pending}
             onClick={submit}
-            className="flex min-h-[50px] flex-1 items-center justify-center gap-3 rounded-md bg-brand px-4 py-3 text-[13px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[51px] fiche:px-5"
+            className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl bg-brand px-5 py-3 text-[16px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:text-[17px]"
           >
-            <IconCart className="size-[18px] shrink-0" />
-            <span className="flex-1 text-center">{libelleBouton}</span>
-            <IconChevronRight className="size-[17px] shrink-0" />
+            <IconCart className="size-5 shrink-0" />
+            <span>{libelleBouton}</span>
           </button>
         </div>
       )}
@@ -591,22 +608,17 @@ export function BuyBox({
         </Alert>
       ) : null}
 
-      {/* ---- .shipping ---- */}
+      {/* ---- .shipping : le délai, et le lien vers les conditions ---- */}
       {delivery ? (
-        <p className="mt-3 flex flex-wrap items-center gap-x-[7px] gap-y-[3px] text-[9px] text-[#696b68] fiche:mt-3 min-[1101px]:text-[8px] min-[1281px]:text-[9px]">
-          <IconTruck className="size-[15px] shrink-0 text-ok" />
-          <span>
-            <strong className="text-[#365d42]">{delivery.priceLabel}</strong>
+        <p className="mt-3.5 flex items-start gap-2 text-[14px] text-[#3c4047]">
+          <IconTruck className="mt-0.5 size-[18px] shrink-0 text-ok" />
+          <span className="min-w-0 flex-1">
+            <strong className="text-ink">{delivery.priceLabel}</strong>
             {delivery.delayLabel ? ` · ${delivery.delayLabel}` : null}
-            {delivery.missingForFreeCents ? (
-              <span className="block">
-                Plus que {formatPrice(delivery.missingForFreeCents)} pour la livraison offerte.
-              </span>
-            ) : null}
           </span>
           <Link
             href="/livraison-retours"
-            className="ml-auto shrink-0 text-[8px] text-[#6b6d70] underline underline-offset-2 hover:text-ink fiche:text-[9px]"
+            className="shrink-0 text-[13px] text-[#55585b] underline underline-offset-2 hover:text-ink"
           >
             Détails
           </Link>
@@ -614,21 +626,25 @@ export function BuyBox({
       ) : null}
 
       {/* ---- .purchase-reassurance ---- */}
-      <div className="mt-4 flex justify-center gap-5 border-b border-line pb-[15px] text-[9px] text-[#6a6c6c] fiche:mt-3.5 fiche:gap-[23px]">
+      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-b border-line pb-4 text-[13px] text-[#3c4047]">
         {returnWindowDays ? (
           <span className="flex items-center gap-1.5">
-            <IconClock className="size-[13px] shrink-0" />
+            <IconReturn className="size-4 shrink-0" />
             Retours sous {returnWindowDays} jours
           </span>
         ) : null}
+        <span className="flex items-center gap-1.5">
+          <IconShield className="size-4 shrink-0" />
+          Paiement sécurisé
+        </span>
         <Link href="/contact" className="flex items-center gap-1.5 hover:underline">
-          <IconWrench className="size-[13px] shrink-0" />
+          <IconWrench className="size-4 shrink-0" />
           Assistance au montage
         </Link>
       </div>
 
       {/* ---- .road-note : l'homologation, dite telle qu'elle est connue ---- */}
-      <div className="mt-2.5 text-[8px] text-[#828282]">
+      <div className="mt-3 text-[13px]">
         <RoadApprovalNote
           status={selected.fitment.roadApproval}
           market={selected.fitment.approvalMarket}
@@ -642,61 +658,46 @@ export function BuyBox({
       */}
       <div
         className={cn(
-          'fixed inset-x-0 bottom-0 z-20 border-t border-[#e1e1e1] bg-white/93 backdrop-blur-xl transition-[translate] duration-200',
+          'fixed inset-x-0 bottom-0 z-20 border-t border-[#e1e1e1] bg-white/95 shadow-[0_-6px_20px_rgb(17_18_20/0.08)] backdrop-blur-xl transition-[translate] duration-200',
           barreVisible ? 'translate-y-0' : 'max-fiche:translate-y-0 fiche:translate-y-[110%]',
         )}
       >
-        <div className="container-page flex min-h-[77px] items-center justify-between gap-3.5 pb-[env(safe-area-inset-bottom)] fiche:min-h-[78px] fiche:gap-[25px]">
+        <div className="container-page flex min-h-[76px] items-center justify-between gap-3.5 pb-[env(safe-area-inset-bottom)] fiche:min-h-[78px] fiche:gap-6">
           {/* .sticky-product : masqué en mobile, où la place manque. */}
           <div className="hidden items-center gap-3 fiche:flex">
-            {/*
-              .sticky-thumb — la barre rappelle ce qu'on achète. Une icône de
-              panier ne le disait pas : elle désignait l'action, pas l'article,
-              et deux fiches ouvertes côte à côte se ressemblaient.
-            */}
             {thumbnail ? (
-              <span className="relative size-[46px] shrink-0 overflow-hidden rounded-[5px] bg-[#f1f4eb]">
-                <Image
-                  src={thumbnail.url}
-                  alt=""
-                  fill
-                  sizes="46px"
-                  className="object-cover mix-blend-multiply"
-                />
+              <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-[#f2f2f2]">
+                <Image src={thumbnail.url} alt="" fill sizes="48px" className="object-cover" />
               </span>
             ) : (
               <IconCart className="size-5 shrink-0 text-brand" />
             )}
             <div className="min-w-0">
-              <strong className="block text-[11px] leading-[1.3] min-[1101px]:text-[12px]">
-                {productName}
-              </strong>
-              <span className="mt-[3px] block text-[9px] text-[#999999]">
+              <strong className="block text-[14px] leading-[1.3]">{productName}</strong>
+              <span className="mt-0.5 block text-[12px] text-[#6b6d70]">
                 {selected.name}
                 {vehicleLabel ? ` · ${vehicleLabel}` : null}
               </span>
             </div>
           </div>
 
-          <div className="flex w-full items-center justify-between gap-3.5 fiche:w-auto fiche:gap-[25px]">
+          <div className="flex w-full items-center justify-between gap-3.5 fiche:w-auto fiche:gap-6">
             <div className="shrink-0">
-              <strong className="block text-[24px] leading-[1.2] tracking-[-0.9px] fiche:text-[25px] fiche:tracking-[-1px]">
+              <strong className="block text-[21px] leading-[1.15] tracking-[-0.6px] fiche:text-[24px]">
                 {formatPrice(total)}
               </strong>
-              <span className="mt-[1px] block text-[7px] leading-[1.4] whitespace-nowrap text-[#959595] fiche:text-[8px]">
+              <span className="mt-0.5 block text-[11px] leading-[1.4] whitespace-nowrap text-[#6b6d70] fiche:text-[12px]">
                 TTC{delivery?.priceLabel ? ` · ${delivery.priceLabel.toLowerCase()}` : null}
               </span>
             </div>
 
-            {/* La barre fixe ne peut pas proposer autre chose que le bloc
-                d'achat : une compatibilité non établie n'y devient pas un
-                « Ajouter » tranquille. */}
+            {/* La barre fixe ne propose rien d'autre que le bloc d'achat. */}
             {inconnu ? (
               <Link
                 href={lienVerification}
-                className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-md bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-h-[45px] fiche:min-w-[210px] fiche:flex-none fiche:gap-3 fiche:text-[12px] min-[1101px]:min-w-[236px]"
+                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
               >
-                <IconShield className="size-[17px] shrink-0" />
+                <IconShield className="size-[18px] shrink-0" />
                 <span className="truncate">Faire vérifier mon véhicule</span>
               </Link>
             ) : (
@@ -704,9 +705,9 @@ export function BuyBox({
                 type="button"
                 disabled={!purchasable || pending}
                 onClick={submit}
-                className="flex min-h-[46px] flex-1 items-center justify-center gap-[7px] rounded-md bg-brand px-3 py-2.5 text-[11px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-h-[45px] fiche:min-w-[210px] fiche:flex-none fiche:gap-3 fiche:text-[12px] min-[1101px]:min-w-[236px]"
+                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none"
               >
-                <IconCart className="size-[17px] shrink-0" />
+                <IconCart className="size-[18px] shrink-0" />
                 <span className="truncate">{libelleBouton}</span>
               </button>
             )}
@@ -745,14 +746,14 @@ function SelecteurQuantite({
     <div
       role="group"
       aria-label="Quantité"
-      className="flex h-[50px] w-[87px] shrink-0 items-center justify-between rounded-md border border-[#dedede] fiche:h-[51px] fiche:w-[100px]"
+      className="flex h-14 w-[104px] shrink-0 items-center justify-between rounded-xl border border-[#d5d7db]"
     >
       <button
         type="button"
         onClick={() => onChange(Math.max(1, valeur - 1))}
         disabled={disabled || valeur <= 1}
         aria-label="Diminuer la quantité"
-        className="grid h-full w-[33px] place-items-center text-muted-strong transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+        className="grid h-full w-[38px] place-items-center text-muted-strong transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
       >
         <IconMinus className="size-[13px]" strokeWidth={2} />
       </button>
@@ -761,7 +762,7 @@ function SelecteurQuantite({
         `output` avec `aria-live` : la valeur change sans que le focus bouge,
         et un lecteur d'écran doit l'entendre sans avoir à relire la ligne.
       */}
-      <output aria-live="polite" className="min-w-[17px] text-center text-[12px] font-bold">
+      <output aria-live="polite" className="min-w-[20px] text-center text-[16px] font-bold">
         {valeur}
       </output>
 
@@ -770,7 +771,7 @@ function SelecteurQuantite({
         onClick={() => onChange(Math.min(plafond, valeur + 1))}
         disabled={disabled || valeur >= plafond}
         aria-label="Augmenter la quantité"
-        className="grid h-full w-[33px] place-items-center text-muted-strong transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+        className="grid h-full w-[38px] place-items-center text-muted-strong transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
       >
         <IconPlus className="size-[13px]" strokeWidth={2} />
       </button>

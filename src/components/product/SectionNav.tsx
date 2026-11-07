@@ -49,7 +49,7 @@ export function SectionNav({ items }: { items: SectionNavItem[] }) {
       aria-label="Sections de la fiche"
       className="sticky top-0 z-20 border-b border-line bg-white"
     >
-      <div className="container-page flex gap-[25px] overflow-x-auto whitespace-nowrap fiche:gap-[39px]">
+      <div className="container-page flex gap-6 overflow-x-auto whitespace-nowrap fiche:gap-10">
         {items.map((item) => {
           const courant = item.href === active
           return (
@@ -58,10 +58,10 @@ export function SectionNav({ items }: { items: SectionNavItem[] }) {
               href={item.href}
               aria-current={courant ? 'true' : undefined}
               className={cn(
-                'relative shrink-0 py-[15px] text-[10px] fiche:py-[19px] fiche:text-[11px]',
+                'relative shrink-0 py-4 text-[14px] fiche:py-[18px] fiche:text-[15px]',
                 courant
                   ? 'font-bold text-ink after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-brand'
-                  : 'text-[#737371] hover:text-ink',
+                  : 'text-[#5f6266] hover:text-ink',
               )}
             >
               {item.label}
