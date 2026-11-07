@@ -292,3 +292,20 @@ describe('totalDesCartes', () => {
     })
   })
 })
+
+describe('cartes des packs effet xénon', () => {
+  it('disent qu’elles contiennent des ampoules halogènes, pas des LED', () => {
+    const nom = 'Pack ampoules effet xénon phares pour Renault Clio 4'
+    const [xenon, led] = cartesDesPacks([
+      groupe('LOW_BEAM', 'Feux de croisement', [
+        produit('phares', 3690, {
+          productName: nom,
+          recommended: { id: 'v-phares', name: nom, priceCents: 3690 },
+        }),
+      ]),
+      groupe('PLATE', 'Éclairage de plaque', [produit('plaque', 2690)]),
+    ])
+    expect(xenon.conditionnement).toBe('Ampoules halogènes effet xénon')
+    expect(led.conditionnement).toBeNull()
+  })
+})

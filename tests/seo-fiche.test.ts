@@ -29,18 +29,18 @@ const A1_II: VehiculeDeLaFiche = {
 
 /** Une fiche telle que l'import l'a laissée en production. */
 const IMPORT_HISTORIQUE = {
-  name: 'Pack LED phares pour Audi A1',
-  tagline: 'Pour les phares de votre Audi A1',
-  description: 'Pack LED pour les phares de Audi A1. Compatibilité à vérifier avant commande.',
-  metaTitle: 'Pack LED phares pour Audi A1 — LUMERA',
-  metaDescription: 'Pack LED pour les phares de Audi A1. Compatibilité à vérifier avant commande.',
+  name: 'Pack LED veilleuses pour Audi A1',
+  tagline: 'Pour les veilleuses de votre Audi A1',
+  description: 'Pack LED pour les veilleuses de Audi A1. Compatibilité à vérifier avant commande.',
+  metaTitle: 'Pack LED veilleuses pour Audi A1 — LUMERA',
+  metaDescription: 'Pack LED pour les veilleuses de Audi A1. Compatibilité à vérifier avant commande.',
 }
 const CONDITIONS = { seuilFranchiseCents: 8000, retourJours: 14 }
 
 describe('titre de référencement', () => {
   it("remplace l'ancien nom de travail par les mots du client et les années", () => {
     expect(titreSeo(IMPORT_HISTORIQUE, A1)).toBe(
-      'Ampoules feux de croisement (phares) Audi A1 (2010–2018)',
+      'Ampoules LED veilleuses (feux de position) Audi A1 (2010–2018)',
     )
   })
 
@@ -56,6 +56,29 @@ describe('titre de référencement', () => {
     expect(titre('Pack LED feux de recul pour Audi A1')).toBe('Ampoules LED feux de recul Audi A1 (2010–2018)')
   })
 
+  it('ne promet pas de LED pour un pack d’ampoules halogènes effet xénon', () => {
+    const titre = (name: string) => titreSeo({ ...IMPORT_HISTORIQUE, name, metaTitle: name }, A1)
+    expect(titre('Pack ampoules effet xénon phares pour Audi A1')).toBe(
+      'Ampoules feux de croisement effet xénon Audi A1 (2010–2018)',
+    )
+    expect(titre('Pack ampoules effet xénon antibrouillards pour Audi A1')).toBe(
+      'Ampoules antibrouillards effet xénon Audi A1 (2010–2018)',
+    )
+    expect(
+      descriptionSeo(
+        { ...IMPORT_HISTORIQUE, name: 'Pack ampoules effet xénon phares pour Audi A1', metaDescription: null },
+        A1,
+        CONDITIONS,
+      ),
+    ).not.toMatch(/LED/)
+  })
+
+  it('dit « phares LED » pour les phares LED additionnels qui restent', () => {
+    expect(
+      titreSeo({ ...IMPORT_HISTORIQUE, name: 'Pack LED phares pour Harley-Davidson Fat Bob 1690', metaTitle: null }, null),
+    ).toBe('Phares LED Harley-Davidson Fat Bob 1690')
+  })
+
   it('garde le nom d’un produit qui n’est pas un pack par véhicule', () => {
     expect(lirePackParVehicule('Ampoule LED universelle')).toBeNull()
     expect(lirePackParVehicule('Pack LED coffre pour Audi A1')).toBeNull()
@@ -65,13 +88,13 @@ describe('titre de référencement', () => {
   })
 
   it('dit « depuis » pour une génération toujours produite', () => {
-    expect(titreSeo({ ...IMPORT_HISTORIQUE, name: 'Pack LED phares pour Audi A1 II' }, A1_II)).toBe(
-      'Ampoules feux de croisement (phares) Audi A1 II (depuis 2018)',
+    expect(titreSeo({ ...IMPORT_HISTORIQUE, name: 'Pack LED veilleuses pour Audi A1 II' }, A1_II)).toBe(
+      'Ampoules LED veilleuses (feux de position) Audi A1 II (depuis 2018)',
     )
   })
 
   it('reconnaît aussi le nouveau titre d’import (le nom recopié)', () => {
-    expect(estUnTitreDImport('Pack LED phares pour Audi A1', 'Pack LED phares pour Audi A1')).toBe(true)
+    expect(estUnTitreDImport('Pack LED veilleuses pour Audi A1', 'Pack LED veilleuses pour Audi A1')).toBe(true)
     expect(titreSeo({ ...IMPORT_HISTORIQUE, metaTitle: IMPORT_HISTORIQUE.name }, A1)).toContain('(2010–2018)')
   })
 
@@ -89,7 +112,7 @@ describe('titre de référencement', () => {
 
   it('sans véhicule, garde les mots du client sans années', () => {
     expect(titreSeo({ ...IMPORT_HISTORIQUE, metaTitle: null }, null)).toBe(
-      'Ampoules feux de croisement (phares) Audi A1',
+      'Ampoules LED veilleuses (feux de position) Audi A1',
     )
   })
 })
@@ -98,7 +121,7 @@ describe('description de référencement', () => {
   it('remplace la mise en garde par le véhicule, la livraison et le retour', () => {
     const texte = descriptionSeo(IMPORT_HISTORIQUE, A1, CONDITIONS)
     expect(texte).toBe(
-      `Ampoules feux de croisement (phares) Audi A1 (2010–2018), en pack prêt à monter sans modifier le câblage. Livraison offerte dès ${formatPrice(8000)}, retours sous 14 jours.`,
+      `Ampoules LED veilleuses (feux de position) Audi A1 (2010–2018), en pack prêt à monter sans modifier le câblage. Livraison offerte dès ${formatPrice(8000)}, retours sous 14 jours.`,
     )
     expect(texte).not.toMatch(/vérifier/)
     // Ce que Google affiche sans couper.
@@ -121,7 +144,7 @@ describe('description de référencement', () => {
   })
 
   it('ne reprend pas la mise en garde quand la fiche n’a pas de véhicule', () => {
-    expect(descriptionSeo(IMPORT_HISTORIQUE, null, CONDITIONS)).toBe('Pour les phares de votre Audi A1')
+    expect(descriptionSeo(IMPORT_HISTORIQUE, null, CONDITIONS)).toBe('Pour les veilleuses de votre Audi A1')
   })
 })
 

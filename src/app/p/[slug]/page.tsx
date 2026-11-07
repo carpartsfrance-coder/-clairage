@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 import { estComparatifAvantApres } from '@/lib/media-comparatif'
+import { estEffetXenon } from '@/lib/effet-xenon'
 
 /**
  * Fiche produit — `reference-site/product.html` du dossier de référence.
@@ -222,6 +223,11 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   // (01-avant-apres). Sans comparatif, pas de curseur : on ne fabrique pas un
   // avant/après à partir d'une autre photo.
   const comparatif = product.gallery.find(estComparatifAvantApres)
+  /*
+    Ampoules halogènes effet xénon, pas des LED (lib/effet-xenon.ts) : le
+    comparatif dit « Effet xénon », et l'argumentaire LED n'est pas montré.
+  */
+  const effetXenon = estEffetXenon(product.name)
   const visuelKit = product.gallery.find((item) => item.role === 'KIT_CONTENT') ?? product.gallery[0]
 
   /*
@@ -512,7 +518,11 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 </div>
 
                 {comparatif ? (
-                  <ToneSlider image={comparatif.url} imageAlt={comparatif.alt} />
+                  <ToneSlider
+                    image={comparatif.url}
+                    imageAlt={comparatif.alt}
+                    apresLabel={effetXenon ? 'Effet xénon' : 'LED'}
+                  />
                 ) : null}
               </div>
 
@@ -520,9 +530,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 Pourquoi un pack plutôt que des ampoules « universelles ».
                 Chaque ligne dit ce que la boutique fait réellement pour toute
                 référence montée sur un véhicule — rien de plus. Montré
-                seulement pour un produit lié à un emplacement d'éclairage.
+                seulement pour un produit lié à un emplacement d'éclairage, et
+                jamais pour un pack d'ampoules halogènes : il parle de LED.
               */}
-              {position ? (
+              {position && !effetXenon ? (
                 <div className="flex flex-col gap-8 border-t border-[#2a2d32] pt-12 fiche:grid fiche:grid-cols-[0.8fr_1.2fr] fiche:items-start fiche:gap-14">
                   <div>
                     <p className="mb-3 text-[12px] font-bold tracking-[1.4px] text-brand-on-dark uppercase">

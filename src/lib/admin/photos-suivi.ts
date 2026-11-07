@@ -144,25 +144,33 @@ export type Vue = {
    * « habitacle » — et toute phrase qui les accorde sonnera faux pour la moitié
    * d'entre eux.
    */
-  alt: (position: string, vehicule: string) => string
+  /**
+   * `technologie` : un pack d'ampoules halogènes effet xénon n'est pas décrit
+   * « en LED » (lib/effet-xenon.ts).
+   */
+  alt: (position: string, vehicule: string, technologie?: 'LED' | 'effet xénon') => string
 }
+
+/** « en LED blanche », ou « en ampoules effet xénon ». */
+const enLumiere = (technologie: 'LED' | 'effet xénon' = 'LED') =>
+  technologie === 'effet xénon' ? 'en ampoules effet xénon' : 'en LED blanche'
 
 export const VUES: Vue[] = [
   {
     fichier: '03-gros-plan.jpg',
     legende: 'Gros plan',
-    alt: (p, v) => `Gros plan sur une ${v} — ${p} en LED blanche.`,
+    alt: (p, v, t) => `Gros plan sur une ${v} — ${p} ${enLumiere(t)}.`,
   },
   {
     fichier: '01-avant-apres.jpg',
     legende: 'Avant et après',
-    alt: (p, v) =>
-      `Comparatif avant et après sur une ${v} — ${p} : ampoules d'origine en haut, lumière jaune ; LED en bas, lumière blanche.`,
+    alt: (p, v, t) =>
+      `Comparatif avant et après sur une ${v} — ${p} : ampoules d'origine en haut, lumière jaune ; ${t === 'effet xénon' ? 'ampoules effet xénon' : 'LED'} en bas, lumière blanche.`,
   },
   {
     fichier: '02-vehicule-complet.jpg',
     legende: 'Véhicule entier',
-    alt: (p, v) => `${v} entière, vue de face — ${p} en LED blanche.`,
+    alt: (p, v, t) => `${v} entière, vue de face — ${p} ${enLumiere(t)}.`,
   },
 ]
 

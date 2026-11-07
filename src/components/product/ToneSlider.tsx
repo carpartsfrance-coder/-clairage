@@ -125,8 +125,9 @@ export function ToneSlider({
         />
       </div>
       <figcaption className="mt-3 text-[13px] leading-[1.5] text-[#a9adb4]">
-        Faites glisser pour comparer l’ampoule d’origine (avant) et la LED (après). Visuels
-        d’illustration.
+        Faites glisser pour comparer l’ampoule d’origine (avant) et{' '}
+        {apresLabel === 'LED' ? 'la LED' : `l’ampoule ${apresLabel.toLowerCase()}`} (après).
+        Visuels d’illustration.
       </figcaption>
     </figure>
   )

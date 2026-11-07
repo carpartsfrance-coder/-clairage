@@ -12,6 +12,7 @@ import {
   type LignePhoto,
 } from './photos-suivi'
 import { parseCsv } from '../imports/csv'
+import { estEffetXenon } from '../effet-xenon'
 
 /**
  * Pose des trois rendus LEDVROOM sur les fiches du catalogue.
@@ -328,6 +329,7 @@ export async function poseRendus(options: {
       where: { slug: pack.slug },
       select: {
         id: true,
+        name: true,
         media: { select: { id: true, mediaId: true, role: true, position: true } },
       },
     })
@@ -347,7 +349,11 @@ export async function poseRendus(options: {
         resultat = await deposer(
           prisma,
           chemin,
-          vue.alt(pack.positionLabel, pack.vehicleLabel),
+          vue.alt(
+            pack.positionLabel,
+            pack.vehicleLabel,
+            estEffetXenon(produit.name) ? 'effet xénon' : 'LED',
+          ),
           vue.legende,
           `rendus/${pack.make}`,
           essai,

@@ -115,16 +115,34 @@ const EMPLACEMENT_DES_CLIENTS: Record<string, string> = {
   'feux de route': 'feux de route',
 }
 
+export type PackParVehicule = {
+  /** Ce que contient le pack : des LED, ou des ampoules halogènes effet xénon. */
+  technologie: 'LED' | 'effet xénon'
+  /** L'emplacement tel qu'il est écrit dans le nom (« phares »). */
+  position: string
+  /** L'emplacement dit avec les mots des clients. */
+  emplacement: string
+  vehicule: string
+}
+
 /**
  * Le nom d'un pack par véhicule, découpé : « Pack LED veilleuses pour
- * Renault Clio 4 » → emplacement « veilleuses », véhicule « Renault Clio 4 ».
- * Null pour tout autre produit, ou un emplacement inconnu.
+ * Renault Clio 4 » → LED, emplacement « veilleuses », véhicule « Renault
+ * Clio 4 ». Reconnaît aussi « Pack ampoules effet xénon phares pour … »
+ * (`lib/effet-xenon.ts`). Null pour tout autre produit, ou un emplacement
+ * inconnu.
  */
-export function lirePackParVehicule(nom: string): { emplacement: string; vehicule: string } | null {
-  const morceaux = /^Pack LED (.+?) pour (.+)$/.exec(nom.trim())
+export function lirePackParVehicule(nom: string): PackParVehicule | null {
+  const morceaux = /^Pack (LED|ampoules effet xénon) (.+?) pour (.+)$/.exec(nom.trim())
   if (!morceaux) return null
-  const emplacement = EMPLACEMENT_DES_CLIENTS[morceaux[1]]
-  return emplacement ? { emplacement, vehicule: enChiffres(sansMarqueRepetee(morceaux[2])) } : null
+  const emplacement = EMPLACEMENT_DES_CLIENTS[morceaux[2]]
+  if (!emplacement) return null
+  return {
+    technologie: morceaux[1] === 'LED' ? 'LED' : 'effet xénon',
+    position: morceaux[2],
+    emplacement,
+    vehicule: enChiffres(sansMarqueRepetee(morceaux[3])),
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -189,12 +207,16 @@ export function nomAvecAnnees(nom: string, vehicule: VehiculeDeLaFiche | null): 
 function intituleSeo(produit: ProduitPourLeSeo, vehicule: VehiculeDeLaFiche | null): string {
   const pack = lirePackParVehicule(produit.name)
   if (!pack) return nomAvecAnnees(enChiffres(produit.name), vehicule)
-  // Les packs phares de voiture reprennent le pack « effet xénon » du
-  // partenaire : des ampoules halogènes, pas des LED (1 625 des 1 903 packs
-  // phares du relevé). Le titre ne promet donc pas de LED pour les phares,
-  // tant que le nom des produits n'est pas corrigé en base.
-  const technologie = pack.emplacement.startsWith('feux de croisement') ? 'Ampoules' : 'Ampoules LED'
-  return nomAvecAnnees(`${technologie} ${pack.emplacement} ${pack.vehicule}`, vehicule)
+  // Ampoules halogènes : « Ampoules feux de croisement effet xénon Renault
+  // Clio 4 », sans LED promise (lib/effet-xenon.ts).
+  if (pack.technologie === 'effet xénon') {
+    const emplacement = pack.position === 'phares' ? 'feux de croisement' : pack.emplacement
+    return nomAvecAnnees(`Ampoules ${emplacement} effet xénon ${pack.vehicule}`, vehicule)
+  }
+  // Les packs « LED phares » qui restent sont surtout des phares LED
+  // additionnels de moto et de SSV : ce ne sont pas des ampoules.
+  if (pack.position === 'phares') return nomAvecAnnees(`Phares LED ${pack.vehicule}`, vehicule)
+  return nomAvecAnnees(`Ampoules LED ${pack.emplacement} ${pack.vehicule}`, vehicule)
 }
 
 /**

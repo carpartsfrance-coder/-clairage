@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { PrismaClient } from '@prisma/client'
 import { inspectUpload, putFile, storageStatus } from '../src/lib/storage/driver'
+import { PREFIXE_EFFET_XENON, vignetteEffetXenon } from '../src/lib/effet-xenon'
 
 const prisma = new PrismaClient()
 
@@ -216,13 +217,38 @@ const NOTES: Record<string, { quoi: string; savoir: string }> = {
   },
 }
 
-function corps(pack: Pack): string {
+/**
+ * Le relevé nomme tous les packs « Pack LED … ». Ceux dont le pack partenaire
+ * est un pack « effet xénon » contiennent des ampoules halogènes : ils sont
+ * nommés pour ce qu'ils sont (`src/lib/effet-xenon.ts`).
+ */
+type PackNomme = Pack & { effetXenon: boolean }
+
+function nommer(pack: Pack): PackNomme {
+  const effetXenon = vignetteEffetXenon(pack.image)
+  return {
+    ...pack,
+    effetXenon,
+    name: effetXenon ? pack.name.replace(/^Pack LED /, `${PREFIXE_EFFET_XENON} `) : pack.name,
+  }
+}
+
+/** La description courte : ce que contient le pack, pour quel véhicule. */
+function descriptionCourte(pack: PackNomme): string {
+  const contenu = pack.effetXenon ? "Pack d'ampoules effet xénon" : 'Pack LED'
+  return `${contenu} pour les ${pack.positionLabel} de votre ${pack.vehicleLabel}, composé pour ce véhicule.`
+}
+
+function corps(pack: PackNomme): string {
   const note = NOTES[pack.position] ?? {
     quoi: `Les ampoules pour les ${pack.positionLabel}.`,
     savoir: '',
   }
+  const nature = pack.effetXenon
+    ? "Pack d'ampoules halogènes effet xénon"
+    : "Pack d'éclairage LED"
   const morceaux = [
-    `Pack d'éclairage LED composé pour votre ${pack.vehicleLabel}. ${note.quoi}`,
+    `${nature} composé pour votre ${pack.vehicleLabel}. ${note.quoi}`,
     note.savoir,
     `## Ce que couvre ce pack\n\nLes ${pack.positionLabel}, et rien d'autre. Les autres emplacements de votre ${pack.vehicleLabel} ont chacun le leur — vous les retrouvez sur la page du véhicule.`,
     `## Avant de commander\n\nCe pack est composé pour cette génération précise. Si votre véhicule a reçu un bloc optique différent de celui monté en sortie d'usine, dites-le-nous : nous préférons une vérification de plus à un démontage pour rien.`,
@@ -292,7 +318,8 @@ async function main() {
   let majs = 0
   const soucis: string[] = []
 
-  for (const pack of retenus) {
+  for (const releve of retenus) {
+    const pack = nommer(releve)
     const position = positions.get(pack.position)
     if (!position) {
       soucis.push(`${pack.name} — position « ${pack.position} » inconnue`)
@@ -330,7 +357,7 @@ async function main() {
     const donnees = {
       name: pack.name,
       tagline: `Pour les ${pack.positionLabel} de votre ${pack.vehicleLabel}`,
-      description: `Pack LED pour les ${pack.positionLabel} de votre ${pack.vehicleLabel}, composé pour ce véhicule.`,
+      description: descriptionCourte(pack),
       body: corps(pack),
       status: 'PUBLISHED' as const,
       vehicleType: 'CAR' as const,
@@ -340,7 +367,7 @@ async function main() {
       // conditions de livraison (`src/lib/seo-fiche.ts`). Un texte écrit au
       // back-office, lui, est affiché tel quel.
       metaTitle: pack.name,
-      metaDescription: `Pack LED pour les ${pack.positionLabel} de votre ${pack.vehicleLabel}, composé pour ce véhicule.`,
+      metaDescription: descriptionCourte(pack),
       publishedAt: new Date(),
     }
 
