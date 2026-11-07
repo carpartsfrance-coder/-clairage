@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { canViewOrder } from '@/lib/order-access'
 import { reconcilePayment } from '@/lib/orders'
+import { origineDeLaRequete } from '@/lib/origine'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -38,7 +39,9 @@ export async function GET(request: Request) {
   // Toutes les redirections se construisent sur l'origine réellement demandée :
   // dépendre de NEXT_PUBLIC_SITE_URL ferait sortir le client du site si cette
   // variable était mal réglée, et elle l'est par défaut en développement.
-  const base = url.origin
+  // Mais l'origine PUBLIQUE, celle que le proxy transmet : `url.origin` vaut
+  // « http://localhost:10000 » derrière Render (lib/origine.ts).
+  const base = origineDeLaRequete(request)
   const orderId = url.searchParams.get('order')?.trim() ?? ''
   const token = url.searchParams.get('t')
 
