@@ -40,7 +40,7 @@ const CONDITIONS = { seuilFranchiseCents: 8000, retourJours: 14 }
 describe('titre de référencement', () => {
   it("remplace l'ancien nom de travail par les mots du client et les années", () => {
     expect(titreSeo(IMPORT_HISTORIQUE, A1)).toBe(
-      'Ampoules LED feux de croisement (phares) Audi A1 (2010–2018)',
+      'Ampoules feux de croisement (phares) Audi A1 (2010–2018)',
     )
   })
 
@@ -66,7 +66,7 @@ describe('titre de référencement', () => {
 
   it('dit « depuis » pour une génération toujours produite', () => {
     expect(titreSeo({ ...IMPORT_HISTORIQUE, name: 'Pack LED phares pour Audi A1 II' }, A1_II)).toBe(
-      'Ampoules LED feux de croisement (phares) Audi A1 II (depuis 2018)',
+      'Ampoules feux de croisement (phares) Audi A1 II (depuis 2018)',
     )
   })
 
@@ -89,7 +89,7 @@ describe('titre de référencement', () => {
 
   it('sans véhicule, garde les mots du client sans années', () => {
     expect(titreSeo({ ...IMPORT_HISTORIQUE, metaTitle: null }, null)).toBe(
-      'Ampoules LED feux de croisement (phares) Audi A1',
+      'Ampoules feux de croisement (phares) Audi A1',
     )
   })
 })
@@ -98,7 +98,7 @@ describe('description de référencement', () => {
   it('remplace la mise en garde par le véhicule, la livraison et le retour', () => {
     const texte = descriptionSeo(IMPORT_HISTORIQUE, A1, CONDITIONS)
     expect(texte).toBe(
-      `Ampoules LED feux de croisement (phares) Audi A1 (2010–2018), en pack prêt à monter sans modifier le câblage. Livraison offerte dès ${formatPrice(8000)}, retours sous 14 jours.`,
+      `Ampoules feux de croisement (phares) Audi A1 (2010–2018), en pack prêt à monter sans modifier le câblage. Livraison offerte dès ${formatPrice(8000)}, retours sous 14 jours.`,
     )
     expect(texte).not.toMatch(/vérifier/)
     // Ce que Google affiche sans couper.

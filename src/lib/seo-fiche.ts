@@ -189,7 +189,12 @@ export function nomAvecAnnees(nom: string, vehicule: VehiculeDeLaFiche | null): 
 function intituleSeo(produit: ProduitPourLeSeo, vehicule: VehiculeDeLaFiche | null): string {
   const pack = lirePackParVehicule(produit.name)
   if (!pack) return nomAvecAnnees(enChiffres(produit.name), vehicule)
-  return nomAvecAnnees(`Ampoules LED ${pack.emplacement} ${pack.vehicule}`, vehicule)
+  // Les packs phares de voiture reprennent le pack « effet xénon » du
+  // partenaire : des ampoules halogènes, pas des LED (1 625 des 1 903 packs
+  // phares du relevé). Le titre ne promet donc pas de LED pour les phares,
+  // tant que le nom des produits n'est pas corrigé en base.
+  const technologie = pack.emplacement.startsWith('feux de croisement') ? 'Ampoules' : 'Ampoules LED'
+  return nomAvecAnnees(`${technologie} ${pack.emplacement} ${pack.vehicule}`, vehicule)
 }
 
 /**
