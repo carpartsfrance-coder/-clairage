@@ -61,9 +61,70 @@ export function anneesEnToutesLettres(debut: number, fin: number | null): string
  */
 export function nomDuVehicule(vehicule: Pick<VehiculeDeLaFiche, 'marque' | 'generation'>): string {
   const { marque, generation } = vehicule
-  return generation.nom.toLocaleLowerCase('fr-FR').startsWith(marque.nom.toLocaleLowerCase('fr-FR'))
-    ? generation.nom
-    : `${marque.nom} ${generation.nom}`
+  const nom = enChiffres(generation.nom)
+  return nom.toLocaleLowerCase('fr-FR').startsWith(marque.nom.toLocaleLowerCase('fr-FR'))
+    ? nom
+    : `${marque.nom} ${nom}`
+}
+
+const CHIFFRES_ROMAINS: Record<string, string> = {
+  II: '2', III: '3', IV: '4', V: '5', VI: '6', VII: '7', VIII: '8', IX: '9',
+}
+
+/**
+ * « Berlingo II » → « Berlingo 2 », « Golf VII » → « Golf 7 ».
+ *
+ * Google Trends, France, 5 ans : « clio 4 » est tapé 29 fois plus que
+ * « clio iv », « golf 7 » 75 fois plus que « golf vii ». Le chiffre romain
+ * n'est converti que derrière un nom en lettres : « 208 II » reste tel quel,
+ * « 208 2 » ne se lit pas (et personne ne le tape). « X » n'est jamais
+ * converti : c'est presque toujours un nom (X-Trail, Mokka X, Aygo X), et
+ * « Classe V » est un modèle, pas une cinquième génération.
+ */
+export function enChiffres(nom: string): string {
+  return nom.replace(
+    /([\p{L}-]*\p{L})\s+(VIII|VII|VI|IV|IX|III|II|V)(?=$|\s)/gu,
+    (tout: string, mot: string, romain: string) =>
+      mot === 'Classe' ? tout : `${mot} ${CHIFFRES_ROMAINS[romain]}`,
+  )
+}
+
+/** « Mini Mini Cooper » → « Mini Cooper » : la marque répétée par le relevé. */
+export function sansMarqueRepetee(nom: string): string {
+  return nom.replace(/^(\S+) \1(?= )/i, '$1')
+}
+
+/**
+ * L'emplacement dit avec les mots que les clients tapent.
+ *
+ * Mesuré sur Google Trends (France, 5 ans) : « ampoule plaque immatriculation »
+ * est cherché 8 fois plus que « éclairage plaque immatriculation » ; pour
+ * l'habitacle, Google lui-même propose « LED intérieur » ; « ampoule feux de
+ * croisement » l'emporte largement sur « ampoule phare voiture ». Le synonyme
+ * entre parenthèses couvre la seconde façon de chercher.
+ */
+const EMPLACEMENT_DES_CLIENTS: Record<string, string> = {
+  phares: 'feux de croisement (phares)',
+  veilleuses: 'veilleuses (feux de position)',
+  'éclairage de plaque': 'plaque d’immatriculation',
+  habitacle: 'intérieur (plafonnier)',
+  antibrouillards: 'antibrouillards',
+  clignotants: 'clignotants',
+  'feux de recul': 'feux de recul',
+  'feux de jour': 'feux de jour',
+  'feux de route': 'feux de route',
+}
+
+/**
+ * Le nom d'un pack par véhicule, découpé : « Pack LED veilleuses pour
+ * Renault Clio 4 » → emplacement « veilleuses », véhicule « Renault Clio 4 ».
+ * Null pour tout autre produit, ou un emplacement inconnu.
+ */
+export function lirePackParVehicule(nom: string): { emplacement: string; vehicule: string } | null {
+  const morceaux = /^Pack LED (.+?) pour (.+)$/.exec(nom.trim())
+  if (!morceaux) return null
+  const emplacement = EMPLACEMENT_DES_CLIENTS[morceaux[1]]
+  return emplacement ? { emplacement, vehicule: enChiffres(sansMarqueRepetee(morceaux[2])) } : null
 }
 
 /* -------------------------------------------------------------------------- */
@@ -117,16 +178,31 @@ export function nomAvecAnnees(nom: string, vehicule: VehiculeDeLaFiche | null): 
 }
 
 /**
+ * Ce que le client tape, dans l'ordre où il le tape : « Ampoules LED plaque
+ * d’immatriculation Renault Clio 4 (2012–2019) ».
+ *
+ * « Ampoule » d'abord : c'est le mot du client (« ampoule clio 4 » est
+ * cherché 2 fois plus que « led clio 4 », et « kit » ou « pack » presque
+ * jamais). Le nom du produit, lui, ne change pas : le titre affiché sur la
+ * page reste « Pack LED … ».
+ */
+function intituleSeo(produit: ProduitPourLeSeo, vehicule: VehiculeDeLaFiche | null): string {
+  const pack = lirePackParVehicule(produit.name)
+  if (!pack) return nomAvecAnnees(enChiffres(produit.name), vehicule)
+  return nomAvecAnnees(`Ampoules LED ${pack.emplacement} ${pack.vehicule}`, vehicule)
+}
+
+/**
  * Balise `<title>`, sans la marque de la boutique : le gabarit du site
  * l'ajoute (« … — LEDVROOM »).
  *
- * « Pack LED phares pour Audi A1 (2010–2018) ». Les années départagent deux
- * générations du même modèle (A1 et A1 II), et c'est ce que le client tape.
+ * « Ampoules LED feux de croisement (phares) Audi A1 (2010–2018) ». Les
+ * années départagent deux générations du même modèle (A1 et A1 II).
  */
 export function titreSeo(produit: ProduitPourLeSeo, vehicule: VehiculeDeLaFiche | null): string {
   const saisi = produit.metaTitle?.trim()
   if (saisi && !estUnTitreDImport(saisi, produit.name)) return saisi
-  return nomAvecAnnees(produit.name, vehicule)
+  return intituleSeo(produit, vehicule)
 }
 
 /**
@@ -149,7 +225,7 @@ export function descriptionSeo(
   }
 
   const phrases = [
-    `${nomAvecAnnees(produit.name, vehicule)} : kit plug & play composé pour ce véhicule, sans modifier le câblage.`,
+    `${intituleSeo(produit, vehicule)}, en pack prêt à monter sans modifier le câblage.`,
   ]
   const { seuilFranchiseCents, retourJours } = conditions
   if (seuilFranchiseCents !== null && retourJours) {

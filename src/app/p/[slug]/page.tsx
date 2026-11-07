@@ -12,6 +12,7 @@ import {
   anneesCourtes,
   corrigerRedactionnelDImport,
   descriptionSeo,
+  enChiffres,
   nomDuVehicule,
   titreSeo,
 } from '@/lib/seo-fiche'
@@ -200,7 +201,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           { label: 'Accueil', href: '/' },
           { label: vehiculeDeLaFiche.marque.nom, href: vehiculeDeLaFiche.cheminMarque },
           {
-            label: `${vehiculeDeLaFiche.generation.nom} (${anneesCourtes(
+            label: `${enChiffres(vehiculeDeLaFiche.generation.nom)} (${anneesCourtes(
               vehiculeDeLaFiche.generation.anneeDebut,
               vehiculeDeLaFiche.generation.anneeFin,
             )})`,

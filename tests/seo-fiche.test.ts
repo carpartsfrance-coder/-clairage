@@ -4,7 +4,9 @@ import {
   anneesCourtes,
   corrigerRedactionnelDImport,
   descriptionSeo,
+  enChiffres,
   estUnTitreDImport,
+  lirePackParVehicule,
   nomDuVehicule,
   titreSeo,
   type VehiculeDeLaFiche,
@@ -36,13 +38,35 @@ const IMPORT_HISTORIQUE = {
 const CONDITIONS = { seuilFranchiseCents: 8000, retourJours: 14 }
 
 describe('titre de référencement', () => {
-  it("remplace l'ancien nom de travail par le nom et les années", () => {
-    expect(titreSeo(IMPORT_HISTORIQUE, A1)).toBe('Pack LED phares pour Audi A1 (2010–2018)')
+  it("remplace l'ancien nom de travail par les mots du client et les années", () => {
+    expect(titreSeo(IMPORT_HISTORIQUE, A1)).toBe(
+      'Ampoules LED feux de croisement (phares) Audi A1 (2010–2018)',
+    )
+  })
+
+  it('dit chaque emplacement comme le client le tape', () => {
+    const titre = (name: string) => titreSeo({ ...IMPORT_HISTORIQUE, name, metaTitle: null }, A1)
+    expect(titre('Pack LED éclairage de plaque pour Audi A1')).toBe(
+      'Ampoules LED plaque d’immatriculation Audi A1 (2010–2018)',
+    )
+    expect(titre('Pack LED habitacle pour Audi A1')).toBe('Ampoules LED intérieur (plafonnier) Audi A1 (2010–2018)')
+    expect(titre('Pack LED veilleuses pour Audi A1')).toBe(
+      'Ampoules LED veilleuses (feux de position) Audi A1 (2010–2018)',
+    )
+    expect(titre('Pack LED feux de recul pour Audi A1')).toBe('Ampoules LED feux de recul Audi A1 (2010–2018)')
+  })
+
+  it('garde le nom d’un produit qui n’est pas un pack par véhicule', () => {
+    expect(lirePackParVehicule('Ampoule LED universelle')).toBeNull()
+    expect(lirePackParVehicule('Pack LED coffre pour Audi A1')).toBeNull()
+    expect(titreSeo({ ...IMPORT_HISTORIQUE, name: 'Ampoule LED universelle', metaTitle: null }, null)).toBe(
+      'Ampoule LED universelle',
+    )
   })
 
   it('dit « depuis » pour une génération toujours produite', () => {
     expect(titreSeo({ ...IMPORT_HISTORIQUE, name: 'Pack LED phares pour Audi A1 II' }, A1_II)).toBe(
-      'Pack LED phares pour Audi A1 II (depuis 2018)',
+      'Ampoules LED feux de croisement (phares) Audi A1 II (depuis 2018)',
     )
   })
 
@@ -63,8 +87,10 @@ describe('titre de référencement', () => {
     )
   })
 
-  it('sans véhicule, garde le nom', () => {
-    expect(titreSeo({ ...IMPORT_HISTORIQUE, metaTitle: null }, null)).toBe('Pack LED phares pour Audi A1')
+  it('sans véhicule, garde les mots du client sans années', () => {
+    expect(titreSeo({ ...IMPORT_HISTORIQUE, metaTitle: null }, null)).toBe(
+      'Ampoules LED feux de croisement (phares) Audi A1',
+    )
   })
 })
 
@@ -72,7 +98,7 @@ describe('description de référencement', () => {
   it('remplace la mise en garde par le véhicule, la livraison et le retour', () => {
     const texte = descriptionSeo(IMPORT_HISTORIQUE, A1, CONDITIONS)
     expect(texte).toBe(
-      `Pack LED phares pour Audi A1 (2010–2018) : kit plug & play composé pour ce véhicule, sans modifier le câblage. Livraison offerte dès ${formatPrice(8000)}, retours sous 14 jours.`,
+      `Ampoules LED feux de croisement (phares) Audi A1 (2010–2018), en pack prêt à monter sans modifier le câblage. Livraison offerte dès ${formatPrice(8000)}, retours sous 14 jours.`,
     )
     expect(texte).not.toMatch(/vérifier/)
     // Ce que Google affiche sans couper.
@@ -115,6 +141,42 @@ describe('ligne sous le titre', () => {
   })
 })
 
+describe('chiffres au lieu des chiffres romains', () => {
+  it('convertit derrière un nom en lettres', () => {
+    expect(enChiffres('Citroën Berlingo II')).toBe('Citroën Berlingo 2')
+    expect(enChiffres('Volkswagen Golf VII')).toBe('Volkswagen Golf 7')
+    expect(enChiffres('Chevrolet Camaro VI')).toBe('Chevrolet Camaro 6')
+    expect(enChiffres('Citroën C3 Aircross II')).toBe('Citroën C3 Aircross 2')
+  })
+
+  it('laisse un chiffre romain derrière un nombre, et le reste du nom', () => {
+    expect(enChiffres('Peugeot 208 II')).toBe('Peugeot 208 II')
+    expect(enChiffres('Audi A1 II')).toBe('Audi A1 II')
+    expect(enChiffres('Renault Clio 2 phase 1')).toBe('Renault Clio 2 phase 1')
+    expect(enChiffres('Mini Countryman')).toBe('Mini Countryman')
+    expect(enChiffres('BMW Série 5 Vision')).toBe('BMW Série 5 Vision')
+  })
+
+  it('ne touche ni au « X » des noms, ni à la Classe V', () => {
+    expect(enChiffres('Nissan X Trail II')).toBe('Nissan X Trail 2')
+    expect(enChiffres('Opel Mokka X')).toBe('Opel Mokka X')
+    expect(enChiffres('Mercedes-Benz Classe V (W447)')).toBe('Mercedes-Benz Classe V (W447)')
+    expect(enChiffres('Mercedes-Benz Sprinter II (906)')).toBe('Mercedes-Benz Sprinter 2 (906)')
+  })
+
+  it('ne répète pas la marque dans le titre', () => {
+    expect(
+      titreSeo({ ...IMPORT_HISTORIQUE, name: 'Pack LED habitacle pour Mini Mini Cooper II (R50 / R53)', metaTitle: null }, null),
+    ).toBe('Ampoules LED intérieur (plafonnier) Mini Cooper 2 (R50 / R53)')
+  })
+
+  it('s’applique au titre', () => {
+    expect(
+      titreSeo({ ...IMPORT_HISTORIQUE, name: 'Pack LED clignotants pour Citroën Berlingo II', metaTitle: null }, null),
+    ).toBe('Ampoules LED clignotants Citroën Berlingo 2')
+  })
+})
+
 describe('petits textes', () => {
   it('ne répète pas la marque déjà dans le nom de la génération', () => {
     expect(nomDuVehicule(A1)).toBe('Audi A1')
@@ -123,7 +185,7 @@ describe('petits textes', () => {
         marque: { nom: 'Subaru', slug: 'subaru' },
         generation: { ...A1.generation, nom: 'Subaru Outback III' },
       }),
-    ).toBe('Subaru Outback III')
+    ).toBe('Subaru Outback 3')
   })
 
   it('écrit les années', () => {
