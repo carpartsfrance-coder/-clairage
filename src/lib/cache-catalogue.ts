@@ -47,3 +47,37 @@ export function lectureCatalogue<Args extends unknown[], Resultat>(
 ): (...args: Args) => Promise<Resultat> {
   return unstable_cache(lire, [cle], { revalidate: DUREE_CATALOGUE_S, tags: [TAG_CATALOGUE] })
 }
+
+/**
+ * Même cache, pour une lecture qui rattrape déjà ses erreurs et rend une
+ * valeur d'échec (`null`, `{ state: 'unavailable' }`…) au lieu de lever.
+ *
+ * Cette valeur-là n'est **pas** mise en cache : `estUnEchec` la reconnaît, elle
+ * traverse le cache comme une erreur — qu'`unstable_cache` ne garde jamais —
+ * et elle est rendue telle quelle à l'appelant. La lecture suivante retentera.
+ */
+export function lectureCatalogueAvecRepli<Args extends unknown[], Resultat>(
+  cle: string,
+  lire: (...args: Args) => Promise<Resultat>,
+  estUnEchec: (resultat: Resultat) => boolean,
+): (...args: Args) => Promise<Resultat> {
+  const enCache = lectureCatalogue(cle, async (...args: Args) => {
+    const resultat = await lire(...args)
+    if (estUnEchec(resultat)) throw new LectureEchouee(resultat)
+    return resultat
+  })
+  return async (...args: Args) => {
+    try {
+      return await enCache(...args)
+    } catch (error) {
+      if (error instanceof LectureEchouee) return error.repli as Resultat
+      throw error
+    }
+  }
+}
+
+class LectureEchouee extends Error {
+  constructor(readonly repli: unknown) {
+    super('Lecture du catalogue en échec : non mise en cache.')
+  }
+}

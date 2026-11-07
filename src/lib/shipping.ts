@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { prisma } from './db'
 import {
   buildDeliveryTeaser,
@@ -24,8 +25,16 @@ export type { DeliveryTeaser, ShippingOffer }
 
 const COUNTRY = 'FR'
 
-/** Méthodes applicables à un pays, triées par position puis par prix. */
-export async function getShippingOffers(country = COUNTRY): Promise<ShippingOffer[]> {
+/**
+ * Méthodes applicables à un pays, triées par position puis par prix.
+ *
+ * Partagée dans une même requête (`cache` de React) : une fiche produit la lit
+ * pour ses métadonnées et pour sa page. Elle reste lue en direct d'une requête
+ * à l'autre — le panier et le paiement facturent ce qu'elle rend.
+ */
+export const getShippingOffers = cache(lireOffres)
+
+async function lireOffres(country = COUNTRY): Promise<ShippingOffer[]> {
   try {
     const methods = await prisma.shippingMethod.findMany({
       where: { active: true, zone: { countries: { has: country } } },

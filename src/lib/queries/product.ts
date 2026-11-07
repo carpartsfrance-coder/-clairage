@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { visuelsDeLaFiche } from '../media-couverture'
 import { prisma } from '../db'
 import {
@@ -149,6 +150,83 @@ const THUMB_LABELS: Record<GalleryItem['role'], string> = {
 */
 const ROLE_ORDER: GalleryItem['role'][] = ['RESULT', 'PRODUCT', 'KIT_CONTENT', 'INSTALL']
 
+/**
+ * La lecture de la fiche, partagée dans une même requête.
+ *
+ * `generateMetadata` et la page lisent toutes deux la fiche : sans ce
+ * partage, la même vingtaine de requêtes partait deux fois à chaque page vue
+ * (mesuré le 7 novembre 2026 : 46 requêtes pour une fiche). La clé ne porte
+ * que le slug et l'aperçu — pas le véhicule, dont la compatibilité est
+ * résolue à part — pour que les deux appels tombent sur la même lecture même
+ * quand un véhicule est choisi.
+ *
+ * `cache` de React ne vit que le temps d'une requête : le stock et le prix
+ * restent lus en direct à chaque visite.
+ */
+const lireFiche = cache((slug: string, brouillon: boolean) =>
+  prisma.product.findFirst({
+    where: { slug, status: brouillon ? { in: ['PUBLISHED', 'DRAFT'] } : 'PUBLISHED' },
+    include: {
+      categories: { include: { category: true }, orderBy: { position: 'asc' }, take: 1 },
+      media: { include: { media: true }, orderBy: { position: 'asc' } },
+      specs: { orderBy: { position: 'asc' } },
+      faqItems: { orderBy: { position: 'asc' } },
+      guides: { include: { guide: true } },
+      reviews: {
+        where: { status: 'PUBLISHED' },
+        orderBy: { publishedAt: 'desc' },
+        take: 10,
+      },
+      /*
+        Compléments facultatifs.
+
+        La cible doit être publiée. Sans ce filtre, un complément rattaché à
+        un brouillon — ou à un produit archivé — s'affichait sous le bloc
+        d'achat avec un lien vers `/p/<slug>`, c'est-à-dire vers une page que
+        `getProduct` refuse de servir : une proposition d'achat qui mène en
+        404. Le back-office dit maintenant, sur la ligne concernée, qu'un
+        complément non publié n'apparaîtra pas ; cette requête est ce qui rend
+        cette phrase vraie.
+      */
+      relatedFrom: {
+        where: { type: 'OPTIONAL_ADDON', target: { status: 'PUBLISHED' } },
+        orderBy: { position: 'asc' },
+        include: {
+          target: {
+            include: {
+              variants: {
+                where: { active: true },
+                orderBy: { priceCents: 'asc' },
+                include: {
+                  components: { include: { component: true } },
+                },
+              },
+              media: {
+                where: { role: 'PRODUCT' },
+                orderBy: { position: 'asc' },
+                take: 1,
+                include: { media: true },
+              },
+            },
+          },
+        },
+      },
+      variants: {
+        where: { active: true },
+        orderBy: { position: 'asc' },
+        include: {
+          components: {
+            orderBy: { position: 'asc' },
+            include: {
+              component: { include: { product: { select: { slug: true, name: true } } } },
+            },
+          },
+        },
+      },
+    },
+  }),
+)
+
 export async function getProduct(
   slug: string,
   configurationId: string | null = null,
@@ -165,67 +243,7 @@ export async function getProduct(
   { brouillon = false }: { brouillon?: boolean } = {},
 ): Promise<ProductView | null> {
   try {
-    const product = await prisma.product.findFirst({
-      where: { slug, status: brouillon ? { in: ['PUBLISHED', 'DRAFT'] } : 'PUBLISHED' },
-      include: {
-        categories: { include: { category: true }, orderBy: { position: 'asc' }, take: 1 },
-        media: { include: { media: true }, orderBy: { position: 'asc' } },
-        specs: { orderBy: { position: 'asc' } },
-        faqItems: { orderBy: { position: 'asc' } },
-        guides: { include: { guide: true } },
-        reviews: {
-          where: { status: 'PUBLISHED' },
-          orderBy: { publishedAt: 'desc' },
-          take: 10,
-        },
-        /*
-          Compléments facultatifs.
-
-          La cible doit être publiée. Sans ce filtre, un complément rattaché à
-          un brouillon — ou à un produit archivé — s'affichait sous le bloc
-          d'achat avec un lien vers `/p/<slug>`, c'est-à-dire vers une page que
-          `getProduct` refuse de servir : une proposition d'achat qui mène en
-          404. Le back-office dit maintenant, sur la ligne concernée, qu'un
-          complément non publié n'apparaîtra pas ; cette requête est ce qui rend
-          cette phrase vraie.
-        */
-        relatedFrom: {
-          where: { type: 'OPTIONAL_ADDON', target: { status: 'PUBLISHED' } },
-          orderBy: { position: 'asc' },
-          include: {
-            target: {
-              include: {
-                variants: {
-                  where: { active: true },
-                  orderBy: { priceCents: 'asc' },
-                  include: {
-                    components: { include: { component: true } },
-                  },
-                },
-                media: {
-                  where: { role: 'PRODUCT' },
-                  orderBy: { position: 'asc' },
-                  take: 1,
-                  include: { media: true },
-                },
-              },
-            },
-          },
-        },
-        variants: {
-          where: { active: true },
-          orderBy: { position: 'asc' },
-          include: {
-            components: {
-              orderBy: { position: 'asc' },
-              include: {
-                component: { include: { product: { select: { slug: true, name: true } } } },
-              },
-            },
-          },
-        },
-      },
-    })
+    const product = await lireFiche(slug, brouillon)
 
     if (!product || product.variants.length === 0) return null
 

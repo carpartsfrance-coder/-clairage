@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '../db'
+import { lectureCatalogueAvecRepli } from '../cache-catalogue'
 import { recommendPackaging } from '../recommendation'
 import { availabilityForKit, availabilityForVariant, isPurchasable } from '../stock'
 import type { FitmentStatus } from '../fitment'
@@ -120,7 +121,32 @@ export function yearsLabel(yearFrom: number, yearTo: number | null): string {
  * Une panne de lecture n'est pas un catalogue vide, et l'écrire revenait à
  * affirmer une absence qu'on n'avait pas constatée.
  */
-export async function listPackMakes(type: PackVehicleType): Promise<PackMake[] | null> {
+/*
+  Les pages du parcours véhicule (marques, modèles, générations) ne dépendent
+  pas du visiteur : leurs lectures passent par le cache partagé du catalogue
+  (lib/cache-catalogue.ts). Le filtre de visibilité y descend jusqu'aux
+  compatibilités de chaque génération, et chaque page vue le rejouait. Une
+  lecture en échec (`null`, `unavailable`) n'est jamais gardée.
+*/
+export const listPackMakes = lectureCatalogueAvecRepli(
+  'packs-marques-v1',
+  lireMarquesDesPacks,
+  (resultat) => resultat === null,
+)
+
+export const getPackMake = lectureCatalogueAvecRepli(
+  'packs-marque-v1',
+  lireMarqueDesPacks,
+  (resultat) => resultat.state === 'unavailable',
+)
+
+export const getPackGeneration = lectureCatalogueAvecRepli(
+  'packs-generation-v1',
+  lireGenerationDesPacks,
+  (resultat) => resultat.state === 'unavailable',
+)
+
+async function lireMarquesDesPacks(type: PackVehicleType): Promise<PackMake[] | null> {
   try {
     const makes = await prisma.vehicleMake.findMany({
       where: { type, ...MARQUE_VISIBLE },
@@ -151,7 +177,7 @@ export async function listPackMakes(type: PackVehicleType): Promise<PackMake[] |
  * `absent` quand la marque n'est pas au référentiel, `unavailable` quand la
  * lecture échoue : la page n'a pas de quoi les confondre.
  */
-export async function getPackMake(
+async function lireMarqueDesPacks(
   type: PackVehicleType,
   slug: string,
 ): Promise<PackLookup<PackMakeDetail>> {
@@ -278,7 +304,7 @@ export type PackGeneration = {
  * de `absent` pour qu'une panne ne puisse passer ni pour une génération
  * inconnue, ni pour une génération sans compatibilité relevée.
  */
-export async function getPackGeneration(
+async function lireGenerationDesPacks(
   type: PackVehicleType,
   makeSlug: string,
   modelSlug: string,

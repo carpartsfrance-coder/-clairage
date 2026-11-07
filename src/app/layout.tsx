@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from 'next'
+import { Suspense } from 'react'
 import { headers } from 'next/headers'
 import { Inter, Montserrat } from 'next/font/google'
 import './globals.css'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { BarreDeNavigation } from '@/components/layout/BarreDeNavigation'
 import { identity, siteConfig } from '@/lib/identity'
 
 /**
@@ -60,6 +62,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           children
         ) : (
           <>
+            {/* Retour visuel immédiat au clic sur un lien (voir le composant). */}
+            <Suspense fallback={null}>
+              <BarreDeNavigation />
+            </Suspense>
             <a href="#contenu" className="skip-link">
               Aller au contenu
             </a>
