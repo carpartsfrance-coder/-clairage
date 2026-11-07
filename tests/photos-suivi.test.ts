@@ -3,6 +3,8 @@ import {
   POSITION_PAR_TYPE,
   VUES,
   cleDuDossier,
+  colonnesSuivi,
+  familleDuType,
   meilleurRang,
   sansAnnees,
 } from '../src/lib/admin/photos-suivi'
@@ -150,5 +152,61 @@ describe('VUES', () => {
     // Une légende longue se replie en travers de l'image, le cartouche ne fait
     // que 75 % de la largeur.
     for (const vue of VUES) expect(vue.legende.length).toBeLessThanOrEqual(16)
+  })
+})
+
+describe('familleDuType', () => {
+  it('accepte le slug du suivi photo', () => {
+    expect(familleDuType('veilleuses-feux-de-jour')).toBe('SIDELIGHT')
+    expect(familleDuType('phares')).toBe('LOW_BEAM')
+    expect(familleDuType('antibrouillard-avant')).toBe('FOG')
+  })
+
+  it('accepte le libellé lisible de la liste à publier', () => {
+    // Les deux fichiers décrivent la même position et ne l'écrivent pas pareil.
+    // Sans cette normalisation, les 322 lignes « Veilleuses / feux de jour »
+    // ne retombaient sur rien et leurs fiches restaient hors ligne.
+    expect(familleDuType('Veilleuses / feux de jour')).toBe('SIDELIGHT')
+    expect(familleDuType('Phares')).toBe('LOW_BEAM')
+    expect(familleDuType('Plaque')).toBe('PLATE')
+    expect(familleDuType('Recul')).toBe('REVERSE')
+    expect(familleDuType('Antibrouillard avant')).toBe('FOG')
+    expect(familleDuType('Clignotants avant')).toBe('TURN_FRONT')
+  })
+
+  it('traite les accents, puisque « Intérieur » et « interieur » sont la même zone', () => {
+    expect(familleDuType('Intérieur')).toBe('INTERIOR_DOME')
+    expect(familleDuType('interieur')).toBe('INTERIOR_DOME')
+  })
+
+  it('refuse plutôt que de deviner', () => {
+    // Une famille inconnue doit arrêter la ligne, pas tomber sur une position
+    // voisine : ce serait poser des antibrouillards sur une fiche de plaque.
+    expect(familleDuType('Toit ouvrant')).toBeNull()
+    expect(familleDuType('')).toBeNull()
+  })
+})
+
+describe('colonnesSuivi', () => {
+  it('lit le suivi photo', () => {
+    expect(
+      colonnesSuivi(['rang', 'avis', 'type', 'marque', 'dossier', 'statut']),
+    ).toEqual({ rang: 0, type: 2, dossier: 4, statut: 5 })
+  })
+
+  it('lit la liste des produits à publier, qui n’a pas de colonne de statut', () => {
+    const colonnes = colonnesSuivi([
+      'Marque',
+      'Modèle',
+      'Type',
+      'Produit',
+      'Rang ventes',
+      'Dossier images',
+    ])
+    expect(colonnes).toEqual({ type: 2, rang: 4, dossier: 5, statut: -1 })
+  })
+
+  it('refuse un fichier auquel manque une colonne indispensable', () => {
+    expect(colonnesSuivi(['Marque', 'Modèle', 'Produit'])).toBeNull()
   })
 })

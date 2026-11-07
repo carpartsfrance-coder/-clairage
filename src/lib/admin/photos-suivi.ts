@@ -25,6 +25,57 @@ export const POSITION_PAR_TYPE: Record<string, string> = {
   'antibrouillard-avant': 'FOG',
 }
 
+/**
+ * La position lumineuse d'une valeur de colonne « type », quelle que soit sa forme.
+ *
+ * Deux fichiers décrivent la même chose et ne l'écrivent pas pareil : le suivi
+ * photo porte le slug (`veilleuses-feux-de-jour`), la liste des produits à
+ * publier porte le libellé lisible (`Veilleuses / feux de jour`). Plutôt que
+ * deux tables à tenir à jour en parallèle — c'est-à-dire deux tables à oublier
+ * de corriger — on normalise la valeur reçue pour la faire retomber sur la clé
+ * du slug : accents retirés, tout en minuscules, et ce qui n'est ni lettre ni
+ * chiffre devient un tiret. « Antibrouillard avant » et `antibrouillard-avant`
+ * désignent alors la même position, sans qu'on l'ait écrit deux fois.
+ */
+export function familleDuType(valeur: string): string | null {
+  const normalise = valeur
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return POSITION_PAR_TYPE[normalise] ?? null
+}
+
+/**
+ * Les colonnes dont le rapprochement a besoin, sous l'un ou l'autre intitulé.
+ *
+ * Le suivi photo écrit `type`, `dossier`, `rang`, `statut` ; la liste des
+ * produits à publier écrit `Type`, `Dossier images`, `Rang ventes` et n'a pas
+ * de colonne de statut. Un seul lecteur accepte les deux : le script de
+ * publication tourne aussi bien sur la liste du lancement que sur le suivi
+ * complet, et une prochaine série n'obligera pas à renommer des colonnes.
+ *
+ * `statut` est facultative — son absence vaut « toutes les lignes comptent »,
+ * puisqu'un fichier qui ne liste que les produits prêts n'a rien à filtrer.
+ */
+export type ColonnesSuivi = { type: number; dossier: number; rang: number; statut: number }
+
+export function colonnesSuivi(headers: string[]): ColonnesSuivi | null {
+  const indexDe = (noms: string[]) =>
+    headers.findIndex((entete) =>
+      noms.some((nom) => entete.trim().toLowerCase() === nom.toLowerCase()),
+    )
+
+  const type = indexDe(['type'])
+  const dossier = indexDe(['dossier', 'dossier images'])
+  const rang = indexDe(['rang', 'rang ventes'])
+  const statut = indexDe(['statut'])
+
+  if (type < 0 || dossier < 0 || rang < 0) return null
+  return { type, dossier, rang, statut }
+}
+
 /*
   Les années en fin de segment, et elles seules. Le bornage à 1950–2035 évite de
   prendre une cylindrée ou un code moteur pour un millésime : « tiger-sport-1050 »
