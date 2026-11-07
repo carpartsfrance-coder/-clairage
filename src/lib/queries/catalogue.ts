@@ -1,6 +1,7 @@
 import 'server-only'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '../db'
+import { lectureCatalogue } from '../cache-catalogue'
 import {
   bestStatus,
   fitmentSortWeight,
@@ -123,58 +124,66 @@ const PACKAGING_LABELS: Record<string, string> = {
 /** Index des catégories racines, avec le nombre de produits publiés. */
 export async function getCategoryTree(): Promise<CatalogueCategory[]> {
   try {
-    const categories = await prisma.category.findMany({
-      where: { published: true, parentId: null },
-      orderBy: { position: 'asc' },
-      include: {
-        heroMedia: true,
-        children: {
-          where: { published: true },
-          orderBy: { position: 'asc' },
-          select: { slug: true, name: true },
-        },
-      },
-    })
-
-    /**
-     * Le compteur doit annoncer exactement ce que la page de catégorie
-     * listera : les produits de la catégorie ET de ses sous-catégories, et
-     * seulement ceux qui ont au moins une variante active. Compter autrement
-     * promet « 7 produits » et en affiche 23, ou l'inverse.
-     */
-    const counts = await Promise.all(
-      categories.map((category) =>
-        prisma.product.count({
-          where: {
-            status: 'PUBLISHED',
-            variants: { some: { active: true } },
-            categories: {
-              some: {
-                category: {
-                  OR: [{ slug: category.slug }, { parent: { slug: category.slug } }],
-                },
-              },
-            },
-          },
-        }),
-      ),
-    )
-
-    return categories.map((category, index) => ({
-      slug: category.slug,
-      name: category.name,
-      description: category.description,
-      family: category.family,
-      image: category.heroMedia
-        ? { url: category.heroMedia.url, alt: category.heroMedia.alt ?? category.name }
-        : null,
-      productCount: counts[index],
-      children: category.children,
-    }))
+    // Une requête de comptage par rubrique : passe par le cache partagé du
+    // catalogue (lib/cache-catalogue.ts), rien n'y dépend du visiteur.
+    return await arborescenceEnCache()
   } catch (error) {
     console.error('[catalogue] arborescence indisponible', error)
     return []
   }
+}
+
+const arborescenceEnCache = lectureCatalogue('catalogue-arborescence-v1', lireArborescence)
+
+async function lireArborescence(): Promise<CatalogueCategory[]> {
+  const categories = await prisma.category.findMany({
+    where: { published: true, parentId: null },
+    orderBy: { position: 'asc' },
+    include: {
+      heroMedia: true,
+      children: {
+        where: { published: true },
+        orderBy: { position: 'asc' },
+        select: { slug: true, name: true },
+      },
+    },
+  })
+
+  /**
+   * Le compteur doit annoncer exactement ce que la page de catégorie
+   * listera : les produits de la catégorie ET de ses sous-catégories, et
+   * seulement ceux qui ont au moins une variante active. Compter autrement
+   * promet « 7 produits » et en affiche 23, ou l'inverse.
+   */
+  const counts = await Promise.all(
+    categories.map((category) =>
+      prisma.product.count({
+        where: {
+          status: 'PUBLISHED',
+          variants: { some: { active: true } },
+          categories: {
+            some: {
+              category: {
+                OR: [{ slug: category.slug }, { parent: { slug: category.slug } }],
+              },
+            },
+          },
+        },
+      }),
+    ),
+  )
+
+  return categories.map((category, index) => ({
+    slug: category.slug,
+    name: category.name,
+    description: category.description,
+    family: category.family,
+    image: category.heroMedia
+      ? { url: category.heroMedia.url, alt: category.heroMedia.alt ?? category.name }
+      : null,
+    productCount: counts[index],
+    children: category.children,
+  }))
 }
 
 export async function getCategory(slug: string) {
@@ -208,243 +217,294 @@ export async function listProducts(
   filters: CatalogueFilters,
   configurationId: string | null = null,
 ): Promise<CatalogueResult> {
-  const page = Math.max(1, filters.page ?? 1)
-  const perPage = Math.min(60, filters.perPage ?? PER_PAGE)
-  const sort = filters.sort ?? 'pertinence'
-
-  /**
-   * Le `where` se compose à la carte, parce que les facettes ont besoin de
-   * variantes de ce même filtre : une facette doit être comptée avec SON
-   * propre critère retiré. Sinon, cocher « H7 » fait disparaître tous les
-   * autres culots de la liste, et la sélection multiple devient impossible —
-   * alors même que l'interface la promet.
-   */
-  function buildWhere(skip?: 'bases' | 'temperatures' | 'packagings'): Prisma.ProductWhereInput {
-    const clause: Prisma.ProductWhereInput = { status: 'PUBLISHED' }
-
-    if (filters.categorySlug) {
-      // Une catégorie racine ramène aussi les produits de ses sous-catégories.
-      clause.categories = {
-        some: {
-          category: {
-            OR: [{ slug: filters.categorySlug }, { parent: { slug: filters.categorySlug } }],
-          },
-        },
-      }
-    }
-
-    if (filters.query) {
-      const q = filters.query.trim()
-      clause.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { tagline: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
-        { bulbBase: { contains: q, mode: 'insensitive' } },
-        { variants: { some: { sku: { contains: q, mode: 'insensitive' } } } },
-      ]
-    }
-
-    if (filters.vehicleType) clause.vehicleType = { in: [filters.vehicleType, 'BOTH'] }
-    if (skip !== 'bases' && filters.bases?.length) clause.bulbBase = { in: filters.bases }
-    if (skip !== 'temperatures' && filters.temperatures?.length) {
-      clause.colorTemperature = { in: filters.temperatures }
-    }
-
-    // Un produit sans variante active n'est pas achetable : il ne doit
-    // apparaître ni dans la liste, ni dans les compteurs.
-    clause.variants =
-      skip !== 'packagings' && filters.packagings?.length
-        ? {
-            some: {
-              active: true,
-              packaging: { in: filters.packagings as Prisma.EnumPackagingFilter['in'] },
-            },
-          }
-        : { some: { active: true } }
-
-    return clause
-  }
-
-  const where = buildWhere()
-
   try {
-    const [total, rows, facetRows] = await Promise.all([
-      prisma.product.count({ where }),
-      prisma.product.findMany({
-        where,
-        orderBy:
-          sort === 'nouveautes'
-            ? { publishedAt: 'desc' }
-            : sort === 'pertinence'
-              ? [{ featured: 'desc' }, { name: 'asc' }]
-              : { name: 'asc' },
-        // Le tri par prix et le classement par compatibilité portent sur des
-        // valeurs dérivées (prix mini des variantes, statut du fitment) : ils
-        // sont appliqués après lecture, sur la page courante.
-        skip: (page - 1) * perPage,
-        take: perPage,
-        include: {
-          variants: {
-            where: { active: true },
-            orderBy: { priceCents: 'asc' },
-            include: { components: { include: { component: true } } },
-          },
-          media: {
-            ...ARGS_COUVERTURE,
-            include: { media: true },
-          },
-          categories: { include: { category: true }, take: 1 },
-        },
-      }),
-      // Les facettes se calculent sur l'ensemble du périmètre, pas sur la page,
-      // et chacune avec son propre critère neutralisé (voir buildWhere).
-      Promise.all([
-        prisma.product.findMany({
-          where: buildWhere('bases'),
-          select: { bulbBase: true },
-        }),
-        prisma.product.findMany({
-          where: buildWhere('temperatures'),
-          select: { colorTemperature: true },
-        }),
-        prisma.product.findMany({
-          where: buildWhere('packagings'),
-          select: { variants: { where: { active: true }, select: { packaging: true } } },
-        }),
-      ]),
-    ])
-
-    const variantIds = rows.flatMap((product) => product.variants.map((variant) => variant.id))
-    const fitments = await resolveFitments(configurationId, variantIds)
-
-    let items: ProductListItem[] = rows
-      .filter((product) => product.variants.length > 0)
-      .map((product) => {
-        // Quand un conditionnement est filtré, le prix annoncé doit être celui
-        // d'un conditionnement retenu. Sans cela, filtrer sur « Kit complet »
-        // afficherait « à partir de 69,90 € » alors qu'aucun kit ne coûte ce
-        // prix — un prix que le client ne retrouvera nulle part.
-        const eligible = filters.packagings?.length
-          ? product.variants.filter((variant) =>
-              filters.packagings!.includes(variant.packaging),
-            )
-          : product.variants
-        const cheapest = eligible[0] ?? product.variants[0]
-        const cover = couverture(product.media)?.media
-        const category = product.categories[0]?.category
-
-        // La disponibilité affichée est celle du conditionnement le moins cher :
-        // c'est celui dont le prix est annoncé.
-        const availability =
-          cheapest.components.length > 0
-            ? availabilityForKit(
-                cheapest.components.map((entry) => ({
-                  quantity: entry.quantity,
-                  required: entry.required,
-                  component: entry.component,
-                })),
-              )
-            : availabilityForVariant(cheapest)
-
-        const statuses = product.variants
-          .map((variant) => fitments.get(variant.id)?.status)
-          .filter((status): status is FitmentStatus => Boolean(status))
-
-        return {
-          slug: product.slug,
-          name: product.name,
-          tagline: product.tagline,
-          bulbBase: product.bulbBase,
-          colorTemperature: product.colorTemperature,
-          categoryName: category?.name ?? null,
-          categorySlug: category?.slug ?? null,
-          image: cover ? { url: cover.url, alt: cover.alt ?? product.name } : null,
-          fromPriceCents: cheapest.priceCents,
-          hasKit: product.variants.some((variant) => variant.packaging === 'KIT'),
-          // Le moins cher des kits : c'est celui que la pastille désigne. On ne
-          // le renvoie que s'il est plus cher que l'entrée de gamme, sinon les
-          // deux prix affichés seraient le même nombre.
-          kitPriceCents: (() => {
-            const kits = product.variants
-              .filter((variant) => variant.packaging === 'KIT')
-              .map((variant) => variant.priceCents)
-            if (kits.length === 0) return null
-            const moinsCher = Math.min(...kits)
-            return moinsCher > cheapest.priceCents ? moinsCher : null
-          })(),
-          variantCount: product.variants.length,
-          availability,
-          fitment: configurationId ? bestStatus(statuses) : null,
-          recommended: (() => {
-            if (!configurationId) return null
-
-            const candidats = product.variants.map((variant) => {
-              const fitment = fitments.get(variant.id)
-              const fournis = new Set(variant.components.map((entry) => entry.componentId))
-              return {
-                id: variant.id,
-                name: variant.name,
-                priceCents: variant.priceCents,
-                status: fitment?.status ?? 'UNKNOWN',
-                purchasable: isPurchasable(
-                  variant.components.length > 0
-                    ? availabilityForKit(
-                        variant.components.map((entry) => ({
-                          quantity: entry.quantity,
-                          required: entry.required,
-                          component: entry.component,
-                        })),
-                      )
-                    : availabilityForVariant(variant),
-                ),
-                missingRequired: (fitment?.accessories ?? []).filter(
-                  (accessoire) => accessoire.required && !fournis.has(accessoire.variantId),
-                ).length,
-              }
-            })
-
-            const retenu = recommendPackaging(candidats)
-            if (!retenu) return null
-            return {
-              priceCents: retenu.priceCents,
-              name: retenu.name,
-              reason: recommendationReason(retenu, candidats),
-            }
-          })(),
-        }
-      })
-
-    if (sort === 'prix-croissant') {
-      items = items.sort((a, b) => a.fromPriceCents - b.fromPriceCents)
-    } else if (sort === 'prix-decroissant') {
-      items = items.sort((a, b) => b.fromPriceCents - a.fromPriceCents)
-    } else if (sort === 'pertinence' && configurationId) {
-      // Confirmé d'abord, incompatible en dernier — mais rien n'est caché.
-      items = items.sort(
-        (a, b) =>
-          fitmentSortWeight[a.fitment ?? 'UNKNOWN'] - fitmentSortWeight[b.fitment ?? 'UNKNOWN'],
-      )
-    }
-
-    return {
-      items,
-      total,
-      page,
-      perPage,
-      pageCount: Math.max(1, Math.ceil(total / perPage)),
-      facets: buildFacets(facetRows),
-    }
+    /*
+      Sans véhicule choisi, la liste ne dépend que des filtres : elle passe par
+      le cache partagé du catalogue (lib/cache-catalogue.ts). C'est le cas de
+      la plupart des visiteurs et de tous les robots d'indexation. Les
+      facettes relisent tout le périmètre de la rubrique — plusieurs milliers
+      de produits pour les phares — et cela se payait à chaque page vue.
+      Avec un véhicule, la compatibilité de chaque produit est propre au
+      visiteur : la lecture reste directe.
+    */
+    return configurationId
+      ? await lireListe(filters, configurationId)
+      : await listeEnCache(filters)
   } catch (error) {
     console.error('[catalogue] liste indisponible', error)
     return {
       items: [],
       total: 0,
-      page,
-      perPage,
+      page: Math.max(1, filters.page ?? 1),
+      perPage: Math.min(60, filters.perPage ?? PER_PAGE),
       pageCount: 1,
       facets: { bases: [], temperatures: [], packagings: [] },
     }
   }
+}
+
+const listeEnCache = lectureCatalogue('catalogue-liste-v1', (filters: CatalogueFilters) =>
+  lireListe(filters, null),
+)
+
+/**
+ * Le `where` se compose à la carte, parce que les facettes ont besoin de
+ * variantes de ce même filtre : une facette doit être comptée avec SON
+ * propre critère retiré. Sinon, cocher « H7 » fait disparaître tous les
+ * autres culots de la liste, et la sélection multiple devient impossible —
+ * alors même que l'interface la promet.
+ */
+function buildWhere(
+  filters: CatalogueFilters,
+  skip?: 'bases' | 'temperatures' | 'packagings',
+): Prisma.ProductWhereInput {
+  const clause: Prisma.ProductWhereInput = { status: 'PUBLISHED' }
+
+  if (filters.categorySlug) {
+    // Une catégorie racine ramène aussi les produits de ses sous-catégories.
+    clause.categories = {
+      some: {
+        category: {
+          OR: [{ slug: filters.categorySlug }, { parent: { slug: filters.categorySlug } }],
+        },
+      },
+    }
+  }
+
+  if (filters.query) {
+    const q = filters.query.trim()
+    clause.OR = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { tagline: { contains: q, mode: 'insensitive' } },
+      { description: { contains: q, mode: 'insensitive' } },
+      { bulbBase: { contains: q, mode: 'insensitive' } },
+      { variants: { some: { sku: { contains: q, mode: 'insensitive' } } } },
+    ]
+  }
+
+  if (filters.vehicleType) clause.vehicleType = { in: [filters.vehicleType, 'BOTH'] }
+  if (skip !== 'bases' && filters.bases?.length) clause.bulbBase = { in: filters.bases }
+  if (skip !== 'temperatures' && filters.temperatures?.length) {
+    clause.colorTemperature = { in: filters.temperatures }
+  }
+
+  // Un produit sans variante active n'est pas achetable : il ne doit
+  // apparaître ni dans la liste, ni dans les compteurs.
+  clause.variants =
+    skip !== 'packagings' && filters.packagings?.length
+      ? {
+          some: {
+            active: true,
+            packaging: { in: filters.packagings as Prisma.EnumPackagingFilter['in'] },
+          },
+        }
+      : { some: { active: true } }
+
+  return clause
+}
+
+
+/** Lit une page de la liste et ses facettes. Lève si la base ne répond pas. */
+async function lireListe(
+  filters: CatalogueFilters,
+  configurationId: string | null,
+): Promise<CatalogueResult> {
+  const page = Math.max(1, filters.page ?? 1)
+  const perPage = Math.min(60, filters.perPage ?? PER_PAGE)
+  const sort = filters.sort ?? 'pertinence'
+
+  const where = buildWhere(filters)
+
+  const [{ total, facets }, rows] = await Promise.all([
+    /*
+      Le total et les facettes ne dépendent que des filtres — ni de la page,
+      ni du tri, ni du véhicule : ils passent par le cache partagé même pour
+      un visiteur qui a choisi son véhicule. Ce sont les lectures les plus
+      lourdes de la liste (tout le périmètre de la rubrique, trois fois).
+    */
+    comptesEnCache(perimetre(filters)),
+    prisma.product.findMany({
+      where,
+      orderBy:
+        sort === 'nouveautes'
+          ? { publishedAt: 'desc' }
+          : sort === 'pertinence'
+            ? [{ featured: 'desc' }, { name: 'asc' }]
+            : { name: 'asc' },
+      // Le tri par prix et le classement par compatibilité portent sur des
+      // valeurs dérivées (prix mini des variantes, statut du fitment) : ils
+      // sont appliqués après lecture, sur la page courante.
+      skip: (page - 1) * perPage,
+      take: perPage,
+      include: {
+        variants: {
+          where: { active: true },
+          orderBy: { priceCents: 'asc' },
+          include: { components: { include: { component: true } } },
+        },
+        media: {
+          ...ARGS_COUVERTURE,
+          include: { media: true },
+        },
+        categories: { include: { category: true }, take: 1 },
+      },
+    }),
+  ])
+
+  const variantIds = rows.flatMap((product) => product.variants.map((variant) => variant.id))
+  const fitments = await resolveFitments(configurationId, variantIds)
+
+  let items: ProductListItem[] = rows
+    .filter((product) => product.variants.length > 0)
+    .map((product) => {
+      // Quand un conditionnement est filtré, le prix annoncé doit être celui
+      // d'un conditionnement retenu. Sans cela, filtrer sur « Kit complet »
+      // afficherait « à partir de 69,90 € » alors qu'aucun kit ne coûte ce
+      // prix — un prix que le client ne retrouvera nulle part.
+      const eligible = filters.packagings?.length
+        ? product.variants.filter((variant) =>
+            filters.packagings!.includes(variant.packaging),
+          )
+        : product.variants
+      const cheapest = eligible[0] ?? product.variants[0]
+      const cover = couverture(product.media)?.media
+      const category = product.categories[0]?.category
+
+      // La disponibilité affichée est celle du conditionnement le moins cher :
+      // c'est celui dont le prix est annoncé.
+      const availability =
+        cheapest.components.length > 0
+          ? availabilityForKit(
+              cheapest.components.map((entry) => ({
+                quantity: entry.quantity,
+                required: entry.required,
+                component: entry.component,
+              })),
+            )
+          : availabilityForVariant(cheapest)
+
+      const statuses = product.variants
+        .map((variant) => fitments.get(variant.id)?.status)
+        .filter((status): status is FitmentStatus => Boolean(status))
+
+      return {
+        slug: product.slug,
+        name: product.name,
+        tagline: product.tagline,
+        bulbBase: product.bulbBase,
+        colorTemperature: product.colorTemperature,
+        categoryName: category?.name ?? null,
+        categorySlug: category?.slug ?? null,
+        image: cover ? { url: cover.url, alt: cover.alt ?? product.name } : null,
+        fromPriceCents: cheapest.priceCents,
+        hasKit: product.variants.some((variant) => variant.packaging === 'KIT'),
+        // Le moins cher des kits : c'est celui que la pastille désigne. On ne
+        // le renvoie que s'il est plus cher que l'entrée de gamme, sinon les
+        // deux prix affichés seraient le même nombre.
+        kitPriceCents: (() => {
+          const kits = product.variants
+            .filter((variant) => variant.packaging === 'KIT')
+            .map((variant) => variant.priceCents)
+          if (kits.length === 0) return null
+          const moinsCher = Math.min(...kits)
+          return moinsCher > cheapest.priceCents ? moinsCher : null
+        })(),
+        variantCount: product.variants.length,
+        availability,
+        fitment: configurationId ? bestStatus(statuses) : null,
+        recommended: (() => {
+          if (!configurationId) return null
+
+          const candidats = product.variants.map((variant) => {
+            const fitment = fitments.get(variant.id)
+            const fournis = new Set(variant.components.map((entry) => entry.componentId))
+            return {
+              id: variant.id,
+              name: variant.name,
+              priceCents: variant.priceCents,
+              status: fitment?.status ?? 'UNKNOWN',
+              purchasable: isPurchasable(
+                variant.components.length > 0
+                  ? availabilityForKit(
+                      variant.components.map((entry) => ({
+                        quantity: entry.quantity,
+                        required: entry.required,
+                        component: entry.component,
+                      })),
+                    )
+                  : availabilityForVariant(variant),
+              ),
+              missingRequired: (fitment?.accessories ?? []).filter(
+                (accessoire) => accessoire.required && !fournis.has(accessoire.variantId),
+              ).length,
+            }
+          })
+
+          const retenu = recommendPackaging(candidats)
+          if (!retenu) return null
+          return {
+            priceCents: retenu.priceCents,
+            name: retenu.name,
+            reason: recommendationReason(retenu, candidats),
+          }
+        })(),
+      }
+    })
+
+  if (sort === 'prix-croissant') {
+    items = items.sort((a, b) => a.fromPriceCents - b.fromPriceCents)
+  } else if (sort === 'prix-decroissant') {
+    items = items.sort((a, b) => b.fromPriceCents - a.fromPriceCents)
+  } else if (sort === 'pertinence' && configurationId) {
+    // Confirmé d'abord, incompatible en dernier — mais rien n'est caché.
+    items = items.sort(
+      (a, b) =>
+        fitmentSortWeight[a.fitment ?? 'UNKNOWN'] - fitmentSortWeight[b.fitment ?? 'UNKNOWN'],
+    )
+  }
+
+  return {
+    items,
+    total,
+    page,
+    perPage,
+    pageCount: Math.max(1, Math.ceil(total / perPage)),
+    facets,
+  }
+}
+
+/** Le périmètre d'une liste : ses filtres, sans la page, le tri ni la taille de page. */
+function perimetre(filters: CatalogueFilters): CatalogueFilters {
+  const { page: _page, sort: _tri, perPage: _taille, ...reste } = filters
+  return reste
+}
+
+const comptesEnCache = lectureCatalogue('catalogue-comptes-v1', lireComptes)
+
+/** Total et facettes d'un périmètre. Lève si la base ne répond pas. */
+async function lireComptes(
+  filters: CatalogueFilters,
+): Promise<{ total: number; facets: CatalogueResult['facets'] }> {
+  const [total, facetRows] = await Promise.all([
+    prisma.product.count({ where: buildWhere(filters) }),
+    // Les facettes se calculent sur l'ensemble du périmètre, pas sur la page,
+    // et chacune avec son propre critère neutralisé (voir buildWhere).
+    Promise.all([
+      prisma.product.findMany({
+        where: buildWhere(filters, 'bases'),
+        select: { bulbBase: true },
+      }),
+      prisma.product.findMany({
+        where: buildWhere(filters, 'temperatures'),
+        select: { colorTemperature: true },
+      }),
+      prisma.product.findMany({
+        where: buildWhere(filters, 'packagings'),
+        select: { variants: { where: { active: true }, select: { packaging: true } } },
+      }),
+    ]),
+  ])
+  return { total, facets: buildFacets(facetRows) }
 }
 
 function buildFacets(

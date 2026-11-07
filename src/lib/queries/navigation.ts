@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '../db'
+import { lectureCatalogue } from '../cache-catalogue'
 import { MARQUE_VISIBLE, MODELE_VISIBLE } from './vehicules-visibles'
 
 /**
@@ -157,137 +158,155 @@ function colonneMarques(
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Arborescence du menu, lue au plus une fois toutes les cinq minutes.
+ *
+ * Elle est rendue sur **chaque page** par l'en-tête : la relire à chaque
+ * visite coûtait plusieurs secondes sur la base de production (voir
+ * lib/cache-catalogue.ts).
+ */
+const navigationEnCache = lectureCatalogue('navigation-v2', construireNavigation)
+
 export async function getNavigation(): Promise<NavSection[]> {
   try {
-    const [categories, liens, marquesAuto, marquesMoto] = await Promise.all([
-      prisma.category.findMany({
-        where: { published: true },
-        orderBy: [{ position: 'asc' }, { name: 'asc' }],
-        select: {
-          id: true,
-          slug: true,
-          name: true,
-          shortName: true,
-          description: true,
-          parentId: true,
-        },
-      }),
-      /*
-        Un enregistrement par couple (produit publié, catégorie). Il sert à la
-        fois au comptage et au relevé des culots, en une seule lecture. Sur un
-        catalogue de plusieurs milliers de références, ce regroupement
-        descendra en SQL ; à cette échelle, le faire en mémoire est plus
-        simple à relire.
-      */
-      prisma.productCategory.findMany({
-        where: { product: { status: 'PUBLISHED' } },
-        select: { categoryId: true, product: { select: { bulbBase: true } } },
-      }),
-      lireMarques('CAR'),
-      lireMarques('MOTORCYCLE'),
-    ])
-
-    // Produits et culots, par catégorie directe.
-    const parCategorie = new Map<string, { produits: number; culots: Map<string, number> }>()
-    for (const lien of liens) {
-      const entree = parCategorie.get(lien.categoryId) ?? { produits: 0, culots: new Map() }
-      entree.produits += 1
-      const base = lien.product.bulbBase
-      if (base) entree.culots.set(base, (entree.culots.get(base) ?? 0) + 1)
-      parCategorie.set(lien.categoryId, entree)
-    }
-
-    const racines = categories.filter((category) => category.parentId === null)
-    const enfantsDe = (parentId: string) =>
-      categories.filter((category) => category.parentId === parentId)
-
-    /** Produits et culots d'une rubrique, ses sous-catégories comprises. */
-    function cumul(categoryId: string) {
-      const propre = parCategorie.get(categoryId)
-      let produits = propre?.produits ?? 0
-      const culots = new Map(propre?.culots ?? [])
-
-      for (const enfant of enfantsDe(categoryId)) {
-        const sousTotal = cumul(enfant.id)
-        produits += sousTotal.produits
-        for (const [code, nombre] of sousTotal.culots) {
-          culots.set(code, (culots.get(code) ?? 0) + nombre)
-        }
-      }
-      return { produits, culots }
-    }
-
-    const rubriquesCatalogue: NavSection[] = racines.map((racine) => {
-      const total = cumul(racine.id)
-
-      const familles = enfantsDe(racine.id)
-        .map((enfant) => ({ enfant, total: cumul(enfant.id) }))
-        .filter(({ total: sousTotal }) => sousTotal.produits > 0)
-        .map(({ enfant, total: sousTotal }) => ({
-          label: enfant.name,
-          href: `/c/${enfant.slug}`,
-          count: sousTotal.produits,
-        }))
-
-      const culots = [...total.culots.entries()]
-        .sort(([a], [b]) => a.localeCompare(b, 'fr'))
-        .slice(0, MAX_PAR_COLONNE)
-        .map(([code, count]) => ({ label: code, href: `/culot/${code.toLowerCase()}`, count }))
-
-      const columns: NavColumn[] = []
-      if (familles.length > 0) columns.push({ title: 'Par famille', links: familles })
-      if (culots.length > 0) columns.push({ title: 'Par culot', links: culots })
-
-      return {
-        key: racine.slug,
-        kicker: racine.shortName ?? undefined,
-        label: racine.name,
-        href: `/c/${racine.slug}`,
-        description: racine.description ?? undefined,
-        columns,
-        // Conservé pour le filtre ci-dessous : une rubrique peut n'avoir
-        // aucune colonne et tout de même mener à des produits.
-        ...{ _produits: total.produits },
-      } as NavSection & { _produits: number }
-    })
-
-    /*
-      Les deux parcours véhicule ouvrent la barre. Ils ne sont pas des
-      catégories : ils mènent à un arbre marque → modèle → génération, et
-      n'ont donc ni famille ni culot.
-    */
-    const parcours: NavSection[] = [
-      {
-        key: 'packs-auto',
-        kicker: 'Packs par marque',
-        label: 'Auto & utilitaire',
-        href: '/packs/auto',
-        highlight: true,
-        description: 'Les éclairages documentés pour votre voiture.',
-        columns: colonneMarques(marquesAuto, 'auto'),
-      },
-      {
-        key: 'packs-moto',
-        kicker: 'Packs par marque',
-        label: 'Moto, scooter & quad',
-        href: '/packs/moto',
-        description: 'Les éclairages documentés pour votre deux-roues.',
-        columns: colonneMarques(marquesMoto, 'moto'),
-      },
-    ].filter((section) => section.columns.length > 0)
-
-    const catalogue = (rubriquesCatalogue as Array<NavSection & { _produits: number }>)
-      .filter((section) => section._produits > 0)
-      .map(({ _produits: _, ...section }) => section)
-
-    return [...parcours, ...catalogue]
+    return await navigationEnCache()
   } catch (error) {
     /*
       Base injoignable : barre vide plutôt qu'une arborescence figée. Un menu
       écrit en dur survivrait à la panne en pointant vers des pages qui, elles,
-      ne répondraient pas.
+      ne répondraient pas. L'échec n'est pas mis en cache : la page suivante
+      retentera.
     */
     console.error('[navigation] arborescence indisponible', error)
     return []
   }
+}
+
+/** Construit l'arborescence. Lève si la base ne répond pas. */
+async function construireNavigation(): Promise<NavSection[]> {
+  const [categories, comptes, marquesAuto, marquesMoto] = await Promise.all([
+    prisma.category.findMany({
+      where: { published: true },
+      orderBy: [{ position: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        shortName: true,
+        description: true,
+        parentId: true,
+      },
+    }),
+    /*
+      Produits publiés par catégorie et par culot, comptés en SQL. Le
+      comptage se faisait en mémoire sur un enregistrement par couple
+      (produit, catégorie) : plus de dix mille lignes à transférer et à
+      parcourir à chaque construction du menu, pour en garder quelques
+      dizaines. Le culot nul compte dans les produits, pas dans les culots.
+    */
+    prisma.$queryRaw<Array<{ categoryId: string; bulbBase: string | null; produits: number }>>`
+      SELECT pc."categoryId", p."bulbBase", COUNT(*)::int AS produits
+      FROM "ProductCategory" pc
+      JOIN "Product" p ON p.id = pc."productId"
+      WHERE p.status = 'PUBLISHED'
+      GROUP BY pc."categoryId", p."bulbBase"
+    `,
+    lireMarques('CAR'),
+    lireMarques('MOTORCYCLE'),
+  ])
+
+  // Produits et culots, par catégorie directe.
+  const parCategorie = new Map<string, { produits: number; culots: Map<string, number> }>()
+  for (const compte of comptes) {
+    const entree = parCategorie.get(compte.categoryId) ?? { produits: 0, culots: new Map() }
+    entree.produits += compte.produits
+    const base = compte.bulbBase
+    if (base) entree.culots.set(base, (entree.culots.get(base) ?? 0) + compte.produits)
+    parCategorie.set(compte.categoryId, entree)
+  }
+
+  const racines = categories.filter((category) => category.parentId === null)
+  const enfantsDe = (parentId: string) =>
+    categories.filter((category) => category.parentId === parentId)
+
+  /** Produits et culots d'une rubrique, ses sous-catégories comprises. */
+  function cumul(categoryId: string) {
+    const propre = parCategorie.get(categoryId)
+    let produits = propre?.produits ?? 0
+    const culots = new Map(propre?.culots ?? [])
+
+    for (const enfant of enfantsDe(categoryId)) {
+      const sousTotal = cumul(enfant.id)
+      produits += sousTotal.produits
+      for (const [code, nombre] of sousTotal.culots) {
+        culots.set(code, (culots.get(code) ?? 0) + nombre)
+      }
+    }
+    return { produits, culots }
+  }
+
+  const rubriquesCatalogue: NavSection[] = racines.map((racine) => {
+    const total = cumul(racine.id)
+
+    const familles = enfantsDe(racine.id)
+      .map((enfant) => ({ enfant, total: cumul(enfant.id) }))
+      .filter(({ total: sousTotal }) => sousTotal.produits > 0)
+      .map(({ enfant, total: sousTotal }) => ({
+        label: enfant.name,
+        href: `/c/${enfant.slug}`,
+        count: sousTotal.produits,
+      }))
+
+    const culots = [...total.culots.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, 'fr'))
+      .slice(0, MAX_PAR_COLONNE)
+      .map(([code, count]) => ({ label: code, href: `/culot/${code.toLowerCase()}`, count }))
+
+    const columns: NavColumn[] = []
+    if (familles.length > 0) columns.push({ title: 'Par famille', links: familles })
+    if (culots.length > 0) columns.push({ title: 'Par culot', links: culots })
+
+    return {
+      key: racine.slug,
+      kicker: racine.shortName ?? undefined,
+      label: racine.name,
+      href: `/c/${racine.slug}`,
+      description: racine.description ?? undefined,
+      columns,
+      // Conservé pour le filtre ci-dessous : une rubrique peut n'avoir
+      // aucune colonne et tout de même mener à des produits.
+      ...{ _produits: total.produits },
+    } as NavSection & { _produits: number }
+  })
+
+  /*
+    Les deux parcours véhicule ouvrent la barre. Ils ne sont pas des
+    catégories : ils mènent à un arbre marque → modèle → génération, et
+    n'ont donc ni famille ni culot.
+  */
+  const parcours: NavSection[] = [
+    {
+      key: 'packs-auto',
+      kicker: 'Packs par marque',
+      label: 'Auto & utilitaire',
+      href: '/packs/auto',
+      highlight: true,
+      description: 'Les éclairages documentés pour votre voiture.',
+      columns: colonneMarques(marquesAuto, 'auto'),
+    },
+    {
+      key: 'packs-moto',
+      kicker: 'Packs par marque',
+      label: 'Moto, scooter & quad',
+      href: '/packs/moto',
+      description: 'Les éclairages documentés pour votre deux-roues.',
+      columns: colonneMarques(marquesMoto, 'moto'),
+    },
+  ].filter((section) => section.columns.length > 0)
+
+  const catalogue = (rubriquesCatalogue as Array<NavSection & { _produits: number }>)
+    .filter((section) => section._produits > 0)
+    .map(({ _produits: _, ...section }) => section)
+
+  return [...parcours, ...catalogue]
 }

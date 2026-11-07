@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { GENERATION_VISIBLE } from '@/lib/queries/vehicules-visibles'
+import { lectureCatalogue } from '@/lib/cache-catalogue'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,10 +16,7 @@ export async function GET(request: Request) {
   const modelId = new URL(request.url).searchParams.get('modelId')
   if (!modelId) return NextResponse.json({ items: [] })
   try {
-    const generations = await prisma.vehicleGeneration.findMany({
-      where: { modelId, ...GENERATION_VISIBLE },
-      select: { yearFrom: true, yearTo: true },
-    })
+    const generations = await generationsEnCache(modelId)
     const currentYear = new Date().getFullYear()
     const years = new Set<number>()
     for (const generation of generations) {
@@ -31,3 +29,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ items: [], error: 'Catalogue véhicules indisponible' }, { status: 503 })
   }
 }
+
+/*
+  Cache partagé du catalogue, par modèle (voir lib/cache-catalogue.ts). Seules
+  les bornes sont gardées : la liste des années, elle, dépend de l'année en
+  cours et se recalcule à chaque appel.
+*/
+const generationsEnCache = lectureCatalogue('selecteur-generations-v1', (modelId: string) =>
+  prisma.vehicleGeneration.findMany({
+    where: { modelId, ...GENERATION_VISIBLE },
+    select: { yearFrom: true, yearTo: true },
+  }),
+)
