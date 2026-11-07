@@ -169,7 +169,12 @@ export async function generateMetadata({
 
   return {
     title: category.metaTitle ?? category.name,
-    description: category.metaDescription ?? category.description ?? undefined,
+    // Repli quand la rubrique n'a ni description ni méta (quatre rubriques en
+    // production) : Google fabriquait sinon un extrait à partir des filtres.
+    description:
+      category.metaDescription ??
+      category.description ??
+      `${category.name} : packs prêts à monter, choisis pour votre véhicule. Sélectionnez votre marque et votre modèle pour voir ce qui lui correspond.`,
     // La canonique ignore les filtres : une combinaison de cases cochées ne
     // doit pas devenir une page de plus à indexer.
     alternates: { canonical: `/c/${slug}` },
