@@ -404,3 +404,17 @@
   height: 100%;
   translate: -50% -50%;
 }
+
+/*
+  Barre de navigation (components/layout/BarreDeNavigation.tsx) : elle part
+  vite puis ralentit, sans jamais atteindre le bout tant que la page n'est pas
+  arrivée.
+*/
+@keyframes navigation-en-cours {
+  from {
+    transform: scaleX(0.08);
+  }
+  to {
+    transform: scaleX(0.9);
+  }
+}
