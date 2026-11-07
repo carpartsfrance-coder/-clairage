@@ -5,6 +5,7 @@ import { getProduct } from '@/lib/queries/product'
 import { getSelectedVehicle } from '@/lib/session'
 import { getStaffUser } from '@/lib/admin/guard'
 import { getShippingOffers } from '@/lib/shipping'
+import { getPacksComplementaires } from '@/lib/queries/packs-complementaires'
 import { commercialTerms, identity, siteConfig } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import {
@@ -21,6 +22,7 @@ import { KitContents } from '@/components/product/KitContents'
 import { OptionalAddons } from '@/components/product/OptionalAddons'
 import { ProductConfigurationProvider } from '@/components/product/ProductConfiguration'
 import { SectionNav } from '@/components/product/SectionNav'
+import { PacksComplementaires } from '@/components/product/PacksComplementaires'
 import { Prose } from '@/components/ui/Prose'
 import { ToneSlider } from '@/components/product/ToneSlider'
 import { Card } from '@/components/ui/Surface'
@@ -112,7 +114,19 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
   if (!product) notFound()
 
-  const shippingOffers = await getShippingOffers()
+  const [shippingOffers, complementaires] = await Promise.all([
+    getShippingOffers(),
+    getPacksComplementaires(product.slug, vehicle?.configurationId ?? null),
+  ])
+
+  /* Pour le coup de pouce « livraison offerte » de la section Complétez. */
+  const prixDuPackCents =
+    (product.variants.find((variant) => variant.id === product.recommendedVariantId) ??
+      product.variants[0])?.priceCents ?? 0
+  const franchises = shippingOffers
+    .map((offre) => offre.freeFromCents)
+    .filter((seuil): seuil is number => seuil !== null)
+  const seuilFranchiseCents = franchises.length > 0 ? Math.min(...franchises) : null
 
   const kitVariant = product.variants.find((variant) => variant.components.length > 0)
   const position = product.variants.find((variant) => variant.fitment.positionLabel)?.fitment
@@ -357,6 +371,19 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         <div className={cn('container-page pb-10', aVisuel && 'fiche:hidden')}>
           <ListePromesses promesses={promesses} className="grid" />
         </div>
+
+        {/*
+          Complétez l'éclairage — juste après l'achat, tant que le client a le
+          porte-monnaie à la main. Les autres packs confirmés pour ce véhicule.
+        */}
+        {complementaires ? (
+          <PacksComplementaires
+            vehicule={complementaires.vehicule}
+            packs={complementaires.packs}
+            prixDuPackCents={prixDuPackCents}
+            seuilFranchiseCents={seuilFranchiseCents}
+          />
+        ) : null}
 
         {/* ---------------- .section-nav ---------------- */}
         {/* Une seule ancre ne sert à rien : la barre n'apparaît qu'à partir de deux sections. */}
