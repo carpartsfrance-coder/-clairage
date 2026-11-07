@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { MARQUE_VISIBLE } from '@/lib/queries/vehicules-visibles'
+import { lectureCatalogue } from '@/lib/cache-catalogue'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,14 +15,24 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
   const type = new URL(request.url).searchParams.get('type') === 'MOTORCYCLE' ? 'MOTORCYCLE' : 'CAR'
   try {
-    const items = await prisma.vehicleMake.findMany({
-      where: { type, ...MARQUE_VISIBLE },
-      orderBy: [{ position: 'asc' }, { name: 'asc' }],
-      select: { id: true, name: true },
-    })
+    const items = await marquesEnCache(type)
     return NextResponse.json({ items })
   } catch (error) {
     console.error('[vehicules/marques]', error)
     return NextResponse.json({ items: [], error: 'Catalogue véhicules indisponible' }, { status: 503 })
   }
 }
+
+/*
+  La liste ne dépend que du type de véhicule : elle passe par le cache partagé
+  du catalogue (lib/cache-catalogue.ts). Le filtre de visibilité descend
+  jusqu'aux compatibilités de chaque génération, et chaque ouverture du
+  sélecteur le rejouait sur la base.
+*/
+const marquesEnCache = lectureCatalogue('selecteur-marques-v1', (type: 'CAR' | 'MOTORCYCLE') =>
+  prisma.vehicleMake.findMany({
+    where: { type, ...MARQUE_VISIBLE },
+    orderBy: [{ position: 'asc' }, { name: 'asc' }],
+    select: { id: true, name: true },
+  }),
+)

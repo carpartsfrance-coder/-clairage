@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '@/lib/db'
+import { lectureCatalogue } from '@/lib/cache-catalogue'
 import { demoHomeBlocks } from '../../../prisma/demo-data'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
 
@@ -9,6 +10,12 @@ import { ARGS_COUVERTURE, couverture } from '../media-couverture'
  * Chaque accès est tolérant à la panne : si PostgreSQL ne répond pas, la
  * section concernée reçoit une liste vide et s'efface, au lieu de faire tomber
  * la page entière. Rien n'est inventé pour compenser.
+ *
+ * Rien ici ne dépend du visiteur : chaque lecture passe par le cache partagé
+ * du catalogue (lib/cache-catalogue.ts) et l'accueil n'interroge plus la base
+ * qu'une fois toutes les cinq minutes. Les fonctions `lire…` lèvent en cas
+ * d'échec, pour que la panne ne soit jamais mise en cache ; les fonctions
+ * exportées rattrapent l'erreur et rendent le repli.
  */
 
 export type HomeUniverse = {
@@ -38,14 +45,18 @@ export type HomeFaqItem = { question: string; answer: string }
 /** Contenus éditoriaux : la table prend le pas sur les valeurs par défaut. */
 export async function getHomeBlocks(): Promise<typeof demoHomeBlocks> {
   try {
-    const rows = await prisma.homeBlock.findMany({ where: { enabled: true } })
-    const fromDb = Object.fromEntries(rows.map((row) => [row.key, row.payload]))
-    return { ...demoHomeBlocks, ...fromDb } as typeof demoHomeBlocks
+    return await blocsEnCache()
   } catch (error) {
     console.error('[accueil] blocs éditoriaux indisponibles', error)
     return demoHomeBlocks
   }
 }
+
+const blocsEnCache = lectureCatalogue('accueil-blocs-v1', async () => {
+  const rows = await prisma.homeBlock.findMany({ where: { enabled: true } })
+  const fromDb = Object.fromEntries(rows.map((row) => [row.key, row.payload]))
+  return { ...demoHomeBlocks, ...fromDb } as typeof demoHomeBlocks
+})
 
 /**
  * Les univers de l'accueil : seulement ceux qui mènent à des produits.
@@ -69,19 +80,29 @@ export async function getHomeBlocks(): Promise<typeof demoHomeBlocks> {
  */
 export async function getUniverses(limit = 6): Promise<HomeUniverse[]> {
   try {
-    const [categories, racinesFournies] = await Promise.all([
-      prisma.category.findMany({
-        where: { published: true, parentId: null, heroMediaId: { not: null } },
-        orderBy: { position: 'asc' },
-        include: { heroMedia: true },
-      }),
-      racinesAvecProduits(),
-    ])
+    return await universEnCache(limit)
+  } catch (error) {
+    console.error('[accueil] univers indisponibles', error)
+    return []
+  }
+}
 
-    return categories
-      .filter((category) => racinesFournies.has(category.id))
-      .slice(0, limit)
-      .map((category) => ({
+const universEnCache = lectureCatalogue('accueil-univers-v1', lireUnivers)
+
+async function lireUnivers(limit: number): Promise<HomeUniverse[]> {
+  const [categories, racinesFournies] = await Promise.all([
+    prisma.category.findMany({
+      where: { published: true, parentId: null, heroMediaId: { not: null } },
+      orderBy: { position: 'asc' },
+      include: { heroMedia: true },
+    }),
+    racinesAvecProduits(),
+  ])
+
+  return categories
+    .filter((category) => racinesFournies.has(category.id))
+    .slice(0, limit)
+    .map((category) => ({
       slug: category.slug,
       name: category.name,
       description: category.description,
@@ -89,10 +110,6 @@ export async function getUniverses(limit = 6): Promise<HomeUniverse[]> {
         ? { url: category.heroMedia.url, alt: category.heroMedia.alt ?? category.name }
         : null,
     }))
-  } catch (error) {
-    console.error('[accueil] univers indisponibles', error)
-    return []
-  }
 }
 
 /**
@@ -106,11 +123,17 @@ export async function getUniverses(limit = 6): Promise<HomeUniverse[]> {
 async function racinesAvecProduits(): Promise<Set<string>> {
   const [categories, rattachements] = await Promise.all([
     prisma.category.findMany({ select: { id: true, parentId: true } }),
-    prisma.productCategory.findMany({
-      where: { product: { status: 'PUBLISHED' } },
-      select: { categoryId: true },
-      distinct: ['categoryId'],
-    }),
+    /*
+      Dédoublonné en SQL : `distinct` de Prisma se fait en mémoire, après avoir
+      rapatrié un enregistrement par produit — plus de dix mille lignes pour en
+      garder une vingtaine.
+    */
+    prisma.$queryRaw<Array<{ categoryId: string }>>`
+      SELECT DISTINCT pc."categoryId"
+      FROM "ProductCategory" pc
+      JOIN "Product" p ON p.id = pc."productId"
+      WHERE p.status = 'PUBLISHED'
+    `,
   ])
 
   const parentDe = new Map(categories.map((category) => [category.id, category.parentId]))
@@ -176,48 +199,54 @@ const CARTE_VITRINE = {
  */
 export async function getFeaturedProducts(limit = 4): Promise<HomeProduct[]> {
   try {
-    const choisis = await prisma.product.findMany({
-      // Mise en avant éditoriale uniquement : un produit n'arrive ici que parce
-      // qu'il a été coché en back-office, jamais parce qu'il se vendrait bien.
-      where: { status: 'PUBLISHED', featured: true, variants: { some: { active: true } } },
-      orderBy: [{ kind: 'desc' }, { createdAt: 'asc' }],
-      take: limit,
-      include: CARTE_VITRINE,
-    })
-
-    const products = choisis.length > 0 ? choisis : await echantillonParRubrique(limit)
-
-    return products
-      .filter((product) => product.variants.length > 0)
-      .map((product) => {
-        const cheapest = product.variants[0]
-        const cover = couverture(product.media)?.media
-        const category = product.categories[0]?.category
-        return {
-          slug: product.slug,
-          name: product.name,
-          tagline: product.tagline,
-          fromPriceCents: cheapest.priceCents,
-          hasKit: product.variants.some((variant) => variant.packaging === 'KIT'),
-          // Même règle que sur les listes : la pastille « kit » ne doit pas
-          // surmonter le prix d'un autre conditionnement.
-          kitPriceCents: (() => {
-            const kits = product.variants
-              .filter((variant) => variant.packaging === 'KIT')
-              .map((variant) => variant.priceCents)
-            if (kits.length === 0) return null
-            const moinsCher = Math.min(...kits)
-            return moinsCher > cheapest.priceCents ? moinsCher : null
-          })(),
-          categorySlug: category?.slug ?? null,
-          categoryName: category?.name ?? null,
-          image: cover ? { url: cover.url, alt: cover.alt ?? product.name } : null,
-        }
-      })
+    return await vitrineEnCache(limit)
   } catch (error) {
     console.error('[accueil] produits mis en avant indisponibles', error)
     return []
   }
+}
+
+const vitrineEnCache = lectureCatalogue('accueil-vitrine-v1', lireVitrine)
+
+async function lireVitrine(limit: number): Promise<HomeProduct[]> {
+  const choisis = await prisma.product.findMany({
+    // Mise en avant éditoriale uniquement : un produit n'arrive ici que parce
+    // qu'il a été coché en back-office, jamais parce qu'il se vendrait bien.
+    where: { status: 'PUBLISHED', featured: true, variants: { some: { active: true } } },
+    orderBy: [{ kind: 'desc' }, { createdAt: 'asc' }],
+    take: limit,
+    include: CARTE_VITRINE,
+  })
+
+  const products = choisis.length > 0 ? choisis : await echantillonParRubrique(limit)
+
+  return products
+    .filter((product) => product.variants.length > 0)
+    .map((product) => {
+      const cheapest = product.variants[0]
+      const cover = couverture(product.media)?.media
+      const category = product.categories[0]?.category
+      return {
+        slug: product.slug,
+        name: product.name,
+        tagline: product.tagline,
+        fromPriceCents: cheapest.priceCents,
+        hasKit: product.variants.some((variant) => variant.packaging === 'KIT'),
+        // Même règle que sur les listes : la pastille « kit » ne doit pas
+        // surmonter le prix d'un autre conditionnement.
+        kitPriceCents: (() => {
+          const kits = product.variants
+            .filter((variant) => variant.packaging === 'KIT')
+            .map((variant) => variant.priceCents)
+          if (kits.length === 0) return null
+          const moinsCher = Math.min(...kits)
+          return moinsCher > cheapest.priceCents ? moinsCher : null
+        })(),
+        categorySlug: category?.slug ?? null,
+        categoryName: category?.name ?? null,
+        image: cover ? { url: cover.url, alt: cover.alt ?? product.name } : null,
+      }
+    })
 }
 
 /**
@@ -279,15 +308,18 @@ async function echantillonParRubrique(limit: number) {
 
 export async function getHomeFaq(limit = 4): Promise<HomeFaqItem[]> {
   try {
-    const items = await prisma.faqItem.findMany({
-      where: { published: true, scope: 'general' },
-      orderBy: { position: 'asc' },
-      take: limit,
-      select: { question: true, answer: true },
-    })
-    return items
+    return await faqEnCache(limit)
   } catch (error) {
     console.error('[accueil] FAQ indisponible', error)
     return []
   }
 }
+
+const faqEnCache = lectureCatalogue('accueil-faq-v1', (limit: number) =>
+  prisma.faqItem.findMany({
+    where: { published: true, scope: 'general' },
+    orderBy: { position: 'asc' },
+    take: limit,
+    select: { question: true, answer: true },
+  }),
+)
