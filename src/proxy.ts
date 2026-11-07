@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { redirectionVersDomainePublic } from '@/lib/domaine'
+import { siteConfig } from '@/lib/identity'
 
 /**
  * Expose le chemin de la requête aux composants serveur.
@@ -17,6 +19,14 @@ import { NextResponse, type NextRequest } from 'next/server'
  * en-tête à poser, le coût ne le vaut pas.
  */
 export function proxy(request: NextRequest) {
+  // Adresse technique de Render → domaine public (voir lib/domaine.ts).
+  const destination = redirectionVersDomainePublic(
+    request.headers.get('x-forwarded-host') ?? request.headers.get('host'),
+    request.nextUrl,
+    siteConfig.url,
+  )
+  if (destination) return NextResponse.redirect(destination, 308)
+
   const headers = new Headers(request.headers)
   headers.set('x-pathname', request.nextUrl.pathname)
   return NextResponse.next({ request: { headers } })
