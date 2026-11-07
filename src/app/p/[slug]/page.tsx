@@ -6,6 +6,16 @@ import { getSelectedVehicle } from '@/lib/session'
 import { getStaffUser } from '@/lib/admin/guard'
 import { getShippingOffers } from '@/lib/shipping'
 import { getPacksComplementaires } from '@/lib/queries/packs-complementaires'
+import { getVehiculeDeLaFiche } from '@/lib/queries/vehicule-de-la-fiche'
+import {
+  accrocheSousLeTitre,
+  anneesCourtes,
+  corrigerRedactionnelDImport,
+  descriptionSeo,
+  enChiffres,
+  nomDuVehicule,
+  titreSeo,
+} from '@/lib/seo-fiche'
 import { commercialTerms, identity, siteConfig } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import {
@@ -27,6 +37,7 @@ import { Prose } from '@/components/ui/Prose'
 import { ToneSlider } from '@/components/product/ToneSlider'
 import { Card } from '@/components/ui/Surface'
 import {
+  IconArrowRight,
   IconCar,
   IconCheck,
   IconHeadset,
@@ -36,6 +47,7 @@ import {
 } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 import { estComparatifAvantApres } from '@/lib/media-comparatif'
+import { estEffetXenon } from '@/lib/effet-xenon'
 
 /**
  * Fiche produit — `reference-site/product.html` du dossier de référence.
@@ -77,16 +89,43 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     return { title: `Aperçu — ${product.name}`, robots: { index: false, follow: false } }
   }
 
+  /*
+    Titre et description : voir `lib/seo-fiche.ts`. Ceux écrits au
+    back-office passent en premier ; ceux posés par l'import sont remplacés
+    par une version qui porte les années du véhicule et les conditions de
+    livraison et de retour réellement configurées.
+  */
+  const [vehicule, shippingOffers] = await Promise.all([
+    getVehiculeDeLaFiche(product.slug),
+    getShippingOffers(),
+  ])
+  const title = titreSeo(product, vehicule)
+  const description = descriptionSeo(product, vehicule, {
+    seuilFranchiseCents: seuilDeFranchise(shippingOffers),
+    retourJours: commercialTerms.returnWindowDays,
+  })
+
   return {
-    title: product.metaTitle ?? product.name,
-    description: product.metaDescription ?? product.tagline ?? undefined,
+    title,
+    description,
     alternates: { canonical: `/p/${product.slug}` },
     openGraph: {
-      title: product.metaTitle ?? product.name,
-      description: product.metaDescription ?? product.tagline ?? undefined,
-      images: product.gallery[0] ? [product.gallery[0].url] : undefined,
+      title,
+      description,
+      url: `/p/${product.slug}`,
+      images: product.gallery[0]
+        ? [{ url: product.gallery[0].url, alt: product.gallery[0].alt }]
+        : undefined,
     },
   }
+}
+
+/** Le plus bas des seuils de livraison offerte configurés, ou null. */
+function seuilDeFranchise(offres: Array<{ freeFromCents: number | null }>): number | null {
+  const seuils = offres
+    .map((offre) => offre.freeFromCents)
+    .filter((seuil): seuil is number => seuil !== null)
+  return seuils.length > 0 ? Math.min(...seuils) : null
 }
 
 export default async function ProductPage({ params, searchParams }: PageProps) {
@@ -114,19 +153,23 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
   if (!product) notFound()
 
-  const [shippingOffers, complementaires] = await Promise.all([
+  const [shippingOffers, complementaires, vehiculeDeLaFiche] = await Promise.all([
     getShippingOffers(),
     getPacksComplementaires(product.slug, vehicle?.configurationId ?? null),
+    getVehiculeDeLaFiche(product.slug),
   ])
 
   /* Pour le coup de pouce « livraison offerte » de la section Complétez. */
   const prixDuPackCents =
     (product.variants.find((variant) => variant.id === product.recommendedVariantId) ??
       product.variants[0])?.priceCents ?? 0
-  const franchises = shippingOffers
-    .map((offre) => offre.freeFromCents)
-    .filter((seuil): seuil is number => seuil !== null)
-  const seuilFranchiseCents = franchises.length > 0 ? Math.min(...franchises) : null
+  const seuilFranchiseCents = seuilDeFranchise(shippingOffers)
+
+  /* Même description que la balise meta, pour les données structurées. */
+  const descriptionDeLaFiche = descriptionSeo(product, vehiculeDeLaFiche, {
+    seuilFranchiseCents,
+    retourJours: commercialTerms.returnWindowDays,
+  })
 
   const kitVariant = product.variants.find((variant) => variant.components.length > 0)
   const position = product.variants.find((variant) => variant.fitment.positionLabel)?.fitment
@@ -148,19 +191,43 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
   // Même liste pour le fil d'Ariane affiché et pour son balisage : deux
   // sources finiraient par diverger, et c'est le balisage qu'on ne relit pas.
-  const breadcrumbItems = [
-    { label: 'Accueil', href: '/' },
-    { label: 'Catégories', href: '/c' },
-    ...(product.category
-      ? [{ label: product.category.name, href: `/c/${product.category.slug}` }]
-      : []),
-    { label: product.name },
-  ]
+  //
+  // Une fiche composée pour un véhicule se range sous lui : Accueil › Audi ›
+  // A1 (2010–2018) › la fiche. C'est ce que le client cherche (« LED Audi
+  // A1 »), c'est ce que Google affiche sous le lien, et chaque fiche renvoie
+  // ainsi vers la page du véhicule. Les autres gardent leur catégorie.
+  const breadcrumbItems =
+    vehiculeDeLaFiche?.chemin && vehiculeDeLaFiche.cheminMarque
+      ? [
+          { label: 'Accueil', href: '/' },
+          { label: vehiculeDeLaFiche.marque.nom, href: vehiculeDeLaFiche.cheminMarque },
+          {
+            label: `${enChiffres(vehiculeDeLaFiche.generation.nom)} (${anneesCourtes(
+              vehiculeDeLaFiche.generation.anneeDebut,
+              vehiculeDeLaFiche.generation.anneeFin,
+            )})`,
+            href: vehiculeDeLaFiche.chemin,
+          },
+          { label: product.name },
+        ]
+      : [
+          { label: 'Accueil', href: '/' },
+          { label: 'Catégories', href: '/c' },
+          ...(product.category
+            ? [{ label: product.category.name, href: `/c/${product.category.slug}` }]
+            : []),
+          { label: product.name },
+        ]
 
   // Le curseur avant / après découpe le comparatif fabriqué pour la fiche
   // (01-avant-apres). Sans comparatif, pas de curseur : on ne fabrique pas un
   // avant/après à partir d'une autre photo.
   const comparatif = product.gallery.find(estComparatifAvantApres)
+  /*
+    Ampoules halogènes effet xénon, pas des LED (lib/effet-xenon.ts) : le
+    comparatif dit « Effet xénon », et l'argumentaire LED n'est pas montré.
+  */
+  const effetXenon = estEffetXenon(product.name)
   const visuelKit = product.gallery.find((item) => item.role === 'KIT_CONTENT') ?? product.gallery[0]
 
   /*
@@ -281,7 +348,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         */}
         {apercu ? null : (
           <>
-            <ProductStructuredData product={product} />
+            <ProductStructuredData
+              product={product}
+              description={descriptionDeLaFiche}
+              shippingOffers={shippingOffers}
+              returnWindowDays={commercialTerms.returnWindowDays}
+            />
             <BreadcrumbStructuredData items={breadcrumbItems} />
             <FaqStructuredData items={product.faq} />
           </>
@@ -352,7 +424,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                     ? `Blanc ${product.colorTemperature.toLocaleString('fr-FR')} K`
                     : null
                 }
-                tagline={product.tagline}
+                tagline={accrocheSousLeTitre(product.tagline, vehiculeDeLaFiche)}
               />
 
               <div className="order-3 mt-5 fiche:mt-6">
@@ -418,17 +490,39 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   */}
                   {aDescription ? (
                     <Prose sombre className="mt-6">
-                      {product.body ?? ''}
+                      {corrigerRedactionnelDImport(product.body ?? '')}
                     </Prose>
                   ) : product.description ? (
                     <p className="mt-5 text-[16px] leading-[1.7] text-[#c9ccd1] fiche:text-[17px]">
                       {product.description}
                     </p>
                   ) : null}
+
+                  {/*
+                    Le rédactionnel renvoie à « la page du véhicule » : le lien
+                    est là. C'est aussi le lien interne qui relie chaque fiche
+                    à la page qui regroupe tous les packs de ce véhicule.
+                  */}
+                  {vehiculeDeLaFiche?.chemin ? (
+                    <Link
+                      href={vehiculeDeLaFiche.chemin}
+                      className="mt-6 inline-flex min-h-11 items-center gap-2 text-[15px] font-bold text-white underline underline-offset-4 hover:text-brand-on-dark"
+                    >
+                      {`Tous les éclairages de votre ${nomDuVehicule(vehiculeDeLaFiche)} (${anneesCourtes(
+                        vehiculeDeLaFiche.generation.anneeDebut,
+                        vehiculeDeLaFiche.generation.anneeFin,
+                      )})`}
+                      <IconArrowRight className="size-4 shrink-0" />
+                    </Link>
+                  ) : null}
                 </div>
 
                 {comparatif ? (
-                  <ToneSlider image={comparatif.url} imageAlt={comparatif.alt} />
+                  <ToneSlider
+                    image={comparatif.url}
+                    imageAlt={comparatif.alt}
+                    apresLabel={effetXenon ? 'Effet xénon' : 'LED'}
+                  />
                 ) : null}
               </div>
 
@@ -436,9 +530,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 Pourquoi un pack plutôt que des ampoules « universelles ».
                 Chaque ligne dit ce que la boutique fait réellement pour toute
                 référence montée sur un véhicule — rien de plus. Montré
-                seulement pour un produit lié à un emplacement d'éclairage.
+                seulement pour un produit lié à un emplacement d'éclairage, et
+                jamais pour un pack d'ampoules halogènes : il parle de LED.
               */}
-              {position ? (
+              {position && !effetXenon ? (
                 <div className="flex flex-col gap-8 border-t border-[#2a2d32] pt-12 fiche:grid fiche:grid-cols-[0.8fr_1.2fr] fiche:items-start fiche:gap-14">
                   <div>
                     <p className="mb-3 text-[12px] font-bold tracking-[1.4px] text-brand-on-dark uppercase">

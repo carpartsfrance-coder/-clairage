@@ -120,7 +120,8 @@ export async function getPacksComplementaires(
           slug: carte.slug,
           variantId: carte.variantId as string,
           titre: carte.emplacements.map((e) => e.label).join(' et '),
-          sousTitre: premier ? sousTitreDeLEmplacement(premier.code) : null,
+          // « Ampoules halogènes effet xénon » quand c'en est (packs-vue).
+          sousTitre: carte.conditionnement ?? (premier ? sousTitreDeLEmplacement(premier.code) : null),
           image: carte.image,
           prixCents: carte.prixCents,
         }

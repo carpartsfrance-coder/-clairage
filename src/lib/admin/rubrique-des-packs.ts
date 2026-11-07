@@ -42,6 +42,12 @@ export const REGLES_RUBRIQUE: RegleRubrique[] = [
     l'emporter que si aucun préfixe plus précis ne s'applique.
   */
   { prefixe: 'Pack LED phares', rubrique: 'phares-led' },
+  /*
+    Les packs d'ampoules halogènes « effet xénon » (lib/effet-xenon.ts) :
+    phares, antibrouillards et feux de jour confondus. Ce ne sont pas des LED,
+    ils n'ont rien à faire dans les rubriques LED.
+  */
+  { prefixe: 'Pack ampoules effet xénon', rubrique: 'ampoules-effet-xenon' },
 ]
 
 /** Les règles du préfixe le plus long au plus court. */

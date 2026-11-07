@@ -1,6 +1,7 @@
 import type { FitmentStatus } from './fitment'
 import type { PackPositionGroup, PackProduct } from './queries/packs'
 import { nomUtileDuConditionnement } from './nom-conditionnement'
+import { estEffetXenon } from './effet-xenon'
 
 /**
  * Mise en forme de la page « éclairages d'un véhicule ».
@@ -115,7 +116,11 @@ export function cartesDesPacks(groupes: PackPositionGroup[]): CarteEclairage[] {
     image: produit.image,
     status: produit.status,
     prixCents: produit.recommended?.priceCents ?? produit.fromPriceCents,
-    conditionnement: nomDuConditionnement(produit),
+    // Une carte d'ampoules halogènes le dit : sous le titre « Éclairage LED »
+    // de la page véhicule, rien d'autre ne la distinguerait d'un pack LED.
+    conditionnement:
+      nomDuConditionnement(produit) ??
+      (estEffetXenon(produit.productName) ? 'Ampoules halogènes effet xénon' : null),
     autres: [],
     reserve: null,
     verifie: null,

@@ -57,8 +57,9 @@ describe('rubriquePour', () => {
     expect(rubriquePour('Ancien Pack LED clignotants')).toBeNull()
   })
 
-  it('cite neuf familles pour neuf rubriques distinctes', () => {
-    expect(REGLES_RUBRIQUE).toHaveLength(9)
-    expect(rubriquesCitees()).toHaveLength(9)
+  it('cite dix familles pour dix rubriques distinctes', () => {
+    // Les neuf familles de LED, et les ampoules halogènes effet xénon.
+    expect(REGLES_RUBRIQUE).toHaveLength(10)
+    expect(rubriquesCitees()).toHaveLength(10)
   })
 })
