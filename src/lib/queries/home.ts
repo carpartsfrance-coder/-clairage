@@ -231,8 +231,8 @@ const CARTE_VITRINE = {
  * total qui ne correspond à aucun panier possible.
  *
  * **Deux sources, dans cet ordre.** D'abord les produits cochés en
- * back-office : c'est le choix de l'exploitant, et il prime. À défaut, un
- * produit par rubrique de la vitrine.
+ * back-office : c'est le choix de l'exploitant, et il prime. Le reste de la
+ * rangée se complète avec un produit par rubrique.
  *
  * Ce repli existe parce que `featured` ne se pose qu'à la main : tout
  * environnement neuf — et la production l'a été pendant des jours — affichait
@@ -266,7 +266,18 @@ async function lireVitrine(limit: number): Promise<HomeProduct[]> {
     include: CARTE_VITRINE,
   })
 
-  const products = choisis.length > 0 ? choisis : await echantillonParRubrique(limit)
+  /*
+    Le choix du back-office passe devant, et le repli complète la rangée.
+    Avant, un seul produit coché suffisait à couper le repli : la vitrine de
+    production n'affichait plus qu'une carte sur quatre.
+  */
+  const complement =
+    choisis.length < limit
+      ? (await echantillonParRubrique(limit)).filter(
+          (produit) => !choisis.some((choisi) => choisi.id === produit.id),
+        )
+      : []
+  const products = [...choisis, ...complement].slice(0, limit)
 
   return products
     .filter((product) => product.variants.length > 0)
