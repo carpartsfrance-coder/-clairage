@@ -33,6 +33,7 @@ import {
   IconWrench,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
+import { estComparatifAvantApres } from '@/lib/media-comparatif'
 
 /**
  * Fiche produit — `reference-site/product.html` du dossier de référence.
@@ -142,10 +143,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     { label: product.name },
   ]
 
-  // Le visuel de la comparaison est celui que le catalogue désigne comme le
-  // rendu. Aucun rendu enregistré, aucune section : on ne fabrique pas un
-  // avant/après avec la photo du produit.
-  const rendu = product.gallery.find((item) => item.role === 'RESULT')
+  // Le curseur avant / après découpe le comparatif fabriqué pour la fiche
+  // (01-avant-apres). Sans comparatif, pas de curseur : on ne fabrique pas un
+  // avant/après à partir d'une autre photo.
+  const comparatif = product.gallery.find(estComparatifAvantApres)
   const visuelKit = product.gallery.find((item) => item.role === 'KIT_CONTENT') ?? product.gallery[0]
 
   /*
@@ -191,7 +192,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     conditionnement choisi ne fournit pas, et ses restrictions de montage —
     passe avec le contenu du pack, où il se lit au moment de choisir.
   */
-  const aEnBref = aDescription || Boolean(rendu)
+  const aEnBref = aDescription || Boolean(comparatif)
   const aRestrictions = product.variants.some(
     (variant) => variant.missingAccessories.length > 0 || Boolean(variant.fitment.restrictions),
   )
@@ -361,7 +362,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         {/* Une seule ancre ne sert à rien : la barre n'apparaît qu'à partir de deux sections. */}
         {sections.length > 1 ? <SectionNav items={sections} /> : null}
 
-        {/* ---------------- #en-bref : la description, et le rendu ---------------- */}
+        {/* ---------------- #en-bref : la description, et l'avant / après ---------------- */}
         {aEnBref ? (
           <section
             id="en-bref"
@@ -372,10 +373,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               <div
                 className={cn(
                   'flex flex-col gap-10',
-                  rendu && 'fiche:grid fiche:grid-cols-2 fiche:items-center fiche:gap-14',
+                  comparatif && 'fiche:grid fiche:grid-cols-2 fiche:items-center fiche:gap-14',
                 )}
               >
-                <div className={cn(!rendu && 'max-w-[760px]')}>
+                <div className={cn(!comparatif && 'max-w-[760px]')}>
                   <p className="mb-3 text-[12px] font-bold tracking-[1.4px] text-brand-on-dark uppercase">
                     Le pack en bref
                   </p>
@@ -400,7 +401,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   ) : null}
                 </div>
 
-                {rendu ? <ToneSlider image={rendu.url} imageAlt={rendu.alt} /> : null}
+                {comparatif ? (
+                  <ToneSlider image={comparatif.url} imageAlt={comparatif.alt} />
+                ) : null}
               </div>
 
               {/*
