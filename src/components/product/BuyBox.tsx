@@ -37,6 +37,12 @@ const PACKAGING_LABELS: Record<VariantView['packaging'], string> = {
 }
 
 /**
+ * Écart au seuil de livraison offerte en dessous duquel la jauge s'affiche :
+ * 25 €, le prix d'un petit pack. Au-delà, le seuil est annoncé sans barre.
+ */
+const ECART_MAX_JAUGE_CENTS = 2500
+
+/**
  * Bloc d'achat — `.buybox` et `.sticky-buy` du code de référence.
  *
  * Valeurs reprises de `styles.css` : note de compatibilité verte de 11/12 px,
@@ -68,6 +74,7 @@ export function BuyBox({
   shippingOffers,
   returnWindowDays,
   contentAnchor = '#dans-votre-kit',
+  vehiculeDesComplements = null,
 }: {
   productName: string
   /** Premier visuel du produit : la barre fixe rappelle ce qu'on achète. */
@@ -80,6 +87,11 @@ export function BuyBox({
   shippingOffers: ShippingOffer[]
   returnWindowDays: number | null
   contentAnchor?: string
+  /**
+   * Nom du véhicule quand la fiche propose d'autres packs pour lui
+   * (section `#completer`). Null : pas de lien vers ces packs.
+   */
+  vehiculeDesComplements?: string | null
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -185,6 +197,14 @@ export function BuyBox({
   // tout de suite plutôt qu'au paiement.
   const sousTotal = total * quantite
   const delivery = buildDeliveryTeaser(shippingOffers, sousTotal)
+  /*
+    La jauge ne sert que quand le seuil est à portée : « plus que 51 € »
+    décourage plus qu'il n'aide. Au-delà de cet écart, une ligne simple
+    annonce le seuil, sans barre.
+  */
+  const ecartManquant = delivery?.missingForFreeCents ?? null
+  const jaugeAPortee = ecartManquant !== null && ecartManquant <= ECART_MAX_JAUGE_CENTS
+  const seuilFranchiseCents = ecartManquant !== null ? sousTotal + ecartManquant : null
   /* Remplissage de la jauge de livraison offerte, en pourcentage. */
   const progressionFranchise = !delivery
     ? 0
@@ -499,32 +519,61 @@ export function BuyBox({
       </div>
 
       {/*
-        Jauge de livraison offerte — refonte LEDVROOM.
+        Livraison offerte — refonte LEDVROOM.
 
         Le seuil de franchise se lit AVANT le bouton : c'est là qu'il pèse sur
-        la décision. La jauge suit le total réel (conditionnement, accessoires
+        la décision. Il suit le total réel (conditionnement, accessoires
         cochés, quantité) et disparaît quand aucune franchise n'est configurée.
+
+        Trois états : seuil atteint (une ligne verte), seuil à portée (la
+        jauge), seuil lointain (une ligne neutre). Tant qu'il n'est pas
+        atteint, un lien mène aux autres packs du même véhicule.
       */}
-      {delivery && (delivery.missingForFreeCents || delivery.priceCents === 0) ? (
-        <div className="mb-3.5 rounded-xl bg-[#f5f6f7] px-3.5 py-3 text-[14px]">
-          {delivery.missingForFreeCents ? (
+      {delivery && delivery.isSettled ? (
+        <p className="mb-3.5 flex items-center gap-2 text-[14px] font-bold text-[#1f5a39]">
+          <IconTruck className="size-[18px] shrink-0" />
+          La livraison est offerte
+        </p>
+      ) : null}
+      {delivery && ecartManquant !== null && seuilFranchiseCents !== null ? (
+        jaugeAPortee ? (
+          <div className="mb-3.5 rounded-xl bg-[#f5f6f7] px-3.5 py-3 text-[14px]">
             <p>
-              Plus que <strong>{formatPrice(delivery.missingForFreeCents)}</strong> pour la
-              livraison offerte
+              Plus que <strong>{formatPrice(ecartManquant)}</strong> pour la livraison offerte
             </p>
-          ) : (
-            <p className="flex items-center gap-2 font-bold text-[#1f5a39]">
-              <IconTruck className="size-[18px] shrink-0" />
-              La livraison est offerte
-            </p>
-          )}
-          <div aria-hidden="true" className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e1e3e6]">
-            <div
-              className="h-full rounded-full bg-ok"
-              style={{ width: `${progressionFranchise}%` }}
-            />
+            <div aria-hidden="true" className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e1e3e6]">
+              <div
+                className="h-full rounded-full bg-ok"
+                style={{ width: `${progressionFranchise}%` }}
+              />
+            </div>
+            {vehiculeDesComplements ? (
+              <a
+                href="#completer"
+                className="mt-2 inline-flex min-h-6 items-center gap-1 text-[13px] font-bold text-ink underline underline-offset-2 hover:text-brand-dark"
+              >
+                Voir les packs pour votre {vehiculeDesComplements}
+                <IconChevronRight className="size-3.5" />
+              </a>
+            ) : null}
           </div>
-        </div>
+        ) : (
+          <p className="mb-3.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-[#3c4047]">
+            <IconTruck className="size-[18px] shrink-0 text-[#6b6f75]" />
+            <span>
+              Livraison offerte dès <strong className="text-ink">{formatPrice(seuilFranchiseCents)}</strong>
+            </span>
+            {vehiculeDesComplements ? (
+              <a
+                href="#completer"
+                className="inline-flex min-h-6 items-center gap-1 text-[13px] font-bold text-ink underline underline-offset-2 hover:text-brand-dark"
+              >
+                Voir les packs pour votre {vehiculeDesComplements}
+                <IconChevronRight className="size-3.5" />
+              </a>
+            ) : null}
+          </p>
+        )
       ) : null}
 
       {/*

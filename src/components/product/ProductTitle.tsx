@@ -96,17 +96,22 @@ export function ProductTitle({
         </p>
       ) : null}
 
-      {puces.length > 0 ? (
+      {/*
+        Un mot seul (« Le kit ») ne dit rien de plus que le titre : la ligne ne
+        s'affiche qu'à partir de deux caractéristiques, ou pour la teinte seule.
+        Les marges sont posées côté par côté : un `pl-0` sur la première puce
+        serait écrasé par le `fiche:px-…` du point de rupture, d'où le décalage.
+      */}
+      {puces.length > 1 || puces[0]?.cle === 'teinte' ? (
         <p className="mt-3 flex flex-wrap items-center gap-y-1 text-[12px] text-[#55585b] fiche:mt-3.5 fiche:text-[13px]">
           {puces.map((puce, index) => (
             <span
               key={puce.cle}
               className={cn(
-                'px-[9px] fiche:px-[10px] min-[1101px]:px-[13px]',
-                index === 0 && 'flex items-center gap-[6px] pl-0',
-                index < puces.length - 1
-                  ? 'border-r border-line'
-                  : 'border-0 pr-0',
+                index > 0 && 'pl-[9px] fiche:pl-[10px] min-[1101px]:pl-[13px]',
+                index < puces.length - 1 &&
+                  'border-r border-line pr-[9px] fiche:pr-[10px] min-[1101px]:pr-[13px]',
+                puce.pastille && 'flex items-center gap-[6px]',
               )}
             >
               {puce.pastille ? (
