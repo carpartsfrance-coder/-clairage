@@ -7,19 +7,24 @@ import Image from 'next/image'
  * Curseur de teinte seul — le visuel de `ToneComparison`, sans sa section.
  *
  * Refonte LEDVROOM : la fiche le pose à côté de la description, dans « Le
- * pack en bref ». Même principe que `ToneComparison` : les deux moitiés sont
- * la MÊME photographie, celle de gauche passée au filtre chaud. C'est une
- * simulation de teinte — ni un avant/après, ni une mesure — et la légende le
- * dit.
+ * pack en bref ».
  *
- * Le curseur est un `<input type="range">` posé sur le visuel : souris, doigt
- * et flèches du clavier, sans code supplémentaire.
+ * **Seule la lumière change.** Les deux moitiés sont la MÊME photographie.
+ * À gauche, un filtre SVG repère les zones les plus claires de l'image — au
+ * moins 92 % de luminance, c'est-à-dire les feux allumés — et les teinte en
+ * jaune halogène ; la carrosserie, le décor et les reflets restent tels
+ * quels. Le seuil a été réglé sur les rendus du catalogue : à 80 %, les
+ * reflets d'un capot gris clair jaunissaient aussi. Rien n'est à préparer
+ * image par image.
+ *
+ * C'est une simulation de teinte — ni un avant/après, ni une mesure — et la
+ * légende le dit.
  */
 export function ToneSlider({
   image,
   imageAlt,
-  warmLabel = 'Jaune',
-  coolLabel = 'Blanc LED',
+  warmLabel = 'Halogène',
+  coolLabel = 'LED',
 }: {
   image: string
   imageAlt: string
@@ -28,19 +33,61 @@ export function ToneSlider({
 }) {
   const [position, setPosition] = useState(50)
   const sliderId = useId()
+  // Un identifiant utilisable dans `url(#…)` : sans les caractères spéciaux de useId.
+  const filtreId = `halogene-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
 
   return (
     <figure className="m-0">
+      {/*
+        Le filtre « halogène » : luminance → masque des zones très claires
+        (≥ 92 %), adouci, puis version jaunie de la photo posée seulement à
+        travers ce masque, par-dessus l'originale.
+      */}
+      <svg width="0" height="0" className="absolute" aria-hidden="true" focusable="false">
+        <filter
+          id={filtreId}
+          colorInterpolationFilters="sRGB"
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+        >
+          <feColorMatrix
+            in="SourceGraphic"
+            type="matrix"
+            values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.2126 0.7152 0.0722 0 0"
+            result="luminance"
+          />
+          <feComponentTransfer in="luminance" result="masque">
+            <feFuncA type="linear" slope="12.5" intercept="-11.5" />
+          </feComponentTransfer>
+          <feGaussianBlur in="masque" stdDeviation="3" result="masqueDoux" />
+          <feColorMatrix
+            in="SourceGraphic"
+            type="matrix"
+            values="1 0 0 0 0  0 0.8 0 0 0  0 0 0.45 0 0  0 0 0 1 0"
+            result="chaud"
+          />
+          <feComposite in="chaud" in2="masqueDoux" operator="in" result="lumiereChaude" />
+          <feMerge>
+            <feMergeNode in="SourceGraphic" />
+            <feMergeNode in="lumiereChaude" />
+          </feMerge>
+        </filter>
+      </svg>
+
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-[#25282b]">
+        {/* À gauche : la même photo, feux passés en halogène. */}
         <Image
           src={image}
           alt={imageAlt}
           fill
           sizes="(min-width: 801px) 45vw, 100vw"
-          className="object-cover object-center [filter:sepia(0.7)_saturate(1.35)_hue-rotate(351deg)]"
+          className="object-cover object-center"
+          style={{ filter: `url(#${filtreId})` }}
         />
 
-        {/* La photo non filtrée, découpée au curseur. */}
+        {/* À droite : la photo telle quelle, en LED, découpée au curseur. */}
         <div
           className="absolute inset-0"
           style={{ clipPath: `inset(0 0 0 ${position}%)` }}
@@ -93,8 +140,8 @@ export function ToneSlider({
         />
       </div>
       <figcaption className="mt-3 text-[13px] leading-[1.5] text-[#a9adb4]">
-        Faites glisser pour comparer. Simulation de teinte à titre illustratif, pas une mesure
-        de performance.
+        Faites glisser pour comparer. Seule la couleur de la lumière change : simulation à titre
+        illustratif, pas une mesure de performance.
       </figcaption>
     </figure>
   )
