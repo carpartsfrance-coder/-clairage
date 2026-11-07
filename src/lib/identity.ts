@@ -97,7 +97,16 @@ export const identity = {
   },
 
   contact: {
-    email: null as string | null,
+    /*
+      Adresse affichée aux clients : page contact, pied de page, mentions
+      légales, CGV, livraison-retours, garanties, et données structurées. C'est
+      aussi celle du profil Mollie LEDVROOM, que Mollie vérifie sur le site.
+    */
+    email: 'contact@ledvroom.com' as string | null,
+    /*
+      Volontairement vide, à la demande de l'exploitant (7 novembre 2026) : le
+      numéro donné à Mollie ne doit pas apparaître sur le site.
+    */
     phone: null as string | null,
     /** Horaires d'assistance, affichés seulement s'ils sont renseignés. */
     hours: null as string | null,
