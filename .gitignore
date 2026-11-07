@@ -16,3 +16,8 @@ next-env.d.ts
 # Scripts jetables de mise au point : jamais versionnés.
 scripts/_*
 public/uploads/
+
+# Dumps de base : ils contiennent les commandes et les clients.
+# `scripts/backup.sh` écrit ici par défaut — un seul `git add -A` suffirait.
+/sauvegardes/
+*.dump

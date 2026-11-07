@@ -104,6 +104,15 @@ async function detacher() {
         _origine:
           'Visuels relevés sur ledperf.com et posés par scripts/import-vehicle-photos.ts, retirés sur demande de l’exploitant.',
         _detachees_le: new Date().toISOString(),
+        /*
+          De quelle base ce registre parle.
+          Il y en a deux — le poste et la boutique — et leurs identifiants de
+          génération ne se recouvrent pas forcément. Restaurer le mauvais
+          registre ne casse rien (les lignes introuvables sont comptées et
+          nommées), mais on perd du temps à chercher pourquoi « 2 708
+          introuvables ». Autant que le fichier le dise.
+        */
+        _base: baseVisee(),
         entrees,
       },
       null,
