@@ -40,6 +40,7 @@
     "photos:produits": "tsx scripts/pose-photos-produit.ts",
     "publier": "tsx scripts/publier-produits.ts",
     "visibles": "tsx scripts/compte-visibles.ts",
+    "photos:vehicule:retirer": "tsx scripts/retire-photos-vehicule.ts",
     "packs:manquants": "tsx scripts/releve-packs-manquants.ts",
     "slugs:ambigus": "tsx scripts/corrige-slugs-ambigus.ts"
   },
