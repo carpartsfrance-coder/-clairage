@@ -11,11 +11,12 @@ import Image from 'next/image'
  *
  * **Seule la lumière change.** Les deux moitiés sont la MÊME photographie.
  * À gauche, un filtre SVG repère les zones les plus claires de l'image — au
- * moins 92 % de luminance, c'est-à-dire les feux allumés — et les teinte en
- * jaune halogène ; la carrosserie, le décor et les reflets restent tels
- * quels. Le seuil a été réglé sur les rendus du catalogue : à 80 %, les
- * reflets d'un capot gris clair jaunissaient aussi. Rien n'est à préparer
- * image par image.
+ * moins 90 % de luminance, c'est-à-dire les feux allumés — et les passe en
+ * blanc chaud d'ampoule halogène, avec un léger halo ; la carrosserie, le
+ * décor et les reflets restent tels quels. Réglé sur les rendus du
+ * catalogue : à 80 %, les reflets d'un capot gris clair jaunissaient aussi,
+ * et un jaune plus saturé faisait une tache orange peu naturelle. Rien n'est
+ * à préparer image par image.
  *
  * C'est une simulation de teinte — ni un avant/après, ni une mesure — et la
  * légende le dit.
@@ -40,8 +41,8 @@ export function ToneSlider({
     <figure className="m-0">
       {/*
         Le filtre « halogène » : luminance → masque des zones très claires
-        (≥ 92 %), adouci, puis version jaunie de la photo posée seulement à
-        travers ce masque, par-dessus l'originale.
+        (≥ 90 %), adouci, puis version en blanc chaud de la photo posée
+        seulement à travers ce masque, avec son halo, par-dessus l'originale.
       */}
       <svg width="0" height="0" className="absolute" aria-hidden="true" focusable="false">
         <filter
@@ -59,18 +60,25 @@ export function ToneSlider({
             result="luminance"
           />
           <feComponentTransfer in="luminance" result="masque">
-            <feFuncA type="linear" slope="12.5" intercept="-11.5" />
+            <feFuncA type="linear" slope="10" intercept="-9" />
           </feComponentTransfer>
-          <feGaussianBlur in="masque" stdDeviation="3" result="masqueDoux" />
+          <feGaussianBlur in="masque" stdDeviation="4" result="masqueDoux" />
+          {/* Blanc chaud d'une ampoule halogène (≈ 3 200 K), pas un jaune saturé. */}
           <feColorMatrix
             in="SourceGraphic"
             type="matrix"
-            values="1 0 0 0 0  0 0.8 0 0 0  0 0 0.45 0 0  0 0 0 1 0"
+            values="1 0 0 0 0  0 0.9 0 0 0  0 0 0.68 0 0  0 0 0 1 0"
             result="chaud"
           />
           <feComposite in="chaud" in2="masqueDoux" operator="in" result="lumiereChaude" />
+          {/* Léger halo autour du feu : la lumière halogène diffuse plus. */}
+          <feGaussianBlur in="lumiereChaude" stdDeviation="14" result="halo" />
+          <feComponentTransfer in="halo" result="haloDoux">
+            <feFuncA type="linear" slope="0.45" />
+          </feComponentTransfer>
           <feMerge>
             <feMergeNode in="SourceGraphic" />
+            <feMergeNode in="haloDoux" />
             <feMergeNode in="lumiereChaude" />
           </feMerge>
         </filter>
