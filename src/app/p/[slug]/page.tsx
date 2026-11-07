@@ -336,8 +336,14 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             {/*
               Un seul enfant de grille sur grand écran ; sous le basculement,
               `display:contents` le dissout et le titre passe avant la galerie.
+
+              Sur grand écran, la colonne d'achat reste à l'écran pendant qu'on
+              fait défiler la galerie et les promesses, juste sous l'en-tête
+              replié (56 px, puis 105 px à partir de `lg`). Seulement sur un
+              écran assez haut pour la montrer en entier : une colonne collante
+              plus haute que la fenêtre cacherait son propre bas.
             */}
-            <div className="contents fiche:block">
+            <div className="contents fiche:block fiche:self-start fiche:top-[76px] lg:top-[124px] [@media(min-width:801px)_and_(min-height:860px)]:sticky">
               <ProductTitle
                 eyebrow={eyebrow}
                 name={product.name}
@@ -362,6 +368,11 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   vehicleLabel={vehicle?.label ?? null}
                   shippingOffers={shippingOffers}
                   returnWindowDays={commercialTerms.returnWindowDays}
+                  vehiculeDesComplements={
+                    complementaires && complementaires.packs.length > 0
+                      ? complementaires.vehicule
+                      : null
+                  }
                 />
               </div>
             </div>
