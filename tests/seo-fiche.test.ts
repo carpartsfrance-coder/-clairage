@@ -241,3 +241,15 @@ describe('livraison et retour déclarés aux moteurs', () => {
     expect(returnPolicy(14)?.merchantReturnDays).toBe(14)
   })
 })
+
+describe('description : la garantie', () => {
+  it('annonce la garantie et la livraison offerte quand la garantie est configurée', async () => {
+    const { descriptionSeo: decrire } = await import('../src/lib/seo-fiche')
+    const texte = decrire(
+      { name: 'Pack LED veilleuses pour Audi A1', tagline: null, description: null, metaTitle: null, metaDescription: null } as never,
+      { marque: { nom: 'Audi', slug: 'audi' }, modele: { nom: 'A1', slug: 'a1' }, generation: { nom: 'A1', slug: 'a1', phase: null, anneeDebut: 2010, anneeFin: 2018 }, chemin: null, cheminMarque: null } as never,
+      { seuilFranchiseCents: 5000, retourJours: 14, garantie: '5 ans' },
+    )
+    expect(texte).toMatch(/Garantie 5 ans, livraison offerte dès 50/)
+  })
+})

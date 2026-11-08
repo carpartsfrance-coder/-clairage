@@ -103,6 +103,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   ])
   const title = titreSeo(product, vehicule)
   const description = descriptionSeo(product, vehicule, {
+    garantie: dureeGarantie(),
     seuilFranchiseCents: seuilDeFranchise(shippingOffers),
     retourJours: commercialTerms.returnWindowDays,
   })
@@ -183,6 +184,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
       )})`
     : null
   const descriptionDeLaFiche = descriptionSeo(product, vehiculeDeLaFiche, {
+    garantie: dureeGarantie(),
     seuilFranchiseCents,
     retourJours: commercialTerms.returnWindowDays,
   })
