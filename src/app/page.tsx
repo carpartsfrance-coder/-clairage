@@ -9,6 +9,7 @@ import {
 import { getSelectedVehicle } from '@/lib/session'
 import { getNavigation } from '@/lib/queries/navigation'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
+import { faqGeneraleParDefaut } from '@/lib/faq-generale'
 import { dureeGarantie, formatPrice } from '@/lib/identity'
 import { HeroFinder } from '@/components/home/HeroFinder'
 import { ReassuranceBand } from '@/components/home/ReassuranceBand'
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
  * section isolément.
  */
 export default async function HomePage() {
-  const [blocks, universes, products, faq, rubriques, navigation, seuil, vehicle] = await Promise.all([
+  const [blocks, universes, products, faqPubliee, rubriques, navigation, seuil, faqParDefaut, vehicle] = await Promise.all([
     getHomeBlocks(),
     getUniverses(6),
     getFeaturedProducts(4),
@@ -45,6 +46,7 @@ export default async function HomePage() {
     // l'affiche que si une marque moto mène à des produits.
     getNavigation(),
     getSeuilLivraisonOfferte(),
+    faqGeneraleParDefaut(),
     // Le bandeau de sélection s'ouvre sur le véhicule déjà retenu plutôt que
     // de redemander ce que l'en-tête affiche.
     getSelectedVehicle(),
@@ -66,6 +68,9 @@ export default async function HomePage() {
       : []),
     ...autres.filter((item) => item.icon !== 'headset'),
   ].slice(0, 4)
+
+  // Questions publiées en back-office, sinon les quatre premières par défaut.
+  const faq = faqPubliee.length > 0 ? faqPubliee : faqParDefaut.slice(0, 4)
 
   return (
     <>

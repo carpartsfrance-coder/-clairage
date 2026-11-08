@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/auth/session'
 import { countPublishedGuides, listGeneralFaq } from '@/lib/queries/support'
+import { faqGeneraleParDefaut } from '@/lib/faq-generale'
+import { FaqStructuredData } from '@/components/seo/StructuredData'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Card } from '@/components/ui/Surface'
 
@@ -26,11 +28,14 @@ export const metadata: Metadata = {
  * n'est inventé pour remplir le reste.
  */
 export default async function AidePage() {
-  const [faq, guides, user] = await Promise.all([
+  const [faqPubliee, guides, user, faqParDefaut] = await Promise.all([
     listGeneralFaq(),
     countPublishedGuides(),
     getCurrentUser(),
+    faqGeneraleParDefaut(),
   ])
+  // Les questions publiées en back-office, sinon celles tirées de la configuration.
+  const faq = faqPubliee.length > 0 ? faqPubliee : faqParDefaut
 
   /*
     Les entrées sont construites, pas écrites en dur : celles qui dépendent
@@ -56,14 +61,15 @@ export default async function AidePage() {
       text: "Quand la fiche ne confirme pas qu'une référence convient à votre véhicule, nous le vérifions.",
       action: 'Demander une vérification',
     },
-    guides > 0
-      ? {
-          href: '/guides',
-          title: 'Conseils & montage',
-          text: `${guides} guide${guides > 1 ? 's' : ''} publié${guides > 1 ? 's' : ''}, par emplacement et par véhicule.`,
-          action: 'Découvrir les guides',
-        }
-      : null,
+    {
+      href: '/guides',
+      title: 'Conseils & montage',
+      text:
+        guides > 0
+          ? `Les gestes par emplacement, et ${guides} guide${guides > 1 ? 's' : ''} par véhicule.`
+          : 'Les gestes à connaître et l’accès aux feux, emplacement par emplacement.',
+      action: 'Lire les conseils',
+    },
     user
       ? {
           href: '/compte/commandes',
@@ -76,6 +82,7 @@ export default async function AidePage() {
 
   return (
     <div className="container-page pb-10 fiche:pb-14">
+      <FaqStructuredData items={faq} />
       <Breadcrumb items={[{ label: 'Accueil', href: '/' }, { label: 'Aide & contact' }]} />
 
       <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
@@ -83,8 +90,8 @@ export default async function AidePage() {
       </h1>
 
       <p className="mt-3 max-w-[580px] text-[11px] leading-[1.8] text-[#7a7a7a]">
-        Ce qui est déjà en place pour vous dépanner, et comment nous joindre quand ça ne suffit
-        pas.
+        Suivre une commande, trouver une réponse ou nous écrire : tout est ici. Une vraie personne
+        vous répond, avant l’achat comme après.
       </p>
 
       <section aria-labelledby="aide-entrees" className="mt-8">
