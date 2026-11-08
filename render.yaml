@@ -23,8 +23,11 @@ databases:
   - name: lumera-db
     databaseName: lumera
     user: lumera
-    # Offre à ajuster avant l'ouverture : « free » expire au bout de 30 jours.
-    plan: basic-256mb
+    # 0.5 CPU, 1 Go (passée le 8 novembre 2026) : avec 30 000 fiches, l'offre
+    # 256 Mo ne gardait pas les données en mémoire et lisait sans cesse un
+    # disque lent (recherche de 3 à 50 s). Garder ce plan aligné sur celui
+    # du tableau de bord : une synchronisation du Blueprint le réappliquerait.
+    plan: 0.5c-1g
     region: frankfurt
     ipAllowList: [] # accès réseau interne Render uniquement
 
