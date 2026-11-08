@@ -268,7 +268,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     par défaut (compatibilité, câblage, garantie, livraison, retours) : un
     client qui hésite trouve la réponse ici plutôt qu'ailleurs.
   */
-  const questions = product.faq.length > 0 ? product.faq : await faqFicheParDefaut(concuPour, product.name)
+  const questions = product.faq.length > 0 ? product.faq : await faqFicheParDefaut(concuPour, product.name, product.vehicleType === 'MOTORCYCLE')
   const aContenuQuestions = questions.length > 0 || product.reviews.length > 0
 
   /*
@@ -489,6 +489,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   returnWindowDays={commercialTerms.returnWindowDays}
                   garantie={dureeGarantie()}
                   concuPour={concuPour}
+                  moto={product.vehicleType === 'MOTORCYCLE'}
                   vehiculeDesComplements={
                     complementaires && complementaires.packs.length > 0
                       ? complementaires.vehicule

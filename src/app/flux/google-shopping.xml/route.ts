@@ -10,6 +10,7 @@ import {
   type TarifPays,
 } from '@/lib/flux-google'
 import { imagesTypesPourLeFlux } from '@/lib/images-types'
+import { nomAvecPeriode } from '@/lib/seo-fiche'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +52,22 @@ const SELECTION = {
       sku: true,
       name: true,
       priceCents: true,
+      // La génération, pour les années du titre (voir `versArticle`).
+      fitments: {
+        where: {
+          status: { not: 'INCOMPATIBLE' as const },
+          configuration: {
+            active: true,
+            generation: { active: true, model: { active: true, make: { active: true } } },
+          },
+        },
+        take: 20,
+        select: {
+          configuration: {
+            select: { generation: { select: { id: true, yearFrom: true, yearTo: true } } },
+          },
+        },
+      },
       stockOnHand: true,
       stockReserved: true,
       lowStockThreshold: true,
@@ -95,9 +112,18 @@ function versArticle(produit: ProduitLu): ArticleFlux {
   const images = [...produit.media]
     .sort((a, b) => ordre.indexOf(a.role) - ordre.indexOf(b.role))
     .map((entree) => entree.media.url)
+  // Les années de la génération, comme dans le titre de la page : sans elles,
+  // les fiches d'un même modèle de moto (YZF-R6 600 de 1999, 2003, 2006…)
+  // portaient le même titre dans Google Shopping (1 847 titres en double).
+  const generations = new Map(
+    produit.variants.flatMap((variante) =>
+      variante.fitments.map((f) => [f.configuration.generation.id, f.configuration.generation] as const),
+    ),
+  )
+  const generation = generations.size === 1 ? [...generations.values()][0] : null
   return {
     slug: produit.slug,
-    name: produit.name,
+    name: generation ? nomAvecPeriode(produit.name, generation.yearFrom, generation.yearTo) : produit.name,
     description: produit.description ?? produit.tagline,
     brand: produit.brand,
     productType: categorie

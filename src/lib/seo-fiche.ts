@@ -193,7 +193,11 @@ type ProduitPourLeSeo = {
 /** Le nom, suivi des années de la génération quand il ne les porte pas déjà. */
 export function nomAvecAnnees(nom: string, vehicule: VehiculeDeLaFiche | null): string {
   if (!vehicule) return nom
-  const { anneeDebut, anneeFin } = vehicule.generation
+  return nomAvecPeriode(nom, vehicule.generation.anneeDebut, vehicule.generation.anneeFin)
+}
+
+/** « Centrale de clignotants LED pour Yamaha YZF-R6 600 (2006–2007) ». */
+export function nomAvecPeriode(nom: string, anneeDebut: number, anneeFin: number | null): string {
   if (nom.includes(String(anneeDebut))) return nom
   return `${nom} (${anneesCourtes(anneeDebut, anneeFin)})`
 }
