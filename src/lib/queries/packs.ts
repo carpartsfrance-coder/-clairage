@@ -5,6 +5,7 @@ import { recommendPackaging } from '../recommendation'
 import { availabilityForKit, availabilityForVariant, isPurchasable } from '../stock'
 import type { FitmentStatus } from '../fitment'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
+import { couvertureType } from '../images-types'
 import { GENERATION_VISIBLE, MARQUE_VISIBLE, MODELE_VISIBLE } from './vehicules-visibles'
 
 /**
@@ -428,7 +429,8 @@ async function lireGenerationDesPacks(
         if (existant) {
           existant.candidats.push(candidat)
         } else {
-          const cover = couverture(fitment.variant.product.media)?.media
+          const cover =
+            couverture(fitment.variant.product.media)?.media ?? couvertureType(fitment.variant.product)
           groupe.produits.set(slug, {
             productSlug: slug,
             productName: fitment.variant.product.name,

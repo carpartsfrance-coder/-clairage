@@ -15,6 +15,7 @@ import {
   IconHeadset,
 } from '@/components/ui/icons'
 import { ARGS_COUVERTURE, couverture } from '@/lib/media-couverture'
+import { couvertureType } from '@/lib/images-types'
 import { cartesDesResultats, phaseUtile, type GroupeResultat } from '@/lib/resultats-vue'
 import { totalDesCartes } from '@/lib/packs-vue'
 import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
@@ -166,7 +167,7 @@ async function getByPosition(configurationId: string): Promise<GroupeResultat[] 
           productName: row.variant.product.name,
           image: visuel
             ? { url: visuel.media.url, alt: visuel.media.alt ?? row.variant.product.name }
-            : null,
+            : couvertureType(row.variant.product),
           status: row.status,
           lines: [],
         }

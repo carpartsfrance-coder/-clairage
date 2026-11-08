@@ -1,6 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { visuelsDeLaFiche } from '../media-couverture'
+import { imagesTypes, LEGENDE_IMAGE_TYPE } from '../images-types'
 import { prisma } from '../db'
 import {
   resolveFitments,
@@ -324,16 +325,38 @@ export async function getProduct(
         )
       : null
 
-    const gallery: GalleryItem[] = visuelsDeLaFiche(product.media)
-      .map((entry) => ({
-        url: entry.media.url,
-        alt: entry.media.alt ?? product.name,
-        caption: entry.media.caption,
-        role: entry.role as GalleryItem['role'],
-        thumbLabel: THUMB_LABELS[entry.role as GalleryItem['role']] ?? 'Visuel',
-        nature: entry.media.nature as GalleryItem['nature'],
-      }))
-      .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
+    const visuelsPropres: GalleryItem[] = visuelsDeLaFiche(product.media).map((entry) => ({
+      url: entry.media.url,
+      alt: entry.media.alt ?? product.name,
+      caption: entry.media.caption,
+      role: entry.role as GalleryItem['role'],
+      thumbLabel: THUMB_LABELS[entry.role as GalleryItem['role']] ?? 'Visuel',
+      nature: entry.media.nature as GalleryItem['nature'],
+    }))
+
+    /*
+      Pas encore de rendu pour ce véhicule : les images types de l'emplacement
+      (lib/images-types.ts), signalées comme illustrations. Une photo produit
+      propre à la fiche reste prioritaire sur la photo type des ampoules.
+    */
+    const aSonRendu = visuelsPropres.some((item) => item.role === 'RESULT')
+    const aSaPhotoProduit = visuelsPropres.some((item) => item.role === 'PRODUCT')
+    const visuelsTypes: GalleryItem[] = aSonRendu
+      ? []
+      : imagesTypes(product)
+          .filter((image) => image.role === 'RESULT' || !aSaPhotoProduit)
+          .map((image) => ({
+            url: image.url,
+            alt: image.alt,
+            caption: LEGENDE_IMAGE_TYPE,
+            role: image.role,
+            thumbLabel: THUMB_LABELS[image.role],
+            nature: 'ILLUSTRATION' as const,
+          }))
+
+    const gallery: GalleryItem[] = [...visuelsTypes, ...visuelsPropres].sort(
+      (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role),
+    )
 
     return {
       slug: product.slug,

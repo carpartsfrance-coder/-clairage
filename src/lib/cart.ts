@@ -15,6 +15,7 @@ import {
   type MissingCartAccessory,
 } from './fitment'
 import { ARGS_COUVERTURE, couverture } from './media-couverture'
+import { couvertureType } from './images-types'
 
 /**
  * Lecture du panier.
@@ -148,7 +149,7 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
           )
         : availabilityForVariant(variant)
 
-      const cover = couverture(variant.product.media)?.media
+      const cover = couverture(variant.product.media)?.media ?? couvertureType(variant.product)
 
       return {
         id: line.id,

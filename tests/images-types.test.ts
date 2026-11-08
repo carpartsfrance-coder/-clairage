@@ -1,0 +1,44 @@
+import { describe, expect, it } from 'vitest'
+import { couvertureType, emplacementDeLaFiche, imagesTypes, imagesTypesPourLeFlux } from '../src/lib/images-types'
+
+describe('images types par emplacement', () => {
+  it("lit l'emplacement dans l'adresse de la fiche", () => {
+    expect(emplacementDeLaFiche('pack-led-feux-de-recul-toyota-hilux-viii')).toBe('feux-de-recul')
+    expect(emplacementDeLaFiche('pack-led-eclairage-de-plaque-dacia-duster-2')).toBe('eclairage-de-plaque')
+    expect(emplacementDeLaFiche('pack-led-feux-de-route-audi-a3')).toBe('feux-de-route')
+    expect(emplacementDeLaFiche('autre-chose')).toBeNull()
+  })
+
+  it('phares : avant/après, ampoules LED, route de nuit', () => {
+    const images = imagesTypes({ slug: 'pack-led-phares-ford-fiesta-mk7', name: 'Pack LED phares pour Ford Fiesta' })
+    expect(images.map((i) => i.url)).toEqual([
+      '/images-types/phares-avant-apres.webp',
+      '/images-types/produit-led-haute-puissance.webp',
+      '/images-types/route-nuit.webp',
+    ])
+  })
+
+  it("effet xénon : la photo des ampoules halogènes, pas des LED", () => {
+    const images = imagesTypes({ slug: 'pack-led-phares-bmw-serie-3-e90-e91', name: 'Pack ampoules effet xénon phares pour BMW Serie 3' })
+    expect(images[1].url).toBe('/images-types/produit-effet-xenon.webp')
+  })
+
+  it('feux de route : les images des phares', () => {
+    expect(couvertureType({ slug: 'pack-led-feux-de-route-audi-a3', name: 'x' })?.url).toBe('/images-types/phares-apres.webp')
+  })
+
+  it('pas pour la moto', () => {
+    expect(imagesTypes({ slug: 'pack-led-phares-kawasaki-z750', name: 'x', vehicleType: 'MOTORCYCLE' })).toEqual([])
+    expect(couvertureType({ slug: 'pack-led-phares-kawasaki-z750', name: 'x', vehicleType: 'MOTORCYCLE' })).toBeNull()
+  })
+
+  it("Google Shopping : jamais d'image avec du texte, la photo produit d'abord", () => {
+    expect(imagesTypesPourLeFlux({ slug: 'pack-led-veilleuses-audi-a3', name: 'Pack LED veilleuses' })).toEqual([
+      '/images-types/produit-led-w5w.webp',
+      '/images-types/veilleuses-apres.webp',
+    ])
+    expect(imagesTypesPourLeFlux({ slug: 'pack-led-phares-audi-a3', name: 'Pack LED phares' })).toEqual([
+      '/images-types/produit-led-haute-puissance.webp',
+    ])
+  })
+})

@@ -3,6 +3,7 @@ import { identity, siteConfig } from '@/lib/identity'
 import { availabilityForKit, availabilityForVariant } from '@/lib/stock'
 import { getOffresParPays } from '@/lib/shipping'
 import { construireFlux, type ArticleFlux } from '@/lib/flux-google'
+import { imagesTypesPourLeFlux } from '@/lib/images-types'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +33,7 @@ export async function GET() {
           tagline: true,
           description: true,
           brand: true,
+          vehicleType: true,
           categories: {
             orderBy: { position: 'asc' },
             take: 1,
@@ -94,7 +96,10 @@ export async function GET() {
             ? `${categorie.parent.name} > ${categorie.name}`
             : categorie.name
           : null,
-        images: [...new Set(images)],
+        // Sans visuel à elle, la fiche part avec ses images types sans texte
+        // (photo des ampoules, gros plan « après ») : Google accepte les
+        // illustrations pour les pièces de véhicules, pas le texte incrusté.
+        images: images.length > 0 ? [...new Set(images)] : imagesTypesPourLeFlux(produit),
         variants: produit.variants.map((variante) => ({
           sku: variante.sku,
           name: variante.name,

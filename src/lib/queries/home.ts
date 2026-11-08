@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { lectureCatalogue } from '@/lib/cache-catalogue'
 import { demoHomeBlocks } from '../../../prisma/demo-data'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
+import { couvertureType } from '../images-types'
 
 /**
  * Lectures de la page d'accueil.
@@ -283,7 +284,7 @@ async function lireVitrine(limit: number): Promise<HomeProduct[]> {
     .filter((product) => product.variants.length > 0)
     .map((product) => {
       const cheapest = product.variants[0]
-      const cover = couverture(product.media)?.media
+      const cover = couverture(product.media)?.media ?? couvertureType(product)
       const category = product.categories[0]?.category
       return {
         slug: product.slug,
