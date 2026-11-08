@@ -17,7 +17,7 @@ import {
   nomDuVehicule,
   titreSeo,
 } from '@/lib/seo-fiche'
-import { commercialTerms, identity, siteConfig } from '@/lib/identity'
+import { commercialTerms, dureeGarantie, identity, siteConfig } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import {
   BreadcrumbStructuredData,
@@ -44,6 +44,7 @@ import {
   IconHeadset,
   IconPack,
   IconReturn,
+  IconShield,
   IconWrench,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
@@ -174,6 +175,13 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const seuilFranchiseCents = seuilDeFranchise(shippingOffers)
 
   /* Même description que la balise meta, pour les données structurées. */
+  // « Toyota Hilux 8 (2015–2025) » : le véhicule pour lequel le pack est composé.
+  const concuPour = vehiculeDeLaFiche
+    ? `${nomDuVehicule(vehiculeDeLaFiche)} (${anneesCourtes(
+        vehiculeDeLaFiche.generation.anneeDebut,
+        vehiculeDeLaFiche.generation.anneeFin,
+      )})`
+    : null
   const descriptionDeLaFiche = descriptionSeo(product, vehiculeDeLaFiche, {
     seuilFranchiseCents,
     retourJours: commercialTerms.returnWindowDays,
@@ -311,11 +319,23 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
       titre: 'Pensé pour votre véhicule',
       texte: 'Compatibilité indiquée par emplacement',
     },
-    {
-      Icon: IconWrench,
-      titre: 'Sans modifier le câblage',
-      texte: 'Adaptateurs nécessaires signalés',
-    },
+    // La garantie prend la place de « Sans modifier le câblage » : c'est
+    // l'argument qui rassure le plus avant d'acheter, et il vaut pour tout.
+    ...(dureeGarantie()
+      ? [
+          {
+            Icon: IconShield,
+            titre: `Garantie ${dureeGarantie()}`,
+            texte: 'Sur toutes nos ampoules et LED',
+          },
+        ]
+      : [
+          {
+            Icon: IconWrench,
+            titre: 'Sans modifier le câblage',
+            texte: 'Adaptateurs nécessaires signalés',
+          },
+        ]),
     ...(kitVariant
       ? [
           {
@@ -387,7 +407,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           <Breadcrumb items={breadcrumbItems} />
 
           {/* Masqué sur téléphone : le header mobile porte déjà le véhicule. */}
-          <VehicleBar vehicle={vehicle} className="mb-6 max-fiche:hidden" />
+          <VehicleBar vehicle={vehicle} concuPour={concuPour} className="mb-6 max-fiche:hidden" />
 
           {/*
             .product-hero — refonte LEDVROOM.
@@ -448,6 +468,8 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   vehicleLabel={vehicle?.label ?? null}
                   shippingOffers={shippingOffers}
                   returnWindowDays={commercialTerms.returnWindowDays}
+                  garantie={dureeGarantie()}
+                  concuPour={concuPour}
                   vehiculeDesComplements={
                     complementaires && complementaires.packs.length > 0
                       ? complementaires.vehicule

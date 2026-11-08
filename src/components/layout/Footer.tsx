@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
 import { footerNav } from '@/lib/navigation'
-import { IconHeadset, IconReturn, IconTruck } from '@/components/ui/icons'
-import { commercialTerms, formatPrice, identity, siteConfig } from '@/lib/identity'
+import { IconHeadset, IconReturn, IconShield, IconTruck } from '@/components/ui/icons'
+import { commercialTerms, dureeGarantie, formatPrice, identity, siteConfig } from '@/lib/identity'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { getNavigation } from '@/lib/queries/navigation'
 
@@ -65,6 +65,7 @@ export async function Footer() {
           text: `Livraison offerte dès ${formatPrice(seuilLivraisonOfferte)}`,
         }
       : null,
+    dureeGarantie() ? { icon: IconShield, text: `Garantie ${dureeGarantie()} sur tous les produits` } : null,
     commercialTerms.returnWindowDays
       ? { icon: IconReturn, text: `Retours sous ${commercialTerms.returnWindowDays} jours` }
       : null,

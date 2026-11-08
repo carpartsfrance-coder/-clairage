@@ -22,6 +22,7 @@ import {
   IconCheck,
   IconInfo,
   IconShield,
+  IconLock,
   IconCheckCircle,
   IconChevronRight,
   IconReturn,
@@ -73,6 +74,8 @@ export function BuyBox({
   vehicleLabel,
   shippingOffers,
   returnWindowDays,
+  garantie = null,
+  concuPour = null,
   contentAnchor = '#dans-votre-kit',
   vehiculeDesComplements = null,
 }: {
@@ -86,6 +89,10 @@ export function BuyBox({
   /** Règles de livraison configurées, rejouées à chaque changement de total. */
   shippingOffers: ShippingOffer[]
   returnWindowDays: number | null
+  /** « 5 ans » : la garantie commerciale, annoncée en premier. */
+  garantie?: string | null
+  /** « Toyota Hilux 8 (2015–2025) » quand la fiche est composée pour un véhicule. */
+  concuPour?: string | null
   contentAnchor?: string
   /**
    * Nom du véhicule quand la fiche propose d'autres packs pour lui
@@ -324,7 +331,17 @@ export function BuyBox({
         </Alert>
       ) : null}
 
-      {!vehicleLabel ? (
+      {!vehicleLabel && concuPour ? (
+        <Alert tone="ok" title={`Pack composé pour le ${concuPour}.`} className="mb-5">
+          Les ampoules et les LED sont choisies pour ce véhicule.{' '}
+          <Link href="/vehicule" className="font-semibold underline underline-offset-4">
+            Indiquez votre véhicule
+          </Link>{' '}
+          pour confirmer qu&apos;il correspond à votre version et à son équipement d&apos;origine.
+        </Alert>
+      ) : null}
+
+      {!vehicleLabel && !concuPour ? (
         <Alert tone="info" title="Indiquez votre véhicule." className="mb-5">
           Le bon éclairage dépend du bloc optique et de l&apos;équipement d&apos;origine, pas
           seulement du culot.{' '}
@@ -676,6 +693,12 @@ export function BuyBox({
 
       {/* ---- .purchase-reassurance ---- */}
       <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-b border-line pb-4 text-[13px] text-[#3c4047]">
+        {garantie ? (
+          <Link href="/garanties" className="flex items-center gap-1.5 font-semibold text-ink hover:underline">
+            <IconShield className="size-4 shrink-0 text-ok" />
+            Garantie {garantie}
+          </Link>
+        ) : null}
         {returnWindowDays ? (
           <span className="flex items-center gap-1.5">
             <IconReturn className="size-4 shrink-0" />
@@ -683,7 +706,7 @@ export function BuyBox({
           </span>
         ) : null}
         <span className="flex items-center gap-1.5">
-          <IconShield className="size-4 shrink-0" />
+          <IconLock className="size-4 shrink-0" />
           Paiement sécurisé
         </span>
         <Link href="/contact" className="flex items-center gap-1.5 hover:underline">

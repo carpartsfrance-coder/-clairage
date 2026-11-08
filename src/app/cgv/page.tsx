@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { commercialTerms, formatPrice, identity } from '@/lib/identity'
+import { commercialTerms, dureeGarantie, formatPrice, identity } from '@/lib/identity'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import {
   AComplete,
@@ -218,8 +218,15 @@ export default async function Page() {
         <p>
           {commercialTerms.warrantyMonths ? (
             <>
-              Une garantie commerciale de {commercialTerms.warrantyMonths} mois s'ajoute à ces
-              garanties légales, sans s'y substituer.
+              Une garantie commerciale {identity.name} de {dureeGarantie()} couvre en outre tous les
+              produits contre les pannes et défauts de fonctionnement, à compter de la livraison :
+              remplacement par un produit identique ou équivalent envoyé aux frais du vendeur, ou
+              remboursement s'il n'est plus disponible. Elle s'ajoute aux garanties légales, sans
+              s'y substituer. Son contenu, ses exclusions et sa mise en œuvre sont décrits sur la{' '}
+              <Link href="/garanties" className="underline underline-offset-2">
+                page Garanties
+              </Link>
+              .
             </>
           ) : (
             <>

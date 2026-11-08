@@ -1,4 +1,4 @@
-import { identity, siteConfig } from '@/lib/identity'
+import { commercialTerms, identity, siteConfig } from '@/lib/identity'
 import type { AvailabilityState } from '@/lib/stock'
 import type { ProductView } from '@/lib/queries/product'
 import { buildDeliveryTeaser, type ShippingOffer } from '@/lib/delivery-teaser'
@@ -134,6 +134,17 @@ export function ProductStructuredData({
     seller: { '@type': 'Organization', name: identity.name },
     shippingDetails: shippingDetails(shippingOffers, variant.priceCents),
     hasMerchantReturnPolicy: returnPolicy(returnWindowDays),
+    // Garantie commerciale LEDVROOM (page Garanties) : la même pour tout.
+    warranty: commercialTerms.warrantyMonths
+      ? {
+          '@type': 'WarrantyPromise',
+          durationOfWarranty: {
+            '@type': 'QuantitativeValue',
+            value: commercialTerms.warrantyMonths,
+            unitCode: 'MON',
+          },
+        }
+      : undefined,
   }))
 
   // Note moyenne : calculée depuis les avis publiés, et absente s'il n'y en a
