@@ -1,5 +1,6 @@
 import type { FitmentStatus } from './fitment'
 import { nomUtileDuConditionnement } from './nom-conditionnement'
+import { natureDuProduit } from './types-produit'
 import { recommendPackaging } from './recommendation'
 import type { CarteEclairage } from './packs-vue'
 
@@ -138,7 +139,10 @@ export function cartesDesResultats(groupes: GroupeResultat[]): CarteEclairage[] 
         image: produit.image,
         status: produit.status,
         prixCents: conseille.priceCents,
-        conditionnement: nomUtileDuConditionnement(conseille.variantName, produit.productName),
+        // Plusieurs produits par emplacement : la carte dit ce qu'est chacun.
+        conditionnement:
+          nomUtileDuConditionnement(conseille.variantName, produit.productName) ??
+          natureDuProduit(produit.productName),
         autres: produit.lines
           .filter((ligne) => ligne.id !== conseille.id)
           .map((ligne) => ({

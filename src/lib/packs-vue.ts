@@ -1,3 +1,4 @@
+import { natureDuProduit } from './types-produit'
 import type { FitmentStatus } from './fitment'
 import type { PackPositionGroup, PackProduct } from './queries/packs'
 import { nomUtileDuConditionnement } from './nom-conditionnement'
@@ -120,7 +121,9 @@ export function cartesDesPacks(groupes: PackPositionGroup[]): CarteEclairage[] {
     // de la page véhicule, rien d'autre ne la distinguerait d'un pack LED.
     conditionnement:
       nomDuConditionnement(produit) ??
-      (estEffetXenon(produit.productName) ? 'Ampoules halogènes effet xénon' : null),
+      (estEffetXenon(produit.productName)
+        ? 'Ampoules halogènes effet xénon'
+        : natureDuProduit(produit.productName)),
     autres: [],
     reserve: null,
     verifie: null,
@@ -217,6 +220,8 @@ const ZONE_PAR_EMPLACEMENT: Record<string, Exclude<Zone, 'tout'>> = {
   TURN_FRONT: 'avant',
   AUX: 'avant',
   TURN_RELAY: 'avant',
+  STOP: 'arriere',
+  DASH: 'interieur',
   FOG_REAR: 'arriere',
   TURN_REAR: 'arriere',
   PLATE: 'arriere',
@@ -260,6 +265,8 @@ const SOUS_TITRE_PAR_EMPLACEMENT: Record<string, string> = {
   SIDELIGHT: 'Feux de position avant',
   TURN_FRONT: 'Signalisation à l’avant',
   AUX: 'En plus des phares d’origine',
+  STOP: 'Feu arrière et feu stop',
+  DASH: 'Compteur et tableau de bord',
   TURN_RELAY: 'Cadence normale avec des clignotants LED',
   FOG_REAR: 'Feu de brouillard à l’arrière',
   TURN_REAR: 'Signalisation à l’arrière',

@@ -1,7 +1,7 @@
 import 'server-only'
 import { commercialTerms, dureeGarantie, formatPrice } from './identity'
 import { getZonesDeLivraison } from './shipping'
-import { leVehicule, typeDeProduit } from './types-produit'
+import { leVehicule, typeHorsAmpoules } from './types-produit'
 
 /**
  * Questions fréquentes par défaut, tant que le back-office n'en publie pas.
@@ -92,12 +92,14 @@ export async function faqFicheParDefaut(
 ): Promise<QuestionReponse[]> {
   const generales = await faqGeneraleParDefaut()
   // Feux additionnels, centrale… : la réponse sur le câblage est la leur.
-  const type = typeDeProduit(nomDuProduit)
+  const type = typeHorsAmpoules(nomDuProduit)
   const sansPaiement = generales
     .filter(
       (question) => !question.question.startsWith('Le paiement') && !question.question.startsWith('Comment être sûr'),
     )
     .filter((question) => !(type && question.question.startsWith('Un message d’erreur')))
+    // Un accessoire sans branchement (outils, gants) n'a pas de question de câblage.
+    .filter((question) => !(type && !type.cablage && question.question === 'Faut-il modifier le câblage ?'))
     .map((question) =>
       type && question.question === 'Faut-il modifier le câblage ?'
         ? { question: 'Comment se branche ce produit ?', answer: type.cablage }

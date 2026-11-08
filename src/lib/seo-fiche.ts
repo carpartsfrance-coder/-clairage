@@ -1,4 +1,4 @@
-import { typeDeProduit } from './types-produit'
+import { typeHorsAmpoules } from './types-produit'
 import { formatPrice } from './identity'
 
 /**
@@ -261,7 +261,7 @@ export function descriptionSeo(
 
   // Feux additionnels, centrale, clignotants complets : ce qu'on reçoit, pas
   // « sans modifier le câblage » (lib/types-produit.ts).
-  const type = typeDeProduit(produit.name)
+  const type = typeHorsAmpoules(produit.name)
   const phrases = [
     type
       ? `${intituleSeo(produit, vehicule)}. ${type.contenu}`

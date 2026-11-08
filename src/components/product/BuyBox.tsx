@@ -1,6 +1,6 @@
 'use client'
 
-import { leVehicule, typeDeProduit } from '@/lib/types-produit'
+import { leVehicule, typeHorsAmpoules } from '@/lib/types-produit'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -339,13 +339,13 @@ export function BuyBox({
         <Alert
           tone="ok"
           title={
-            typeDeProduit(productName)
+            typeHorsAmpoules(productName)
               ? `Prévu pour ${leVehicule(concuPour)}.`
               : `Pack composé pour ${leVehicule(concuPour)}.`
           }
           className="mb-5"
         >
-          {typeDeProduit(productName)
+          {typeHorsAmpoules(productName)
             ? 'Ce produit est choisi pour ce véhicule.'
             : 'Les ampoules et les LED sont choisies pour ce véhicule.'}{' '}
           <Link href="/vehicule" className="font-semibold underline underline-offset-4">
