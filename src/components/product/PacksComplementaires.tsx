@@ -65,9 +65,13 @@ export function PacksComplementaires({
         setAjoutes((deja) => [...new Set([...deja, ...variantIds])])
         setRetour({
           ok: true,
-          texte:
+          texte: [
             resultat.message ??
-            (variantIds.length === 1 ? 'Ajouté au panier.' : `${variantIds.length} packs ajoutés au panier.`),
+              (variantIds.length === 1 ? 'Ajouté au panier.' : `${variantIds.length} packs ajoutés au panier.`),
+            resultat.livraison,
+          ]
+            .filter(Boolean)
+            .join(' '),
         })
         // Rafraîchit le compteur du header, rendu côté serveur.
         router.refresh()

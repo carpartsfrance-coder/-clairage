@@ -250,7 +250,10 @@ export function BuyBox({
         extraVariantIds: acceptedAccessories,
       })
       if (result.ok) {
-        setFeedback({ tone: 'ok', text: result.message ?? 'Ajouté au panier.' })
+        setFeedback({
+          tone: 'ok',
+          text: [result.message ?? 'Ajouté au panier.', result.livraison].filter(Boolean).join(' '),
+        })
         // Rafraîchit le compteur du header, qui est rendu côté serveur.
         router.refresh()
       } else {
