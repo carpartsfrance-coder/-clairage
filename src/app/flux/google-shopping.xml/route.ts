@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { identity, siteConfig } from '@/lib/identity'
 import { availabilityForKit, availabilityForVariant } from '@/lib/stock'
@@ -25,7 +26,7 @@ export const dynamic = 'force-dynamic'
  * et rien du tout tant que le site est en préproduction.
  */
 /** Lecture par paquets : 30 000 fiches lues d'un coup faisaient tomber le serveur. */
-const PAQUET = 500
+const PAQUET = 250
 
 const SELECTION = {
   id: true,
@@ -52,22 +53,6 @@ const SELECTION = {
       sku: true,
       name: true,
       priceCents: true,
-      // La génération, pour les années du titre (voir `versArticle`).
-      fitments: {
-        where: {
-          status: { not: 'INCOMPATIBLE' as const },
-          configuration: {
-            active: true,
-            generation: { active: true, model: { active: true, make: { active: true } } },
-          },
-        },
-        take: 20,
-        select: {
-          configuration: {
-            select: { generation: { select: { id: true, yearFrom: true, yearTo: true } } },
-          },
-        },
-      },
       stockOnHand: true,
       stockReserved: true,
       lowStockThreshold: true,
@@ -93,6 +78,35 @@ const SELECTION = {
 }
 
 type ProduitLu = Awaited<ReturnType<typeof lirePaquet>>[number]
+type Periode = { debut: number; fin: number | null }
+
+/**
+ * Les années de la génération de chaque fiche du paquet, comme dans le titre
+ * de la page : sans elles, les fiches d'un même modèle de moto (YZF-R6 600 de
+ * 1999, 2003, 2006…) portaient le même titre dans Google Shopping (1 847
+ * titres en double). Une seule requête par paquet ; une fiche documentée sur
+ * plusieurs générations (ampoule générique) n'a pas d'années.
+ */
+async function periodesDuPaquet(ids: string[]): Promise<Map<string, Periode>> {
+  if (ids.length === 0) return new Map()
+  const lignes = await prisma.$queryRaw<
+    Array<{ productId: string; generations: bigint; debut: number; fin: number | null }>
+  >`
+    SELECT v."productId", COUNT(DISTINCT g."id") AS generations,
+           MIN(g."yearFrom") AS debut, MAX(g."yearTo") AS fin
+    FROM "ProductVariant" v
+    JOIN "Fitment" f ON f."variantId" = v."id" AND f."status" <> 'INCOMPATIBLE'
+    JOIN "VehicleConfiguration" c ON c."id" = f."configurationId" AND c."active"
+    JOIN "VehicleGeneration" g ON g."id" = c."generationId" AND g."active"
+    WHERE v."productId" IN (${Prisma.join(ids)})
+    GROUP BY v."productId"
+  `
+  return new Map(
+    lignes
+      .filter((ligne) => Number(ligne.generations) === 1)
+      .map((ligne) => [ligne.productId, { debut: ligne.debut, fin: ligne.fin }]),
+  )
+}
 
 function lirePaquet(apres: string | null) {
   return prisma.product.findMany({
@@ -104,7 +118,7 @@ function lirePaquet(apres: string | null) {
   })
 }
 
-function versArticle(produit: ProduitLu): ArticleFlux {
+function versArticle(produit: ProduitLu, periode: Periode | undefined): ArticleFlux {
   const categorie = produit.categories[0]?.category
   // La couverture d'abord, comme partout ailleurs sur le site : le rendu
   // (feu allumé sur le véhicule), puis le produit, puis le contenu du kit.
@@ -112,18 +126,9 @@ function versArticle(produit: ProduitLu): ArticleFlux {
   const images = [...produit.media]
     .sort((a, b) => ordre.indexOf(a.role) - ordre.indexOf(b.role))
     .map((entree) => entree.media.url)
-  // Les années de la génération, comme dans le titre de la page : sans elles,
-  // les fiches d'un même modèle de moto (YZF-R6 600 de 1999, 2003, 2006…)
-  // portaient le même titre dans Google Shopping (1 847 titres en double).
-  const generations = new Map(
-    produit.variants.flatMap((variante) =>
-      variante.fitments.map((f) => [f.configuration.generation.id, f.configuration.generation] as const),
-    ),
-  )
-  const generation = generations.size === 1 ? [...generations.values()][0] : null
   return {
     slug: produit.slug,
-    name: generation ? nomAvecPeriode(produit.name, generation.yearFrom, generation.yearTo) : produit.name,
+    name: periode ? nomAvecPeriode(produit.name, periode.debut, periode.fin) : produit.name,
     description: produit.description ?? produit.tagline,
     brand: produit.brand,
     productType: categorie
@@ -187,7 +192,10 @@ export async function GET() {
       try {
         if (fini) return
         const paquet: ProduitLu[] = await lirePaquet(apres)
-        const lignes = paquet.flatMap((produit) => lignesDeLArticle(versArticle(produit), options))
+        const periodes = await periodesDuPaquet(paquet.map((produit) => produit.id))
+        const lignes = paquet.flatMap((produit) =>
+          lignesDeLArticle(versArticle(produit, periodes.get(produit.id)), options),
+        )
         let morceau = debut ? enteteFlux(siteConfig.url, identity.name) : ''
         if (lignes.length > 0) morceau += (debut ? '' : '\n') + lignes.join('\n')
         debut = false
