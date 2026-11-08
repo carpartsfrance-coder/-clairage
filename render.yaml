@@ -71,10 +71,13 @@ services:
       # À remplacer par le domaine définitif dès qu'il est rattaché.
       - key: NEXT_PUBLIC_SITE_URL
         sync: false
-      # « on » tant que des données de démonstration sont en base : le site
-      # affiche alors le bandeau de préproduction et reste en noindex.
+      # « off » : la boutique est ouverte (bandeau de préproduction retiré,
+      # site indexable, flux Google Shopping actif). Valeur tenue ICI : une
+      # synchronisation du Blueprint écrase celle du tableau de bord — le
+      # 8 novembre 2026, un « on » resté dans ce fichier a remis le site en
+      # préproduction (noindex, robots.txt fermé, flux en 404).
       - key: NEXT_PUBLIC_DEMO_MODE
-        value: 'on'
+        value: 'off'
 
       # --- Sessions ----------------------------------------------------------
       # Aucun secret de signature : le cookie de session porte un jeton
