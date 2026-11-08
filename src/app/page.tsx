@@ -83,7 +83,17 @@ export default async function HomePage() {
         droite, l'action à gauche, dans le premier écran. Ils se suivaient, ce
         qui obligeait à descendre pour agir.
       */}
-      <HeroFinder hero={blocks.hero} finder={blocks.vehicleBand} vehicle={vehicle} />
+      <HeroFinder
+        hero={blocks.hero}
+        /*
+          « Je connais ma référence d'ampoule » menait à une recherche vide :
+          les packs se choisissent par véhicule et n'affichent pas de
+          référence. Le raccourci mène à la même recherche, qui trouve un
+          véhicule tapé en toutes lettres.
+        */
+        finder={{ ...blocks.vehicleBand, shortcutLabel: 'Ou tapez votre véhicule : « clio 4 veilleuses »' }}
+        vehicle={vehicle}
+      />
       <ReassuranceBand items={reperes} />
       <UniversesSection content={blocks.universes} universes={universes} />
       <ComparisonSection content={blocks.comparison} />

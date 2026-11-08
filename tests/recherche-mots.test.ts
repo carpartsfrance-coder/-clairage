@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { motsDeRecherche } from '../src/lib/recherche-mots'
+import { estUneReferenceDAmpoule, motsDeRecherche } from '../src/lib/recherche-mots'
 
 describe('mots de recherche', () => {
   it('ignore les mots vides et cherche le chiffre aussi en romain', () => {
@@ -17,5 +17,18 @@ describe('mots de recherche', () => {
   it('une référence reste un seul mot', () => {
     expect(motsDeRecherche('LUM-PK-REVE-TOYOTA')).toEqual([['lum-pk-reve-toyota']])
     expect(motsDeRecherche('H7')).toEqual([['h7']])
+  })
+})
+
+describe('estUneReferenceDAmpoule', () => {
+  it('reconnaît une référence seule', () => {
+    for (const saisie of ['h7', 'H4', 'ampoule h7', 'led W5W', 'p21w', 'kit led h11', 'HB3']) {
+      expect(estUneReferenceDAmpoule(saisie)).toBe(true)
+    }
+  })
+  it('laisse passer une recherche par véhicule', () => {
+    for (const saisie of ['golf 7', 'clio 4 veilleuses', 'h7 golf 7', 'audi a3', 't5 transporter']) {
+      expect(estUneReferenceDAmpoule(saisie)).toBe(false)
+    }
   })
 })
