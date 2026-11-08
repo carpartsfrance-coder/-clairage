@@ -1,5 +1,6 @@
 'use client'
 
+import { typeDeProduit } from '@/lib/types-produit'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -335,8 +336,18 @@ export function BuyBox({
       ) : null}
 
       {!vehicleLabel && concuPour ? (
-        <Alert tone="ok" title={`Pack composé pour le ${concuPour}.`} className="mb-5">
-          Les ampoules et les LED sont choisies pour ce véhicule.{' '}
+        <Alert
+          tone="ok"
+          title={
+            typeDeProduit(productName)
+              ? `Prévu pour le ${concuPour}.`
+              : `Pack composé pour le ${concuPour}.`
+          }
+          className="mb-5"
+        >
+          {typeDeProduit(productName)
+            ? 'Ce produit est choisi pour ce véhicule.'
+            : 'Les ampoules et les LED sont choisies pour ce véhicule.'}{' '}
           <Link href="/vehicule" className="font-semibold underline underline-offset-4">
             Indiquez votre véhicule
           </Link>{' '}

@@ -1,3 +1,4 @@
+import { typeDeProduit } from './types-produit'
 import { formatPrice } from './identity'
 
 /**
@@ -258,8 +259,13 @@ export function descriptionSeo(
       .find((texte) => texte && !/Compatibilité à vérifier avant commande/i.test(texte))
   }
 
+  // Feux additionnels, centrale, clignotants complets : ce qu'on reçoit, pas
+  // « sans modifier le câblage » (lib/types-produit.ts).
+  const type = typeDeProduit(produit.name)
   const phrases = [
-    `${intituleSeo(produit, vehicule)}, en pack prêt à monter sans modifier le câblage.`,
+    type
+      ? `${intituleSeo(produit, vehicule)}. ${type.contenu}`
+      : `${intituleSeo(produit, vehicule)}, en pack prêt à monter sans modifier le câblage.`,
   ]
   const { seuilFranchiseCents, retourJours, garantie } = conditions
   if (garantie && seuilFranchiseCents !== null) {

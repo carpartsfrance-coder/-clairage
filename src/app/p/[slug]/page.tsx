@@ -19,6 +19,7 @@ import {
 } from '@/lib/seo-fiche'
 import { commercialTerms, dureeGarantie, identity, siteConfig } from '@/lib/identity'
 import { faqFicheParDefaut } from '@/lib/faq-generale'
+import { typeDeProduit } from '@/lib/types-produit'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import {
   BreadcrumbStructuredData,
@@ -247,6 +248,8 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     comparatif dit « Effet xénon », et l'argumentaire LED n'est pas montré.
   */
   const effetXenon = estEffetXenon(product.name)
+  /** Feux additionnels, centrale, clignotants complets… (lib/types-produit.ts). */
+  const typeSpecial = typeDeProduit(product.name)
   const visuelKit = product.gallery.find((item) => item.role === 'KIT_CONTENT') ?? product.gallery[0]
 
   /*
@@ -265,7 +268,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     par défaut (compatibilité, câblage, garantie, livraison, retours) : un
     client qui hésite trouve la réponse ici plutôt qu'ailleurs.
   */
-  const questions = product.faq.length > 0 ? product.faq : await faqFicheParDefaut(concuPour)
+  const questions = product.faq.length > 0 ? product.faq : await faqFicheParDefaut(concuPour, product.name)
   const aContenuQuestions = questions.length > 0 || product.reviews.length > 0
 
   /*
@@ -305,7 +308,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const aSectionContenu = aContenuKit || aRestrictions
 
   const sections = [
-    ...(aEnBref ? [{ href: '#en-bref', label: 'Le pack en bref' }] : []),
+    ...(aEnBref ? [{ href: '#en-bref', label: typeSpecial ? 'En bref' : 'Le pack en bref' }] : []),
     ...(complementaires
       ? [{ href: '#completer', label: product.vehicleType === 'MOTORCYCLE' ? 'Toute la moto' : 'Toute la voiture' }]
       : []),
@@ -337,7 +340,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           {
             Icon: IconShield,
             titre: `Garantie ${dureeGarantie()}`,
-            texte: 'Sur toutes nos ampoules et LED',
+            texte: 'Sur tous nos produits',
           },
         ]
       : [
@@ -418,7 +421,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           <Breadcrumb items={breadcrumbItems} />
 
           {/* Masqué sur téléphone : le header mobile porte déjà le véhicule. */}
-          <VehicleBar vehicle={vehicle} concuPour={concuPour} className="mb-6 max-fiche:hidden" />
+          <VehicleBar
+            vehicle={vehicle}
+            concuPour={concuPour}
+            intitule={typeSpecial ? 'Prévu pour' : 'Pack composé pour'}
+            className="mb-6 max-fiche:hidden"
+          />
 
           {/*
             .product-hero — refonte LEDVROOM.
@@ -517,7 +525,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               >
                 <div className={cn(!comparatif && 'max-w-[760px]')}>
                   <p className="mb-3 text-[12px] font-bold tracking-[1.4px] text-brand-on-dark uppercase">
-                    Le pack en bref
+                    {typeSpecial ? 'En bref' : 'Le pack en bref'}
                   </p>
                   <h2
                     id="titre-en-bref"
@@ -574,7 +582,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 seulement pour un produit lié à un emplacement d'éclairage, et
                 jamais pour un pack d'ampoules halogènes : il parle de LED.
               */}
-              {position && !effetXenon ? (
+              {position && !effetXenon && !typeSpecial ? (
                 <div className="flex flex-col gap-8 border-t border-[#2a2d32] pt-12 fiche:grid fiche:grid-cols-[0.8fr_1.2fr] fiche:items-start fiche:gap-14">
                   <div>
                     <p className="mb-3 text-[12px] font-bold tracking-[1.4px] text-brand-on-dark uppercase">

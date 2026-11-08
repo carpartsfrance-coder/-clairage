@@ -215,6 +215,8 @@ const ZONE_PAR_EMPLACEMENT: Record<string, Exclude<Zone, 'tout'>> = {
   FOG: 'avant',
   SIDELIGHT: 'avant',
   TURN_FRONT: 'avant',
+  AUX: 'avant',
+  TURN_RELAY: 'avant',
   FOG_REAR: 'arriere',
   TURN_REAR: 'arriere',
   PLATE: 'arriere',
@@ -257,6 +259,8 @@ const SOUS_TITRE_PAR_EMPLACEMENT: Record<string, string> = {
   REVERSE: 'Éclairage en marche arrière',
   SIDELIGHT: 'Feux de position avant',
   TURN_FRONT: 'Signalisation à l’avant',
+  AUX: 'En plus des phares d’origine',
+  TURN_RELAY: 'Cadence normale avec des clignotants LED',
   FOG_REAR: 'Feu de brouillard à l’arrière',
   TURN_REAR: 'Signalisation à l’arrière',
 }

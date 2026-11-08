@@ -2,6 +2,7 @@ import 'server-only'
 import { cache } from 'react'
 import { visuelsDeLaFiche } from '../media-couverture'
 import { imagesTypes, LEGENDE_IMAGE_TYPE } from '../images-types'
+import { typeDeProduit } from '../types-produit'
 import { prisma } from '../db'
 import {
   resolveFitments,
@@ -348,7 +349,12 @@ export async function getProduct(
           .map((image) => ({
             url: image.url,
             alt: image.alt,
-            caption: image.role === 'PRODUCT' ? 'Visuel d’illustration des ampoules.' : LEGENDE_IMAGE_TYPE,
+            caption:
+              image.role === 'PRODUCT'
+                ? typeDeProduit(product.name)
+                  ? 'Visuel d’illustration du produit.'
+                  : 'Visuel d’illustration des ampoules.'
+                : LEGENDE_IMAGE_TYPE,
             role: image.role,
             thumbLabel: THUMB_LABELS[image.role],
             nature: 'ILLUSTRATION' as const,
