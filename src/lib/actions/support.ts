@@ -6,6 +6,8 @@ import { getCurrentUser } from '../auth/session'
 import { throttle, throttleMessage } from '../auth/throttle'
 import { nextOrderReference } from '../stock-reservation'
 import { buildContactDescription, contactSchema, contactSubjectLabel } from '../support'
+import { emailIsSimulated, sendEmail } from '../email'
+import { identity } from '../identity'
 
 /**
  * Demande de vérification de compatibilité.
@@ -149,13 +151,14 @@ export async function requestFitmentCheck(
       return numero
     })
 
-    /*
-      Aucun e-mail n'est envoyé ici. L'expédition réelle n'est pas encore
-      activée sur cet environnement, et une confirmation qui annoncerait un
-      message parti serait fausse. La demande, elle, est bien enregistrée : le
-      retour le dit, et donne la référence pour la suivre.
-    */
-    return { reference, withoutEmail: true }
+    const envoye = await prevenir({
+      reference,
+      email,
+      subject: 'Vérification de compatibilité',
+      description,
+      orderReference: null,
+    })
+    return { reference, withoutEmail: !envoye }
   } catch (error) {
     console.error('[sav] demande de vérification impossible', error)
     return { error: "La demande n'a pas pu être enregistrée. Réessayez dans un instant." }
@@ -296,16 +299,64 @@ export async function requestContact(
       return numero
     })
 
-    /*
-      Aucun e-mail n'est expédié ici — ni au client, ni à l'équipe. L'envoi réel
-      n'est pas activé sur cet environnement, et annoncer un accusé de réception
-      qui n'existe pas serait un mensonge de plus à réparer plus tard. La
-      demande, elle, est bien enregistrée : le retour le dit et donne sa
-      référence.
-    */
-    return { reference, withoutEmail: true }
+    const envoye = await prevenir({
+      reference,
+      email,
+      subject: contactSubjectLabel(subject),
+      description,
+      orderReference: order?.reference ?? null,
+    })
+    return { reference, withoutEmail: !envoye }
   } catch (error) {
     console.error('[sav] prise de contact impossible', error)
     return { error: "La demande n'a pas pu être enregistrée. Réessayez dans un instant." }
   }
+}
+
+/**
+ * Accusé de réception au client, et alerte à l'équipe.
+ *
+ * Jusqu'ici, aucune demande ne partait par e-mail : l'envoi n'était pas
+ * configuré. Il l'est en production, et la page de contact disait encore au
+ * client qu'il ne recevrait rien — sur un site qu'il ne connaît pas, c'est
+ * une raison de ne pas acheter. Quand l'envoi reste simulé (développement),
+ * rien ne part et le retour le dit, comme avant.
+ *
+ * Un envoi en échec ne fait jamais échouer la demande : elle est enregistrée,
+ * et l'équipe la voit dans le back-office.
+ */
+async function prevenir(demande: {
+  reference: string
+  email: string
+  subject: string
+  description: string
+  orderReference: string | null
+}): Promise<boolean> {
+  if (emailIsSimulated()) return false
+  try {
+    await sendEmail({
+      template: 'sav.ouverture',
+      to: demande.email,
+      subject: `${identity.name} — demande ${demande.reference} reçue`,
+      variables: { reference: demande.reference, orderReference: demande.orderReference ?? '' },
+    })
+  } catch (error) {
+    console.error('[sav] accusé de réception non envoyé', error)
+    return false
+  }
+  if (identity.contact.email) {
+    await sendEmail({
+      template: 'equipe.demande',
+      to: identity.contact.email,
+      subject: `Nouvelle demande ${demande.reference} — ${demande.subject}`,
+      variables: {
+        reference: demande.reference,
+        subject: demande.subject,
+        email: demande.email,
+        orderReference: demande.orderReference ?? '',
+        message: demande.description,
+      },
+    }).catch((error) => console.error('[sav] alerte équipe non envoyée', error))
+  }
+  return true
 }

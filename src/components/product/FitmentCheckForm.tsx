@@ -52,7 +52,12 @@ export function FitmentCheckForm({
             environnement : aucun accusé de réception ne vous a été expédié. Notez cette
             référence pour la suite.
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-2">
+            Un accusé de réception vient de vous être envoyé par e-mail. Nous vous répondons à
+            cette même adresse.
+          </p>
+        )}
         <p className="mt-2">
           <Link href="/" className="font-semibold underline underline-offset-4">
             Revenir à l&apos;accueil

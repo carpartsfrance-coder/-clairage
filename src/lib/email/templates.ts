@@ -29,6 +29,7 @@ export type TemplateKey =
   | 'sav.reponse'
   | 'sav.retour'
   | 'stock.retour'
+  | 'equipe.demande'
 
 export type RenderedEmail = { subject: string; html: string; text: string }
 
@@ -387,6 +388,41 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
       reference: 'SAV-2026-0007',
       orderReference: 'CMD-2026-00042',
       returnAddress: "Adresse de retour à renseigner dans les paramètres de la boutique.",
+    },
+  },
+
+  /*
+    Pour l'équipe, pas pour le client : sans lui, une demande déposée sur le
+    site n'était visible qu'en ouvrant le back-office, et un client pouvait
+    attendre des jours une réponse que personne ne savait devoir donner.
+  */
+  'equipe.demande': {
+    key: 'equipe.demande',
+    label: 'Nouvelle demande client (équipe)',
+    trigger:
+      "À chaque demande déposée sur le site (contact, vérification de compatibilité). Envoyé à l'adresse de contact de la boutique.",
+    subject: (vars) => `Nouvelle demande ${str(vars, 'reference')} — ${str(vars, 'subject')}`,
+    preheader: (vars) => `De ${str(vars, 'email')}`,
+    blocks: (vars) => [
+      {
+        type: 'facts',
+        rows: [
+          ['Référence', str(vars, 'reference')],
+          ['Sujet', str(vars, 'subject')],
+          ['Client', str(vars, 'email')],
+          ...(str(vars, 'orderReference')
+            ? ([['Commande', str(vars, 'orderReference')]] as Array<[string, string]>)
+            : []),
+        ],
+      },
+      { type: 'paragraph', text: str(vars, 'message') },
+      { type: 'button', label: 'Ouvrir la demande', href: `${siteConfig.url}/admin/sav` },
+    ],
+    sample: {
+      reference: 'SAV-2026-0007',
+      subject: 'Question sur un produit',
+      email: 'client@exemple.fr',
+      message: 'Bonjour, le pack veilleuses convient-il à ma Clio 4 phase 2 ?',
     },
   },
 }
