@@ -37,9 +37,10 @@ describe('images types par emplacement', () => {
     expect(couvertureType({ slug: 'pack-led-phares-bmw-e90', name: 'Pack ampoules effet xénon phares' })?.url).toBe('/images-types/produit-effet-xenon.webp')
   })
 
-  it('pas pour la moto', () => {
-    expect(imagesTypes({ slug: 'pack-led-phares-kawasaki-z750', name: 'x', vehicleType: 'MOTORCYCLE' })).toEqual([])
-    expect(couvertureType({ slug: 'pack-led-phares-kawasaki-z750', name: 'x', vehicleType: 'MOTORCYCLE' })).toBeNull()
+  it('moto : seulement la photo des ampoules, jamais une voiture', () => {
+    const moto = { slug: 'pack-led-phares-kawasaki-z750', name: 'Pack LED phares', vehicleType: 'MOTORCYCLE' }
+    expect(imagesTypes(moto).map((i) => i.url)).toEqual(['/images-types/produit-led-haute-puissance.webp'])
+    expect(couvertureType(moto)?.url).toBe('/images-types/produit-led-haute-puissance.webp')
   })
 
   it("Google Shopping : jamais d'image avec du texte, la photo produit d'abord", () => {
