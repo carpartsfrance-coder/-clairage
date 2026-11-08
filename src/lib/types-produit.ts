@@ -214,7 +214,7 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
     ['kit-led-mini', /^(Kit ampoule LED taille mini|Ampoule LED phare) /, 'produit-led-moto'],
     ['led-stop', /^(Ampoule LED feu stop|Pack ampoules LED feux stop) /, 'produit-led-stop'],
     ['ampoules-xenon', /^Ampoules xénon d’origine /, 'produit-ampoule-xenon'],
-    ['led-xenon', /^Ampoules LED pour phares xénon /, 'produit-led-xenon'],
+    ['led-xenon', /^Ampoules LED pour phares xénon /, 'produit-led-xenon', 'Ampoules LED pour phares xénon'],
     ['repetiteurs-ampoules', /^Pack LED répétiteurs latéraux /, 'produit-led-orange', 'Ampoules LED de répétiteurs'],
     ['compteur', /^Kit LED compteur /, 'produit-led-compteur'],
   ].map(([cle, prefixe, image, libelle]) => ({
