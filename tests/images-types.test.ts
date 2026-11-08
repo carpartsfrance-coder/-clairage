@@ -18,6 +18,11 @@ describe('images types par emplacement', () => {
     ])
   })
 
+  it("pas de route de nuit pour les antibrouillards ni pour l'effet xénon", () => {
+    expect(imagesTypes({ slug: 'pack-led-antibrouillards-audi-a3', name: 'Pack LED antibrouillards' })[2].url).toBe('/images-types/antibrouillards-apres.webp')
+    expect(imagesTypes({ slug: 'pack-led-phares-bmw-e90', name: 'Pack ampoules effet xénon phares' })[2].url).toBe('/images-types/phares-apres.webp')
+  })
+
   it("effet xénon : la photo des ampoules halogènes, pas des LED", () => {
     const images = imagesTypes({ slug: 'pack-led-phares-bmw-serie-3-e90-e91', name: 'Pack ampoules effet xénon phares pour BMW Serie 3' })
     expect(images[1].url).toBe('/images-types/produit-effet-xenon.webp')

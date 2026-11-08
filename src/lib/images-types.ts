@@ -60,7 +60,7 @@ function visuelDe(emplacement: Emplacement): Exclude<Emplacement, 'feux-de-route
 }
 
 function photoProduit(emplacement: Emplacement, nom: string): string {
-  if (/effet\s+x[ée]non/i.test(nom)) return 'produit-effet-xenon'
+  if (estEffetXenon(nom)) return 'produit-effet-xenon'
   switch (emplacement) {
     case 'phares':
     case 'antibrouillards':
@@ -78,7 +78,16 @@ function photoProduit(emplacement: Emplacement, nom: string): string {
   }
 }
 
-const ECLAIRE_LA_ROUTE: Emplacement[] = ['phares', 'antibrouillards', 'feux-de-route']
+/*
+  La route de nuit (halogène contre LED, faisceau qui porte loin) ne vaut que
+  pour des phares LED : croisement et route. Ni pour les antibrouillards, qui
+  n'éclairent pas la route de cette façon, ni pour l'effet xénon, qui blanchit
+  la lumière sans la porter aussi loin — l'image promettrait plus que le
+  produit (remarque de l'exploitant, 8 novembre 2026). Ailleurs, c'est le gros
+  plan « après » de l'emplacement.
+*/
+const ECLAIRE_LA_ROUTE: Emplacement[] = ['phares', 'feux-de-route']
+const estEffetXenon = (nom: string) => /effet\s+x[ée]non/i.test(nom)
 
 export type ImageType = {
   url: string
@@ -103,7 +112,7 @@ export function imagesTypes(produit: ProduitMinimal): ImageType[] {
       role: 'PRODUCT',
       sansTexte: true,
     },
-    ECLAIRE_LA_ROUTE.includes(emplacement)
+    ECLAIRE_LA_ROUTE.includes(emplacement) && !estEffetXenon(produit.name)
       ? { url: `${DOSSIER}/route-nuit.webp`, alt, role: 'RESULT', sansTexte: false }
       : { url: `${DOSSIER}/${visuel}-apres.webp`, alt, role: 'RESULT', sansTexte: true },
   ]
