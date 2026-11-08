@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/auth/session'
 import { identity } from '@/lib/identity'
+import { emailIsSimulated } from '@/lib/email'
 import { CONTACT_SUBJECTS, type ContactSubjectKey } from '@/lib/support'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { ContactForm } from '@/components/support/ContactForm'
@@ -82,12 +83,20 @@ export default async function ContactPage({ searchParams }: PageProps) {
               Ce qui se passe ensuite
             </h2>
 
-            <p className="mt-3 text-[11px] leading-[1.8] text-[#7a7a7a]">
-              Votre demande est enregistrée et apparaît dans la file de l&apos;équipe avec sa
-              référence. L&apos;envoi automatique d&apos;e-mails n&apos;est pas encore activé sur
-              cet environnement : vous ne recevrez pas d&apos;accusé de réception, et aucun délai
-              de réponse ne vous est promis ici.
-            </p>
+            {emailIsSimulated() ? (
+              <p className="mt-3 text-[11px] leading-[1.8] text-[#7a7a7a]">
+                Votre demande est enregistrée et apparaît dans la file de l&apos;équipe avec sa
+                référence. L&apos;envoi automatique d&apos;e-mails n&apos;est pas encore activé sur
+                cet environnement : vous ne recevrez pas d&apos;accusé de réception, et aucun délai
+                de réponse ne vous est promis ici.
+              </p>
+            ) : (
+              <p className="mt-3 text-[11px] leading-[1.8] text-[#7a7a7a]">
+                Votre demande reçoit une référence et vous recevez aussitôt un accusé de réception
+                par e-mail. Un membre de l&apos;équipe la lit et vous répond par e-mail, à
+                l&apos;adresse indiquée.
+              </p>
+            )}
 
             {coordonnees.length > 0 ? (
               <dl className="mt-4 text-[12px]">
