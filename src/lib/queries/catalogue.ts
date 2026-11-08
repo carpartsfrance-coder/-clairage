@@ -1,4 +1,5 @@
 import 'server-only'
+import { motsDeRecherche } from '../recherche-mots'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '../db'
 import { lectureCatalogue } from '../cache-catalogue'
@@ -274,13 +275,34 @@ function buildWhere(
 
   if (filters.query) {
     const q = filters.query.trim()
-    clause.OR = [
-      { name: { contains: q, mode: 'insensitive' } },
-      { tagline: { contains: q, mode: 'insensitive' } },
-      { description: { contains: q, mode: 'insensitive' } },
-      { bulbBase: { contains: q, mode: 'insensitive' } },
-      { variants: { some: { sku: { contains: q, mode: 'insensitive' } } } },
+    const champs = (texte: string): Prisma.ProductWhereInput[] => [
+      { name: { contains: texte, mode: 'insensitive' } },
+      { tagline: { contains: texte, mode: 'insensitive' } },
+      { description: { contains: texte, mode: 'insensitive' } },
+      { bulbBase: { contains: texte, mode: 'insensitive' } },
+      { variants: { some: { sku: { contains: texte, mode: 'insensitive' } } } },
     ]
+    // Chaque mot utile doit se trouver dans la fiche, dans n'importe quel
+    // ordre (lib/recherche-mots.ts) ; sans mot utile, la phrase entière.
+    const mots = motsDeRecherche(q)
+    if (mots.length > 0) {
+      // Un nombre ou un mot très court (« 4 », « 308 », « H7 ») ne se cherche
+      // que dans le nom et le culot : ailleurs, il se retrouvait dans toutes
+      // les références (SKU) et les descriptions.
+      const court = (texte: string) => /^\s?[\p{N}IVX]+$/iu.test(texte) || texte.trim().length <= 3
+      clause.AND = mots.map((variantes) => ({
+        OR: variantes.flatMap((texte) =>
+          court(texte)
+            ? [
+                { name: { contains: texte, mode: 'insensitive' as const } },
+                { bulbBase: { contains: texte, mode: 'insensitive' as const } },
+              ]
+            : champs(texte),
+        ),
+      }))
+    } else {
+      clause.OR = champs(q)
+    }
   }
 
   if (filters.vehicleType) clause.vehicleType = { in: [filters.vehicleType, 'BOTH'] }
