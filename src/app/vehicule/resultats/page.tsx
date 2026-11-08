@@ -20,6 +20,7 @@ import { cartesDesResultats, phaseUtile, type GroupeResultat } from '@/lib/resul
 import { totalDesCartes } from '@/lib/packs-vue'
 import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
 import { BarreVehicule } from '@/components/vehicule/BarreVehicule'
+import { PromessesAchat } from '@/components/confiance/PromessesAchat'
 import { EclairagesParZone } from '@/components/vehicule/EclairagesParZone'
 import { TotalEclairage } from '@/components/vehicule/TotalEclairage'
 
@@ -356,6 +357,8 @@ export default async function Page() {
         </p>
       )}
 
+      {cartes.length > 0 ? <PromessesAchat className="mt-3" /> : null}
+
       {groups === null ? (
         <Alert
           tone="danger"
@@ -461,10 +464,6 @@ export default async function Page() {
                       confirmation, et ce n&apos;est pas un refus.{' '}
                       <strong className="text-slate-ink">Incompatible</strong> : le produit ne
                       convient pas à cette configuration.
-                    </p>
-                    <p className="mt-2">
-                      La compatibilité de montage ne préjuge pas de l&apos;homologation routière :
-                      elle est indiquée séparément sur chaque fiche produit.
                     </p>
                   </div>
                 </details>

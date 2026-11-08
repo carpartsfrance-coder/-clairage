@@ -24,6 +24,8 @@ import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
 import { BarreVehicule } from '@/components/vehicule/BarreVehicule'
 import { EclairagesParZone } from '@/components/vehicule/EclairagesParZone'
 import { TotalEclairage } from '@/components/vehicule/TotalEclairage'
+import { PromessesAchat } from '@/components/confiance/PromessesAchat'
+import { dureeGarantie } from '@/lib/identity'
 
 type PageProps = {
   params: Promise<{ type: string; marque: string; modele: string; generation: string }>
@@ -78,9 +80,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const data = lecture.data
+  const emplacements = [...new Set(data.groups.map((groupe) => groupe.label))]
   return {
     title: `Éclairage ${data.makeName} ${data.generationName} ${data.years}`,
-    description: `Les éclairages documentés pour ${data.makeName} ${data.generationName} (${data.years}).`,
+    description: [
+      emplacements.length > 0
+        ? `Packs LED pour ${data.makeName} ${data.generationName} (${data.years}) : ${emplacements.slice(0, 5).join(', ').toLowerCase()}${emplacements.length > 5 ? '…' : '.'}`
+        : `Éclairage LED pour ${data.makeName} ${data.generationName} (${data.years}).`,
+      'Composés pour votre véhicule, à monter à la place des ampoules d’origine.',
+      dureeGarantie() ? `Garantie ${dureeGarantie()}.` : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
     alternates: { canonical: `/packs/${type}/${marque}/${modele}/${generation}` },
   }
 }
@@ -184,6 +195,8 @@ export default async function PacksGenerationPage({ params }: PageProps) {
         <p className="mt-2 text-[12px] text-muted-strong">{data.phase}</p>
       ) : null}
 
+      {totalProduits > 0 ? <PromessesAchat className="mt-3" /> : null}
+
       {/*
         L'avertissement qui empêche cette page de mentir.
 
@@ -285,10 +298,26 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                     Cette page montre ce qui est documenté pour la génération. Indiquez votre
                     équipement d&apos;origine pour que les compatibilités valent pour votre
                     véhicule : un phare halogène et un xénon n&apos;acceptent pas les mêmes
-                    pièces. La compatibilité de montage ne préjuge pas de l&apos;homologation
-                    routière, indiquée séparément sur chaque fiche produit.
+                    pièces. En cas de doute, écrivez-nous avec le modèle exact : nous
+                    vérifions avant l&apos;envoi.
                   </p>
                 </details>
+                {dureeGarantie() ? (
+                  <details className="border-b border-line">
+                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-bold marker:content-none">
+                      Et si une ampoule tombe en panne ?
+                      <IconChevronDown className="size-4 shrink-0" />
+                    </summary>
+                    <p className="pr-2.5 pb-3 text-[13px] text-muted-strong">
+                      Tous nos produits sont garantis {dureeGarantie()} à compter de la
+                      livraison : écrivez-nous avec votre numéro de commande, nous remplaçons
+                      le produit à nos frais.{' '}
+                      <Link href="/garanties" className="font-bold text-slate-ink underline underline-offset-4">
+                        Voir la garantie
+                      </Link>
+                    </p>
+                  </details>
+                ) : null}
               </div>
             </div>
           </section>
