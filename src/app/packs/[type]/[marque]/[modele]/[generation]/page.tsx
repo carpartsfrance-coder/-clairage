@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
+import { generationRenommee } from '@/lib/queries/adresses-renommees'
 import {
   LIBELLE_PAR_CHEMIN,
   TYPE_PAR_CHEMIN,
@@ -115,7 +116,12 @@ export default async function PacksGenerationPage({ params }: PageProps) {
     véhicule dont la fiche n'a pas été lue.
   */
   if (lecture.state === 'unavailable') return <PackReadFailure type={type} libelle={libelle} />
-  if (lecture.state === 'absent') notFound()
+  if (lecture.state === 'absent') {
+    // Adresse renommée (« -photo-manquante » retiré) : renvoi permanent.
+    const renommee = await generationRenommee({ type, marque, modele, generation })
+    if (renommee) permanentRedirect(renommee)
+    notFound()
+  }
 
   const data = lecture.data
   const cartes = cartesDesPacks(data.groups)
