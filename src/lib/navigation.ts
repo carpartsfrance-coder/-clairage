@@ -98,6 +98,7 @@ export const footerNav: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Informations',
     items: [
+      { label: 'Qui sommes-nous', href: '/a-propos' },
       { label: 'Mentions légales', href: '/mentions-legales' },
       { label: 'Conditions générales de vente', href: '/cgv' },
       { label: 'Confidentialité', href: '/confidentialite' },

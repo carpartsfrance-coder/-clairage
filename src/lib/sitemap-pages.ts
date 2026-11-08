@@ -18,6 +18,7 @@ export const STATIC_PAGES: Array<{ path: string; priority: number; changeFrequen
   // questions. Déclarer une redirection dans un plan de site est une erreur
   // que Google signale.
   { path: '/aide', priority: 0.4, changeFrequency: 'monthly' },
+  { path: '/a-propos', priority: 0.4, changeFrequency: 'yearly' },
   { path: '/contact', priority: 0.4, changeFrequency: 'yearly' },
   { path: '/livraison-retours', priority: 0.4, changeFrequency: 'monthly' },
   { path: '/guides', priority: 0.4, changeFrequency: 'monthly' },
