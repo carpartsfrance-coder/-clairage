@@ -2,7 +2,13 @@ import { prisma } from '@/lib/db'
 import { identity, siteConfig } from '@/lib/identity'
 import { availabilityForKit, availabilityForVariant } from '@/lib/stock'
 import { getOffresParPays } from '@/lib/shipping'
-import { construireFlux, type ArticleFlux } from '@/lib/flux-google'
+import {
+  PIED_FLUX,
+  enteteFlux,
+  lignesDeLArticle,
+  type ArticleFlux,
+  type TarifPays,
+} from '@/lib/flux-google'
 import { imagesTypesPourLeFlux } from '@/lib/images-types'
 
 export const dynamic = 'force-dynamic'
@@ -17,102 +23,119 @@ export const dynamic = 'force-dynamic'
  * Mêmes barrières que le plan de site : produits publiés, hors démonstration,
  * et rien du tout tant que le site est en préproduction.
  */
+/** Lecture par paquets : 30 000 fiches lues d'un coup faisaient tomber le serveur. */
+const PAQUET = 500
+
+const SELECTION = {
+  id: true,
+  slug: true,
+  name: true,
+  tagline: true,
+  description: true,
+  brand: true,
+  vehicleType: true,
+  categories: {
+    orderBy: { position: 'asc' as const },
+    take: 1,
+    select: { category: { select: { name: true, parent: { select: { name: true } } } } },
+  },
+  media: {
+    where: { role: { in: ['RESULT', 'PRODUCT', 'KIT_CONTENT'] as Array<'RESULT' | 'PRODUCT' | 'KIT_CONTENT'> } },
+    orderBy: { position: 'asc' as const },
+    select: { role: true, media: { select: { url: true } } },
+  },
+  variants: {
+    where: { active: true, isDemo: false },
+    orderBy: { position: 'asc' as const },
+    select: {
+      sku: true,
+      name: true,
+      priceCents: true,
+      stockOnHand: true,
+      stockReserved: true,
+      lowStockThreshold: true,
+      backorder: true,
+      components: {
+        select: {
+          quantity: true,
+          required: true,
+          component: {
+            select: {
+              sku: true,
+              name: true,
+              stockOnHand: true,
+              stockReserved: true,
+              lowStockThreshold: true,
+              backorder: true,
+            },
+          },
+        },
+      },
+    },
+  },
+}
+
+type ProduitLu = Awaited<ReturnType<typeof lirePaquet>>[number]
+
+function lirePaquet(apres: string | null) {
+  return prisma.product.findMany({
+    where: { status: 'PUBLISHED', isDemo: false },
+    orderBy: { id: 'asc' },
+    take: PAQUET,
+    ...(apres ? { cursor: { id: apres }, skip: 1 } : {}),
+    select: SELECTION,
+  })
+}
+
+function versArticle(produit: ProduitLu): ArticleFlux {
+  const categorie = produit.categories[0]?.category
+  // La couverture d'abord, comme partout ailleurs sur le site : le rendu
+  // (feu allumé sur le véhicule), puis le produit, puis le contenu du kit.
+  const ordre = ['RESULT', 'PRODUCT', 'KIT_CONTENT']
+  const images = [...produit.media]
+    .sort((a, b) => ordre.indexOf(a.role) - ordre.indexOf(b.role))
+    .map((entree) => entree.media.url)
+  return {
+    slug: produit.slug,
+    name: produit.name,
+    description: produit.description ?? produit.tagline,
+    brand: produit.brand,
+    productType: categorie
+      ? categorie.parent
+        ? `${categorie.parent.name} > ${categorie.name}`
+        : categorie.name
+      : null,
+    // Sans visuel à elle, la fiche part avec ses images types sans texte
+    // (photo du produit, gros plan « après ») : Google accepte les
+    // illustrations pour les pièces de véhicules, pas le texte incrusté.
+    images: images.length > 0 ? [...new Set(images)] : imagesTypesPourLeFlux(produit),
+    variants: produit.variants.map((variante) => ({
+      sku: variante.sku,
+      name: variante.name,
+      priceCents: variante.priceCents,
+      etat: (variante.components.length > 0
+        ? availabilityForKit(variante.components)
+        : availabilityForVariant(variante)
+      ).state,
+    })),
+  }
+}
+
+/**
+ * Le flux est écrit au fil de la lecture, par paquets de 500 fiches : avec
+ * près de 30 000 fiches (catalogue « comme LedPerf », 8 novembre 2026), tout
+ * lire puis tout assembler en mémoire dépassait la mémoire du serveur, qui
+ * redémarrait — le site entier répondait 502 le temps du redémarrage.
+ */
 export async function GET() {
   if (siteConfig.demoBanner) {
     return new Response('Flux désactivé en préproduction.', { status: 404 })
   }
 
+  let tarifs: TarifPays[]
   try {
-    const [produits, offresParPays] = await Promise.all([
-      prisma.product.findMany({
-        where: { status: 'PUBLISHED', isDemo: false },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          slug: true,
-          name: true,
-          tagline: true,
-          description: true,
-          brand: true,
-          vehicleType: true,
-          categories: {
-            orderBy: { position: 'asc' },
-            take: 1,
-            select: { category: { select: { name: true, parent: { select: { name: true } } } } },
-          },
-          media: {
-            where: { role: { in: ['RESULT', 'PRODUCT', 'KIT_CONTENT'] } },
-            orderBy: { position: 'asc' },
-            select: { role: true, media: { select: { url: true } } },
-          },
-          variants: {
-            where: { active: true, isDemo: false },
-            orderBy: { position: 'asc' },
-            select: {
-              sku: true,
-              name: true,
-              priceCents: true,
-              stockOnHand: true,
-              stockReserved: true,
-              lowStockThreshold: true,
-              backorder: true,
-              components: {
-                select: {
-                  quantity: true,
-                  required: true,
-                  component: {
-                    select: {
-                      sku: true,
-                      name: true,
-                      stockOnHand: true,
-                      stockReserved: true,
-                      lowStockThreshold: true,
-                      backorder: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      }),
-      getOffresParPays(),
-    ])
-
-    const articles: ArticleFlux[] = produits.map((produit) => {
-      const categorie = produit.categories[0]?.category
-      // La couverture d'abord, comme partout ailleurs sur le site : le rendu
-      // (feu allumé sur le véhicule), puis le produit, puis le contenu du kit.
-      const ordre = ['RESULT', 'PRODUCT', 'KIT_CONTENT']
-      const images = [...produit.media]
-        .sort((a, b) => ordre.indexOf(a.role) - ordre.indexOf(b.role))
-        .map((entree) => entree.media.url)
-      return {
-        slug: produit.slug,
-        name: produit.name,
-        description: produit.description ?? produit.tagline,
-        brand: produit.brand,
-        productType: categorie
-          ? categorie.parent
-            ? `${categorie.parent.name} > ${categorie.name}`
-            : categorie.name
-          : null,
-        // Sans visuel à elle, la fiche part avec ses images types sans texte
-        // (photo des ampoules, gros plan « après ») : Google accepte les
-        // illustrations pour les pièces de véhicules, pas le texte incrusté.
-        images: images.length > 0 ? [...new Set(images)] : imagesTypesPourLeFlux(produit),
-        variants: produit.variants.map((variante) => ({
-          sku: variante.sku,
-          name: variante.name,
-          priceCents: variante.priceCents,
-          etat: (variante.components.length > 0
-            ? availabilityForKit(variante.components)
-            : availabilityForVariant(variante)
-          ).state,
-        })),
-      }
-    })
-
-    const tarifs = Object.entries(offresParPays).map(([country, offres]) => ({
+    const offresParPays = await getOffresParPays()
+    tarifs = Object.entries(offresParPays).map(([country, offres]) => ({
       country,
       modes: offres.map((offre) => ({
         label: offre.label,
@@ -120,22 +143,47 @@ export async function GET() {
         freeFromCents: offre.freeFromCents,
       })),
     }))
-
-    const { xml } = construireFlux({
-      siteUrl: siteConfig.url,
-      titre: identity.name,
-      articles,
-      tarifs,
-    })
-
-    return new Response(xml, {
-      headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600',
-      },
-    })
   } catch (error) {
     console.error('[flux google]', error)
     return new Response('Flux momentanément indisponible.', { status: 503 })
   }
+
+  const encodeur = new TextEncoder()
+  const options = { siteUrl: siteConfig.url, titre: identity.name, tarifs }
+  let apres: string | null = null
+  let debut = true
+  let fini = false
+  // `pull` : le paquet suivant n'est lu que quand le précédent est parti vers
+  // Google. La mémoire reste celle d'un seul paquet, quelle que soit la taille
+  // du catalogue.
+  const flux = new ReadableStream<Uint8Array>({
+    async pull(controleur) {
+      try {
+        if (fini) return
+        const paquet: ProduitLu[] = await lirePaquet(apres)
+        const lignes = paquet.flatMap((produit) => lignesDeLArticle(versArticle(produit), options))
+        let morceau = debut ? enteteFlux(siteConfig.url, identity.name) : ''
+        if (lignes.length > 0) morceau += (debut ? '' : '\n') + lignes.join('\n')
+        debut = false
+        if (paquet.length < PAQUET) {
+          fini = true
+          controleur.enqueue(encodeur.encode(morceau + PIED_FLUX))
+          controleur.close()
+          return
+        }
+        apres = paquet[paquet.length - 1].id
+        controleur.enqueue(encodeur.encode(morceau))
+      } catch (error) {
+        console.error('[flux google]', error)
+        controleur.error(error)
+      }
+    },
+  })
+
+  return new Response(flux, {
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    },
+  })
 }
