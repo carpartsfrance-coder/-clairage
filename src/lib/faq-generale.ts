@@ -73,3 +73,28 @@ export async function faqGeneraleParDefaut(): Promise<QuestionReponse[]> {
 
   return questions.filter((question): question is QuestionReponse => question !== null)
 }
+
+/**
+ * Questions par défaut d'une fiche produit, tant que le back-office ne lui en
+ * donne pas (`product.faq`).
+ *
+ * Sans elles, la fiche n'avait aucune section « Vos questions » : le client
+ * qui hésite repartait chercher ailleurs ce qu'il voulait savoir. Ce sont les
+ * questions générales, sauf le paiement (déjà dit dans le bloc d'achat), avec
+ * en tête la compatibilité, dite pour le véhicule de la fiche quand on le
+ * connaît. Elles ne partent pas en données structurées : le même texte sur des
+ * milliers de fiches n'apporte rien à Google.
+ */
+export async function faqFicheParDefaut(concuPour: string | null): Promise<QuestionReponse[]> {
+  const generales = await faqGeneraleParDefaut()
+  const sansPaiement = generales.filter(
+    (question) => !question.question.startsWith('Le paiement') && !question.question.startsWith('Comment être sûr'),
+  )
+  const compatibilite: QuestionReponse = concuPour
+    ? {
+        question: `Ce pack convient-il à mon véhicule ?`,
+        answer: `Il est composé pour le ${concuPour} : les ampoules et les LED correspondent aux emplacements d’origine de ce véhicule. Si le vôtre a reçu des phares différents de ceux montés en usine (xénon, LED d’origine), écrivez-nous avec le modèle exact avant de commander : nous vérifions.`,
+      }
+    : generales.find((question) => question.question.startsWith('Comment être sûr')) ?? generales[0]
+  return [compatibilite, ...sansPaiement]
+}
