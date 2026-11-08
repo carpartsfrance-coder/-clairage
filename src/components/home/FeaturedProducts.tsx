@@ -198,8 +198,8 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
               porte donc que sur ce qui reste à vérifier, la compatibilité.
             */}
             <p className="mt-3 text-[8px] leading-[1.7] text-[#969696]">
-              La compatibilité et l'homologation dépendent du véhicule et de son équipement
-              d'origine : elles sont à confirmer sur la fiche produit avant commande.
+              Chaque pack est composé pour un véhicule : la fiche indique lequel. Choisissez le vôtre
+              pour ne voir que ce qui lui correspond.
             </p>
           </>
         )}

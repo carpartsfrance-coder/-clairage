@@ -882,7 +882,8 @@ function CarteConseil({ className, bandeau = false }: { className?: string; band
         <IconHeadset className="size-5" />
       </span>
       <div className={cn('flex flex-col gap-2', bandeau && 'fiche:flex-1')}>
-        <strong className="text-[18px]">Un doute sur vos phares ?</strong>
+        {/* « vos phares » s'affichait aussi sur les packs plaque, recul ou habitacle. */}
+        <strong className="text-[18px]">Un doute avant de commander ?</strong>
         <p className="text-[14px] leading-[1.6] text-[#c9ccd1]">
           Décrivez-nous votre véhicule : un conseiller vous dit quel pack prendre, et vous aide
           jusqu’au montage.
