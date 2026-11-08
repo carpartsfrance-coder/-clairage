@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
+import { adresseDuCulot } from '@/lib/culot'
 import { prisma } from '@/lib/db'
 import { listProducts } from '@/lib/queries/catalogue'
 import { getSelectedVehicle } from '@/lib/session'
@@ -41,9 +42,8 @@ const lireCulot = cache(async function lireCulot(code: string) {
       where: { status: 'PUBLISHED', bulbBase: { not: null } },
       _count: { _all: true },
     })
-    const trouve = rows.find(
-      (row) => row.bulbBase && row.bulbBase.toLowerCase() === code.toLowerCase(),
-    )
+    const cherche = adresseDuCulot(decodeURIComponent(code))
+    const trouve = rows.find((row) => row.bulbBase && adresseDuCulot(row.bulbBase) === cherche)
     return trouve?.bulbBase ? { base: trouve.bulbBase, count: trouve._count._all } : null
   } catch (error) {
     console.error('[culot] lecture impossible', error)

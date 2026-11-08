@@ -2,6 +2,7 @@ import 'server-only'
 import { prisma } from '../db'
 import { lectureCatalogue } from '../cache-catalogue'
 import { MARQUE_VISIBLE, MODELE_VISIBLE } from './vehicules-visibles'
+import { adresseDuCulot } from '../culot'
 
 /**
  * Arborescence de navigation, construite depuis le catalogue.
@@ -257,10 +258,14 @@ async function construireNavigation(): Promise<NavSection[]> {
         count: sousTotal.produits,
       }))
 
+    // Les culots les plus fournis d'abord (H7, H4, W5W…), puis dans l'ordre
+    // naturel : par ordre alphabétique seul, H10 à H27 prenaient les dix
+    // places et H4 et H7 disparaissaient du menu.
     const culots = [...total.culots.entries()]
-      .sort(([a], [b]) => a.localeCompare(b, 'fr'))
+      .sort(([, a], [, b]) => b - a)
       .slice(0, MAX_PAR_COLONNE)
-      .map(([code, count]) => ({ label: code, href: `/culot/${code.toLowerCase()}`, count }))
+      .sort(([a], [b]) => a.localeCompare(b, 'fr', { numeric: true }))
+      .map(([code, count]) => ({ label: code, href: `/culot/${adresseDuCulot(code)}`, count }))
 
     const columns: NavColumn[] = []
     if (familles.length > 0) columns.push({ title: 'Par famille', links: familles })
