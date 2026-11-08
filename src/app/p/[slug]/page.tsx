@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, permanentRedirect, redirect } from 'next/navigation'
-import { ficheRenommee } from '@/lib/queries/adresses-renommees'
+import { ficheJumelle, ficheRenommee } from '@/lib/queries/adresses-renommees'
 import { getProduct } from '@/lib/queries/product'
 import { pageDeRepliFiche } from '@/lib/queries/repli-fiche'
 import { getSelectedVehicle } from '@/lib/session'
@@ -161,8 +161,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     // Fiche retirée de la vente (pas encore de photos, archivée…) : le
     // visiteur venu de Google arrive sur la page de son véhicule plutôt que
     // sur « Page introuvable ». Redirection temporaire : la fiche reviendra.
-    // Adresse renommée (« -photo-manquante » retiré) : renvoi permanent.
-    const renommee = apercu ? null : await ficheRenommee(slug)
+    // Adresse renommée (« -photo-manquante » retiré) ou doublon archivé :
+    // renvoi permanent.
+    const renommee = apercu ? null : ((await ficheRenommee(slug)) ?? (await ficheJumelle(slug)))
     if (renommee) permanentRedirect(renommee)
     const repli = apercu ? null : await pageDeRepliFiche(slug)
     if (repli) redirect(repli)
