@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
 import { footerNav } from '@/lib/navigation'
-import { IconHeadset, IconReturn, IconShield, IconTruck } from '@/components/ui/icons'
+import { IconHeadset, IconPin, IconReturn, IconShield, IconTruck } from '@/components/ui/icons'
 import { commercialTerms, dureeGarantie, formatPrice, identity, siteConfig } from '@/lib/identity'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { getNavigation } from '@/lib/queries/navigation'
@@ -71,6 +71,14 @@ export async function Footer() {
       ? { icon: IconReturn, text: `Retours sous ${commercialTerms.returnWindowDays} jours` }
       : null,
     { icon: IconHeadset, text: 'Assistance au choix et au montage' },
+    /*
+      Société immatriculée en France, siège à Nice (identity.legal) : sur une
+      boutique qu'il ne connaît pas, c'est une des premières choses que le
+      client cherche en bas de page.
+    */
+    legal.companyName && legal.city
+      ? { icon: IconPin, text: `Société française, basée à ${legal.city}` }
+      : null,
   ].filter((promise): promise is { icon: typeof IconTruck; text: string } => promise !== null)
 
   return (
