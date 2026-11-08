@@ -58,3 +58,41 @@ export async function generationRenommee(chemin: {
     return null
   }
 }
+
+/**
+ * Fiche archivée comme doublon (migration 20261108200000) : renvoi permanent
+ * vers la fiche gardée — même nom, même véhicule, toujours en ligne. Null
+ * pour toute autre fiche archivée ou retirée.
+ */
+export async function ficheJumelle(slug: string): Promise<string | null> {
+  try {
+    const archivee = await prisma.product.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        variants: { select: { fitments: { select: { configurationId: true } } } },
+      },
+    })
+    if (!archivee || archivee.status !== 'ARCHIVED') return null
+    const configurations = [
+      ...new Set(archivee.variants.flatMap((variante) => variante.fitments.map((f) => f.configurationId))),
+    ]
+    if (configurations.length === 0) return null
+    const jumelle = await prisma.product.findFirst({
+      where: {
+        id: { not: archivee.id },
+        name: archivee.name,
+        status: 'PUBLISHED',
+        isDemo: false,
+        variants: { some: { fitments: { some: { configurationId: { in: configurations } } } } },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { slug: true },
+    })
+    return jumelle ? `/p/${jumelle.slug}` : null
+  } catch {
+    return null
+  }
+}
