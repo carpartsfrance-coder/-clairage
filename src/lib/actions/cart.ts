@@ -1,7 +1,7 @@
 'use server'
 
 import { cookies } from 'next/headers'
-import { revalidatePath } from 'next/cache'
+import { refresh } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '../db'
 import { CART_COOKIE, VEHICLE_COOKIE } from '../session'
@@ -143,7 +143,13 @@ export async function addToCart(input: unknown): Promise<CartActionResult> {
     await prisma.cart.update({ where: { id: cart.id }, data: { updatedAt: new Date() } })
     const itemCount = await countItems(cart.id)
 
-    revalidatePath('/', 'layout')
+    // `refresh()` et non `revalidatePath('/', 'layout')` : la seconde vidait
+    // le cache partagé du catalogue (menu, accueil, pages véhicule) à chaque
+    // ajout au panier, pour tous les visiteurs. La page suivante relisait
+    // tout dans la base : 12 à 15 s, bouton « Ajout en cours… » compris
+    // (mesuré le 8 novembre 2026). Le panier et l'en-tête sont lus en direct ;
+    // il suffit de rafraîchir la page du client.
+    refresh()
     return {
       ok: true,
       itemCount,
@@ -246,7 +252,7 @@ export async function updateCartLine(input: unknown): Promise<CartActionResult> 
         where: { cartId: line.cartId, OR: [{ id: lineId }, { requiredBy: line.variantId }] },
       })
       const itemCount = await countItems(line.cartId)
-      revalidatePath('/', 'layout')
+      refresh()
       return { ok: true, itemCount }
     }
 
@@ -257,7 +263,7 @@ export async function updateCartLine(input: unknown): Promise<CartActionResult> 
     await prisma.cartLine.update({ where: { id: lineId }, data: { quantity: granted } })
     const itemCount = await countItems(line.cartId)
 
-    revalidatePath('/', 'layout')
+    refresh()
     return {
       ok: true,
       itemCount,
