@@ -275,12 +275,23 @@ function buildWhere(
 
   if (filters.query) {
     const q = filters.query.trim()
+    /*
+      La référence (SKU) n'est cherchée que si la saisie y ressemble
+      (« LUM-PK-HEAD-…-1683 ») : c'était la partie la plus lente de chaque
+      recherche (toute la table des variantes relue pour chaque mot, sans index
+      possible), pour des mots — marque, modèle, emplacement — que le nom de la
+      fiche porte déjà. Les quatre champs restants ont un index trigrammes
+      (migration 20261108230000).
+    */
+    const referenceSaisie = /^[\p{L}\p{N}]+(-[\p{L}\p{N}]+)+$/u.test(q) && /\d/.test(q)
     const champs = (texte: string): Prisma.ProductWhereInput[] => [
       { name: { contains: texte, mode: 'insensitive' } },
       { tagline: { contains: texte, mode: 'insensitive' } },
       { description: { contains: texte, mode: 'insensitive' } },
       { bulbBase: { contains: texte, mode: 'insensitive' } },
-      { variants: { some: { sku: { contains: texte, mode: 'insensitive' } } } },
+      ...(referenceSaisie
+        ? [{ variants: { some: { sku: { contains: texte, mode: 'insensitive' as const } } } }]
+        : []),
     ]
     // Chaque mot utile doit se trouver dans la fiche, dans n'importe quel
     // ordre (lib/recherche-mots.ts) ; sans mot utile, la phrase entière.
