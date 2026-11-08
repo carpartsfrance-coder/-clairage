@@ -19,7 +19,7 @@ import {
 } from '@/lib/seo-fiche'
 import { commercialTerms, dureeGarantie, identity, siteConfig } from '@/lib/identity'
 import { faqFicheParDefaut } from '@/lib/faq-generale'
-import { typeDeProduit } from '@/lib/types-produit'
+import { typeHorsAmpoules } from '@/lib/types-produit'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import {
   BreadcrumbStructuredData,
@@ -249,7 +249,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   */
   const effetXenon = estEffetXenon(product.name)
   /** Feux additionnels, centrale, clignotants complets… (lib/types-produit.ts). */
-  const typeSpecial = typeDeProduit(product.name)
+  const typeSpecial = typeHorsAmpoules(product.name)
   const visuelKit = product.gallery.find((item) => item.role === 'KIT_CONTENT') ?? product.gallery[0]
 
   /*

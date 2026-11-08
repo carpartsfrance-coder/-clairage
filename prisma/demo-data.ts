@@ -41,6 +41,8 @@ export const demoLightPositions = [
   { code: 'TURN_REAR', label: 'Clignotants arrière', family: 'TURN_SIGNAL', defaultQty: 2, position: 10 },
   { code: 'AUX', label: 'Feux additionnels', family: 'HEADLIGHT', defaultQty: 2, position: 11 },
   { code: 'TURN_RELAY', label: 'Centrale de clignotants', family: 'TURN_SIGNAL', defaultQty: 1, position: 12 },
+  { code: 'STOP', label: 'Feux stop', family: 'REVERSE', defaultQty: 2, position: 13 },
+  { code: 'DASH', label: 'Compteur et tableau de bord', family: 'INTERIOR', defaultQty: 1, position: 14 },
 ] as const
 
 /**

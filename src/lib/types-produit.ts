@@ -23,6 +23,8 @@
 
 export type TypeDeProduit = {
   cle: string
+  /** Ce que c'est, en quelques mots, pour la carte de la page du véhicule. */
+  libelle?: string
   /** Le début du nom de la fiche. */
   prefixe: RegExp
   /** Fichier de `public/images-types/`, sans extension. */
@@ -31,11 +33,18 @@ export type TypeDeProduit = {
   contenu: string
   /** Réponse à « Faut-il modifier le câblage ? ». */
   cablage: string
+  /**
+   * Vrai pour des ampoules (kits LED de phares, ampoules xénon, feux stop…) :
+   * seule la photo change ; le texte, les questions et la description Google
+   * restent ceux d'un pack d'ampoules.
+   */
+  ampoules?: boolean
 }
 
 export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
   {
     cle: 'feux-additionnels',
+    libelle: 'Feux LED antibrouillard et longue portée',
     prefixe: /^Feux LED antibrouillard et longue portée /,
     image: 'produit-feux-additionnels',
     contenu:
@@ -45,6 +54,7 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
   },
   {
     cle: 'phares-additionnels',
+    libelle: 'Phares additionnels LED',
     prefixe: /^Phares additionnels LED /,
     image: 'produit-phares-additionnels',
     contenu:
@@ -54,6 +64,7 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
   },
   {
     cle: 'optiques-led',
+    libelle: 'Optiques LED pour phares additionnels',
     prefixe: /^Optiques LED pour phares additionnels /,
     image: 'produit-optiques-led',
     contenu: 'Des optiques LED à la place de celles des phares additionnels d’origine.',
@@ -61,7 +72,18 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
       'Non : les optiques LED prennent la place de celles des phares additionnels d’origine et se branchent sur leur prise.',
   },
   {
+    cle: 'boitier-phare-rond-chrome',
+    libelle: 'Boîtier de phare rond chromé',
+    prefixe: /^Boîtier de phare rond chromé /,
+    image: 'produit-phare-rond-chrome',
+    contenu:
+      'Le boîtier de phare rond chromé qui reçoit une optique LED de 7 pouces (optique non fournie).',
+    cablage:
+      'Le boîtier se fixe à la place du phare d’origine ; l’optique LED de 7 pouces, vendue à part, se branche sur la prise du phare.',
+  },
+  {
     cle: 'boitier-phare-rond',
+    libelle: 'Boîtier de phare rond noir',
     prefixe: /^Boîtier de phare rond /,
     image: 'produit-phare-rond',
     contenu:
@@ -71,6 +93,7 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
   },
   {
     cle: 'centrale-clignotants',
+    libelle: 'Centrale de clignotants LED',
     prefixe: /^Centrale de clignotants LED /,
     image: 'produit-centrale-clignotants',
     contenu:
@@ -80,6 +103,7 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
   },
   {
     cle: 'clignotants-sequentiels',
+    libelle: 'Clignotants séquentiels LED',
     prefixe: /^Clignotants séquentiels LED /,
     image: 'produit-clignotants-sequentiels',
     contenu:
@@ -89,6 +113,7 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
   },
   {
     cle: 'clignotants-retroviseurs',
+    libelle: 'Clignotants LED de rétroviseurs',
     prefixe: /^Clignotants dynamiques LED de rétroviseurs /,
     image: 'produit-clignotants-retroviseurs',
     contenu:
@@ -98,6 +123,7 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
   },
   {
     cle: 'repetiteurs',
+    libelle: 'Répétiteurs latéraux dynamiques LED',
     prefixe: /^Répétiteurs latéraux dynamiques LED /,
     image: 'produit-repetiteurs',
     contenu:
@@ -105,11 +131,112 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
     cablage:
       'Non : ils se clipsent à la place des répétiteurs d’origine et se branchent sur la prise d’origine.',
   },
+  {
+    cle: 'modules-plaque',
+    libelle: 'Modules LED de plaque',
+    prefixe: /^Modules LED de plaque /,
+    image: 'produit-modules-plaque',
+    contenu: 'Les boîtiers d’éclairage de plaque complets, à LED, à la place de ceux d’origine.',
+    cablage:
+      'Non : les modules se clipsent à la place des boîtiers de plaque d’origine et se branchent sur la même prise.',
+  },
+  {
+    cle: 'clignotants-feux-stop',
+    libelle: 'Clignotants dynamiques + feux stop',
+    prefixe: /^Clignotants dynamiques LED \+ feux stop /,
+    image: 'produit-clignotants-feux-stop',
+    contenu: 'Une paire de clignotants LED à défilement avec feu arrière et feu stop intégrés.',
+    cablage:
+      'Ils se montent à la place des clignotants arrière d’origine et se branchent sur les fils des clignotants et du feu stop ; les modules fournis évitent le clignotement rapide.',
+  },
+  {
+    cle: 'clignotants-feux-de-jour',
+    libelle: 'Clignotants dynamiques + feux de jour',
+    prefixe: /^Clignotants dynamiques LED \+ feux de jour /,
+    image: 'produit-clignotants-feux-de-jour',
+    contenu: 'Une paire de clignotants LED à défilement avec une bande blanche de feu de jour.',
+    cablage:
+      'Ils se montent à la place des clignotants avant d’origine ; la bande blanche se branche sur les feux de position, et les modules fournis évitent le clignotement rapide.',
+  },
+  {
+    cle: 'kit-bi-xenon',
+    libelle: 'Kit bi-xénon HID',
+    prefixe: /^Kit bi-xénon HID /,
+    image: 'produit-kit-bi-xenon',
+    contenu: 'Un kit xénon HID bi-xénon : l’ampoule et son ballast, avec les câbles.',
+    cablage:
+      'L’ampoule se branche sur la prise de l’ampoule d’origine et le ballast se fixe près du phare : aucun fil à couper.',
+  },
+  {
+    cle: 'kit-xenon',
+    libelle: 'Kit xénon HID',
+    prefixe: /^Kit xénon HID /,
+    image: 'produit-kit-xenon',
+    contenu: 'Un kit xénon HID : les ampoules xénon et leurs ballasts, avec les câbles.',
+    cablage:
+      'Les ampoules se branchent sur les prises d’origine et les ballasts se fixent près des phares : aucun fil à couper.',
+  },
+  {
+    cle: 'ballast-xenon',
+    libelle: 'Ballast xénon',
+    prefixe: /^Ballast xénon /,
+    image: 'produit-ballast-xenon',
+    contenu: 'Le ballast xénon de type origine, le boîtier qui allume et alimente l’ampoule xénon.',
+    cablage: 'Non : il se branche à la place du ballast d’origine, sur les mêmes prises.',
+  },
+  {
+    cle: 'optique-ronde',
+    libelle: 'Optique LED ronde',
+    prefixe: /^Optique LED ronde /,
+    image: 'produit-optiques-led',
+    contenu: 'Une optique ronde full LED, feu de croisement et feu de route, à la place de l’optique d’origine.',
+    cablage: 'Non : elle se monte dans le boîtier du phare d’origine et se branche sur sa prise.',
+  },
+  {
+    cle: 'outils',
+    libelle: 'Outils de démontage',
+    prefixe: /^Kit de 4 outils de démontage /,
+    image: 'produit-outils',
+    contenu: 'Quatre outils en plastique pour déclipser caches, boîtiers et garnitures sans rayer ni casser.',
+    cablage: '',
+  },
+  {
+    cle: 'gants',
+    libelle: 'Gants de montage',
+    prefixe: /^Gants de précision /,
+    image: 'produit-gants',
+    contenu: 'Une paire de gants fins pour manipuler les ampoules sans laisser de traces de doigts.',
+    cablage: '',
+  },
+  // Des ampoules : seule la photo leur est propre.
+  ...[
+    ['kit-led-phares', /^Kit ampoules (LED|bi-LED) /, 'produit-led-haute-puissance'],
+    ['kit-led-mini', /^(Kit ampoule LED taille mini|Ampoule LED phare) /, 'produit-led-moto'],
+    ['led-stop', /^(Ampoule LED feu stop|Pack ampoules LED feux stop) /, 'produit-led-stop'],
+    ['ampoules-xenon', /^Ampoules xénon d’origine /, 'produit-ampoule-xenon'],
+    ['led-xenon', /^Ampoules LED pour phares xénon /, 'produit-led-xenon'],
+    ['repetiteurs-ampoules', /^Pack LED répétiteurs latéraux /, 'produit-led-orange', 'Ampoules LED de répétiteurs'],
+    ['compteur', /^Kit LED compteur /, 'produit-led-compteur'],
+  ].map(([cle, prefixe, image, libelle]) => ({
+    cle: cle as string,
+    libelle: libelle as string | undefined,
+    prefixe: prefixe as RegExp,
+    image: image as string,
+    contenu: '',
+    cablage: '',
+    ampoules: true,
+  })),
 ]
 
-/** Le type d'une fiche qui n'est pas un pack d'ampoules, ou null. */
+/** Le type d'une fiche qui a sa propre photo (ampoules comprises), ou null. */
 export function typeDeProduit(nom: string): TypeDeProduit | null {
   return TYPES_DE_PRODUIT.find((type) => type.prefixe.test(nom.trim())) ?? null
+}
+
+/** Le type d'une fiche qui n'est PAS un pack d'ampoules, ou null. */
+export function typeHorsAmpoules(nom: string): TypeDeProduit | null {
+  const type = typeDeProduit(nom)
+  return type && !type.ampoules ? type : null
 }
 
 /**
@@ -118,4 +245,19 @@ export function typeDeProduit(nom: string): TypeDeProduit | null {
  */
 export function leVehicule(nom: string): string {
   return /^[aeiouyhâàéèêîïôûAEIOUYHÂÀÉÈÊÎÏÔÛ]/.test(nom.trim()) ? `l’${nom}` : `le ${nom}`
+}
+
+/**
+ * Ce qu'est le produit, en quelques mots : « Kit xénon HID », « Pack LED
+ * clignotants arrière ». Sur la page d'un véhicule, plusieurs produits
+ * partagent désormais un même emplacement (phares : effet xénon, kit LED,
+ * kit xénon…) ; sans cette ligne, leurs cartes ne se distinguaient que par le
+ * prix.
+ */
+export function natureDuProduit(nom: string): string | null {
+  const type = typeDeProduit(nom)
+  if (type?.libelle) return type.libelle
+  // « Pack LED veilleuses pour… » : l'emplacement le dit déjà sur la carte.
+  if (/^Pack /.test(nom.trim())) return null
+  return nom.split(' pour ')[0].trim() || null
 }
