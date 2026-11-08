@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { prisma } from '../db'
 import { CART_COOKIE, VEHICLE_COOKIE } from '../session'
 import { newCartToken, sellableQuantity } from '../cart'
+import { getDeliveryTeaser } from '../shipping'
+import { formatPrice } from '../identity'
 
 /**
  * Actions du panier.
@@ -20,7 +22,17 @@ import { newCartToken, sellableQuantity } from '../cart'
  */
 
 export type CartActionResult =
-  | { ok: true; itemCount: number; message?: string }
+  | {
+      ok: true
+      itemCount: number
+      message?: string
+      /**
+       * Où en est le panier de la livraison offerte, après l'ajout : « La
+       * livraison est offerte » ou « Plus que 12,10 € pour la livraison
+       * offerte ». Absent quand aucune franchise n'est configurée.
+       */
+      livraison?: string
+    }
   | { ok: false; error: string }
 
 const addSchema = z.object({
@@ -132,7 +144,12 @@ export async function addToCart(input: unknown): Promise<CartActionResult> {
     const itemCount = await countItems(cart.id)
 
     revalidatePath('/', 'layout')
-    return { ok: true, itemCount, message: notes.join(' ') || undefined }
+    return {
+      ok: true,
+      itemCount,
+      message: notes.join(' ') || undefined,
+      livraison: await etatLivraisonOfferte(cart.id),
+    }
   } catch (error) {
     console.error('[panier] ajout impossible', error)
     return { ok: false, error: "L'ajout au panier a échoué. Réessayez dans un instant." }
@@ -170,6 +187,7 @@ export async function addPacksToCart(input: unknown): Promise<CartActionResult> 
 
   let ajoutes = 0
   let itemCount = 0
+  let livraison: string | undefined
   const ecartes: string[] = []
 
   for (const variantId of variantIds) {
@@ -177,6 +195,8 @@ export async function addPacksToCart(input: unknown): Promise<CartActionResult> 
     if (resultat.ok) {
       ajoutes += 1
       itemCount = resultat.itemCount
+      // Le dernier ajout dit l'état final du panier.
+      livraison = resultat.livraison
     } else {
       ecartes.push(resultat.error)
     }
@@ -192,6 +212,7 @@ export async function addPacksToCart(input: unknown): Promise<CartActionResult> 
     message: ecartes.length
       ? `${ajoutes} pack${ajoutes > 1 ? 's' : ''} ajouté${ajoutes > 1 ? 's' : ''}. ${ecartes.length} référence${ecartes.length > 1 ? 's' : ''} indisponible${ecartes.length > 1 ? 's' : ''}.`
       : undefined,
+    livraison,
   }
 }
 
@@ -257,4 +278,30 @@ async function countItems(cartId: string): Promise<number> {
     _sum: { quantity: true },
   })
   return aggregate._sum.quantity ?? 0
+}
+
+/**
+ * La franchise de port, dite au moment de l'ajout : c'est là que le client
+ * décide d'ajouter un second pack ou de passer commande. Calculée sur les prix
+ * des lignes, comme le sous-total du panier (`getCart`). Une erreur ici ne
+ * fait jamais échouer l'ajout : la mention est simplement omise.
+ */
+async function etatLivraisonOfferte(cartId: string): Promise<string | undefined> {
+  try {
+    const lignes = await prisma.cartLine.findMany({
+      where: { cartId },
+      select: { quantity: true, variant: { select: { priceCents: true } } },
+    })
+    const sousTotal = lignes.reduce((somme, ligne) => somme + ligne.variant.priceCents * ligne.quantity, 0)
+    const accroche = await getDeliveryTeaser(sousTotal)
+    if (!accroche) return undefined
+    if (accroche.priceCents === 0) return 'La livraison est offerte pour cette commande.'
+    if (accroche.missingForFreeCents) {
+      return `Plus que ${formatPrice(accroche.missingForFreeCents)} pour la livraison offerte.`
+    }
+    return undefined
+  } catch (error) {
+    console.error('[panier] franchise de port illisible', error)
+    return undefined
+  }
 }

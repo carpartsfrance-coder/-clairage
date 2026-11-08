@@ -43,7 +43,9 @@ export function TotalEclairage({
       if (resultat.ok) {
         setRetour({
           ok: true,
-          texte: resultat.message ?? `${variantIds.length} packs ajoutés au panier.`,
+          texte: [resultat.message ?? `${variantIds.length} packs ajoutés au panier.`, resultat.livraison]
+            .filter(Boolean)
+            .join(' '),
         })
         // Rafraîchit le compteur du header, rendu côté serveur.
         router.refresh()
