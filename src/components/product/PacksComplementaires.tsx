@@ -28,13 +28,16 @@ export function PacksComplementaires({
   packs,
   prixDuPackCents,
   seuilFranchiseCents,
+  libelleFranchise = 'Avec le pack de cette page : livraison offerte',
 }: {
   vehicule: string
   packs: PackComplementaire[]
-  /** Prix du pack de la fiche, conditionnement conseillé. */
+  /** Prix du pack de la fiche, conditionnement conseillé — ou du panier. */
   prixDuPackCents: number
   /** Seuil de livraison offerte configuré, ou null s'il n'y en a pas. */
   seuilFranchiseCents: number | null
+  /** La phrase sous le pack qui fait passer le seuil (le panier dit « Avec ce pack »). */
+  libelleFranchise?: string
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -145,7 +148,7 @@ export function PacksComplementaires({
                   ) : null}
                   {pack.variantId === declencheur ? (
                     <span className="mt-1 text-[12px] leading-[1.35] font-bold text-[#1f5a39]">
-                      Avec le pack de cette page : livraison offerte
+                      {libelleFranchise}
                     </span>
                   ) : null}
 
