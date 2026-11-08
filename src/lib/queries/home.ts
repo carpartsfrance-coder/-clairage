@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '@/lib/db'
+import type { Prisma } from '@prisma/client'
 import { lectureCatalogue } from '@/lib/cache-catalogue'
 import { demoHomeBlocks } from '../../../prisma/demo-data'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
@@ -88,7 +89,23 @@ export async function getUniverses(limit = 6): Promise<HomeUniverse[]> {
   }
 }
 
-const universEnCache = lectureCatalogue('accueil-univers-v1', lireUnivers)
+const universEnCache = lectureCatalogue('accueil-univers-v2', lireUnivers)
+
+/*
+  Dernier repli d'une tuile d'univers : le gros plan « après » des images
+  types (voir `lib/images-types.ts`). « Plafonnier & habitacle » n'avait plus
+  aucun visuel depuis le retrait des photos reprises d'un concurrent, et la
+  tuile affichait son nom sur fond gris.
+*/
+const IMAGE_TYPE_PAR_RUBRIQUE: Record<string, string> = {
+  interieur: '/images-types/habitacle-apres.webp',
+  'plaque-recul': '/images-types/eclairage-de-plaque-apres.webp',
+  clignotants: '/images-types/clignotants-apres.webp',
+  'feux-de-jour': '/images-types/feux-de-jour-apres.webp',
+  veilleuses: '/images-types/veilleuses-apres.webp',
+  'phares-led': '/images-types/phares-apres.webp',
+  'ampoules-effet-xenon': '/images-types/phares-apres.webp',
+}
 
 async function lireUnivers(limit: number): Promise<HomeUniverse[]> {
   const [categories, racinesFournies] = await Promise.all([
@@ -131,7 +148,11 @@ async function lireUnivers(limit: number): Promise<HomeUniverse[]> {
   )
 
   return retenues.map((category, index) => {
-    const repli = couverture(visuels[index]?.media ?? [])?.media
+    const repli =
+      couverture(visuels[index]?.media ?? [])?.media ??
+      (IMAGE_TYPE_PAR_RUBRIQUE[category.slug]
+        ? { url: IMAGE_TYPE_PAR_RUBRIQUE[category.slug], alt: category.name }
+        : null)
     return {
       slug: category.slug,
       name: category.name,
@@ -255,7 +276,7 @@ export async function getFeaturedProducts(limit = 4): Promise<HomeProduct[]> {
   }
 }
 
-const vitrineEnCache = lectureCatalogue('accueil-vitrine-v1', lireVitrine)
+const vitrineEnCache = lectureCatalogue('accueil-vitrine-v2', lireVitrine)
 
 async function lireVitrine(limit: number): Promise<HomeProduct[]> {
   const choisis = await prisma.product.findMany({
@@ -322,32 +343,24 @@ async function lireVitrine(limit: number): Promise<HomeProduct[]> {
  */
 async function echantillonParRubrique(limit: number) {
   const rubriques = await rubriquesEnCache()
+  /*
+    D'abord un pack voiture qui a ses propres rendus (le feu allumé sur SON
+    véhicule) : c'est la vitrine de la boutique. Le premier produit créé de la
+    rubrique, seul critère jusqu'ici, était un pack pour une moto rare, avec la
+    photo type des ampoules. À défaut, la règle d'origine.
+  */
+  const preferences: Prisma.ProductWhereInput[] = [
+    { vehicleType: 'CAR', media: { some: { role: 'RESULT' } } },
+    {},
+  ]
   const parRubrique = await Promise.all(
-    rubriques.map((rubrique) =>
-      prisma.product.findFirst({
-        where: {
-          status: 'PUBLISHED',
-          variants: { some: { active: true } },
-          /*
-            La rubrique OU l'une de ses sous-familles. Les produits ne sont pas
-            toujours rattachés à la racine : « Plaque & recul » n'en portait
-            aucun en propre, ses références vivant dans « Feux de recul ». La
-            vitrine n'affichait donc que trois cartes sur quatre en production.
-            La taxonomie a deux niveaux, un seul saut de parent suffit.
-          */
-          categories: {
-            some: {
-              category: {
-                published: true,
-                OR: [{ slug: rubrique.slug }, { parent: { slug: rubrique.slug } }],
-              },
-            },
-          },
-        },
-        orderBy: { createdAt: 'asc' },
-        include: CARTE_VITRINE,
-      }),
-    ),
+    rubriques.map(async (rubrique) => {
+      for (const preference of preferences) {
+        const trouve = await premierDeLaRubrique(rubrique.slug, preference)
+        if (trouve) return trouve
+      }
+      return null
+    }),
   )
 
   /*
@@ -365,6 +378,34 @@ async function echantillonParRubrique(limit: number) {
   }
 
   return retenus
+}
+
+/** Le premier produit publié d'une rubrique (ou de ses sous-familles). */
+function premierDeLaRubrique(slug: string, preference: Prisma.ProductWhereInput) {
+  return prisma.product.findFirst({
+    where: {
+      ...preference,
+      status: 'PUBLISHED',
+      variants: { some: { active: true } },
+      /*
+        La rubrique OU l'une de ses sous-familles. Les produits ne sont pas
+        toujours rattachés à la racine : « Plaque & recul » n'en portait
+        aucun en propre, ses références vivant dans « Feux de recul ». La
+        vitrine n'affichait donc que trois cartes sur quatre en production.
+        La taxonomie a deux niveaux, un seul saut de parent suffit.
+      */
+      categories: {
+        some: {
+          category: {
+            published: true,
+            OR: [{ slug }, { parent: { slug } }],
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+    include: CARTE_VITRINE,
+  })
 }
 
 export async function getHomeFaq(limit = 4): Promise<HomeFaqItem[]> {
