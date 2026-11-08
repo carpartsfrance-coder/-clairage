@@ -13,7 +13,8 @@ import { renderHtml, renderText, type EmailBlock } from './layout'
  * à un client pour de bon.
  *
  * Rien n'est promis ici qui ne vienne d'une donnée ou d'un paramètre : aucun
- * délai, aucune garantie, aucun « sous 24 h ».
+ * délai, aucun « sous 24 h ». La garantie n'est rappelée que parce qu'elle est
+ * configurée (`commercialTerms.warrantyMonths`).
  */
 
 export type TemplateKey =
@@ -147,12 +148,16 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
           text: 'Nous vous écrirons à nouveau dès que votre colis sera expédié.',
         },
       ]
-      if (commercialTerms.returnWindowDays) {
-        blocks.push({
-          type: 'note',
-          text: `Vous disposez de ${commercialTerms.returnWindowDays} jours pour changer d'avis après réception.`,
-        })
-      }
+      // Garantie et droit de retour : ce qui est configuré, rien de plus.
+      const rappels = [
+        commercialTerms.warrantyMonths
+          ? `Vos produits sont garantis ${commercialTerms.warrantyMonths % 12 === 0 ? `${commercialTerms.warrantyMonths / 12} ans` : `${commercialTerms.warrantyMonths} mois`} : en cas de panne, écrivez-nous avec votre référence de commande, nous remplaçons le produit.`
+          : null,
+        commercialTerms.returnWindowDays
+          ? `Vous disposez de ${commercialTerms.returnWindowDays} jours pour changer d'avis après réception.`
+          : null,
+      ].filter((texte): texte is string => texte !== null)
+      if (rappels.length > 0) blocks.push({ type: 'note', text: rappels.join(' ') })
       return blocks
     },
     sample: {
