@@ -306,7 +306,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
   const sections = [
     ...(aEnBref ? [{ href: '#en-bref', label: 'Le pack en bref' }] : []),
-    ...(complementaires ? [{ href: '#completer', label: 'Toute la voiture' }] : []),
+    ...(complementaires
+      ? [{ href: '#completer', label: product.vehicleType === 'MOTORCYCLE' ? 'Toute la moto' : 'Toute la voiture' }]
+      : []),
     ...(aSectionContenu
       ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans la boîte' : 'Caractéristiques' }]
       : []),
@@ -579,7 +581,8 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                       Pourquoi un pack {identity.name}
                     </p>
                     <h3 className="text-[24px] leading-[1.15] font-bold tracking-[-0.6px] fiche:text-[30px]">
-                      Des LED qui vont vraiment sur votre voiture.
+                      Des LED qui vont vraiment sur votre{' '}
+                      {product.vehicleType === 'MOTORCYCLE' ? 'moto' : 'voiture'}.
                     </h3>
                     <p className="mt-4 text-[16px] leading-[1.7] text-[#c9ccd1]">
                       Des ampoules LED, on en trouve partout. Savoir lesquelles rentrent dans
@@ -644,6 +647,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             packs={complementaires.packs}
             prixDuPackCents={prixDuPackCents}
             seuilFranchiseCents={seuilFranchiseCents}
+            moto={product.vehicleType === 'MOTORCYCLE'}
           />
         ) : null}
 

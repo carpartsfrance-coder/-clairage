@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { estUneReferenceDAmpoule } from '@/lib/recherche-mots'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Pagination } from '@/components/catalogue/Pagination'
 import { ProductCard } from '@/components/catalogue/ProductCard'
@@ -248,7 +249,7 @@ export default async function RecherchePage({
               elle reste sur grand écran, et sur l'état vide plus bas. */}
           <p className="mt-2 hidden max-w-2xl text-base text-muted-strong sm:block">
             Tapez votre véhicule et l’éclairage, dans l’ordre que vous voulez : « clio 4
-            veilleuses », « golf 7 phares », « 308 plaque ». Une référence marche aussi.
+            veilleuses », « golf 7 phares », « 308 plaque ».
           </p>
         </div>
 
@@ -411,15 +412,23 @@ export default async function RecherchePage({
                 }}
               />
             ) : (
-              <EmptyState
-                title={
-                  state.q
-                    ? `Aucun résultat pour « ${state.q} ».`
-                    : 'Aucun résultat avec ces filtres.'
-                }
-                description="Essayez avec moins de mots (« clio 4 »), ou choisissez votre véhicule pour voir tous ses packs."
-                action={{ label: 'Parcourir toutes les catégories', href: '/c' }}
-              />
+              estUneReferenceDAmpoule(state.q) ? (
+                <EmptyState
+                  title="Nos packs se choisissent par véhicule, pas par référence d’ampoule."
+                  description="Chaque pack contient déjà les bonnes ampoules pour votre véhicule, emplacement par emplacement : vous n’avez pas à chercher la référence. Indiquez votre marque, votre modèle et votre année, ou tapez-les ici (« golf 7 phares »)."
+                  action={{ label: 'Choisir mon véhicule', href: '/vehicule' }}
+                />
+              ) : (
+                <EmptyState
+                  title={
+                    state.q
+                      ? `Aucun résultat pour « ${state.q} ».`
+                      : 'Aucun résultat avec ces filtres.'
+                  }
+                  description="Essayez avec moins de mots (« clio 4 »), ou choisissez votre véhicule pour voir tous ses packs."
+                  action={{ label: 'Parcourir toutes les catégories', href: '/c' }}
+                />
+              )
             )}
           </section>
 

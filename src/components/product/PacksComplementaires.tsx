@@ -29,6 +29,7 @@ export function PacksComplementaires({
   prixDuPackCents,
   seuilFranchiseCents,
   libelleFranchise = 'Avec le pack de cette page : livraison offerte',
+  moto = false,
 }: {
   vehicule: string
   packs: PackComplementaire[]
@@ -38,6 +39,8 @@ export function PacksComplementaires({
   seuilFranchiseCents: number | null
   /** La phrase sous le pack qui fait passer le seuil (le panier dit « Avec ce pack »). */
   libelleFranchise?: string
+  /** Fiche moto : « Pour la même moto ». */
+  moto?: boolean
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -95,7 +98,7 @@ export function PacksComplementaires({
         <div className="mb-6 fiche:mb-8 fiche:flex fiche:items-end fiche:justify-between fiche:gap-8">
           <div>
             <p className="mb-2 text-[12px] font-bold tracking-[1.4px] text-brand uppercase">
-              Pour la même voiture
+              {moto ? 'Pour la même moto' : 'Pour la même voiture'}
             </p>
             <h2
               id="titre-completer"

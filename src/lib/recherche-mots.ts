@@ -60,3 +60,18 @@ export function motsDeRecherche(saisie: string): string[][] {
     return SYNONYMES[mot] ?? [mot]
   })
 }
+
+/*
+  Les références d'ampoule qu'un client tape seules : « h7 », « ampoule W5W »,
+  « led p21w ». Les packs ne les affichent pas — ils se choisissent par
+  véhicule, et la bonne ampoule est déjà dedans — donc la recherche n'en
+  trouve aucun. Plutôt que « Aucun résultat », la page explique comment
+  trouver le pack (voir app/recherche).
+*/
+const REFERENCE_D_AMPOULE =
+  /^(?:(?:ampoules?|led|leds|kit|pack)\s+)*(?:h\d{1,2}|hb[345]|hir2|h\d{1,2}w|9005|9006|9012|880|881|d[1-8][rs]|w5w|t10|t15|t20|t4w|c5w|c10w|c21w|p21w|py21w|p21\/5w|p27w|p27\/7w|w16w|w21w|w21\/5w|r5w|r10w|ba9s|ba15s|bau15s|bay15d|psx24w|psx26w|pw24w)(?:\s+(?:led|leds|xenon|xénon))?$/i
+
+/** Vrai quand la saisie n'est qu'une référence d'ampoule (« h7 », « led w5w »). */
+export function estUneReferenceDAmpoule(saisie: string): boolean {
+  return REFERENCE_D_AMPOULE.test(saisie.trim().replace(/\s+/g, ' '))
+}
