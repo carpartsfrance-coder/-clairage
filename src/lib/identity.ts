@@ -135,8 +135,12 @@ export const commercialTerms = {
   freeShippingThresholdCents: 8000 as number | null,
   /** Délai de rétractation légal en France. */
   returnWindowDays: 14 as number | null,
-  /** Garantie commerciale éventuelle, en mois. Null tant que non arbitrée. */
-  warrantyMonths: null as number | null,
+  /**
+   * Garantie commerciale LEDVROOM, en mois : 5 ans sur tous les produits
+   * (décision de l'exploitant, 8 novembre 2026). Conditions : page Garanties
+   * et article 8 des CGV.
+   */
+  warrantyMonths: 60 as number | null,
   /**
    * Estimation d'expédition affichée en fiche produit.
    * Null tant qu'aucune méthode de livraison réelle n'est configurée : les
@@ -183,4 +187,12 @@ export function formatPrice(
     maximumFractionDigits: 2,
   })
   return withCurrency ? `${value} ${identity.locale.currencySymbol}` : value
+}
+
+/** « 5 ans », « 18 mois »… ou null s'il n'y a pas de garantie commerciale. */
+export function dureeGarantie(): string | null {
+  const mois = commercialTerms.warrantyMonths
+  if (!mois) return null
+  if (mois % 12 === 0) return mois === 12 ? '1 an' : `${mois / 12} ans`
+  return `${mois} mois`
 }

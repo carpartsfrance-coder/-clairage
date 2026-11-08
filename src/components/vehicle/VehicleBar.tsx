@@ -1,6 +1,6 @@
 import type { SelectedVehicle } from '@/lib/session'
 import { VehicleMenu } from '@/components/layout/VehicleMenu'
-import { IconCar, IconMotorcycle } from '@/components/ui/icons'
+import { IconCar, IconCheckCircle, IconMotorcycle } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 
 /**
@@ -23,9 +23,17 @@ export function VehicleBar({
   vehicle,
   className,
   variant = 'full',
+  concuPour = null,
 }: {
   vehicle: SelectedVehicle | null
   className?: string
+  /**
+   * Fiche composée pour un véhicule précis : « Toyota Hilux 8 (2015–2025) ».
+   * Sans véhicule choisi, le bandeau le dit au lieu d'annoncer qu'« aucune
+   * compatibilité ne peut être affirmée » — phrase juste, mais qui faisait
+   * douter un client arrivé de Google sur le pack de SA voiture.
+   */
+  concuPour?: string | null
   /** `compact` sur les listes, `full` là où la compatibilité engage l'achat. */
   variant?: 'full' | 'compact'
 }) {
@@ -68,6 +76,32 @@ export function VehicleBar({
     projet : c'est le seul endroit de la fiche qui dit qu'aucune compatibilité
     ne peut être affirmée, et la référence n'a pas cet état.
   */
+  if (!vehicle && concuPour) {
+    return (
+      <div
+        className={cn(
+          'flex items-center justify-between gap-3 rounded-lg border border-ok/30 bg-ok-soft px-3 py-[11px] fiche:px-[19px] fiche:py-3',
+          className,
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-2.5 fiche:gap-3.5">
+          <span className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-white fiche:size-9">
+            <IconCheckCircle className="size-5 text-ok fiche:size-[22px]" />
+          </span>
+          <div className="min-w-0">
+            <small className="mb-px block text-[7px] tracking-[1.3px] text-[#5d6b5f] uppercase fiche:text-[8px]">
+              Pack composé pour
+            </small>
+            <strong className="block text-[10px] fiche:text-[12px]">{concuPour}</strong>
+          </div>
+        </div>
+        <div className="shrink-0">
+          <VehicleMenu vehicle={vehicle} variant="action" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(

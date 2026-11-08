@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
-import { formatPrice, identity, siteConfig } from '@/lib/identity'
+import { dureeGarantie, formatPrice, identity, siteConfig } from '@/lib/identity'
 import { getCartSummary, getSelectedVehicle } from '@/lib/session'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { topNav } from '@/lib/navigation'
 import { getNavigation } from '@/lib/queries/navigation'
 import { MainNav } from './MainNav'
-import { IconUser, IconHeadset, IconReturn, IconTruck } from '@/components/ui/icons'
+import { IconUser, IconHeadset, IconReturn, IconShield, IconTruck } from '@/components/ui/icons'
 import { HeaderSearch } from './HeaderSearch'
 import { VehicleMenu } from './VehicleMenu'
 import { CartLink } from './CartLink'
@@ -60,14 +60,27 @@ export async function Header() {
         }
       >
         <div className="container-page flex h-[26px] items-center justify-between gap-5 text-[9px] md:h-[29px] md:text-[10px]">
-          <p className="flex min-w-0 items-center gap-2">
-            <IconTruck className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
-            <span className="truncate">
-              {seuilLivraisonOfferte
-                ? `Livraison offerte dès ${formatPrice(seuilLivraisonOfferte)}`
-                : 'Livraison et retours'}
-            </span>
-          </p>
+          <div className="flex min-w-0 items-center gap-4">
+            <p className="flex min-w-0 items-center gap-2">
+              <IconTruck className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
+              <span className="truncate">
+                {seuilLivraisonOfferte
+                  ? `Livraison offerte dès ${formatPrice(seuilLivraisonOfferte)}`
+                  : 'Livraison et retours'}
+              </span>
+            </p>
+            {/* La garantie, deuxième argument de confiance après la livraison. */}
+            {dureeGarantie() ? (
+              <Link
+                href="/garanties"
+                className="flex min-w-0 items-center gap-2 transition-colors hover:text-white"
+              >
+                <span aria-hidden className="text-white/25">|</span>
+                <IconShield className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
+                <span className="truncate">Garantie {dureeGarantie()}</span>
+              </Link>
+            ) : null}
+          </div>
 
           {siteConfig.demoBanner ? (
             <p className="hidden text-[8px] tracking-[0.5px] text-[#8e999f] uppercase lg:block">

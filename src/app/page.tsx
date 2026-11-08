@@ -8,6 +8,8 @@ import {
 } from '@/lib/queries/home'
 import { getSelectedVehicle } from '@/lib/session'
 import { getNavigation } from '@/lib/queries/navigation'
+import { getSeuilLivraisonOfferte } from '@/lib/shipping'
+import { dureeGarantie, formatPrice } from '@/lib/identity'
 import { HeroFinder } from '@/components/home/HeroFinder'
 import { ReassuranceBand } from '@/components/home/ReassuranceBand'
 import { UniversesSection } from '@/components/home/UniversesSection'
@@ -33,7 +35,7 @@ export const metadata: Metadata = {
  * section isolément.
  */
 export default async function HomePage() {
-  const [blocks, universes, products, faq, rubriques, navigation, vehicle] = await Promise.all([
+  const [blocks, universes, products, faq, rubriques, navigation, seuil, vehicle] = await Promise.all([
     getHomeBlocks(),
     getUniverses(6),
     getFeaturedProducts(4),
@@ -42,10 +44,28 @@ export default async function HomePage() {
     // Sert seulement à savoir si le parcours moto existe : le menu ne
     // l'affiche que si une marque moto mène à des produits.
     getNavigation(),
+    getSeuilLivraisonOfferte(),
     // Le bandeau de sélection s'ouvre sur le véhicule déjà retenu plutôt que
     // de redemander ce que l'en-tête affiche.
     getSelectedVehicle(),
   ])
+
+  /*
+    Les repères sous le bandeau d'accueil : la compatibilité d'abord, puis les
+    deux arguments qui décident un premier achat — la garantie et la livraison
+    offerte — tirés de la configuration, jamais écrits en dur.
+  */
+  const [premier, ...autres] = blocks.reassurance
+  const reperes = [
+    ...(premier ? [premier] : []),
+    ...(dureeGarantie()
+      ? [{ icon: 'shield', title: `Garantie ${dureeGarantie()}`, text: 'Sur toutes nos ampoules et LED' }]
+      : []),
+    ...(seuil
+      ? [{ icon: 'truck', title: `Livraison offerte dès ${formatPrice(seuil)}`, text: 'En France métropolitaine' }]
+      : []),
+    ...autres.filter((item) => item.icon !== 'headset'),
+  ].slice(0, 4)
 
   return (
     <>
@@ -59,7 +79,7 @@ export default async function HomePage() {
         qui obligeait à descendre pour agir.
       */}
       <HeroFinder hero={blocks.hero} finder={blocks.vehicleBand} vehicle={vehicle} />
-      <ReassuranceBand items={blocks.reassurance} />
+      <ReassuranceBand items={reperes} />
       <UniversesSection content={blocks.universes} universes={universes} />
       <ComparisonSection content={blocks.comparison} />
       <FeaturedProducts

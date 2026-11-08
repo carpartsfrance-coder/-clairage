@@ -85,7 +85,12 @@ export function ReassuranceBand({ items }: ReassuranceBandProps) {
           l'horizontale — une règle verticale entre deux blocs superposés ne
           sépare rien.
         */}
-        <ul className="grid list-none grid-cols-1 overflow-hidden rounded-md border border-line bg-white p-0 sm:grid-cols-3">
+        <ul
+          className={cn(
+            'grid list-none grid-cols-1 overflow-hidden rounded-md border border-line bg-white p-0',
+            items.length >= 4 ? 'lg:grid-cols-4' : 'sm:grid-cols-3',
+          )}
+        >
           {items.map((item, index) => {
             const Icon = resolveIcon(item.icon)
             return (
@@ -93,7 +98,10 @@ export function ReassuranceBand({ items }: ReassuranceBandProps) {
                 key={`${item.icon}-${index}`}
                 className={cn(
                   'flex items-center gap-4 px-6 py-6 sm:px-7',
-                  index > 0 && 'border-t border-line sm:border-t-0 sm:border-l',
+                  index > 0 &&
+                    (items.length >= 4
+                      ? 'border-t border-line lg:border-t-0 lg:border-l'
+                      : 'border-t border-line sm:border-t-0 sm:border-l'),
                 )}
               >
                 {Icon ? (
