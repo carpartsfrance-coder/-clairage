@@ -240,7 +240,12 @@ export function titreSeo(produit: ProduitPourLeSeo, vehicule: VehiculeDeLaFiche 
 export function descriptionSeo(
   produit: ProduitPourLeSeo,
   vehicule: VehiculeDeLaFiche | null,
-  conditions: { seuilFranchiseCents: number | null; retourJours: number | null },
+  conditions: {
+    seuilFranchiseCents: number | null
+    retourJours: number | null
+    /** « 5 ans » : la garantie, l'argument le plus fort dans un résultat Google. */
+    garantie?: string | null
+  },
 ): string | undefined {
   const saisie = produit.metaDescription?.trim()
   if (saisie && !estUneDescriptionDImport(saisie, produit.description)) return saisie
@@ -254,8 +259,14 @@ export function descriptionSeo(
   const phrases = [
     `${intituleSeo(produit, vehicule)}, en pack prêt à monter sans modifier le câblage.`,
   ]
-  const { seuilFranchiseCents, retourJours } = conditions
-  if (seuilFranchiseCents !== null && retourJours) {
+  const { seuilFranchiseCents, retourJours, garantie } = conditions
+  if (garantie && seuilFranchiseCents !== null) {
+    // Garantie et livraison offerte : la ligne tient dans l'extrait Google ;
+    // les retours restent sur la fiche.
+    phrases.push(`Garantie ${garantie}, livraison offerte dès ${formatPrice(seuilFranchiseCents)}.`)
+  } else if (garantie) {
+    phrases.push(`Garantie ${garantie}${retourJours ? `, retours sous ${retourJours} jours` : ''}.`)
+  } else if (seuilFranchiseCents !== null && retourJours) {
     phrases.push(`Livraison offerte dès ${formatPrice(seuilFranchiseCents)}, retours sous ${retourJours} jours.`)
   } else if (seuilFranchiseCents !== null) {
     phrases.push(`Livraison offerte dès ${formatPrice(seuilFranchiseCents)}.`)
