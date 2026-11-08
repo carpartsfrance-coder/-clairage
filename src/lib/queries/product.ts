@@ -348,14 +348,19 @@ export async function getProduct(
           .map((image) => ({
             url: image.url,
             alt: image.alt,
-            caption: LEGENDE_IMAGE_TYPE,
+            caption: image.role === 'PRODUCT' ? 'Visuel d’illustration des ampoules.' : LEGENDE_IMAGE_TYPE,
             role: image.role,
             thumbLabel: THUMB_LABELS[image.role],
             nature: 'ILLUSTRATION' as const,
           }))
 
+    // Sans rendu du véhicule, la galerie s'ouvre sur les ampoules : une autre
+    // voiture en première image ferait douter de la compatibilité.
+    const ordre: GalleryItem['role'][] = aSonRendu
+      ? ROLE_ORDER
+      : ['PRODUCT', 'RESULT', 'KIT_CONTENT', 'INSTALL']
     const gallery: GalleryItem[] = [...visuelsTypes, ...visuelsPropres].sort(
-      (a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role),
+      (a, b) => ordre.indexOf(a.role) - ordre.indexOf(b.role),
     )
 
     return {

@@ -24,7 +24,12 @@ describe('images types par emplacement', () => {
   })
 
   it('feux de route : les images des phares', () => {
-    expect(couvertureType({ slug: 'pack-led-feux-de-route-audi-a3', name: 'x' })?.url).toBe('/images-types/phares-apres.webp')
+    expect(imagesTypes({ slug: 'pack-led-feux-de-route-audi-a3', name: 'x' })[0].url).toBe('/images-types/phares-avant-apres.webp')
+  })
+
+  it('en couverture, les ampoules et jamais une voiture', () => {
+    expect(couvertureType({ slug: 'pack-led-feux-de-recul-toyota-hilux-viii', name: 'Pack LED feux de recul' })?.url).toBe('/images-types/produit-led-p21w.webp')
+    expect(couvertureType({ slug: 'pack-led-phares-bmw-e90', name: 'Pack ampoules effet xénon phares' })?.url).toBe('/images-types/produit-effet-xenon.webp')
   })
 
   it('pas pour la moto', () => {
