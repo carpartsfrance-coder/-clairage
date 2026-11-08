@@ -110,6 +110,9 @@ export function construireFlux(options: {
         `<g:condition>new</g:condition>`,
         `<g:brand>${echapperXml(article.brand ?? titre)}</g:brand>`,
         `<g:identifier_exists>no</g:identifier_exists>`,
+        // « Véhicules et accessoires » : la catégorie où Google accepte les
+        // visuels d'illustration (règles des images produit de Merchant Center).
+        `<g:google_product_category>888</g:google_product_category>`,
       ]
       if (plusieurs) champs.push(`<g:item_group_id>${echapperXml(article.slug)}</g:item_group_id>`)
       if (article.productType) {

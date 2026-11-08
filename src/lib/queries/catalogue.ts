@@ -16,6 +16,7 @@ import {
 } from '../stock'
 import { recommendPackaging, recommendationReason } from '../recommendation'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
+import { couvertureType } from '../images-types'
 
 /**
  * Lectures du catalogue : index des catégories, listes filtrées, recherche.
@@ -367,7 +368,7 @@ async function lireListe(
           )
         : product.variants
       const cheapest = eligible[0] ?? product.variants[0]
-      const cover = couverture(product.media)?.media
+      const cover = couverture(product.media)?.media ?? couvertureType(product)
       const category = product.categories[0]?.category
 
       // La disponibilité affichée est celle du conditionnement le moins cher :
