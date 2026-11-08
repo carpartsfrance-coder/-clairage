@@ -18,6 +18,7 @@ import {
   titreSeo,
 } from '@/lib/seo-fiche'
 import { commercialTerms, dureeGarantie, identity, siteConfig } from '@/lib/identity'
+import { faqFicheParDefaut } from '@/lib/faq-generale'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import {
   BreadcrumbStructuredData,
@@ -259,7 +260,13 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     de page comme dans le bloc d'achat.
   */
   const aContenuKit = Boolean(kitVariant) || product.specs.length > 0
-  const aContenuQuestions = product.faq.length > 0 || product.reviews.length > 0
+  /*
+    Sans questions publiées en back-office, la fiche reçoit les questions
+    par défaut (compatibilité, câblage, garantie, livraison, retours) : un
+    client qui hésite trouve la réponse ici plutôt qu'ailleurs.
+  */
+  const questions = product.faq.length > 0 ? product.faq : await faqFicheParDefaut(concuPour)
+  const aContenuQuestions = questions.length > 0 || product.reviews.length > 0
 
   /*
     Le rédactionnel long existait en base sans être rendu nulle part : les
@@ -761,9 +768,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               </div>
 
               <div className="mt-6 fiche:mt-0">
-                {product.faq.length > 0 ? (
+                {questions.length > 0 ? (
                   <ul className="border-t border-line">
-                    {product.faq.map((item) => (
+                    {questions.map((item) => (
                       <li key={item.question} className="border-b border-line">
                         <details className="group">
                           <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-[16px] font-bold [&::-webkit-details-marker]:hidden">
@@ -790,7 +797,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 */}
                 {product.reviews.length > 0 ? (
                   <>
-                    <h3 className={cn('text-[18px] font-bold', product.faq.length > 0 && 'mt-12')}>
+                    <h3 className={cn('text-[18px] font-bold', questions.length > 0 && 'mt-12')}>
                       Avis clients
                     </h3>
                     <ul className="mt-4 grid gap-3 fiche:grid-cols-2">
