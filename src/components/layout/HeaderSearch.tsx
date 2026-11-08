@@ -127,7 +127,7 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
             onBlur={() => {
               blurTimer.current = setTimeout(() => setOpen(false), 120)
             }}
-            placeholder="Rechercher une ampoule, un culot, une référence…"
+            placeholder="Votre véhicule et l’éclairage : clio 4 veilleuses…"
             autoComplete="off"
             role="combobox"
             aria-expanded={open}
