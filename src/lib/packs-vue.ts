@@ -215,6 +215,8 @@ const ZONE_PAR_EMPLACEMENT: Record<string, Exclude<Zone, 'tout'>> = {
   FOG: 'avant',
   SIDELIGHT: 'avant',
   TURN_FRONT: 'avant',
+  FOG_REAR: 'arriere',
+  TURN_REAR: 'arriere',
   PLATE: 'arriere',
   REVERSE: 'arriere',
   INTERIOR_DOME: 'interieur',
@@ -255,6 +257,8 @@ const SOUS_TITRE_PAR_EMPLACEMENT: Record<string, string> = {
   REVERSE: 'Éclairage en marche arrière',
   SIDELIGHT: 'Feux de position avant',
   TURN_FRONT: 'Signalisation à l’avant',
+  FOG_REAR: 'Feu de brouillard à l’arrière',
+  TURN_REAR: 'Signalisation à l’arrière',
 }
 
 export function sousTitreDeLEmplacement(code: string): string | null {

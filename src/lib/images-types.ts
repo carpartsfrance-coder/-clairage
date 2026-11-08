@@ -62,6 +62,8 @@ function visuelDe(emplacement: Emplacement): Exclude<Emplacement, 'feux-de-route
 
 function photoProduit(emplacement: Emplacement, nom: string): string {
   if (estEffetXenon(nom)) return 'produit-effet-xenon'
+  // L'antibrouillard arrière prend une ampoule de feu arrière, pas de phare.
+  if (emplacement === 'antibrouillards' && estArriere(nom)) return 'produit-led-p21w'
   switch (emplacement) {
     case 'phares':
     case 'antibrouillards':
@@ -89,6 +91,12 @@ function photoProduit(emplacement: Emplacement, nom: string): string {
 */
 const ECLAIRE_LA_ROUTE: Emplacement[] = ['phares', 'feux-de-route']
 const estEffetXenon = (nom: string) => /effet\s+x[ée]non/i.test(nom)
+/*
+  « Antibrouillard arrière », « clignotants arrière » : les avant / après et
+  gros plans types montrent l'avant de la voiture. Ces fiches n'ont que la
+  photo des ampoules (8 novembre 2026).
+*/
+const estArriere = (nom: string) => /\barri[eè]re\b/i.test(nom)
 
 export type ImageType = {
   url: string
@@ -102,7 +110,7 @@ export type ImageType = {
 export function imagesTypes(produit: ProduitMinimal): ImageType[] {
   const emplacement = emplacementDeLaFiche(produit.slug)
   if (!emplacement) return []
-  if (produit.vehicleType === 'MOTORCYCLE') {
+  if (produit.vehicleType === 'MOTORCYCLE' || estArriere(produit.name)) {
     return [
       {
         url: `${DOSSIER}/${photoProduit(emplacement, produit.name)}.webp`,
