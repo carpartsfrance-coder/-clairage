@@ -5,6 +5,7 @@ import { IconHeadset, IconReturn, IconShield, IconTruck } from '@/components/ui/
 import { commercialTerms, dureeGarantie, formatPrice, identity, siteConfig } from '@/lib/identity'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { getNavigation } from '@/lib/queries/navigation'
+import { MoyensDePaiement } from '@/components/paiement/MoyensDePaiement'
 
 /**
  * Pied de page — `.home-footer` du code de référence.
@@ -108,6 +109,7 @@ export async function Footer() {
 
           {/* .footer-manifesto : repères à gauche d'une icône de 16 px. */}
           <div className="col-span-2 border-t border-[#3a454b] pt-5 lg:col-span-1 lg:border-0 lg:pt-0 lg:pl-5">
+            <MoyensDePaiement ton="sombre" className="mb-4" />
             <ul>
               {promises.map((promise) => (
                 <li

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { MoyensDePaiement } from '@/components/paiement/MoyensDePaiement'
 import Image from 'next/image'
 import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
@@ -435,6 +436,8 @@ export default async function PanierPage() {
               >
                 Continuer ma commande
               </ButtonLink>
+
+              <MoyensDePaiement className="mt-3 justify-center" />
 
               {/* .cart-fineprint : centré, 9 px, interligne 1.8. */}
               <p className="mt-3 text-center text-[9px] leading-[1.8] text-[#8c8c8c]">

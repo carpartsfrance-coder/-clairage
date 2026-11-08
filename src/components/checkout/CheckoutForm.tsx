@@ -1,5 +1,6 @@
 'use client'
 
+import { MoyensDePaiement } from '@/components/paiement/MoyensDePaiement'
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
 import { submitOrder, type CheckoutState } from '@/lib/actions/checkout'
@@ -483,6 +484,13 @@ export function CheckoutForm({
           >
             {pending ? 'Enregistrement…' : `Payer ${formatPrice(totalCents)}`}
           </Button>
+
+          {/* Ce qui rassure au moment de payer, sous le bouton. */}
+          <MoyensDePaiement className="justify-center" />
+          <p className="text-center text-[11px] leading-[1.7] text-[#6b6f73]">
+            Paiement sur la page sécurisée de Mollie : votre numéro de carte ne nous est jamais
+            transmis. Produits garantis 5 ans, retours sous 14 jours.
+          </p>
         </form>
       </section>
 
