@@ -103,7 +103,17 @@ export default async function PanierPage() {
               Articles du panier
             </h2>
 
-            <VehicleBar vehicle={vehicle} className="mb-[18px]" />
+            {/*
+              Sans véhicule choisi, la version neutre : chaque pack du panier
+              porte déjà dans son nom le véhicule pour lequel il est composé.
+              Le bandeau rouge « Aucune compatibilité ne peut être affirmée »
+              faisait douter au moment même de commander.
+            */}
+            <VehicleBar
+              vehicle={vehicle}
+              variant={vehicle ? 'full' : 'compact'}
+              className="mb-[18px]"
+            />
 
             {cart.conflicts.length > 0 ? (
               <Alert
