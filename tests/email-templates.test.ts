@@ -92,7 +92,16 @@ describe('promesses', () => {
   it("n'annonce aucun délai garanti", () => {
     // Le cahier des charges l'interdit explicitement, et rien dans
     // l'application ne permettrait de le tenir.
-    const interdits = [/sous 24\s?h/i, /sous 48\s?h/i, /garanti/i, /livré demain/i]
+    // « garanti » seul n'est plus interdit : la garantie produit de 5 ans
+    // est configurée (commercialTerms.warrantyMonths) et rappelée à la
+    // commande. Ce qui reste interdit, c'est un DÉLAI garanti.
+    const interdits = [
+      /sous 24\s?h/i,
+      /sous 48\s?h/i,
+      /(délai|livraison|livré|expédi)[^.]{0,30}garanti/i,
+      /garanti[^.]{0,30}(délai|livraison|expédi)/i,
+      /livré demain/i,
+    ]
     for (const key of TEMPLATE_KEYS) {
       const { text, subject } = renderSample(key)
       for (const motif of interdits) {
@@ -100,6 +109,10 @@ describe('promesses', () => {
         expect(text).not.toMatch(motif)
       }
     }
+  })
+
+  it('rappelle la garantie produit à la confirmation de commande', () => {
+    expect(renderSample('commande.confirmation').text).toMatch(/garantis 5 ans/)
   })
 
   it("n'affiche pas de bouton de suivi quand aucune URL n'est connue", () => {
