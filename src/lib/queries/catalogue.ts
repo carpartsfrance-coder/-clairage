@@ -245,7 +245,7 @@ export async function listProducts(
   }
 }
 
-const listeEnCache = lectureCatalogue('catalogue-liste-v1', (filters: CatalogueFilters) =>
+const listeEnCache = lectureCatalogue('catalogue-liste-v2', (filters: CatalogueFilters) =>
   lireListe(filters, null),
 )
 
@@ -352,7 +352,15 @@ async function lireListe(
         sort === 'nouveautes'
           ? { publishedAt: 'desc' }
           : sort === 'pertinence'
-            ? [{ featured: 'desc' }, { name: 'asc' }]
+            ? /*
+                Après la mise en avant du back-office, les fiches qui ont
+                leurs propres visuels (le feu allumé sur leur véhicule)
+                passent devant celles qui n'ont que les images types. Par
+                ordre alphabétique seul, une rubrique s'ouvrait sur des Alfa
+                Romeo sans photo, et les packs les mieux montrés étaient
+                relégués en page 20.
+              */
+              [{ featured: 'desc' }, { media: { _count: 'desc' } }, { name: 'asc' }]
             : { name: 'asc' },
       // Le tri par prix et le classement par compatibilité portent sur des
       // valeurs dérivées (prix mini des variantes, statut du fitment) : ils
