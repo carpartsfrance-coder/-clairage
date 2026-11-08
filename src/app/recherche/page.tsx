@@ -247,8 +247,8 @@ export default async function RecherchePage({
           {/* L'explication n'a d'intérêt que si l'on cherche encore quoi taper :
               elle reste sur grand écran, et sur l'état vide plus bas. */}
           <p className="mt-2 hidden max-w-2xl text-base text-muted-strong sm:block">
-            La recherche accepte trois entrées : un nom de produit, une référence (SKU) ou un culot
-            — H7, D1S, W5W.
+            Tapez votre véhicule et l’éclairage, dans l’ordre que vous voulez : « clio 4
+            veilleuses », « golf 7 phares », « 308 plaque ». Une référence marche aussi.
           </p>
         </div>
 
@@ -417,7 +417,7 @@ export default async function RecherchePage({
                     ? `Aucun résultat pour « ${state.q} ».`
                     : 'Aucun résultat avec ces filtres.'
                 }
-                description="Vérifiez l'orthographe de la référence, ou partez du culot ou de la catégorie."
+                description="Essayez avec moins de mots (« clio 4 »), ou choisissez votre véhicule pour voir tous ses packs."
                 action={{ label: 'Parcourir toutes les catégories', href: '/c' }}
               />
             )}
