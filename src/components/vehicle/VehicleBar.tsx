@@ -24,6 +24,7 @@ export function VehicleBar({
   className,
   variant = 'full',
   concuPour = null,
+  intitule = 'Pack composé pour',
 }: {
   vehicle: SelectedVehicle | null
   className?: string
@@ -34,6 +35,8 @@ export function VehicleBar({
    * douter un client arrivé de Google sur le pack de SA voiture.
    */
   concuPour?: string | null
+  /** « Pack composé pour », ou « Prévu pour » quand la fiche n'est pas un pack d'ampoules. */
+  intitule?: string
   /** `compact` sur les listes, `full` là où la compatibilité engage l'achat. */
   variant?: 'full' | 'compact'
 }) {
@@ -90,7 +93,7 @@ export function VehicleBar({
           </span>
           <div className="min-w-0">
             <small className="mb-px block text-[7px] tracking-[1.3px] text-[#5d6b5f] uppercase fiche:text-[8px]">
-              Pack composé pour
+              {intitule}
             </small>
             <strong className="block text-[10px] fiche:text-[12px]">{concuPour}</strong>
           </div>

@@ -30,6 +30,8 @@
  * Les fichiers sont dans `public/images-types/`.
  */
 
+import { typeDeProduit } from './types-produit'
+
 export const EMPLACEMENTS = [
   'phares',
   'antibrouillards',
@@ -108,6 +110,18 @@ export type ImageType = {
 
 /** Les images types d'une fiche, dans l'ordre de la galerie. Vide si aucune. */
 export function imagesTypes(produit: ProduitMinimal): ImageType[] {
+  // Feux additionnels, centrale, clignotants complets… : leur photo seule.
+  const type = typeDeProduit(produit.name)
+  if (type) {
+    return [
+      {
+        url: `${DOSSIER}/${type.image}.webp`,
+        alt: `${produit.name} — visuel d’illustration`,
+        role: 'PRODUCT',
+        sansTexte: true,
+      },
+    ]
+  }
   const emplacement = emplacementDeLaFiche(produit.slug)
   if (!emplacement) return []
   if (produit.vehicleType === 'MOTORCYCLE' || estArriere(produit.name)) {
@@ -149,6 +163,8 @@ export function imagesTypes(produit: ProduitMinimal): ImageType[] {
  * `null` si la fiche n'a pas d'image type.
  */
 export function couvertureType(produit: ProduitMinimal): { url: string; alt: string } | null {
+  const type = typeDeProduit(produit.name)
+  if (type) return { url: `${DOSSIER}/${type.image}.webp`, alt: `${produit.name} — visuel d’illustration` }
   const emplacement = emplacementDeLaFiche(produit.slug)
   if (!emplacement) return null
   return {

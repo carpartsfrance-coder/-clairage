@@ -1,6 +1,7 @@
 import 'server-only'
 import { commercialTerms, dureeGarantie, formatPrice } from './identity'
 import { getZonesDeLivraison } from './shipping'
+import { typeDeProduit } from './types-produit'
 
 /**
  * Questions fréquentes par défaut, tant que le back-office n'en publie pas.
@@ -85,15 +86,29 @@ export async function faqGeneraleParDefaut(): Promise<QuestionReponse[]> {
  * connaît. Elles ne partent pas en données structurées : le même texte sur des
  * milliers de fiches n'apporte rien à Google.
  */
-export async function faqFicheParDefaut(concuPour: string | null): Promise<QuestionReponse[]> {
+export async function faqFicheParDefaut(
+  concuPour: string | null,
+  nomDuProduit = '',
+): Promise<QuestionReponse[]> {
   const generales = await faqGeneraleParDefaut()
-  const sansPaiement = generales.filter(
-    (question) => !question.question.startsWith('Le paiement') && !question.question.startsWith('Comment être sûr'),
-  )
+  // Feux additionnels, centrale… : la réponse sur le câblage est la leur.
+  const type = typeDeProduit(nomDuProduit)
+  const sansPaiement = generales
+    .filter(
+      (question) => !question.question.startsWith('Le paiement') && !question.question.startsWith('Comment être sûr'),
+    )
+    .filter((question) => !(type && question.question.startsWith('Un message d’erreur')))
+    .map((question) =>
+      type && question.question === 'Faut-il modifier le câblage ?'
+        ? { question: 'Comment se branche ce produit ?', answer: type.cablage }
+        : question,
+    )
   const compatibilite: QuestionReponse = concuPour
     ? {
-        question: `Ce pack convient-il à mon véhicule ?`,
-        answer: `Il est composé pour le ${concuPour} : les ampoules et les LED correspondent aux emplacements d’origine de ce véhicule. Si le vôtre a reçu des phares différents de ceux montés en usine (xénon, LED d’origine), écrivez-nous avec le modèle exact avant de commander : nous vérifions.`,
+        question: type ? 'Ce produit convient-il à mon véhicule ?' : `Ce pack convient-il à mon véhicule ?`,
+        answer: type
+          ? `Il est prévu pour le ${concuPour}. En cas de doute sur votre version, écrivez-nous avec le modèle exact avant de commander : nous vérifions.`
+          : `Il est composé pour le ${concuPour} : les ampoules et les LED correspondent aux emplacements d’origine de ce véhicule. Si le vôtre a reçu des phares différents de ceux montés en usine (xénon, LED d’origine), écrivez-nous avec le modèle exact avant de commander : nous vérifions.`,
       }
     : generales.find((question) => question.question.startsWith('Comment être sûr')) ?? generales[0]
   return [compatibilite, ...sansPaiement]
