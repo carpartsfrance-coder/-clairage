@@ -20,8 +20,11 @@ import { GENERATION_VISIBLE, MARQUE_VISIBLE, MODELE_VISIBLE } from './vehicules-
  * 2. sinon la rubrique de la fiche, si elle a des produits en ligne ;
  * 3. sinon rien : la page reste introuvable (404).
  *
- * Une adresse qui n'a jamais existé, ou une fiche de démonstration, reste en
- * 404 : on ne redirige que ce qu'on connaît.
+ * Une fiche qui n'existe plus du tout en base (retirée lors de la bascule)
+ * est reconnue à son adresse : « pack-led-feux-de-recul-toyota-hilux-viii »
+ * se termine par la marque et la génération du véhicule. Seule une génération
+ * en ligne peut être retenue ; sinon, 404. Une fiche de démonstration reste
+ * en 404.
  */
 export async function pageDeRepliFiche(slug: string): Promise<string | null> {
   try {
@@ -36,7 +39,8 @@ export async function pageDeRepliFiche(slug: string): Promise<string | null> {
         },
       },
     })
-    if (!produit || produit.isDemo) return null
+    if (produit?.isDemo) return null
+    if (!produit) return pageDuVehiculeDansLAdresse(slug)
 
     const generation = await prisma.vehicleGeneration.findFirst({
       where: {
@@ -64,9 +68,33 @@ export async function pageDeRepliFiche(slug: string): Promise<string | null> {
       })
       if (enLigne > 0) return `/c/${category.slug}`
     }
-    return null
+    // Fiche sans compatibilité ni rubrique utilisable : l'adresse dit encore
+    // pour quel véhicule elle était faite.
+    return pageDuVehiculeDansLAdresse(slug)
   } catch (error) {
     console.error('[fiche] repli introuvable', error)
     return null
   }
+}
+
+/**
+ * La génération en ligne dont « marque-génération » termine l'adresse de la
+ * fiche, la plus longue si plusieurs conviennent. Seulement pour les
+ * adresses de packs (`pack-…`) : une adresse quelconque reste introuvable.
+ */
+async function pageDuVehiculeDansLAdresse(slug: string): Promise<string | null> {
+  if (!slug.startsWith('pack-')) return null
+  const generations = await prisma.vehicleGeneration.findMany({
+    where: {
+      ...GENERATION_VISIBLE,
+      model: { ...MODELE_VISIBLE, make: { ...MARQUE_VISIBLE, type: { in: ['CAR', 'MOTORCYCLE'] } } },
+    },
+    select: { slug: true, model: { select: { slug: true, make: { select: { slug: true, type: true } } } } },
+  })
+  const retenue = generations
+    .filter((generation) => slug.endsWith(`-${generation.model.make.slug}-${generation.slug}`))
+    .sort((a, b) => b.slug.length + b.model.make.slug.length - (a.slug.length + a.model.make.slug.length))[0]
+  if (!retenue) return null
+  const type = CHEMIN_PAR_TYPE[retenue.model.make.type as 'CAR' | 'MOTORCYCLE']
+  return `/packs/${type}/${retenue.model.make.slug}/${retenue.model.slug}/${retenue.slug}`
 }
