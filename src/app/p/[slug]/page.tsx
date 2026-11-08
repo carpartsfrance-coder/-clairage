@@ -255,6 +255,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const effetXenon = estEffetXenon(product.name)
   /** Feux additionnels, centrale, clignotants complets… (lib/types-produit.ts). */
   const typeSpecial = typeHorsAmpoules(product.name)
+  /*
+    « Le pack en bref » ne vaut que pour un pack composé pour un véhicule.
+    Une ampoule H7, un ballast ou une barre LED du rayon au détail n'est pas
+    un pack : « En bref ».
+  */
+  const enBref = typeSpecial || !vehiculeDeLaFiche ? 'En bref' : 'Le pack en bref'
   const visuelKit = product.gallery.find((item) => item.role === 'KIT_CONTENT') ?? product.gallery[0]
 
   /*
@@ -313,7 +319,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const aSectionContenu = aContenuKit || aRestrictions
 
   const sections = [
-    ...(aEnBref ? [{ href: '#en-bref', label: typeSpecial ? 'En bref' : 'Le pack en bref' }] : []),
+    ...(aEnBref ? [{ href: '#en-bref', label: enBref }] : []),
     ...(complementaires
       ? [{ href: '#completer', label: product.vehicleType === 'MOTORCYCLE' ? 'Toute la moto' : 'Toute la voiture' }]
       : []),
@@ -531,7 +537,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               >
                 <div className={cn(!comparatif && 'max-w-[760px]')}>
                   <p className="mb-3 text-[12px] font-bold tracking-[1.4px] text-brand-on-dark uppercase">
-                    {typeSpecial ? 'En bref' : 'Le pack en bref'}
+                    {enBref}
                   </p>
                   <h2
                     id="titre-en-bref"
