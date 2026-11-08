@@ -136,7 +136,7 @@ export function VehicleMenu({
           ) : (
             <>
               <span className="min-w-0 flex-1 truncate text-muted-strong">
-                Ajoutez votre véhicule pour filtrer le catalogue
+                Votre véhicule : voyez ce qui lui va
               </span>
               <span className="shrink-0 font-semibold text-brand">Choisir</span>
             </>
