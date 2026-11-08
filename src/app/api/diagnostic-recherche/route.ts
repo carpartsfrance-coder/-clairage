@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     .slice(0, 4)
   const ou = (mot: string) => {
     const m = `'%${mot}%'`
-    return `(p."name" ILIKE ${m} OR p."tagline" ILIKE ${m} OR p."description" ILIKE ${m} OR p."bulbBase" ILIKE ${m} OR EXISTS (SELECT 1 FROM "ProductVariant" t WHERE t."sku" ILIKE ${m} AND t."productId" = p."id"))`
+    return `(p."name" ILIKE ${m} OR p."tagline" ILIKE ${m} OR p."description" ILIKE ${m} OR p."bulbBase" ILIKE ${m})`
   }
   const filtre = `p."status" = 'PUBLISHED' AND ${mots.map(ou).join(' AND ')} AND EXISTS (SELECT 1 FROM "ProductVariant" t2 WHERE t2."active" AND t2."productId" = p."id")`
   const resultat: Record<string, unknown> = { mots }

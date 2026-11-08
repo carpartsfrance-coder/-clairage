@@ -200,6 +200,13 @@ model Product {
   @@index([bulbBase])
   @@index([vehicleType])
   @@index([isDemo])
+  /// Recherche « contient » (ILIKE '%mot%') : index trigrammes (extension
+  /// pg_trgm, migration 20261108230000). Sans eux, chaque recherche relisait
+  /// toute la table sur le disque, très lent sur la petite base de Render.
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_name_trgm_idx")
+  @@index([tagline(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_tagline_trgm_idx")
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_description_trgm_idx")
+  @@index([bulbBase(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_bulbBase_trgm_idx")
 }
 
 enum ProductStatus {
