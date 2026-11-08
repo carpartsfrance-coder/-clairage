@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getProduct } from '@/lib/queries/product'
+import { pageDeRepliFiche } from '@/lib/queries/repli-fiche'
 import { getSelectedVehicle } from '@/lib/session'
 import { getStaffUser } from '@/lib/admin/guard'
 import { getShippingOffers } from '@/lib/shipping'
@@ -151,7 +152,14 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
   const product = await getProduct(slug, vehicle?.configurationId ?? null, { brouillon: apercu })
 
-  if (!product) notFound()
+  if (!product) {
+    // Fiche retirée de la vente (pas encore de photos, archivée…) : le
+    // visiteur venu de Google arrive sur la page de son véhicule plutôt que
+    // sur « Page introuvable ». Redirection temporaire : la fiche reviendra.
+    const repli = apercu ? null : await pageDeRepliFiche(slug)
+    if (repli) redirect(repli)
+    notFound()
+  }
 
   const [shippingOffers, complementaires, vehiculeDeLaFiche] = await Promise.all([
     getShippingOffers(),
