@@ -22,7 +22,8 @@
  *   une photo produit à elle, ce sont eux qui s'affichent.
  * - **Toujours signalées** : nature « illustration » (la galerie affiche
  *   « Visuel d'illustration ») et légende « véhicule non représentatif ».
- * - **Pas pour la moto** : ces images montrent une voiture.
+ * - **Moto : seulement la photo des ampoules.** Les avant / après et la
+ *   route montrent une voiture : jamais sur une fiche moto.
  * - **Google Shopping ne reçoit jamais l'avant / après** (texte « AVANT /
  *   APRÈS » sur l'image, refusé par Google) : voir `imagesTypesPourLeFlux`.
  *
@@ -99,9 +100,18 @@ export type ImageType = {
 
 /** Les images types d'une fiche, dans l'ordre de la galerie. Vide si aucune. */
 export function imagesTypes(produit: ProduitMinimal): ImageType[] {
-  if (produit.vehicleType === 'MOTORCYCLE') return []
   const emplacement = emplacementDeLaFiche(produit.slug)
   if (!emplacement) return []
+  if (produit.vehicleType === 'MOTORCYCLE') {
+    return [
+      {
+        url: `${DOSSIER}/${photoProduit(emplacement, produit.name)}.webp`,
+        alt: `${produit.name} — les ampoules`,
+        role: 'PRODUCT',
+        sansTexte: true,
+      },
+    ]
+  }
   const visuel = visuelDe(emplacement)
   const alt = `${produit.name} — visuel d’illustration`
   return [
@@ -131,7 +141,6 @@ export function imagesTypes(produit: ProduitMinimal): ImageType[] {
  * `null` si la fiche n'a pas d'image type.
  */
 export function couvertureType(produit: ProduitMinimal): { url: string; alt: string } | null {
-  if (produit.vehicleType === 'MOTORCYCLE') return null
   const emplacement = emplacementDeLaFiche(produit.slug)
   if (!emplacement) return null
   return {

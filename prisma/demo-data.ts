@@ -600,7 +600,7 @@ export const demoHomeBlocks = {
     ctaLabel: 'Trouver pour ma moto',
     ctaHref: '/c/moto',
     image: 'motorcycle.png',
-    caption: 'Visuel illustratif · gamme de démonstration',
+    caption: 'Visuel d’illustration',
     eyebrow: 'Et sur deux roues ?',
   },
   help: {
