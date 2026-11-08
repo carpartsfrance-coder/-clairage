@@ -106,7 +106,14 @@ export default async function HomePage() {
       {/* Pas de mise en avant moto tant qu'aucun pack moto n'est en ligne :
           son bouton menait à « Aucune marque moto n'est encore référencée ». */}
       {navigation.some((section) => section.key === 'packs-moto') ? (
-        <MotoSection content={blocks.moto} />
+        <MotoSection
+          content={{
+            ...blocks.moto,
+            // La rubrique « Moto & scooter » est vide : les packs moto se
+            // trouvent par marque et modèle, comme ceux des voitures.
+            ctaHref: blocks.moto.ctaHref === '/c/moto' ? '/packs/moto' : blocks.moto.ctaHref,
+          }}
+        />
       ) : null}
       <FaqHelpSection faq={faq} help={blocks.help} />
     </>

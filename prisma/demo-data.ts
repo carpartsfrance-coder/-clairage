@@ -598,7 +598,7 @@ export const demoHomeBlocks = {
     title: 'Le blanc LED.\nL’esprit libre.',
     subtitle: 'Des solutions d’éclairage haute performance pour votre moto.',
     ctaLabel: 'Trouver pour ma moto',
-    ctaHref: '/c/moto',
+    ctaHref: '/packs/moto',
     image: 'motorcycle.png',
     caption: 'Visuel d’illustration',
     eyebrow: 'Et sur deux roues ?',
