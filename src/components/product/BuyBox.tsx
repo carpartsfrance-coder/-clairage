@@ -1,6 +1,6 @@
 'use client'
 
-import { typeDeProduit } from '@/lib/types-produit'
+import { leVehicule, typeDeProduit } from '@/lib/types-produit'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -340,8 +340,8 @@ export function BuyBox({
           tone="ok"
           title={
             typeDeProduit(productName)
-              ? `Prévu pour le ${concuPour}.`
-              : `Pack composé pour le ${concuPour}.`
+              ? `Prévu pour ${leVehicule(concuPour)}.`
+              : `Pack composé pour ${leVehicule(concuPour)}.`
           }
           className="mb-5"
         >

@@ -1,7 +1,7 @@
 import 'server-only'
 import { commercialTerms, dureeGarantie, formatPrice } from './identity'
 import { getZonesDeLivraison } from './shipping'
-import { typeDeProduit } from './types-produit'
+import { leVehicule, typeDeProduit } from './types-produit'
 
 /**
  * Questions fréquentes par défaut, tant que le back-office n'en publie pas.
@@ -107,8 +107,8 @@ export async function faqFicheParDefaut(
     ? {
         question: type ? 'Ce produit convient-il à mon véhicule ?' : `Ce pack convient-il à mon véhicule ?`,
         answer: type
-          ? `Il est prévu pour le ${concuPour}. En cas de doute sur votre version, écrivez-nous avec le modèle exact avant de commander : nous vérifions.`
-          : `Il est composé pour le ${concuPour} : les ampoules et les LED correspondent aux emplacements d’origine de ce véhicule. Si le vôtre a reçu des phares différents de ceux montés en usine (xénon, LED d’origine), écrivez-nous avec le modèle exact avant de commander : nous vérifions.`,
+          ? `Il est prévu pour ${leVehicule(concuPour)}. En cas de doute sur votre version, écrivez-nous avec le modèle exact avant de commander : nous vérifions.`
+          : `Il est composé pour ${leVehicule(concuPour)} : les ampoules et les LED correspondent aux emplacements d’origine de ce véhicule. Si le vôtre a reçu des phares différents de ceux montés en usine (xénon, LED d’origine), écrivez-nous avec le modèle exact avant de commander : nous vérifions.`,
       }
     : generales.find((question) => question.question.startsWith('Comment être sûr')) ?? generales[0]
   return [compatibilite, ...sansPaiement]

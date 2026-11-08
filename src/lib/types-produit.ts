@@ -111,3 +111,11 @@ export const TYPES_DE_PRODUIT: TypeDeProduit[] = [
 export function typeDeProduit(nom: string): TypeDeProduit | null {
   return TYPES_DE_PRODUIT.find((type) => type.prefixe.test(nom.trim())) ?? null
 }
+
+/**
+ * « le Toyota Hilux », mais « l’Audi A3 », « l’Opel Corsa E » : l'article
+ * devant un nom de véhicule.
+ */
+export function leVehicule(nom: string): string {
+  return /^[aeiouyhâàéèêîïôûAEIOUYHÂÀÉÈÊÎÏÔÛ]/.test(nom.trim()) ? `l’${nom}` : `le ${nom}`
+}
