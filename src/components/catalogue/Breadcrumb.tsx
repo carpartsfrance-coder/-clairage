@@ -17,7 +17,7 @@ export function Breadcrumb({
 }) {
   return (
     <nav aria-label="Fil d'Ariane" className="text-[10px] text-muted fiche:text-[11px]">
-      <ol className="flex h-[43px] flex-wrap items-center gap-x-[9px] gap-y-1 fiche:h-[54px] fiche:gap-x-2.5">
+      <ol className="flex min-h-[43px] flex-wrap items-center gap-x-[9px] gap-y-1 py-2 fiche:min-h-[54px] fiche:gap-x-2.5">
         {items.map((item, index) => (
           <li key={`${item.label}-${index}`} className="flex items-center gap-[9px] fiche:gap-2.5">
             {index > 0 ? (
