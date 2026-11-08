@@ -89,6 +89,7 @@ export async function faqGeneraleParDefaut(): Promise<QuestionReponse[]> {
 export async function faqFicheParDefaut(
   concuPour: string | null,
   nomDuProduit = '',
+  moto = false,
 ): Promise<QuestionReponse[]> {
   const generales = await faqGeneraleParDefaut()
   // Feux additionnels, centrale… : la réponse sur le câblage est la leur.
@@ -109,8 +110,8 @@ export async function faqFicheParDefaut(
     ? {
         question: type ? 'Ce produit convient-il à mon véhicule ?' : `Ce pack convient-il à mon véhicule ?`,
         answer: type
-          ? `Il est prévu pour ${leVehicule(concuPour)}. En cas de doute sur votre version, écrivez-nous avec le modèle exact avant de commander : nous vérifions.`
-          : `Il est composé pour ${leVehicule(concuPour)} : les ampoules et les LED correspondent aux emplacements d’origine de ce véhicule. Si le vôtre a reçu des phares différents de ceux montés en usine (xénon, LED d’origine), écrivez-nous avec le modèle exact avant de commander : nous vérifions.`,
+          ? `Il est prévu pour ${leVehicule(concuPour, moto)}. En cas de doute sur votre version, écrivez-nous avec le modèle exact avant de commander : nous vérifions.`
+          : `Il est composé pour ${leVehicule(concuPour, moto)} : les ampoules et les LED correspondent aux emplacements d’origine de ce véhicule. Si le vôtre a reçu des phares différents de ceux montés en usine (xénon, LED d’origine), écrivez-nous avec le modèle exact avant de commander : nous vérifions.`,
       }
     : generales.find((question) => question.question.startsWith('Comment être sûr')) ?? generales[0]
   return [compatibilite, ...sansPaiement]

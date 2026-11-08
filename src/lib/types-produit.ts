@@ -240,11 +240,16 @@ export function typeHorsAmpoules(nom: string): TypeDeProduit | null {
 }
 
 /**
- * « le Toyota Hilux », mais « l’Audi A3 », « l’Opel Corsa E » : l'article
- * devant un nom de véhicule.
+ * L'article devant un nom de véhicule : « le Toyota Hilux », « l’Audi A3 »,
+ * et pour une moto « la Yamaha MT-07 », « l’Aprilia RS 125 ».
+ *
+ * Pas d'élision devant H ni devant Y : les marques s'y prononcent comme une
+ * consonne (« la Honda », « le Hyundai Tucson », « la Yamaha ») — « l’Yamaha »
+ * s'affichait sur toutes les fiches Yamaha et Honda (8 novembre 2026).
  */
-export function leVehicule(nom: string): string {
-  return /^[aeiouyhâàéèêîïôûAEIOUYHÂÀÉÈÊÎÏÔÛ]/.test(nom.trim()) ? `l’${nom}` : `le ${nom}`
+export function leVehicule(nom: string, moto = false): string {
+  if (/^[aeiouâàéèêîïôû]/i.test(nom.trim())) return `l’${nom}`
+  return `${moto ? 'la' : 'le'} ${nom}`
 }
 
 /**

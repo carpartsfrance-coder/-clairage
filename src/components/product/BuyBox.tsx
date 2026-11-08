@@ -77,6 +77,7 @@ export function BuyBox({
   returnWindowDays,
   garantie = null,
   concuPour = null,
+  moto = false,
   contentAnchor = '#dans-votre-kit',
   vehiculeDesComplements = null,
 }: {
@@ -94,6 +95,8 @@ export function BuyBox({
   garantie?: string | null
   /** « Toyota Hilux 8 (2015–2025) » quand la fiche est composée pour un véhicule. */
   concuPour?: string | null
+  /** Fiche moto : « la Yamaha », pas « le Yamaha ». */
+  moto?: boolean
   contentAnchor?: string
   /**
    * Nom du véhicule quand la fiche propose d'autres packs pour lui
@@ -340,8 +343,8 @@ export function BuyBox({
           tone="ok"
           title={
             typeHorsAmpoules(productName)
-              ? `Prévu pour ${leVehicule(concuPour)}.`
-              : `Pack composé pour ${leVehicule(concuPour)}.`
+              ? `Prévu pour ${leVehicule(concuPour, moto)}.`
+              : `Pack composé pour ${leVehicule(concuPour, moto)}.`
           }
           className="mb-5"
         >

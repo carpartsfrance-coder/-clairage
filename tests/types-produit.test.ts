@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { typeDeProduit } from '../src/lib/types-produit'
+import { leVehicule, typeDeProduit } from '../src/lib/types-produit'
+import { nomAvecPeriode } from '../src/lib/seo-fiche'
 import { couvertureType, imagesTypes } from '../src/lib/images-types'
 
 /**
@@ -27,5 +28,31 @@ describe('typeDeProduit', () => {
     expect(images).toHaveLength(1)
     expect(images[0].url).toBe('/images-types/produit-feux-additionnels.webp')
     expect(couvertureType(produit)?.url).toBe('/images-types/produit-feux-additionnels.webp')
+  })
+})
+
+describe('leVehicule', () => {
+  it('élide devant une voyelle seulement', () => {
+    expect(leVehicule('Audi A3 (2012–2020)')).toBe('l’Audi A3 (2012–2020)')
+    expect(leVehicule('Toyota Hilux 8')).toBe('le Toyota Hilux 8')
+    expect(leVehicule('Hyundai Tucson')).toBe('le Hyundai Tucson')
+  })
+  it('dit « la » devant une moto, sans élision devant H ou Y', () => {
+    expect(leVehicule('Yamaha YZF-R6 600 (2006–2007)', true)).toBe('la Yamaha YZF-R6 600 (2006–2007)')
+    expect(leVehicule('Honda CBR 1000 RR', true)).toBe('la Honda CBR 1000 RR')
+    expect(leVehicule('Harley-Davidson Fat Bob 1690', true)).toBe('la Harley-Davidson Fat Bob 1690')
+    expect(leVehicule('Aprilia RS 125', true)).toBe('l’Aprilia RS 125')
+  })
+})
+
+describe('nomAvecPeriode', () => {
+  it('ajoute les années, sauf si le nom les porte déjà', () => {
+    expect(nomAvecPeriode('Centrale de clignotants LED pour Yamaha YZF-R6 600', 2006, 2007)).toBe(
+      'Centrale de clignotants LED pour Yamaha YZF-R6 600 (2006–2007)',
+    )
+    expect(nomAvecPeriode('Kit xénon HID pour Honda CB 500', 2019, null)).toBe(
+      'Kit xénon HID pour Honda CB 500 (depuis 2019)',
+    )
+    expect(nomAvecPeriode('Pack LED phares pour Ford Focus 2008', 2008, 2011)).toBe('Pack LED phares pour Ford Focus 2008')
   })
 })
