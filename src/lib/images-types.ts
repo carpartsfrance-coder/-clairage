@@ -14,6 +14,10 @@
  *    le gros plan « après ».
  *
  * Règles :
+ * - **Les ampoules d'abord.** En couverture et en tête de galerie, la photo
+ *   des ampoules : une voiture qui n'est pas la sienne ferait douter le
+ *   client de la compatibilité. L'avant / après vient ensuite, en
+ *   illustration de l'effet.
  * - **Jamais à la place d'un vrai visuel.** Dès qu'une fiche a un rendu, ou
  *   une photo produit à elle, ce sont eux qui s'affichent.
  * - **Toujours signalées** : nature « illustration » (la galerie affiche
@@ -107,16 +111,23 @@ export function imagesTypes(produit: ProduitMinimal): ImageType[] {
 
 /**
  * Le visuel de couverture d'une fiche sans visuel à elle (cartes du
- * catalogue, panier, accueil) : le gros plan « après », sans texte, qui se
- * recadre bien. `null` si la fiche n'a pas d'image type.
+ * catalogue, pages véhicule, panier, accueil) : **la photo des ampoules**,
+ * jamais une voiture.
+ *
+ * C'était le gros plan « après » sur la voiture neutre. Sur la page d'un
+ * véhicule, les cartes des packs qui ont leurs rendus montrent ce véhicule ;
+ * à côté, une autre voiture laissait croire au client que ce pack-là n'était
+ * pas pour la sienne (remarque de l'exploitant, 8 novembre 2026). Les
+ * ampoules devant la boîte ne montrent aucune voiture : rien à comparer.
+ * `null` si la fiche n'a pas d'image type.
  */
 export function couvertureType(produit: ProduitMinimal): { url: string; alt: string } | null {
   if (produit.vehicleType === 'MOTORCYCLE') return null
   const emplacement = emplacementDeLaFiche(produit.slug)
   if (!emplacement) return null
   return {
-    url: `${DOSSIER}/${visuelDe(emplacement)}-apres.webp`,
-    alt: `${produit.name} — visuel d’illustration`,
+    url: `${DOSSIER}/${photoProduit(emplacement, produit.name)}.webp`,
+    alt: `${produit.name} — les ampoules`,
   }
 }
 
