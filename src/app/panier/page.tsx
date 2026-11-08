@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { MoyensDePaiement } from '@/components/paiement/MoyensDePaiement'
 import Image from 'next/image'
 import Link from 'next/link'
-import { revalidatePath } from 'next/cache'
+import { refresh } from 'next/cache'
 import { getCart } from '@/lib/cart'
 import { getDeliveryTeaser, getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { getPacksComplementaires } from '@/lib/queries/packs-complementaires'
@@ -38,7 +38,7 @@ async function modifierLigne(formData: FormData) {
     lineId: String(formData.get('lineId') ?? ''),
     quantity: Number(formData.get('quantity') ?? 0),
   })
-  revalidatePath('/panier')
+  refresh()
 }
 
 /**
