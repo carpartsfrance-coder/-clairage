@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
+import { IconCheck, IconInfo, IconPack, IconPin, IconWrench } from '@/components/ui/icons'
 
 /**
  * Rendu du rédactionnel long (`Product.body`, et plus tard les guides).
@@ -67,6 +68,8 @@ export function Prose({
   sombre?: boolean
 }) {
   const blocs = children.split(/\n{2,}/).filter((bloc) => bloc.trim().length > 0)
+
+  if (sombre) return <ProseEnBref blocs={blocs} className={className} />
 
   return (
     <div className={className}>
@@ -143,6 +146,115 @@ export function Prose({
           </p>
         )
       })}
+    </div>
+  )
+}
+
+/*
+  « Le pack en bref » de la fiche produit, mis en page pour être lu
+  (exploitant, 9 novembre 2026 : « le texte est difficile à lire »).
+
+  Le texte reste entier et visible — il compte pour le référencement. Seule
+  la présentation change :
+   - le premier paragraphe en accroche, plus grand et en blanc ;
+   - chaque intertitre `##` devient une carte, avec une icône selon son sujet ;
+   - les lignes `- …` deviennent une liste à coches ;
+   - une largeur de ligne limitée et plus d'air entre les blocs.
+*/
+
+
+function iconeDeSection(titre: string) {
+  if (/carton|contenu|inclus/i.test(titre)) return IconPack
+  if (/avant de commander|compatib|vérif/i.test(titre)) return IconInfo
+  if (/couvre|emplacement|où/i.test(titre)) return IconPin
+  if (/montage|branch|install/i.test(titre)) return IconWrench
+  return IconCheck
+}
+
+function blocEnBref(bloc: string, cle: string, accroche: boolean) {
+  const lignes = bloc.split('\n').filter((l) => l.trim().length > 0)
+  const puces = lignes.map((l) => l.match(/^\s*[-*•]\s+(.*)$/)?.[1] ?? null)
+  if (puces.length > 0 && puces.every((x) => x !== null)) {
+    return (
+      <ul key={cle} className="my-3 flex flex-col gap-2">
+        {puces.map((texte, i) => (
+          <li key={`${cle}-${i}`} className="flex items-start gap-2.5 text-[16px] leading-[1.5] text-[#e7e8ea]">
+            <IconCheck className="mt-[3px] size-[18px] shrink-0 text-ok" />
+            <span>{emphases(texte as string, `${cle}-${i}`, true)}</span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  const paires = lignes.map(celluleDeTableau).filter((x): x is [string, string] => x !== null)
+  if (paires.length > 0 && lignes.every((l) => /^\s*\|.*\|\s*$/.test(l))) {
+    return (
+      <dl key={cle} className="my-3 grid grid-cols-[auto_1fr] gap-x-5 gap-y-2">
+        {paires.map(([terme, valeur], i) => (
+          <Fragment key={`${cle}-${i}`}>
+            <dt className="text-[13px] font-bold tracking-[0.3px] text-[#a9adb4] uppercase">{terme}</dt>
+            <dd className="text-[15px] leading-[1.6] text-[#e7e8ea]">{emphases(valeur, `${cle}-${i}`, true)}</dd>
+          </Fragment>
+        ))}
+      </dl>
+    )
+  }
+  return (
+    <p
+      key={cle}
+      className={
+        accroche
+          ? 'mb-5 text-[19px] leading-[1.55] font-medium text-white fiche:text-[21px]'
+          : 'mb-4 text-[16px] leading-[1.75] text-[#c9ccd1] fiche:text-[17px]'
+      }
+    >
+      {lignes.map((ligne, i) => (
+        <Fragment key={`${cle}-${i}`}>
+          {i > 0 ? <br /> : null}
+          {emphases(ligne, `${cle}-${i}`, true)}
+        </Fragment>
+      ))}
+    </p>
+  )
+}
+
+function ProseEnBref({ blocs, className }: { blocs: string[]; className?: string }) {
+  // L'introduction (avant le premier intertitre), puis une section par `##`.
+  // Un intertitre suivi directement de sa liste, sans ligne vide, est séparé.
+  const morceaux = blocs.flatMap((b) => {
+    const m = b.match(/^##\s+(.+?)\n([\s\S]+)$/)
+    return m ? [`## ${m[1]}`, m[2]] : [b]
+  })
+  const intro: string[] = []
+  const sections: { titre: string; blocs: string[] }[] = []
+  for (const b of morceaux) {
+    if (b.startsWith('## ')) sections.push({ titre: b.slice(3).trim(), blocs: [] })
+    else if (sections.length > 0) sections[sections.length - 1].blocs.push(b)
+    else intro.push(b)
+  }
+  return (
+    <div className={`max-w-[640px] ${className ?? ''}`}>
+      {intro.map((b, i) => blocEnBref(b, `i${i}`, i === 0))}
+      {sections.length > 0 ? (
+        <div className="mt-7 flex flex-col gap-3">
+          {sections.map(({ titre, blocs: contenu }, i) => {
+            const Icone = iconeDeSection(titre)
+            return (
+              <section key={`s${i}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 fiche:p-6">
+                <h3 className="flex items-center gap-3 text-[18px] leading-tight font-bold tracking-[-0.3px] text-white fiche:text-[19px]">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand/15">
+                    <Icone className="size-[18px] text-brand-on-dark" />
+                  </span>
+                  {titre}
+                </h3>
+                <div className="mt-3 [&>p:last-child]:mb-0 [&>p]:text-[16px]">
+                  {contenu.map((b, j) => blocEnBref(b, `s${i}-${j}`, false))}
+                </div>
+              </section>
+            )
+          })}
+        </div>
+      ) : null}
     </div>
   )
 }
