@@ -117,8 +117,10 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
                     )}
                   >
                     {fait ? <IconCheck className="size-4" /> : <IconPlus className="size-4" />}
-                    {fait ? 'Ajouté' : enCours === pack.variantId ? 'Ajout…' : 'Ajouter'}
-                    <span className="hidden fiche:inline">{fait || enCours === pack.variantId ? '' : ' au panier'}</span>
+                    <span>
+                      {fait ? 'Ajouté' : enCours === pack.variantId ? 'Ajout…' : 'Ajouter'}
+                      {fait || enCours === pack.variantId ? null : <span className="hidden fiche:inline"> au panier</span>}
+                    </span>
                   </button>
                 </div>
               </div>
