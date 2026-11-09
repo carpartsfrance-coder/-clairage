@@ -127,14 +127,19 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
             onBlur={() => {
               blurTimer.current = setTimeout(() => setOpen(false), 120)
             }}
-            placeholder="Votre véhicule et l’éclairage : clio 4 veilleuses…"
+            placeholder={compact ? 'Ex. : clio 4 veilleuses, H7…' : 'Votre véhicule et l’éclairage : clio 4 veilleuses…'}
             autoComplete="off"
             role="combobox"
             aria-expanded={open}
             aria-controls={listId}
             aria-autocomplete="list"
             aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
-            className="h-full min-w-0 flex-1 bg-transparent px-3 text-[12px] text-[#363636] outline-none placeholder:text-[#8a8a8a]" 
+            // 16 px en version compacte : en dessous, iOS zoome toute la page
+            // dès qu'on touche le champ.
+            className={cn(
+              'h-full min-w-0 flex-1 bg-transparent px-3 text-[#363636] outline-none placeholder:text-[#8a8a8a]',
+              compact ? 'text-[16px]' : 'text-[12px]',
+            )}
           />
           <button
             type="submit"

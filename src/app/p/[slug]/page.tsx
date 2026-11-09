@@ -459,7 +459,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             )}
           >
             {aVisuel ? (
-              <div className="order-2 mt-4 fiche:order-none fiche:mt-0 fiche:self-start fiche:top-[76px] lg:top-[124px] [@media(min-width:801px)_and_(min-height:760px)]:sticky">
+              <div className="order-2 mt-4 fiche:order-none fiche:mt-0 fiche:self-start fiche:top-[calc(var(--hauteur-header,108px)+16px)] [@media(min-width:801px)_and_(min-height:760px)]:sticky">
                 <ProductGallery items={product.gallery} productName={product.name} />
                 <ListePromesses promesses={promesses} className="mt-6 hidden fiche:grid" />
               </div>

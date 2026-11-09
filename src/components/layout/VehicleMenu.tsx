@@ -122,7 +122,7 @@ export function VehicleMenu({
           onClick={() => setOpen(true)}
           aria-haspopup="dialog"
           aria-expanded={open}
-          className="flex min-h-11 w-full items-center gap-2.5 rounded-sm text-left text-sm"
+          className="flex min-h-9 w-full items-center gap-2.5 rounded-sm text-left text-sm"
         >
           <Icon className="size-5 shrink-0 text-muted-strong" />
           {vehicle ? (

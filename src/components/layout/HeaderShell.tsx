@@ -24,14 +24,34 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
  *    lit la position qu'une fois par image, pas à chaque événement.
  */
 
-/** Au-delà : header replié. */
-const SEUIL_REPLI = 96
+/**
+ * Au-delà : header replié. Sur mobile, le repli retire ~130 px (bandeau,
+ * recherche, véhicule) : le seuil doit rester au-dessus de ce retrait plus le
+ * seuil de dépli, sinon le navigateur, qui compense le retrait en remontant la
+ * page, ramènerait sous le seuil de dépli et le header clignoterait.
+ */
+const SEUIL_REPLI = 200
 /** En deçà : header déplié. Écart volontaire avec le seuil de repli. */
 const SEUIL_DEPLI = 32
 
 export function HeaderShell({ children }: { children: ReactNode }) {
   const [scrolled, setScrolled] = useState(false)
   const ticking = useRef(false)
+  const ref = useRef<HTMLElement>(null)
+
+  // Hauteur réelle du header, publiée en variable CSS (`--hauteur-header`) :
+  // ce qui colle sous lui (onglets de la fiche, galerie) s'y cale au lieu
+  // d'une valeur figée, fausse dès qu'il se replie.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const publier = () =>
+      document.documentElement.style.setProperty('--hauteur-header', `${Math.round(el.getBoundingClientRect().height)}px`)
+    publier()
+    const obs = new ResizeObserver(publier)
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   useEffect(() => {
     function lire() {
@@ -55,6 +75,7 @@ export function HeaderShell({ children }: { children: ReactNode }) {
 
   return (
     <header
+      ref={ref}
       data-scrolled={scrolled ? 'true' : undefined}
       className="group/header sticky top-0 z-40 bg-white"
     >
