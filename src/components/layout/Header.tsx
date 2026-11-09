@@ -186,12 +186,14 @@ export async function Header() {
       </div>
 
       {/* ---------------- Véhicule, bandeau mobile ----------------
+          Absent des fiches faites pour un véhicule précis (repère
+          `data-fiche-vehicule`) : le titre porte déjà le véhicule.
           Replié au défilement : le véhicule retenu reste rappelé sur les pages
           qui en dépendent (fiche, panier, résultats) et reste modifiable
           depuis le menu. */}
       <div
         className={
-          'overflow-hidden border-b border-line bg-[#f6f6f6] transition-[height] duration-200 motion-reduce:transition-none lg:hidden ' +
+          'overflow-hidden border-b border-line bg-[#f6f6f6] transition-[height] duration-200 motion-reduce:transition-none lg:hidden [body:has([data-fiche-vehicule])_&]:hidden ' +
           'h-9 group-data-scrolled/header:h-0 group-data-scrolled/header:border-b-0'
         }
       >

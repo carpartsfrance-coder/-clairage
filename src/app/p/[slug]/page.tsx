@@ -431,7 +431,15 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         ) : null}
 
         <div className="container-page">
-          <Breadcrumb items={breadcrumbItems} />
+          <Breadcrumb
+            items={breadcrumbItems}
+            retourMobile={
+              concuPour && vehiculeDeLaFiche?.chemin ? { label: concuPour, href: vehiculeDeLaFiche.chemin } : null
+            }
+          />
+          {/* Fiche d'un véhicule précis : le header mobile n'affiche pas la
+              barre « Votre véhicule », le titre porte déjà le véhicule. */}
+          {vehiculeDeLaFiche ? <span data-fiche-vehicule hidden /> : null}
 
           {/* Masqué sur téléphone : le header mobile porte déjà le véhicule. */}
           <VehicleBar
@@ -484,6 +492,13 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                     : null
                 }
                 tagline={accrocheSousLeTitre(product.tagline, vehiculeDeLaFiche)}
+                // Téléphone : « Pour les Audi A1 produites de 2010 à 2018 » redit
+                // le titre ; le véhicule et ses années passent dans le surtitre.
+                vehiculeMobile={
+                  concuPour && accrocheSousLeTitre(product.tagline, vehiculeDeLaFiche) !== product.tagline
+                    ? concuPour
+                    : null
+                }
               />
 
               <ResumeFiche
