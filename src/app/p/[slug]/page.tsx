@@ -510,11 +510,11 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 }
               />
 
+              {/* Plus de « Réf. LV-… » sous le titre (exploitant, 9 novembre 2026) :
+                  la référence interne ne dit rien au client. Elle reste dans les
+                  données structurées pour Google, et dans le panier. */}
               <ResumeFiche
-                reference={
-                  (product.variants.find((v) => v.id === product.recommendedVariantId) ?? product.variants[0])
-                    ?.sku ?? null
-                }
+                reference={null}
                 resume={aEnBref ? resumeCourt(product.description ?? product.tagline ?? null) : null}
               />
 
