@@ -201,7 +201,10 @@ export function BuyBox({
 
   const total = selected.priceCents + accessoriesTotal
   /* Le nom du conditionnement ne s'affiche que s'il dit autre chose que le titre. */
-  const conditionnementAffiche = nomUtileDuConditionnement(selected.name, productName)
+  // Une combinaison d'options se lit déjà dans les listes : pas de répétition à côté du prix.
+  const conditionnementAffiche = selected.name.includes(' : ')
+    ? null
+    : nomUtileDuConditionnement(selected.name, productName)
 
   // L'accroche de livraison suit le total réel : passer du kit aux ampoules
   // seules peut faire repasser sous le seuil de franchise, et cela doit se voir
@@ -936,7 +939,7 @@ function ChoixDOptions({
     if (i >= 0) onChange(variants[i].id)
   }
   return (
-    <fieldset className="rounded-xl bg-[#111214] p-4 text-white">
+    <fieldset className="mb-4 rounded-xl bg-[#111214] p-4 text-white">
       <legend className="sr-only">Configuration</legend>
       <p className="text-[15px] font-bold">Configuration</p>
       <p className="mt-1 mb-3 text-[13px] text-[#c9ccd1]">Le prix change selon les options choisies.</p>
