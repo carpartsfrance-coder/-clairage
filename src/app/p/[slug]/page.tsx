@@ -37,7 +37,6 @@ import { KitContents } from '@/components/product/KitContents'
 import { OptionalAddons } from '@/components/product/OptionalAddons'
 import { ProductConfigurationProvider } from '@/components/product/ProductConfiguration'
 import { SectionNav } from '@/components/product/SectionNav'
-import { PacksComplementaires } from '@/components/product/PacksComplementaires'
 import { Prose } from '@/components/ui/Prose'
 import { ToneSlider } from '@/components/product/ToneSlider'
 import { Card } from '@/components/ui/Surface'
@@ -322,7 +321,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const sections = [
     ...(aEnBref ? [{ href: '#en-bref', label: enBref }] : []),
     ...(complementaires
-      ? [{ href: '#completer', label: product.vehicleType === 'MOTORCYCLE' ? 'Toute la moto' : 'Toute la voiture' }]
+      ? [{ href: '#titre-options-vehicule', label: product.vehicleType === 'MOTORCYCLE' ? 'Toute la moto' : 'Toute la voiture' }]
       : []),
     ...(aSectionContenu
       ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans la boîte' : 'Caractéristiques' }]
@@ -675,15 +674,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           pack en bref » : le client vient de voir l'avant / après, c'est là
           qu'il a envie d'équiper toute la voiture.
         */}
-        {complementaires ? (
-          <PacksComplementaires
-            vehicule={complementaires.vehicule}
-            packs={complementaires.packs}
-            prixDuPackCents={prixDuPackCents}
-            seuilFranchiseCents={seuilFranchiseCents}
-            moto={product.vehicleType === 'MOTORCYCLE'}
-          />
-        ) : null}
+        {/* Remplacée par « Complétez l'éclairage » dans la colonne d'achat
+            (cartes avec photo et « tout ajouter ») : la garder faisait doublon. */}
+        {/* « Complétez l'éclairage » est dans la colonne d'achat (OptionsDuVehicule). */}
 
         {/* ---------------- #dans-votre-kit ---------------- */}
         {aSectionContenu ? (
