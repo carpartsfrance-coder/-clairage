@@ -576,12 +576,8 @@ export function BuyBox({
         jauge), seuil lointain (une ligne neutre). Tant qu'il n'est pas
         atteint, un lien mène aux autres packs du même véhicule.
       */}
-      {delivery && delivery.isSettled ? (
-        <p className="mb-3.5 flex items-center gap-2 text-[14px] font-bold text-[#1f5a39]">
-          <IconTruck className="size-[18px] shrink-0" />
-          La livraison est offerte
-        </p>
-      ) : null}
+      {/* Seuil atteint : rien ici, la ligne sous le bouton dit déjà
+          « Livraison offerte · délai » (deux fois de suite sur téléphone). */}
       {delivery && ecartManquant !== null && seuilFranchiseCents !== null ? (
         jaugeAPortee ? (
           <div className="mb-3.5 rounded-xl bg-[#f5f6f7] px-3.5 py-3 text-[14px]">

@@ -394,9 +394,11 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     >
       {/*
         La barre d'achat fixe occupe le bas de l'écran : on lui réserve sa
-        hauteur, plus la zone de sécurité des téléphones à encoche.
+        hauteur, plus la zone de sécurité des téléphones à encoche — sous le
+        pied de page (repère `data-barre-achat`, lu par Footer), pour ne pas
+        laisser une bande blanche entre la dernière section et le pied.
       */}
-      <div className="pb-[calc(76px+env(safe-area-inset-bottom))] fiche:pb-[78px]">
+      <div data-barre-achat>
         {/*
           Données structurées : voir StructuredData.tsx — rien n'y est émis en
           préproduction, ni en aperçu.
@@ -441,13 +443,17 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               barre « Votre véhicule », le titre porte déjà le véhicule. */}
           {vehiculeDeLaFiche ? <span data-fiche-vehicule hidden /> : null}
 
-          {/* Masqué sur téléphone : le header mobile porte déjà le véhicule. */}
+          {/* Masqué sur téléphone : le header mobile porte déjà le véhicule.
+              Masqué aussi sans véhicule choisi sur une fiche de véhicule :
+              l'encadré « Prévu pour… » du bloc d'achat dit la même chose. */}
+          {vehicle || !concuPour ? (
           <VehicleBar
             vehicle={vehicle}
             concuPour={concuPour}
             intitule={typeSpecial ? 'Prévu pour' : 'Pack composé pour'}
             className="mb-6 max-fiche:hidden"
           />
+          ) : null}
 
           {/*
             .product-hero — refonte LEDVROOM.
@@ -540,10 +546,13 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           </section>
         </div>
 
-        {/* Les promesses sur téléphone (et sur une fiche sans visuel) : après le bouton. */}
-        <div className={cn('container-page pb-10', aVisuel && 'fiche:hidden')}>
-          <ListePromesses promesses={promesses} className="grid" />
-        </div>
+        {/* Fiche sans visuel : les promesses après le bouton. Sur téléphone,
+            plus de cartes : la ligne sous le bouton d'achat les dit déjà. */}
+        {aVisuel ? null : (
+          <div className="container-page pb-10 max-fiche:hidden">
+            <ListePromesses promesses={promesses} className="grid" />
+          </div>
+        )}
 
         {/* ---------------- .section-nav ---------------- */}
         {/* Une seule ancre ne sert à rien : la barre n'apparaît qu'à partir de deux sections. */}
@@ -796,7 +805,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             aria-labelledby="titre-questions"
             className="scroll-mt-32 border-t border-line"
           >
-            <div className="container-page py-12 fiche:grid fiche:grid-cols-[0.75fr_1.25fr] fiche:gap-14 fiche:py-20">
+            <div className="container-page pt-12 pb-10 fiche:grid fiche:grid-cols-[0.75fr_1.25fr] fiche:gap-14 fiche:py-20">
               <div>
                 <p className="mb-2 text-[12px] font-bold tracking-[1.4px] text-brand uppercase">
                   On vous répond
