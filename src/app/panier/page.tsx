@@ -235,7 +235,7 @@ export default async function PanierPage() {
                               </Link>
                             </h3>
                             <p className="my-0.5 text-[9px] text-[#7e7e7e]">
-                              {line.variantName} · réf. {line.sku}
+                              {line.variantName}
                             </p>
                             {line.requiredBy ? (
                               <p className="my-0.5 text-[9px] text-[#7e7e7e]">
