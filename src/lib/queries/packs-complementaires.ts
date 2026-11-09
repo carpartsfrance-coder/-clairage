@@ -107,10 +107,18 @@ export async function getPacksComplementaires(
       confirmesPourLeClient = new Set(confirmes.map((f) => f.variant.product.slug))
     }
 
-    const packs = cartesDesPacks(lecture.data.groups)
+    const cartes = cartesDesPacks(lecture.data.groups)
+    // « Compléter », pas « remplacer » : les produits du même emplacement que
+    // celui de la fiche (un autre kit pour les mêmes phares) n'y ont pas leur
+    // place — on propose les AUTRES emplacements du véhicule.
+    const ici = new Set(
+      (cartes.find((carte) => carte.slug === productSlug)?.emplacements ?? []).map((e) => e.code),
+    )
+    const packs = cartes
       .filter(
         (carte) =>
           carte.slug !== productSlug &&
+          !carte.emplacements.some((e) => ici.has(e.code)) &&
           carte.status === 'CONFIRMED' &&
           carte.variantId !== null &&
           (confirmesPourLeClient === null || confirmesPourLeClient.has(carte.slug)),
