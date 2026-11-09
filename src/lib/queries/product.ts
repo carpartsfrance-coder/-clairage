@@ -76,6 +76,10 @@ export type VariantView = {
   fitment: FitmentResult
   /** Accessoires exigés par le montage et absents de ce conditionnement. */
   missingAccessories: RequiredAccessory[]
+  /** Photo propre à cette option (finition, couleur…), montrée quand elle est choisie. */
+  image: { url: string; alt: string } | null
+  /** La même option, produit allumé. */
+  imageAllumee: { url: string; alt: string } | null
 }
 
 export type ProductView = {
@@ -217,6 +221,8 @@ const lireFiche = cache((slug: string, brouillon: boolean) =>
         where: { active: true },
         orderBy: { position: 'asc' },
         include: {
+          image: { select: { url: true, alt: true } },
+          imageAllumee: { select: { url: true, alt: true } },
           components: {
             orderBy: { position: 'asc' },
             include: {
@@ -287,6 +293,10 @@ export async function getProduct(
         id: variant.id,
         sku: variant.sku,
         name: variant.name,
+        image: variant.image ? { url: variant.image.url, alt: variant.image.alt ?? `${product.name} — ${variant.name}` } : null,
+        imageAllumee: variant.imageAllumee
+          ? { url: variant.imageAllumee.url, alt: variant.imageAllumee.alt ?? `${product.name} allumé — ${variant.name}` }
+          : null,
         packaging: variant.packaging,
         priceCents: variant.priceCents,
         compareAtCents: variant.compareAtCents,

@@ -271,6 +271,14 @@ model ProductVariant {
   position          Int       @default(0)
   active            Boolean   @default(true)
   isDemo            Boolean   @default(false)
+  /// Photo propre à cette option (finition claire / fumée, couleur…) :
+  /// la galerie la montre quand le client choisit l'option.
+  imageId           String?
+  image             Media?    @relation("VariantImage", fields: [imageId], references: [id], onDelete: SetNull)
+  /// La même option, produit allumé (même éclairage que sur la photo du
+  /// fabricant) : montrée juste après la photo de l'option.
+  imageAllumeeId    String?
+  imageAllumee      Media?    @relation("VariantImageAllumee", fields: [imageAllumeeId], references: [id], onDelete: SetNull)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -285,6 +293,7 @@ model ProductVariant {
 
   @@index([productId, position])
   @@index([sku])
+  @@index([imageId])
 }
 
 enum Packaging {
@@ -414,6 +423,8 @@ model Media {
   equipmentIllustrations  LightingEquipment[] @relation("EquipmentIllustration")
   vehicleMakeLogos        VehicleMake[]       @relation("VehicleMakeLogo")
   vehicleGenerationPhotos VehicleGeneration[] @relation("VehicleGenerationPhoto")
+  variantImages           ProductVariant[]    @relation("VariantImage")
+  variantImagesAllumees   ProductVariant[]    @relation("VariantImageAllumee")
 
   @@index([nature])
 }
