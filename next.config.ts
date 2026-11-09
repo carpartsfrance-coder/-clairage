@@ -79,6 +79,15 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
         ],
       },
+      /*
+        Photos produit lisibles depuis chatgpt.com : l'outil de l'exploitant
+        part de la photo LEDVROOM existante pour créer la même photo dans une
+        autre finition (claire / fumée…). Lecture seule, images publiques.
+      */
+      ...['/produits-ampoules/:path*', '/images-types/:path*'].map((source) => ({
+        source,
+        headers: [{ key: 'Access-Control-Allow-Origin', value: 'https://chatgpt.com' }],
+      })),
     ]
   },
 }
