@@ -136,6 +136,15 @@ export const commercialTerms = {
   /** Délai de rétractation légal en France. */
   returnWindowDays: 14 as number | null,
   /**
+   * Garantie commerciale « Satisfait ou remboursé », en jours après réception
+   * (décision de l'exploitant, 9 novembre 2026, sur le modèle de Lasfit) :
+   * produit neuf, complet, dans son emballage d'origine ; retour à la charge
+   * du client sauf défaut. Les 14 premiers jours restent la rétractation
+   * légale, sans condition. Conditions : article 7 des CGV, page Livraison et
+   * retours.
+   */
+  satisfaitDays: 45 as number | null,
+  /**
    * Garantie commerciale LEDVROOM, en mois : 5 ans sur tous les produits
    * (décision de l'exploitant, 8 novembre 2026). Conditions : page Garanties
    * et article 8 des CGV.
@@ -195,4 +204,11 @@ export function dureeGarantie(): string | null {
   if (!mois) return null
   if (mois % 12 === 0) return mois === 12 ? '1 an' : `${mois / 12} ans`
   return `${mois} mois`
+}
+
+/** « Satisfait ou remboursé 45 jours », sinon « Retours sous 14 jours », sinon null. */
+export function promesseRetour(): string | null {
+  if (commercialTerms.satisfaitDays) return `Satisfait ou remboursé ${commercialTerms.satisfaitDays} jours`
+  if (commercialTerms.returnWindowDays) return `Retours sous ${commercialTerms.returnWindowDays} jours`
+  return null
 }

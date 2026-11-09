@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { IconLock, IconReturn, IconShield, IconTruck } from '@/components/ui/icons'
-import { commercialTerms, dureeGarantie, formatPrice } from '@/lib/identity'
+import { dureeGarantie, formatPrice, promesseRetour } from '@/lib/identity'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { cn } from '@/lib/cn'
 
@@ -18,14 +18,14 @@ import { cn } from '@/lib/cn'
 export async function PromessesAchat({ className }: { className?: string }) {
   const seuil = await getSeuilLivraisonOfferte()
   const garantie = dureeGarantie()
-  const retours = commercialTerms.returnWindowDays
+  const retours = promesseRetour()
 
   const promesses = [
     garantie ? { icone: IconShield, texte: `Garantie ${garantie}`, href: '/garanties' } : null,
     seuil
       ? { icone: IconTruck, texte: `Livraison offerte dès ${formatPrice(seuil)}`, href: '/livraison-retours' }
       : null,
-    retours ? { icone: IconReturn, texte: `Retours sous ${retours} jours`, href: '/livraison-retours' } : null,
+    retours ? { icone: IconReturn, texte: retours, href: '/livraison-retours#retours' } : null,
     { icone: IconLock, texte: 'Paiement sécurisé', href: '/paiement' },
   ].filter((promesse) => promesse !== null)
 

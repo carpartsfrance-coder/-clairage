@@ -155,7 +155,9 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
           ? `Vos produits sont garantis ${commercialTerms.warrantyMonths % 12 === 0 ? `${commercialTerms.warrantyMonths / 12} ans` : `${commercialTerms.warrantyMonths} mois`} : en cas de panne, écrivez-nous avec votre référence de commande, nous remplaçons le produit.`
           : null,
         commercialTerms.returnWindowDays
-          ? `Vous disposez de ${commercialTerms.returnWindowDays} jours pour changer d'avis après réception.`
+          ? commercialTerms.satisfaitDays
+            ? `Satisfait ou remboursé : vous avez ${commercialTerms.satisfaitDays} jours après réception pour nous renvoyer un article neuf et complet.`
+            : `Vous disposez de ${commercialTerms.returnWindowDays} jours pour changer d'avis après réception.`
           : null,
       ].filter((texte): texte is string => texte !== null)
       if (rappels.length > 0) blocks.push({ type: 'note', text: rappels.join(' ') })

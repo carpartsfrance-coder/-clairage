@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import type { VariantView } from '@/lib/queries/product'
 import { buildDeliveryTeaser, type ShippingOffer } from '@/lib/delivery-teaser'
 import { addToCart } from '@/lib/actions/cart'
-import { formatPrice } from '@/lib/identity'
+import { commercialTerms, formatPrice } from '@/lib/identity'
 import { availabilityLabel, isPurchasable } from '@/lib/stock'
 import { defaultVariantId, useProductConfiguration } from './ProductConfiguration'
 import { StockAlertForm } from './StockAlertForm'
@@ -735,7 +735,9 @@ export function BuyBox({
         {returnWindowDays ? (
           <span className="flex items-center gap-1.5">
             <IconReturn className="size-4 shrink-0" />
-            Retours sous {returnWindowDays} jours
+            {commercialTerms.satisfaitDays
+              ? `Satisfait ou remboursé ${commercialTerms.satisfaitDays} jours`
+              : `Retours sous ${returnWindowDays} jours`}
           </span>
         ) : null}
         <span className="flex items-center gap-1.5">

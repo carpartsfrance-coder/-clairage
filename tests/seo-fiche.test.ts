@@ -35,7 +35,7 @@ const IMPORT_HISTORIQUE = {
   metaTitle: 'Pack LED veilleuses pour Audi A1 — LUMERA',
   metaDescription: 'Pack LED pour les veilleuses de Audi A1. Compatibilité à vérifier avant commande.',
 }
-const CONDITIONS = { seuilFranchiseCents: 8000, retourJours: 14 }
+const CONDITIONS = { seuilFranchiseCents: 8000, retourJours: 45 }
 
 describe('titre de référencement', () => {
   it("remplace l'ancien nom de travail par les mots du client et les années", () => {
@@ -121,7 +121,7 @@ describe('description de référencement', () => {
   it('remplace la mise en garde par le véhicule, la livraison et le retour', () => {
     const texte = descriptionSeo(IMPORT_HISTORIQUE, A1, CONDITIONS)
     expect(texte).toBe(
-      `Ampoules LED veilleuses (feux de position) Audi A1 (2010–2018), en pack prêt à monter sans modifier le câblage. Livraison offerte dès ${formatPrice(8000)}, retours sous 14 jours.`,
+      `Ampoules LED veilleuses (feux de position) Audi A1 (2010–2018), en pack prêt à monter sans modifier le câblage. Livraison offerte dès ${formatPrice(8000)}, retours sous 45 jours.`,
     )
     expect(texte).not.toMatch(/vérifier/)
     // Ce que Google affiche sans couper.
