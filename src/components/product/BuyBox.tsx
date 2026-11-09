@@ -369,8 +369,21 @@ export function BuyBox({
         </Alert>
       ) : null}
 
+      {/* ---- Options (type de ballast, couleur…) : une liste par option ---- */}
+      {variants.length > 1 && optionsDesVariantes(variants) ? (
+        <ChoixDOptions
+          variants={variants}
+          selectedId={selected.id}
+          onChange={(id) => {
+            setSelectedId(id)
+            setAcceptedAccessories([])
+            setFeedback(null)
+          }}
+        />
+      ) : null}
+
       {/* ---- .pack-heading + .pack-options ---- */}
-      {variants.length > 1 ? (
+      {variants.length > 1 && !optionsDesVariantes(variants) ? (
         <fieldset>
           <div className="mb-2.5 flex items-center justify-between gap-4 text-[15px] font-bold">
             <legend>Choisissez votre kit</legend>
@@ -876,5 +889,85 @@ function SelecteurQuantite({
         <IconPlus className="size-[13px]" strokeWidth={2} />
       </button>
     </div>
+  )
+}
+
+
+/*
+  Variantes « à options » : leur nom suit la forme
+  « Ballasts : Slim Canbus Pro 35W · Température de couleur : 5000K (blanc pur) ».
+  Toutes les variantes ont alors les mêmes libellés d'option, et la fiche montre
+  une liste déroulante par option (comme le configurateur du concurrent) plutôt
+  qu'une carte par combinaison.
+*/
+type VarianteNommee = { id: string; name: string; priceCents: number }
+
+function decouper(nom: string): [string, string][] | null {
+  const parts = nom.split(' · ').map((x) => x.split(' : '))
+  if (parts.some((x) => x.length !== 2 || !x[0] || !x[1])) return null
+  return parts.map(([l, v]) => [l.trim(), v.trim()])
+}
+
+function optionsDesVariantes(variants: VarianteNommee[]) {
+  const d = variants.map((v) => decouper(v.name))
+  if (d.some((x) => !x)) return null
+  const libelles = d[0]!.map(([l]) => l)
+  if (d.some((x) => x!.length !== libelles.length || x!.some(([l], i) => l !== libelles[i]))) return null
+  return { libelles, valeurs: d as [string, string][][] }
+}
+
+function ChoixDOptions({
+  variants,
+  selectedId,
+  onChange,
+}: {
+  variants: VarianteNommee[]
+  selectedId: string
+  onChange: (id: string) => void
+}) {
+  const o = optionsDesVariantes(variants)!
+  const index = Math.max(0, variants.findIndex((v) => v.id === selectedId))
+  const courant = o.valeurs[index]
+  const choisir = (rang: number, valeur: string) => {
+    const voulu = courant.map(([, v], i) => (i === rang ? valeur : v))
+    // La combinaison exacte, sinon la première qui garde les choix jusqu'à cette option.
+    let i = o.valeurs.findIndex((x) => x.every(([, v], k) => v === voulu[k]))
+    if (i < 0) i = o.valeurs.findIndex((x) => x.slice(0, rang + 1).every(([, v], k) => v === voulu[k]))
+    if (i >= 0) onChange(variants[i].id)
+  }
+  return (
+    <fieldset className="rounded-xl bg-[#111214] p-4 text-white">
+      <legend className="sr-only">Configuration</legend>
+      <p className="text-[15px] font-bold">Configuration</p>
+      <p className="mt-1 mb-3 text-[13px] text-[#c9ccd1]">Le prix change selon les options choisies.</p>
+      <div className="grid gap-2.5">
+        {o.libelles.map((libelle, rang) => {
+          // Les valeurs possibles, compte tenu des choix des options précédentes.
+          const possibles = [
+            ...new Set(
+              o.valeurs
+                .filter((x) => x.slice(0, rang).every(([, v], k) => v === courant[k][1]))
+                .map((x) => x[rang][1]),
+            ),
+          ]
+          return (
+            <label key={libelle} className="grid gap-1 text-[13px] font-semibold sm:grid-cols-[150px_1fr] sm:items-center">
+              <span>{libelle}</span>
+              <select
+                value={courant[rang][1]}
+                onChange={(e) => choisir(rang, e.target.value)}
+                className="min-h-10 rounded-[6px] bg-white px-2.5 text-[14px] font-normal text-ink"
+              >
+                {possibles.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )
+        })}
+      </div>
+    </fieldset>
   )
 }
