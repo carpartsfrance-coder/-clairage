@@ -134,6 +134,7 @@ export function cartesDesResultats(groupes: GroupeResultat[]): CarteEclairage[] 
 
       parSlug.set(produit.productSlug, {
         slug: produit.productSlug,
+        nom: produit.productName,
         variantId: conseille.variantId,
         emplacements: [{ code: groupe.code, label: groupe.label }],
         image: produit.image,
@@ -143,8 +144,9 @@ export function cartesDesResultats(groupes: GroupeResultat[]): CarteEclairage[] 
         conditionnement:
           nomUtileDuConditionnement(conseille.variantName, produit.productName) ??
           natureDuProduit(produit.productName),
+        // Les combinaisons d'options (« Ballasts : … ») se choisissent sur la fiche.
         autres: produit.lines
-          .filter((ligne) => ligne.id !== conseille.id)
+          .filter((ligne) => ligne.id !== conseille.id && !ligne.variantName.includes(' : '))
           .map((ligne) => ({
             nom: ligne.isKit ? `${ligne.variantName} · tout compris` : ligne.variantName,
             prixCents: ligne.priceCents,

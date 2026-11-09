@@ -1,5 +1,6 @@
 'use client'
 
+import { presentationDeCarte } from '@/lib/carte-titre'
 import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -14,7 +15,6 @@ import {
   type Zone,
   cartesTriees,
   nomDeLaZone,
-  sousTitreDeLEmplacement,
   zoneDeLEmplacement,
   zonesPresentes,
 } from '@/lib/packs-vue'
@@ -145,7 +145,7 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
       <ul className="grid grid-cols-2 gap-[11px] min-[651px]:grid-cols-3 min-[860px]:grid-cols-4 min-[860px]:gap-[15px]">
         {visibles.map((carte) => {
           const zonePrincipale = zoneDeLEmplacement(carte.emplacements[0].code)
-          const sousTitre = sousTitreDeLEmplacement(carte.emplacements[0].code)
+          const presentation = presentationDeCarte(carte.nom, carte.conditionnement)
           const incompatible = carte.status === 'INCOMPATIBLE'
           return (
             <li key={carte.slug}>
@@ -184,18 +184,16 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
                 </div>
 
                 <div className="flex flex-1 flex-col p-2.5 min-[651px]:p-[13px]">
-                  <h3 className="text-[14px] leading-[1.22] font-extrabold tracking-[-0.023em] min-[651px]:text-[15px]">
+                  {/* L'emplacement en étiquette, ce qu'est le produit en titre. */}
+                  <p className="text-[11px] font-bold tracking-[0.04em] text-brand uppercase">
                     {carte.emplacements.map((e) => e.label).join(' · ')}
+                  </p>
+                  <h3 className="mt-1 text-[14px] leading-[1.22] font-extrabold tracking-[-0.023em] min-[651px]:text-[15px]">
+                    {presentation.titre ?? carte.emplacements.map((e) => e.label).join(' · ')}
                   </h3>
-                  {sousTitre ? (
-                    <p className="mt-[5px] text-[12px] leading-[1.35] text-muted-strong">
-                      {sousTitre}
-                    </p>
-                  ) : null}
-
-                  {carte.conditionnement ? (
-                    <p className="mt-1.5 text-[11px] font-bold text-slate-ink">
-                      {carte.conditionnement}
+                  {presentation.phrase ? (
+                    <p className="mt-[5px] text-[12px] leading-[1.4] text-muted-strong">
+                      {presentation.phrase}
                     </p>
                   ) : null}
 
