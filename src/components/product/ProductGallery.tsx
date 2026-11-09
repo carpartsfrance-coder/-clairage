@@ -55,7 +55,7 @@ const VUE_PACK: 'pack' = 'pack'
 type Vue = number | typeof VUE_PACK
 
 export function ProductGallery({
-  items,
+  items: itemsDeBase,
   productName,
 }: {
   items: GalleryItem[]
@@ -64,6 +64,28 @@ export function ProductGallery({
   const [vue, setVue] = useState<Vue>(0)
   const [zoomed, setZoomed] = useState(false)
   const configuration = useProductConfiguration()
+
+  /*
+    Photo propre à l'option choisie (finition claire / fumée, couleur des
+    LED…) : elle prend la place de la photo produit. Demande de l'exploitant
+    (9 novembre 2026) : « que la photo change quand le client choisit
+    l'option ».
+  */
+  const imageOption = configuration?.selected?.image ?? null
+  const items: GalleryItem[] = (() => {
+    if (!imageOption) return itemsDeBase
+    const i = itemsDeBase.findIndex((item) => item.role === 'PRODUCT')
+    const photo: GalleryItem = {
+      url: imageOption.url,
+      alt: imageOption.alt,
+      caption: 'Visuel d’illustration du produit.',
+      role: 'PRODUCT',
+      thumbLabel: i >= 0 ? itemsDeBase[i].thumbLabel : 'Produit',
+      nature: 'ILLUSTRATION',
+    }
+    if (i < 0) return [photo, ...itemsDeBase]
+    return itemsDeBase.map((item, k) => (k === i ? photo : item))
+  })()
 
   /*
     La vue « Dans le pack » n'existe que s'il y a un pack : un produit simple
@@ -106,9 +128,16 @@ export function ProductGallery({
       reculer d'un cran à chaque clic.
     */
     const estKit = (configuration?.selected?.components.length ?? 0) > 0
-    const cible = estKit ? items.findIndex((item) => item.role === 'KIT_CONTENT') : 0
+    // Une option avec sa propre photo (finition, couleur) : on montre cette photo.
+    const cible = configuration?.selected?.image
+      ? items.findIndex((item) => item.role === 'PRODUCT')
+      : estKit
+        ? items.findIndex((item) => item.role === 'KIT_CONTENT')
+        : 0
     if (cible >= 0) setVue(cible)
-  }, [configuration?.selectedId, configuration?.selected, items])
+    // `items` est recalculé à chaque rendu : il ne déclenche pas cet effet.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configuration?.selectedId, configuration?.selected])
 
   if (items.length === 0) {
     return (
