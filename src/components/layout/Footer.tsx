@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { ColonneDuPied } from './ColonneDuPied'
 import { Logo } from '@/components/brand/Logo'
 import { footerNav } from '@/lib/navigation'
 import { IconHeadset, IconPin, IconReturn, IconShield, IconTruck } from '@/components/ui/icons'
@@ -80,7 +80,7 @@ export async function Footer() {
   ].filter((promise): promise is { icon: typeof IconTruck; text: string } => promise !== null)
 
   return (
-    <footer className="mt-auto bg-ink text-white">
+    <footer className="mt-auto bg-ink text-white [body:has([data-barre-achat])_&]:pb-[calc(76px+env(safe-area-inset-bottom))] fiche:[body:has([data-barre-achat])_&]:pb-[78px]">
       <div className="container-page pt-[30px] pb-[21px] lg:pt-[39px] lg:pb-[22px]">
         {/* .footer-top : marque, colonnes de liens, repères. */}
         <div className="grid grid-cols-2 gap-[23px] border-b border-[#3a454b] pb-[23px] lg:grid-cols-[1.2fr_repeat(4,0.8fr)_1.2fr] lg:gap-[30px] lg:border-[#3c4448] lg:pb-[29px]">
@@ -93,25 +93,12 @@ export async function Footer() {
             </p>
           </div>
 
-          {colonnes.map((column) => (
-            <nav key={column.title} aria-label={column.title}>
-              <h2 className="mb-1 text-[14px] font-bold text-[#e2e7e8] lg:mb-3.5 lg:text-[12px]">
-                {column.title}
-              </h2>
-              <ul>
-                {column.items.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="block py-2.5 text-[14px] text-[#97a5aa] lg:text-[11px] transition-colors hover:text-white lg:my-2 lg:py-0"
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
+          {/* Sur téléphone : une liste pleine largeur de colonnes repliables. */}
+          <div className="col-span-2 lg:contents">
+            {colonnes.map((column) => (
+              <ColonneDuPied key={column.title} titre={column.title} liens={column.items} />
+            ))}
+          </div>
 
           {/* .footer-manifesto : repères à gauche d'une icône de 16 px. */}
           <div className="col-span-2 border-t border-[#3a454b] pt-5 lg:col-span-1 lg:border-0 lg:pt-0 lg:pl-5">

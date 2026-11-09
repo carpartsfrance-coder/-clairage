@@ -233,9 +233,14 @@ export function ProductGallery({
                 l'intitulé de la vignette ; l'intitulé ne sert que de repli.
                 Deux pastilles sur la même photo se lisaient comme du bruit.
               */}
-              <span className="absolute top-3 left-3 z-[2] hidden max-w-[75%] rounded-full fiche:block bg-white px-3 py-1.5 text-[12px] font-bold text-ink shadow-soft fiche:top-4 fiche:left-4">
-                {current.caption ?? current.thumbLabel}
-              </span>
+              {/* « Visuel d'illustration… » n'est pas une étiquette : il passe
+                  en petit gris sous la photo (.visual-note ci-dessous). */}
+              {(current.caption ?? current.thumbLabel) &&
+              !/^Visuel d.illustration/i.test(current.caption ?? current.thumbLabel ?? '') ? (
+                <span className="absolute top-3 left-3 z-[2] hidden max-w-[75%] rounded-full fiche:block bg-white px-3 py-1.5 text-[12px] font-bold text-ink shadow-soft fiche:top-4 fiche:left-4">
+                  {current.caption ?? current.thumbLabel}
+                </span>
+              ) : null}
 
               {/* .zoom-button — 44 px, la taille d'un doigt. */}
               <button
