@@ -83,8 +83,12 @@ export function ProductGallery({
       thumbLabel: i >= 0 ? itemsDeBase[i].thumbLabel : 'Produit',
       nature: 'ILLUSTRATION',
     }
-    if (i < 0) return [photo, ...itemsDeBase]
-    return itemsDeBase.map((item, k) => (k === i ? photo : item))
+    const allumee = configuration?.selected?.imageAllumee
+    const suite: GalleryItem[] = allumee
+      ? [{ url: allumee.url, alt: allumee.alt, caption: 'Visuel d’illustration du produit allumé.', role: 'PRODUCT', thumbLabel: 'Allumé', nature: 'ILLUSTRATION' }]
+      : []
+    if (i < 0) return [photo, ...suite, ...itemsDeBase]
+    return itemsDeBase.flatMap((item, k) => (k === i ? [photo, ...suite] : [item]))
   })()
 
   /*
