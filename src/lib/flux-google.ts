@@ -101,11 +101,15 @@ export function lignesDeLArticle(
   const absolue = (url: string) =>
     /^https?:\/\//.test(url) ? url : `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`
   if (article.images.length === 0 || article.variants.length === 0) return []
-  const plusieurs = article.variants.length > 1
+  // Produit « à options » (ballast, couleur…) : une seule ligne, celle de la
+  // configuration par défaut — pas une ligne par combinaison.
+  const aOptions = article.variants.some((v) => v.name.includes(' : '))
+  const variantes = aOptions ? article.variants.slice(0, 1) : article.variants
+  const plusieurs = variantes.length > 1
   const description = texteBrut(article.description ?? '') || article.name
   const lignes: string[] = []
 
-  for (const variante of article.variants) {
+  for (const variante of variantes) {
     const champs: string[] = [
       `<g:id>${echapperXml(variante.sku)}</g:id>`,
       `<g:title>${echapperXml(
