@@ -91,6 +91,8 @@ export type CarteEclairage = {
   prixCents: number
   /** Le conditionnement, seulement quand son nom apprend quelque chose. */
   conditionnement: string | null
+  /** Nom du produit : la carte en tire son titre (`presentationDeCarte`). */
+  nom: string
   /** Les autres conditionnements documentés, s'il y en a. */
   autres: Array<{ nom: string; prixCents: number }>
   /**
@@ -112,6 +114,7 @@ export type CarteEclairage = {
 export function cartesDesPacks(groupes: PackPositionGroup[]): CarteEclairage[] {
   return produitsSitues(groupes).map(({ produit, emplacements }) => ({
     slug: produit.productSlug,
+    nom: produit.productName,
     variantId: produit.recommended?.id ?? null,
     emplacements,
     image: produit.image,
