@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
-import { dureeGarantie, formatPrice, identity, siteConfig } from '@/lib/identity'
+import { dureeGarantie, formatPrice, identity, siteConfig, promesseRetour } from '@/lib/identity'
 import { getCartSummary, getSelectedVehicle } from '@/lib/session'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { topNav } from '@/lib/navigation'
@@ -78,6 +78,17 @@ export async function Header() {
                 <span aria-hidden className="text-white/25">|</span>
                 <IconShield className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
                 <span className="truncate">Garantie {dureeGarantie()}</span>
+              </Link>
+            ) : null}
+            {/* Satisfait ou remboursé : mis en avant (décision de l'exploitant, 9 novembre 2026). */}
+            {promesseRetour() ? (
+              <Link
+                href="/livraison-retours#retours"
+                className="hidden min-w-0 items-center gap-2 transition-colors hover:text-white sm:flex"
+              >
+                <span aria-hidden className="text-white/25">|</span>
+                <IconReturn className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
+                <span className="truncate font-semibold text-white">{promesseRetour()}</span>
               </Link>
             ) : null}
           </div>

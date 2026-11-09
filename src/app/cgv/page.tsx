@@ -196,6 +196,25 @@ export default async function Page() {
           manipulations autres que celles nécessaires pour établir la nature et les caractéristiques
           du produit — un montage sur véhicule, par exemple.
         </p>
+        {commercialTerms.satisfaitDays ? (
+          <>
+            <p id="satisfait-ou-rembourse">
+              <strong>Garantie commerciale « Satisfait ou remboursé ».</strong> En plus du droit de
+              rétractation, le vendeur accepte le retour d'un produit pendant{' '}
+              <strong>{commercialTerms.satisfaitDays} jours</strong> à compter de sa réception,
+              contre remboursement de son prix, aux conditions suivantes : le produit est neuf, non
+              monté, complet, dans son emballage d'origine avec tous ses accessoires ; le client
+              prévient le vendeur avant tout envoi, par les moyens indiqués ci-dessus ; les frais de
+              retour sont à sa charge, sauf produit défectueux ou non conforme.
+            </p>
+            <p>
+              Le remboursement intervient au plus tard quatorze jours après réception et vérification
+              du produit, par le même moyen de paiement. Passé le délai de rétractation, les frais de
+              livraison initiaux ne sont pas remboursés. Cette garantie commerciale ne remplace ni le
+              droit de rétractation ni les garanties légales, qui s'appliquent en toute hypothèse.
+            </p>
+          </>
+        ) : null}
       </Article>
 
       <Article numero={8} id="garanties" titre="Garanties légales">

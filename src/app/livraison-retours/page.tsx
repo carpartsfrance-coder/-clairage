@@ -8,7 +8,7 @@ import { Article, PageLegale } from '@/components/legal/PageLegale'
 export const metadata: Metadata = {
   title: 'Livraison et retours',
   description:
-    'Tarifs et délais de livraison en France, livraison offerte, suivi de colis, retours sous 14 jours et remboursement.',
+    'Tarifs et délais de livraison en France, livraison offerte, suivi de colis, satisfait ou remboursé 45 jours.',
   alternates: { canonical: '/livraison-retours' },
 }
 
@@ -36,6 +36,7 @@ export default async function Page() {
     a.countries.includes('FR') ? -1 : b.countries.includes('FR') ? 1 : 0,
   )
   const retour = commercialTerms.returnWindowDays ?? 14
+  const satisfait = commercialTerms.satisfaitDays
   const zoneFrance = zones.find((zone) => zone.countries.includes('FR'))
   const seuils = (zoneFrance?.offres ?? [])
     .map((offre) => offre.freeFromCents)
@@ -119,11 +120,35 @@ export default async function Page() {
         </p>
       </Article>
 
-      <Article numero={3} id="retours" titre={`Retours sous ${retour} jours`}>
-        <p>
-          Vous avez <strong>{retour} jours à compter de la réception</strong> pour changer d’avis,
-          sans avoir à vous justifier.
-        </p>
+      <Article
+        numero={3}
+        id="retours"
+        titre={satisfait ? `Satisfait ou remboursé ${satisfait} jours` : `Retours sous ${retour} jours`}
+      >
+        {satisfait ? (
+          <>
+            <p>
+              <strong>Vous avez {satisfait} jours après la réception</strong> pour nous renvoyer un
+              article qui ne vous convient pas : nous vous le remboursons.
+            </p>
+            <ul className="list-disc pl-5">
+              <li>
+                <strong>Les {retour} premiers jours</strong>, c’est votre droit de rétractation :
+                aucune condition, pas besoin de vous justifier.
+              </li>
+              <li>
+                <strong>Du {retour + 1}e au {satisfait}e jour</strong>, l’article doit être neuf et
+                complet, dans son emballage d’origine avec tous ses accessoires. Un article monté
+                ou abîmé n’est pas repris.
+              </li>
+            </ul>
+          </>
+        ) : (
+          <p>
+            Vous avez <strong>{retour} jours à compter de la réception</strong> pour changer d’avis,
+            sans avoir à vous justifier.
+          </p>
+        )}
         <ol className="list-decimal pl-5">
           <li>
             Prévenez-nous depuis le{' '}
@@ -142,7 +167,7 @@ export default async function Page() {
             , avec votre numéro de commande.
           </li>
           <li>
-            Renvoyez l’article dans les {retour} jours qui suivent
+            Renvoyez l’article dans les {retour} jours qui suivent votre demande
             {adresse ? <>, à l’adresse : {adresse}</> : <>, à l’adresse que nous vous indiquons</>}.
             Les frais de retour sont à votre charge, sauf si l’article est défectueux ou ne
             correspond pas à la commande.
@@ -150,7 +175,14 @@ export default async function Page() {
           <li>
             Nous vous remboursons au plus tard {retour} jours après avoir reçu l’article (ou la
             preuve de son envoi), par le même moyen de paiement. Le remboursement comprend le prix de
-            l’article et les frais de livraison standard payés à la commande.
+            l’article{satisfait ? (
+              <>
+                , et les frais de livraison standard payés à la commande si vous renvoyez l’article
+                dans les {retour} premiers jours
+              </>
+            ) : (
+              <> et les frais de livraison standard payés à la commande</>
+            )}.
           </li>
         </ol>
         <p className="text-[12px] text-muted-strong">

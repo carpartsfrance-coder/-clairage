@@ -133,7 +133,7 @@ export function ProductStructuredData({
     itemCondition: 'https://schema.org/NewCondition',
     seller: { '@type': 'Organization', name: identity.name },
     shippingDetails: shippingDetails(shippingOffers, variant.priceCents),
-    hasMerchantReturnPolicy: returnPolicy(returnWindowDays),
+    hasMerchantReturnPolicy: returnPolicy(commercialTerms.satisfaitDays ?? returnWindowDays),
     // Garantie commerciale LEDVROOM (page Garanties) : la même pour tout.
     warranty: commercialTerms.warrantyMonths
       ? {

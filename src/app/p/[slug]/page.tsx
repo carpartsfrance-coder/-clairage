@@ -18,7 +18,7 @@ import {
   nomDuVehicule,
   titreSeo,
 } from '@/lib/seo-fiche'
-import { commercialTerms, dureeGarantie, identity, siteConfig } from '@/lib/identity'
+import { commercialTerms, dureeGarantie, identity, promesseRetour, siteConfig } from '@/lib/identity'
 import { faqFicheParDefaut } from '@/lib/faq-generale'
 import { typeHorsAmpoules } from '@/lib/types-produit'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
@@ -109,7 +109,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const description = descriptionSeo(product, vehicule, {
     garantie: dureeGarantie(),
     seuilFranchiseCents: seuilDeFranchise(shippingOffers),
-    retourJours: commercialTerms.returnWindowDays,
+    retourJours: commercialTerms.satisfaitDays ?? commercialTerms.returnWindowDays,
   })
 
   return {
@@ -194,7 +194,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const descriptionDeLaFiche = descriptionSeo(product, vehiculeDeLaFiche, {
     garantie: dureeGarantie(),
     seuilFranchiseCents,
-    retourJours: commercialTerms.returnWindowDays,
+    retourJours: commercialTerms.satisfaitDays ?? commercialTerms.returnWindowDays,
   })
 
   const kitVariant = product.variants.find((variant) => variant.components.length > 0)
@@ -374,8 +374,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         ? [
             {
               Icon: IconReturn,
-              titre: `Retours sous ${commercialTerms.returnWindowDays} jours`,
-              texte: 'Le temps de changer d’avis',
+              titre: promesseRetour() ?? '',
+              texte: commercialTerms.satisfaitDays
+                ? 'Le temps d’essayer, sinon on rembourse'
+                : 'Le temps de changer d’avis',
             },
           ]
         : []),

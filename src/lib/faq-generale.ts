@@ -57,7 +57,9 @@ export async function faqGeneraleParDefaut(): Promise<QuestionReponse[]> {
     retour
       ? {
           question: 'Puis-je retourner un produit ?',
-          answer: `Oui : vous avez ${retour} jours à compter de la réception pour changer d’avis, sans avoir à vous justifier. Prévenez-nous avec votre numéro de commande, puis renvoyez l’article ; nous vous remboursons par le même moyen de paiement.`,
+          answer: commercialTerms.satisfaitDays
+            ? `Oui : satisfait ou remboursé pendant ${commercialTerms.satisfaitDays} jours après réception. Les ${retour} premiers jours, c’est sans condition (droit de rétractation). Ensuite, jusqu’au ${commercialTerms.satisfaitDays}e jour, l’article doit être neuf et complet, dans son emballage d’origine. Prévenez-nous avec votre numéro de commande, puis renvoyez l’article ; nous vous remboursons par le même moyen de paiement.`
+            : `Oui : vous avez ${retour} jours à compter de la réception pour changer d’avis, sans avoir à vous justifier. Prévenez-nous avec votre numéro de commande, puis renvoyez l’article ; nous vous remboursons par le même moyen de paiement.`,
         }
       : null,
     {

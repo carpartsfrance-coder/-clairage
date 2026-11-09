@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
 import { footerNav } from '@/lib/navigation'
 import { IconHeadset, IconPin, IconReturn, IconShield, IconTruck } from '@/components/ui/icons'
-import { commercialTerms, dureeGarantie, formatPrice, identity, siteConfig } from '@/lib/identity'
+import { commercialTerms, dureeGarantie, formatPrice, identity, promesseRetour, siteConfig } from '@/lib/identity'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { getNavigation } from '@/lib/queries/navigation'
 import { MoyensDePaiement } from '@/components/paiement/MoyensDePaiement'
@@ -67,9 +67,7 @@ export async function Footer() {
         }
       : null,
     dureeGarantie() ? { icon: IconShield, text: `Garantie ${dureeGarantie()} sur tous les produits` } : null,
-    commercialTerms.returnWindowDays
-      ? { icon: IconReturn, text: `Retours sous ${commercialTerms.returnWindowDays} jours` }
-      : null,
+    promesseRetour() ? { icon: IconReturn, text: promesseRetour() as string } : null,
     { icon: IconHeadset, text: 'Assistance au choix et au montage' },
     /*
       Société immatriculée en France, siège à Nice (identity.legal) : sur une
