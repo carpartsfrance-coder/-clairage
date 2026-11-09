@@ -351,13 +351,10 @@ export function BuyBox({
           }
           className="mb-5"
         >
-          {typeHorsAmpoules(productName)
-            ? 'Ce produit est choisi pour ce véhicule.'
-            : 'Les ampoules et les LED sont choisies pour ce véhicule.'}{' '}
           <Link href="/vehicule" className="font-semibold underline underline-offset-4">
-            Indiquez votre véhicule
+            Vérifier avec mon véhicule
           </Link>{' '}
-          pour confirmer qu&apos;il correspond à votre version et à son équipement d&apos;origine.
+          (version et équipement d&apos;origine).
         </Alert>
       ) : null}
 

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { addToCart } from '@/lib/actions/cart'
+import { addPacksToCart, addToCart } from '@/lib/actions/cart'
 import { formatPrice } from '@/lib/identity'
 import type { PackComplementaire } from '@/lib/queries/packs-complementaires'
 import { IconCheck, IconPlus } from '@/components/ui/icons'
@@ -21,7 +21,7 @@ import { presentationDeCarte } from '@/lib/carte-titre'
 export function ResumeFiche({ reference, resume }: { reference: string | null; resume: string | null }) {
   if (!reference && !resume) return null
   return (
-    <div className="order-3 mt-4">
+    <div className="order-4 mt-4">
       {reference ? (
         <p className="text-[13px] text-muted-strong">
           Réf. <span className="font-semibold text-ink">{reference}</span>
@@ -63,7 +63,7 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
   }
 
   return (
-    <section aria-labelledby="titre-options-vehicule" className="order-3 mt-8">
+    <section aria-labelledby="titre-options-vehicule" className="order-5 mt-8 scroll-mt-32">
       <h2 id="titre-options-vehicule" className="text-[20px] leading-tight font-extrabold tracking-[-0.02em]">
         Complétez l’éclairage de votre {vehicule}
       </h2>
@@ -120,6 +120,38 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
         >
           Voir les {packs.length - 4} autres éclairages pour ce véhicule
         </button>
+      ) : null}
+      {packs.length > 1 ? (
+        <div className="mt-4 rounded-xl bg-[#111214] p-4 text-white">
+          <p className="text-[14px] leading-snug">
+            <strong>Tout l’éclairage de votre {vehicule}</strong> en une fois :{' '}
+            {packs.length} produits, {formatPrice(packs.reduce((t, p) => t + p.prixCents, 0))}
+          </p>
+          <button
+            type="button"
+            disabled={enCours !== null || packs.every((p) => ajoutes.includes(p.variantId))}
+            onClick={() => {
+              const ids = packs.map((p) => p.variantId).filter((id) => !ajoutes.includes(id))
+              setErreur(null)
+              setEnCours('tout')
+              startTransition(async () => {
+                const r = await addPacksToCart({ variantIds: ids })
+                if (r.ok) {
+                  setAjoutes((d) => [...new Set([...d, ...ids])])
+                  router.refresh()
+                } else setErreur(r.error)
+                setEnCours(null)
+              })
+            }}
+            className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand text-[14px] font-bold hover:bg-brand-dark disabled:opacity-60"
+          >
+            {packs.every((p) => ajoutes.includes(p.variantId))
+              ? 'Tout est dans le panier'
+              : enCours === 'tout'
+                ? 'Ajout…'
+                : `Ajouter les ${packs.length} au panier`}
+          </button>
+        </div>
       ) : null}
       {erreur ? <p className="mt-2 text-[12px] text-danger">{erreur}</p> : null}
     </section>
