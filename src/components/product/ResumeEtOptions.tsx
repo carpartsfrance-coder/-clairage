@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { addToCart } from '@/lib/actions/cart'
@@ -8,6 +9,7 @@ import { formatPrice } from '@/lib/identity'
 import type { PackComplementaire } from '@/lib/queries/packs-complementaires'
 import { IconCheck, IconPlus } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
+import { presentationDeCarte } from '@/lib/carte-titre'
 
 /**
  * Colonne d'achat plus fournie, comme chez le concurrent (demande de
@@ -43,8 +45,9 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
   const [ajoutes, setAjoutes] = useState<string[]>([])
   const [enCours, setEnCours] = useState<string | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
-  const liste = packs.slice(0, 4)
-  if (liste.length === 0) return null
+  const [tout, setTout] = useState(false)
+  if (packs.length === 0) return null
+  const liste = tout ? packs : packs.slice(0, 4)
 
   function ajouter(variantId: string) {
     setErreur(null)
@@ -60,40 +63,65 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
   }
 
   return (
-    <div className="order-3 mt-6 rounded-[10px] bg-[#111214] p-4 text-white fiche:p-5">
-      <p className="text-[16px] font-bold">Complétez votre {vehicule}</p>
-      <p className="mt-1 text-[13px] leading-[1.5] text-[#c9ccd1]">
-        Les autres éclairages vérifiés pour ce véhicule, à ajouter en un clic.
-      </p>
-      <ul className="mt-4 flex flex-col gap-2">
+    <section aria-labelledby="titre-options-vehicule" className="order-3 mt-8">
+      <h2 id="titre-options-vehicule" className="text-[20px] leading-tight font-extrabold tracking-[-0.02em]">
+        Complétez l’éclairage de votre {vehicule}
+      </h2>
+      <p className="mt-1 text-[13px] text-muted-strong">Vérifiés pour ce véhicule, à ajouter en un clic.</p>
+      <ul className="mt-4 flex flex-col gap-3">
         {liste.map((pack) => {
           const fait = ajoutes.includes(pack.variantId)
+          const p = presentationDeCarte(pack.nom, pack.sousTitre)
           return (
-            <li key={pack.variantId} className="flex items-center gap-3 rounded-[7px] bg-[#1d1f23] px-3 py-2.5">
-              <Link href={`/p/${pack.slug}`} className="min-w-0 flex-1 hover:underline">
-                <span className="block truncate text-[14px] font-semibold">{pack.titre}</span>
-                {pack.sousTitre ? (
-                  <span className="block truncate text-[12px] text-[#9aa0a6]">{pack.sousTitre}</span>
+            <li key={pack.variantId} className="flex gap-4 rounded-xl border border-line bg-[#f6f7f8] p-3">
+              <Link
+                href={`/p/${pack.slug}`}
+                className="relative size-[104px] shrink-0 overflow-hidden rounded-lg bg-[#282b2f] sm:size-[120px]"
+              >
+                {pack.image ? (
+                  <Image src={pack.image.url} alt={pack.image.alt} fill sizes="120px" className="object-cover" />
                 ) : null}
               </Link>
-              <span className="shrink-0 text-[14px] font-bold">{formatPrice(pack.prixCents)}</span>
-              <button
-                type="button"
-                onClick={() => ajouter(pack.variantId)}
-                disabled={fait || enCours !== null}
-                className={cn(
-                  'inline-flex min-h-9 shrink-0 items-center gap-1 rounded-[6px] px-2.5 text-[13px] font-bold',
-                  fait ? 'text-[#7dd3a0]' : 'text-[#ff8a5c] hover:bg-white/10',
-                )}
-              >
-                {fait ? <IconCheck className="size-4" /> : <IconPlus className="size-4" />}
-                {fait ? 'Ajouté' : enCours === pack.variantId ? '…' : 'Ajouter'}
-              </button>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <Link href={`/p/${pack.slug}`} className="hover:underline">
+                  <span className="block text-[15px] leading-snug font-extrabold">{p.titre ?? pack.titre}</span>
+                </Link>
+                <p className="mt-1 text-[12px] text-muted-strong">
+                  <span className="font-semibold text-ink">Emplacement :</span> {pack.titre}
+                </p>
+                <p className="mt-1 flex items-center gap-1.5 text-[12px] font-semibold text-ok">
+                  <span aria-hidden className="size-2 rounded-full bg-ok" /> En stock
+                </p>
+                <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-2">
+                  <strong className="text-[18px] font-extrabold tracking-[-0.03em]">{formatPrice(pack.prixCents)}</strong>
+                  <button
+                    type="button"
+                    onClick={() => ajouter(pack.variantId)}
+                    disabled={fait || enCours !== null}
+                    className={cn(
+                      'inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3.5 text-[13px] font-bold text-white transition-colors',
+                      fait ? 'bg-ok' : 'bg-brand hover:bg-brand-dark disabled:opacity-60',
+                    )}
+                  >
+                    {fait ? <IconCheck className="size-4" /> : <IconPlus className="size-4" />}
+                    {fait ? 'Ajouté' : enCours === pack.variantId ? 'Ajout…' : 'Ajouter au panier'}
+                  </button>
+                </div>
+              </div>
             </li>
           )
         })}
       </ul>
-      {erreur ? <p className="mt-2 text-[12px] text-[#ff9b9b]">{erreur}</p> : null}
-    </div>
+      {packs.length > 4 && !tout ? (
+        <button
+          type="button"
+          onClick={() => setTout(true)}
+          className="mt-3 w-full rounded-lg border border-line py-2.5 text-[13px] font-bold hover:border-line-strong"
+        >
+          Voir les {packs.length - 4} autres éclairages pour ce véhicule
+        </button>
+      ) : null}
+      {erreur ? <p className="mt-2 text-[12px] text-danger">{erreur}</p> : null}
+    </section>
   )
 }

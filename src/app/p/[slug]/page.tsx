@@ -460,7 +460,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             )}
           >
             {aVisuel ? (
-              <div className="order-2 mt-4 fiche:order-none fiche:mt-0">
+              <div className="order-2 mt-4 fiche:order-none fiche:mt-0 fiche:self-start fiche:top-[76px] lg:top-[124px] [@media(min-width:801px)_and_(min-height:760px)]:sticky">
                 <ProductGallery items={product.gallery} productName={product.name} />
                 <ListePromesses promesses={promesses} className="mt-6 hidden fiche:grid" />
               </div>
@@ -470,13 +470,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               Un seul enfant de grille sur grand écran ; sous le basculement,
               `display:contents` le dissout et le titre passe avant la galerie.
 
-              Sur grand écran, la colonne d'achat reste à l'écran pendant qu'on
-              fait défiler la galerie et les promesses, juste sous l'en-tête
-              replié (56 px, puis 105 px à partir de `lg`). Seulement sur un
-              écran assez haut pour la montrer en entier : une colonne collante
-              plus haute que la fenêtre cacherait son propre bas.
+              Sur grand écran, c'est la galerie (à gauche) qui reste à l'écran
+              pendant qu'on fait défiler la colonne d'achat, plus longue depuis
+              le configurateur et « Complétez votre véhicule » — comme chez les
+              concurrents (demande de l'exploitant, 9 novembre 2026).
             */}
-            <div className="contents fiche:block fiche:self-start fiche:top-[76px] lg:top-[124px] [@media(min-width:801px)_and_(min-height:860px)]:sticky">
+            <div className="contents fiche:block">
               <ProductTitle
                 eyebrow={eyebrow}
                 name={product.name}
