@@ -937,7 +937,11 @@ function ChoixDOptions({
     <fieldset className="mb-4 rounded-xl bg-[#111214] p-4 text-white">
       <legend className="sr-only">Configuration</legend>
       <p className="text-[15px] font-bold">Configuration</p>
-      <p className="mt-1 mb-3 text-[13px] text-[#c9ccd1]">Le prix change selon les options choisies.</p>
+      <p className="mt-1 mb-3 text-[13px] text-[#c9ccd1]">
+        {new Set(variants.map((v) => v.priceCents)).size > 1
+          ? 'Le prix change selon les options choisies.'
+          : 'Même prix quelle que soit l’option choisie.'}
+      </p>
       <div className="grid gap-2.5">
         {o.libelles.map((libelle, rang) => {
           // Les valeurs possibles, compte tenu des choix des options précédentes.
