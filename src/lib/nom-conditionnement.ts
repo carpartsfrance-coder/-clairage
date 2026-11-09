@@ -16,5 +16,7 @@ export function nomUtileDuConditionnement(
   nomDuProduit: string,
 ): string | null {
   if (!nomDuConditionnement) return null
+  // Une combinaison d'options (« Ballasts : … · Température … ») n'est pas un nom à afficher.
+  if (nomDuConditionnement.includes(' : ')) return null
   return nomDuConditionnement === nomDuProduit ? null : nomDuConditionnement
 }
