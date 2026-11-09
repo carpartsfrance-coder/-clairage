@@ -31,6 +31,7 @@ export function ProductTitle({
   name,
   secondLine,
   tagline,
+  vehiculeMobile = null,
 }: {
   /** Rubrique et emplacement d'éclairage, séparés par un point médian. */
   eyebrow: string[]
@@ -38,6 +39,11 @@ export function ProductTitle({
   /** Seconde ligne du titre, en graisse normale. Vide si rien ne la justifie. */
   secondLine: string | null
   tagline: string | null
+  /**
+   * Sur téléphone, le véhicule rejoint le surtitre (« Kits complets · Audi A1
+   * (2010–2018) ») et l'accroche automatique, qui le redisait, est masquée.
+   */
+  vehiculeMobile?: string | null
 }) {
   const configuration = useProductConfiguration()
   const selected = configuration?.selected ?? null
@@ -66,7 +72,7 @@ export function ProductTitle({
 
   return (
     <div className="order-1">
-      {eyebrow.length > 0 ? (
+      {eyebrow.length > 0 || vehiculeMobile ? (
         <p className="mb-2 text-[11px] leading-[1.4] font-bold tracking-[1.2px] text-brand uppercase fiche:mb-2.5 fiche:text-[12px] fiche:tracking-[1.4px]">
           {eyebrow.map((partie, index) => (
             <span key={partie}>
@@ -78,6 +84,16 @@ export function ProductTitle({
               {partie}
             </span>
           ))}
+          {vehiculeMobile ? (
+            <span className="fiche:hidden">
+              {eyebrow.length > 0 ? (
+                <span aria-hidden="true" className="mx-[6px] text-[#c2c2c2]">
+                  ·
+                </span>
+              ) : null}
+              {vehiculeMobile}
+            </span>
+          ) : null}
         </p>
       ) : null}
 
@@ -91,7 +107,12 @@ export function ProductTitle({
       </h1>
 
       {tagline ? (
-        <p className="mt-2 text-[14px] leading-[1.6] text-[#5f6266] fiche:mt-2.5 fiche:text-[15px]">
+        <p
+          className={cn(
+            'mt-2 text-[14px] leading-[1.6] text-[#5f6266] fiche:mt-2.5 fiche:text-[15px]',
+            vehiculeMobile && 'max-fiche:hidden',
+          )}
+        >
           {tagline}
         </p>
       ) : null}
