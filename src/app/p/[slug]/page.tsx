@@ -655,7 +655,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                     {/* Un chiffre lu dans la base (modèles avec au moins un produit en ligne). */}
                     {modelesReferences && plusDe(modelesReferences) ? (
                       <p className="mt-7 flex items-baseline gap-3">
-                        <strong className="text-[34px] leading-none font-extrabold tracking-[-1px] text-white fiche:text-[40px]">
+                        {/* « Plus de » reste écrit : le chiffre est arrondi vers le bas. */}
+                        <strong className="flex items-baseline gap-2 text-[34px] leading-none font-extrabold tracking-[-1px] text-white fiche:text-[40px]">
+                          <span className="text-[15px] font-semibold tracking-normal text-[#c9ccd1]">Plus de</span>
                           {plusDe(modelesReferences)?.replace(/^Plus de /, '')}
                         </strong>
                         <span className="text-[15px] leading-snug text-[#c9ccd1]">
@@ -724,7 +726,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                           </th>
                           <td className="px-2 py-3.5 text-center text-[#a9adb4]">
                             <span className="inline-flex items-center gap-1.5">
-                              {ligne.non ? <IconClose className="size-4 shrink-0 text-[#6b7078]" /> : null}
+                              {ligne.non ? <IconClose className="size-4 shrink-0 text-[#6b7078] max-fiche:hidden" /> : null}
                               {ligne.ailleurs}
                             </span>
                           </td>
