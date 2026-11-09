@@ -18,7 +18,8 @@ import {
   nomDuVehicule,
   titreSeo,
 } from '@/lib/seo-fiche'
-import { commercialTerms, dureeGarantie, identity, promesseRetour, siteConfig } from '@/lib/identity'
+import { commercialTerms, dureeGarantie, formatPrice, identity, promesseRetour, siteConfig } from '@/lib/identity'
+import { getModelesReferences, plusDe } from '@/lib/queries/chiffres-catalogue'
 import { faqFicheParDefaut } from '@/lib/faq-generale'
 import { typeHorsAmpoules } from '@/lib/types-produit'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
@@ -45,6 +46,7 @@ import {
   IconCar,
   IconCheck,
   IconHeadset,
+  IconClose,
   IconPack,
   IconReturn,
   IconShield,
@@ -170,10 +172,11 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     notFound()
   }
 
-  const [shippingOffers, complementaires, vehiculeDeLaFiche] = await Promise.all([
+  const [shippingOffers, complementaires, vehiculeDeLaFiche, modelesReferences] = await Promise.all([
     getShippingOffers(),
     getPacksComplementaires(product.slug, vehicle?.configurationId ?? null),
     getVehiculeDeLaFiche(product.slug),
+    getModelesReferences(),
   ])
 
   /* Pour le coup de pouce « livraison offerte » de la section Complétez. */
@@ -649,6 +652,26 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                       Des ampoules LED, on en trouve partout. Savoir lesquelles rentrent dans
                       votre phare, sans erreur au tableau de bord, c’est notre métier.
                     </p>
+                    {/* Un chiffre lu dans la base (modèles avec au moins un produit en ligne). */}
+                    {modelesReferences && plusDe(modelesReferences) ? (
+                      <p className="mt-7 flex items-baseline gap-3">
+                        <strong className="text-[34px] leading-none font-extrabold tracking-[-1px] text-white fiche:text-[40px]">
+                          {plusDe(modelesReferences)?.replace(/^Plus de /, '')}
+                        </strong>
+                        <span className="text-[15px] leading-snug text-[#c9ccd1]">
+                          modèles de véhicules référencés,
+                          <br />
+                          emplacement par emplacement.
+                        </span>
+                      </p>
+                    ) : null}
+                    <a
+                      href="/contact"
+                      className="mt-7 inline-flex min-h-12 items-center gap-2.5 rounded-xl border border-white/20 px-5 text-[15px] font-bold text-white transition-colors hover:border-white/50 hover:bg-white/5"
+                    >
+                      <IconHeadset className="size-5 text-brand-on-dark" />
+                      Une question ? Demander conseil
+                    </a>
                   </div>
 
                   <table className="w-full border-collapse text-[14px] fiche:text-[15px]">
@@ -663,28 +686,59 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                         >
                           LED « universelles »
                         </th>
-                        <th scope="col" className="w-[30%] px-2 py-3 text-center font-bold">
+                        <th scope="col" className="w-[30%] rounded-t-xl bg-white/[0.06] px-2 py-3 text-center font-bold">
                           Pack {identity.name}
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {[
-                        { critere: 'Compatibilité vérifiée pour votre véhicule', ailleurs: 'À vérifier vous-même' },
-                        { critere: 'Équipement d’origine pris en compte (halogène, xénon, LED)', ailleurs: 'À vérifier vous-même' },
-                        { critere: 'Adaptateurs nécessaires signalés', ailleurs: 'À trouver ailleurs' },
-                        { critere: 'Un conseiller avant et après l’achat', ailleurs: '—' },
-                      ].map((ligne) => (
+                      {/*
+                        Comparaison loyale : chaque ligne est vérifiable. Les
+                        trois dernières disent nos conditions réelles (garantie,
+                        satisfait ou remboursé, livraison) ; en face, ce qu'on
+                        peut affirmer de tout vendeur — le minimum légal de 14
+                        jours, ou « selon le vendeur ».
+                      */}
+                      {(
+                        [
+                        { critere: 'Compatibilité vérifiée pour votre véhicule', ailleurs: 'À vérifier vous-même', non: true },
+                        { critere: 'Équipement d’origine pris en compte (halogène, xénon, LED)', ailleurs: 'À vérifier vous-même', non: true },
+                        { critere: 'Adaptateurs nécessaires signalés', ailleurs: 'À trouver ailleurs', non: true },
+                        { critere: 'Un conseiller avant et après l’achat', ailleurs: 'Rarement', non: true },
+                        dureeGarantie()
+                          ? { critere: 'Garantie', ailleurs: 'Selon le vendeur', nous: dureeGarantie() as string }
+                          : null,
+                        commercialTerms.satisfaitDays
+                          ? { critere: 'Satisfait ou remboursé', ailleurs: '14 jours (minimum légal)', nous: `${commercialTerms.satisfaitDays} jours` }
+                          : null,
+                        seuilFranchiseCents
+                          ? { critere: 'Livraison', ailleurs: 'Selon le vendeur', nous: `Offerte dès ${formatPrice(seuilFranchiseCents)}` }
+                          : null,
+                        ] as Array<{ critere: string; ailleurs: string; non?: boolean; nous?: string } | null>
+                      )
+                        .filter((l): l is { critere: string; ailleurs: string; non?: boolean; nous?: string } => l !== null)
+                        .map((ligne, i, toutes) => (
                         <tr key={ligne.critere} className="border-t border-[#2a2d32]">
                           <th scope="row" className="py-3.5 pr-3 text-left font-medium text-[#e7e8ea]">
                             {ligne.critere}
                           </th>
-                          <td className="px-2 py-3.5 text-center text-[#a9adb4]">{ligne.ailleurs}</td>
-                          <td className="px-2 py-3.5 text-center">
-                            <span className="inline-grid size-7 place-items-center rounded-full bg-ok text-white">
-                              <IconCheck className="size-4" strokeWidth={2.5} />
+                          <td className="px-2 py-3.5 text-center text-[#a9adb4]">
+                            <span className="inline-flex items-center gap-1.5">
+                              {ligne.non ? <IconClose className="size-4 shrink-0 text-[#6b7078]" /> : null}
+                              {ligne.ailleurs}
                             </span>
-                            <span className="sr-only">Oui</span>
+                          </td>
+                          <td className={cn('bg-white/[0.06] px-2 py-3.5 text-center', i === toutes.length - 1 && 'rounded-b-xl')}>
+                            {ligne.nous ? (
+                              <strong className="text-[15px] font-extrabold text-white fiche:text-[16px]">{ligne.nous}</strong>
+                            ) : (
+                              <>
+                                <span className="inline-grid size-7 place-items-center rounded-full bg-ok text-white">
+                                  <IconCheck className="size-4" strokeWidth={2.5} />
+                                </span>
+                                <span className="sr-only">Oui</span>
+                              </>
+                            )}
                           </td>
                         </tr>
                       ))}
