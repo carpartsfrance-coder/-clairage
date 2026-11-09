@@ -615,12 +615,16 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   ) : null}
                 </div>
 
+                {/* Sur téléphone, l'avant / après passe en premier : c'est lui
+                    qui donne envie de lire la suite. */}
                 {comparatif ? (
-                  <ToneSlider
-                    image={comparatif.url}
-                    imageAlt={comparatif.alt}
-                    apresLabel={effetXenon ? 'Effet xénon' : 'LED'}
-                  />
+                  <div className="max-fiche:order-first">
+                    <ToneSlider
+                      image={comparatif.url}
+                      imageAlt={comparatif.alt}
+                      apresLabel={effetXenon ? 'Effet xénon' : 'LED'}
+                    />
+                  </div>
                 ) : null}
               </div>
 
