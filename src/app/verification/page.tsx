@@ -128,7 +128,7 @@ export default async function VerificationPage({ searchParams }: PageProps) {
                       <dd className="text-right font-semibold">
                         {variant!.name}
                         <span className="block text-[10px] font-normal text-[#7e7e7e]">
-                          réf. {variant!.sku} · {formatPrice(variant!.priceCents)}
+                          {formatPrice(variant!.priceCents)}
                         </span>
                       </dd>
                     </div>
