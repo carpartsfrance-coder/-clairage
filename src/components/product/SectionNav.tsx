@@ -47,7 +47,7 @@ export function SectionNav({ items }: { items: SectionNavItem[] }) {
   return (
     <nav
       aria-label="Sections de la fiche"
-      className="sticky top-0 z-20 border-b border-line bg-white"
+      className="sticky top-[var(--hauteur-header,0px)] z-20 border-b border-line bg-white transition-[top] duration-200 motion-reduce:transition-none"
     >
       <div className="container-page flex gap-6 overflow-x-auto whitespace-nowrap fiche:gap-10">
         {items.map((item) => {

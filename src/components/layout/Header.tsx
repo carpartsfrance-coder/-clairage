@@ -12,6 +12,7 @@ import { VehicleMenu } from './VehicleMenu'
 import { CartLink } from './CartLink'
 import { MobileNav } from './MobileNav'
 import { HeaderShell } from './HeaderShell'
+import { BoutonRecherche } from './BoutonRecherche'
 
 /**
  * Header commun à toutes les pages — composition de 03-header-final.png.
@@ -129,7 +130,7 @@ export async function Header() {
           className={
             /* .shop-header-main : 89 px et 36 px d'écart (43 au-delà de 1450 px). */
             'container-page flex items-center gap-3 transition-[height] duration-200 motion-reduce:transition-none ' +
-            'h-14 lg:h-[89px] lg:gap-9 group-data-scrolled/header:lg:h-[64px]'
+            'h-[52px] lg:h-[89px] lg:gap-9 group-data-scrolled/header:lg:h-[64px]'
           }
         >
           <MobileNav vehicle={vehicle} sections={sections} />
@@ -164,14 +165,22 @@ export async function Header() {
               </span>
             </Link>
             <span aria-hidden className="mx-5 hidden h-8 w-px bg-[#e0e0e0] lg:block" />
+            {/* Mobile, page défilée : la loupe remplace la barre de recherche. */}
+            <div className="lg:hidden">
+              <BoutonRecherche cible="recherche-mobile" />
+            </div>
             <CartLink itemCount={cart.itemCount} />
           </div>
         </div>
 
         {/* Recherche pleine largeur sous la ligne principale, mobile et tablette.
-            Elle ne se replie jamais : chercher est la raison d'être de ce
-            header, et la masquer obligerait à un geste de plus à chaque fois. */}
-        <div className="container-page pb-2.5 lg:hidden">
+            Affichée à l'arrivée ; repliée au défilement, où la loupe de la
+            ligne principale la rouvre d'un appui (BoutonRecherche). Le header
+            collant ne garde ainsi que la ligne du logo pendant la lecture. */}
+        <div
+          id="recherche-mobile"
+          className="container-page pb-2.5 lg:hidden [header[data-scrolled]:not([data-recherche])_&]:h-0 [header[data-scrolled]:not([data-recherche])_&]:overflow-hidden [header[data-scrolled]:not([data-recherche])_&]:pb-0"
+        >
           <HeaderSearch compact />
         </div>
       </div>
@@ -183,10 +192,10 @@ export async function Header() {
       <div
         className={
           'overflow-hidden border-b border-line bg-[#f6f6f6] transition-[height] duration-200 motion-reduce:transition-none lg:hidden ' +
-          'h-11 group-data-scrolled/header:h-0 group-data-scrolled/header:border-b-0'
+          'h-9 group-data-scrolled/header:h-0 group-data-scrolled/header:border-b-0'
         }
       >
-        <div className="container-page flex h-11 items-center">
+        <div className="container-page flex h-9 items-center">
           <VehicleMenu vehicle={vehicle} variant="bar" />
         </div>
       </div>

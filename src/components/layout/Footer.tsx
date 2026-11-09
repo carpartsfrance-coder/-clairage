@@ -95,7 +95,7 @@ export async function Footer() {
 
           {colonnes.map((column) => (
             <nav key={column.title} aria-label={column.title}>
-              <h2 className="mb-3 text-[10px] font-bold text-[#e2e7e8] lg:mb-3.5">
+              <h2 className="mb-1 text-[14px] font-bold text-[#e2e7e8] lg:mb-3.5 lg:text-[12px]">
                 {column.title}
               </h2>
               <ul>
@@ -103,7 +103,7 @@ export async function Footer() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className="block py-2.5 text-[9px] text-[#97a5aa] transition-colors hover:text-white lg:my-2 lg:py-0"
+                      className="block py-2.5 text-[14px] text-[#97a5aa] lg:text-[11px] transition-colors hover:text-white lg:my-2 lg:py-0"
                     >
                       {item.label}
                     </Link>
@@ -120,7 +120,7 @@ export async function Footer() {
               {promises.map((promise) => (
                 <li
                   key={promise.text}
-                  className="mb-3 flex items-center gap-2.5 text-[9px] text-[#bdc8ca] last:mb-0 lg:mb-[15px]"
+                  className="mb-3 flex items-center gap-2.5 text-[13px] text-[#bdc8ca] last:mb-0 lg:mb-[15px] lg:text-[11px]"
                 >
                   <promise.icon className="size-4 shrink-0" />
                   {promise.text}
@@ -128,7 +128,7 @@ export async function Footer() {
               ))}
 
               {contact.email ? (
-                <li className="mt-3 flex items-center gap-2.5 text-[9px] lg:mt-[15px]">
+                <li className="mt-3 flex items-center gap-2.5 text-[13px] lg:mt-[15px] lg:text-[11px]">
                   <a
                     href={`mailto:${contact.email}`}
                     className="text-[#bdc8ca] underline underline-offset-[3px] hover:text-white"
@@ -152,7 +152,7 @@ export async function Footer() {
         </div>
 
         {/* .footer-bottom : identité à gauche, mention de démonstration à droite. */}
-        <div className="mt-[17px] block gap-5 text-[7px] leading-[1.8] text-[#84949b] lg:mt-5 lg:flex lg:justify-between lg:text-[8px] lg:leading-normal">
+        <div className="mt-[17px] block gap-5 text-[12px] leading-[1.8] lg:text-[11px] text-[#84949b] lg:mt-5 lg:flex lg:justify-between lg:leading-normal">
           <span className="block">
             © {year} {identity.name}
             {hasLegalIdentity ? ` · ${legal.companyName}` : null}
@@ -172,7 +172,7 @@ export async function Footer() {
           Elle empêche « Branchement sans modifier le câblage » d'être lu comme
           une promesse valable pour tous les véhicules.
         */}
-        <p className="mt-3 text-[6px] leading-[1.7] text-[#647c86] lg:text-[7px]">
+        <p className="mt-3 text-[12px] leading-[1.7] text-[#647c86] lg:text-[11px]">
           * Selon le kit et le véhicule. Accessoires et contraintes de montage à vérifier sur la
           fiche produit.
         </p>
