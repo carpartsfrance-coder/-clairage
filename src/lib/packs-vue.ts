@@ -306,11 +306,15 @@ const ORDRE_ZONE: Record<Exclude<Zone, 'tout'>, number> = { avant: 0, arriere: 1
  */
 export function cartesTriees(cartes: CarteEclairage[], tri: Tri): CarteEclairage[] {
   if (tri === 'conseilles') {
-    // `sort` est stable : à zone égale, l'ordre d'arrivée est conservé.
+    // D'abord les cartes qui montrent le véhicule du client (rendu réel de SA
+    // voiture), puis les autres ; dans chaque groupe, par zone. `sort` est
+    // stable : à rang égal, l'ordre d'arrivée est conservé.
+    const vehicule = (c: CarteEclairage) => (c.image && /\/rendus\//.test(c.image.url) ? 0 : 1)
     return [...cartes].sort(
       (a, b) =>
+        vehicule(a) - vehicule(b) ||
         ORDRE_ZONE[zoneDeLEmplacement(a.emplacements[0].code)] -
-        ORDRE_ZONE[zoneDeLEmplacement(b.emplacements[0].code)],
+          ORDRE_ZONE[zoneDeLEmplacement(b.emplacements[0].code)],
     )
   }
   const sens = tri === 'prix-croissant' ? 1 : -1
