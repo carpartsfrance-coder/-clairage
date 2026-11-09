@@ -31,6 +31,7 @@ import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { ProductGallery } from '@/components/product/ProductGallery'
 import { ProductTitle } from '@/components/product/ProductTitle'
 import { BuyBox } from '@/components/product/BuyBox'
+import { OptionsDuVehicule, ResumeFiche } from '@/components/product/ResumeEtOptions'
 import { ConfigurationContents } from '@/components/product/ConfigurationContents'
 import { KitContents } from '@/components/product/KitContents'
 import { OptionalAddons } from '@/components/product/OptionalAddons'
@@ -485,6 +486,14 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 tagline={accrocheSousLeTitre(product.tagline, vehiculeDeLaFiche)}
               />
 
+              <ResumeFiche
+                reference={
+                  (product.variants.find((v) => v.id === product.recommendedVariantId) ?? product.variants[0])
+                    ?.sku ?? null
+                }
+                resume={aEnBref ? resumeCourt(product.description ?? product.tagline ?? null) : null}
+              />
+
               <div className="order-3 mt-5 fiche:mt-6">
                 <BuyBox
                   productName={product.name}
@@ -508,6 +517,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   }
                 />
               </div>
+
+              {complementaires && complementaires.packs.length > 0 ? (
+                <OptionsDuVehicule vehicule={complementaires.vehicule} packs={complementaires.packs} />
+              ) : null}
             </div>
           </section>
         </div>
@@ -933,4 +946,13 @@ function CarteConseil({ className, bandeau = false }: { className?: string; band
       </Link>
     </div>
   )
+}
+
+/** Le début de la description, coupé proprement vers 220 caractères. */
+function resumeCourt(texte: string | null): string | null {
+  if (!texte) return null
+  const t = texte.replace(/\s+/g, ' ').trim()
+  if (t.length <= 230) return t
+  const coupe = t.slice(0, 220)
+  return coupe.slice(0, coupe.lastIndexOf(' ')) + '…'
 }
