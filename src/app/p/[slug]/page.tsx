@@ -49,7 +49,14 @@ import {
   IconReturn,
   IconShield,
   IconWrench,
+  IconSun,
+  IconPin,
+  IconInfo,
+  IconMotorcycle,
+  IconChevronDown,
 } from '@/components/ui/icons'
+import { pointsCles } from '@/lib/en-bref'
+import { presentationDeCarte } from '@/lib/carte-titre'
 import { cn } from '@/lib/cn'
 import { estComparatifAvantApres } from '@/lib/media-comparatif'
 import { estEffetXenon } from '@/lib/effet-xenon'
@@ -587,9 +594,32 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                     courte du rendu prend sa place.
                   */}
                   {aDescription ? (
-                    <Prose sombre className="mt-6">
-                      {corrigerRedactionnelDImport(product.body ?? '')}
-                    </Prose>
+                    <>
+                      {/*
+                        Devant : quelques points courts, tirés du rédactionnel.
+                        Le texte complet reste, replié (« Lire le détail ») :
+                        les clients ne lisent pas de longs paragraphes
+                        (exploitant, 9 novembre 2026).
+                      */}
+                      <PointsEnBref
+                        points={pointsDeLaFiche({
+                          body: product.body,
+                          nom: product.name,
+                          emplacement: position ?? null,
+                          concuPour,
+                          moto: product.vehicleType === 'MOTORCYCLE',
+                        })}
+                      />
+                      <details className="group mt-6 border-t border-[#2a2d32] pt-2">
+                        <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 text-[15px] font-semibold text-[#c9ccd1] hover:text-white [&::-webkit-details-marker]:hidden">
+                          Lire le détail
+                          <IconChevronDown className="size-4 transition-transform group-open:rotate-180" />
+                        </summary>
+                        <Prose sombre className="mt-3">
+                          {corrigerRedactionnelDImport(product.body ?? '')}
+                        </Prose>
+                      </details>
+                    </>
                   ) : product.description ? (
                     <p className="mt-5 text-[16px] leading-[1.7] text-[#c9ccd1] fiche:text-[17px]">
                       {product.description}
@@ -973,4 +1003,56 @@ function resumeCourt(texte: string | null): string | null {
   if (t.length <= 230) return t
   const coupe = t.slice(0, 220)
   return coupe.slice(0, coupe.lastIndexOf(' ')) + '…'
+}
+
+type PointEnBref = { Icon: typeof IconSun; titre: string; texte: string }
+
+/** Les points courts de « En bref » : ce qu'il fait, où, pour qui, ce qu'il y a dans le carton, et la consigne à retenir. */
+function pointsDeLaFiche({
+  body,
+  nom,
+  emplacement,
+  concuPour,
+  moto,
+}: {
+  body: string | null
+  nom: string
+  emplacement: string | null
+  concuPour: string | null
+  moto: boolean
+}): PointEnBref[] {
+  const pc = pointsCles(body)
+  const enDeuxMots = presentationDeCarte(nom, null).phrase ?? pc.premiere
+  return [
+    enDeuxMots ? { Icon: IconSun, titre: 'En deux mots', texte: enDeuxMots } : null,
+    emplacement ? { Icon: IconPin, titre: 'Emplacement', texte: emplacement } : null,
+    concuPour
+      ? {
+          Icon: moto ? IconMotorcycle : IconCar,
+          titre: 'Prévu pour',
+          texte: `${concuPour}. Un doute ? On vérifie avec vous avant l’envoi.`,
+        }
+      : null,
+    pc.carton.length > 0 ? { Icon: IconPack, titre: 'Dans le carton', texte: pc.carton.join(' · ') } : null,
+    pc.aSavoir[0] ? { Icon: IconInfo, titre: 'À savoir', texte: pc.aSavoir[0] } : null,
+  ].filter((p): p is PointEnBref => p !== null)
+}
+
+function PointsEnBref({ points }: { points: PointEnBref[] }) {
+  if (points.length === 0) return null
+  return (
+    <ul className="mt-7 flex flex-col gap-5">
+      {points.map(({ Icon, titre, texte }) => (
+        <li key={titre} className="flex gap-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/[0.08]">
+            <Icon className="size-5 text-brand-on-dark" />
+          </span>
+          <div className="min-w-0 pt-0.5">
+            <p className="text-[13px] font-bold tracking-[0.6px] text-[#8e939b] uppercase">{titre}</p>
+            <p className="mt-0.5 text-[17px] leading-snug font-semibold text-white">{texte}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
 }
