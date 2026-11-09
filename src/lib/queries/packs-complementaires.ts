@@ -29,6 +29,8 @@ export type PackComplementaire = {
   slug: string
   variantId: string
   titre: string
+  /** Nom du produit (« Kit xénon HID pour Audi A1 ») : la carte de la fiche en tire son titre. */
+  nom: string
   sousTitre: string | null
   image: { url: string; alt: string } | null
   prixCents: number
@@ -120,6 +122,7 @@ export async function getPacksComplementaires(
           slug: carte.slug,
           variantId: carte.variantId as string,
           titre: carte.emplacements.map((e) => e.label).join(' et '),
+          nom: carte.nom,
           // « Ampoules halogènes effet xénon » quand c'en est (packs-vue).
           sousTitre: carte.conditionnement ?? (premier ? sousTitreDeLEmplacement(premier.code) : null),
           image: carte.image,
