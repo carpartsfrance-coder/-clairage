@@ -1,4 +1,5 @@
 import 'server-only'
+import { evaluerPromotion } from './promotions'
 import { randomBytes } from 'node:crypto'
 import type { Prisma } from '@prisma/client'
 import { prisma } from './db'
@@ -179,14 +180,38 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   if (!method) {
     return { ok: false, error: "Ce mode de livraison n'est pas disponible." }
   }
-  const shippingCents = effectivePrice(method, subtotalCents)
+  // --- Code promo : relu et recalculé ici, jamais cru depuis le navigateur ---
+  const promo = cart.promotionCode
+    ? await evaluerPromotion(cart.promotionCode, {
+        lignes: cart.lines.map((line) => ({
+          productId: line.variant.productId,
+          totalCents: line.variant.priceCents * line.quantity,
+        })),
+        email: input.email,
+      })
+    : null
+  if (promo && !promo.ok) {
+    return { ok: false, error: `${promo.erreur} Retirez-le de votre panier pour continuer.` }
+  }
+  const remise = promo?.ok ? promo : null
+  const shippingCents = remise?.livraisonOfferte ? 0 : effectivePrice(method, subtotalCents)
 
   const lineInputs = cart.lines.map((line) => ({
     unitPriceCents: line.variant.priceCents,
     quantity: line.quantity,
     vatRateBp: line.variant.vatRate?.rateBp ?? 0,
   }))
-  const totals = await computeTotals(lineInputs, shippingCents)
+  const brut = await computeTotals(lineInputs, shippingCents)
+  const discountCents = Math.min(remise?.remiseCents ?? 0, brut.subtotalCents)
+  // Les prix sont TTC : la remise réduit la TVA contenue dans la même proportion.
+  const totals = {
+    ...brut,
+    vatCents:
+      brut.subtotalCents > 0
+        ? Math.round((brut.vatCents * (brut.subtotalCents - discountCents)) / brut.subtotalCents)
+        : 0,
+    totalCents: brut.subtotalCents - discountCents + brut.shippingCents,
+  }
 
   const prefix =
     (await prisma.setting.findUnique({ where: { key: 'order.prefix' } }))?.value?.toString() ??
@@ -223,7 +248,10 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
           fulfillmentStatus: 'UNFULFILLED',
           currency: cart.currency,
           subtotalCents: totals.subtotalCents,
-          discountCents: 0,
+          discountCents,
+          ...(remise
+            ? { promotion: { connect: { id: remise.promotionId } }, promotionCode: remise.code }
+            : {}),
           shippingCents: totals.shippingCents,
           taxCents: totals.vatCents,
           totalCents: totals.totalCents,
@@ -608,6 +636,12 @@ export async function applyPaymentOutcome(
           where: { id: payment.orderId },
           data: { paymentStatus: 'PAID', status: 'CONFIRMED', placedAt: new Date() },
         })
+        if (payment.order.promotionId) {
+          await tx.promotion.update({
+            where: { id: payment.order.promotionId },
+            data: { redemptions: { increment: 1 } },
+          })
+        }
         await tx.orderEvent.create({
           data: {
             orderId: payment.orderId,

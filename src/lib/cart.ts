@@ -16,6 +16,7 @@ import {
 } from './fitment'
 import { ARGS_COUVERTURE, couverture } from './media-couverture'
 import { couvertureType } from './images-types'
+import { evaluerPromotion, type ResultatPromo } from './promotions'
 
 /**
  * Lecture du panier.
@@ -56,6 +57,7 @@ export type CartLineView = {
   availability: Availability
   /** Renseigné quand la ligne a été ajoutée parce qu'un montage l'exige. */
   requiredBy: string | null
+  productId: string
 }
 
 export type CartView = {
@@ -78,9 +80,15 @@ export type CartView = {
    * rien ne peut être déclaré nécessaire.
    */
   missingAccessories: MissingCartAccessory[]
+  /** Code promo saisi au panier, recalculé à chaque lecture. */
+  promotion: ResultatPromo | null
+  /** Remise du code, en centimes (0 sans code valable). */
+  discountCents: number
 }
 
 export const EMPTY_CART: CartView = {
+  promotion: null,
+  discountCents: 0,
   id: null,
   token: null,
   lines: [],
@@ -173,6 +181,7 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
         })),
         availability,
         requiredBy: line.requiredBy,
+        productId: variant.product.id,
       }
     })
 
@@ -216,6 +225,10 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
       ),
     ])
 
+    const promotion = await evaluerPromotion(cart.promotionCode, {
+      lignes: lines.map((line) => ({ productId: line.productId, totalCents: line.lineTotalCents })),
+    }).catch(() => null)
+
     return {
       id: cart.id,
       token: cart.token,
@@ -226,6 +239,8 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
       stockIssues,
       conflicts,
       missingAccessories,
+      promotion,
+      discountCents: promotion?.ok ? promotion.remiseCents : 0,
     }
   } catch (error) {
     console.error('[panier] lecture impossible', error)

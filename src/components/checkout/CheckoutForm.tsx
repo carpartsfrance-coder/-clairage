@@ -52,6 +52,8 @@ type Props = {
   subtotalCents: number
   /** TVA contenue dans le sous-total des articles (les prix sont TTC). */
   vatCents: number
+  /** Code promo valable du panier (recalculé à la validation). */
+  promotion?: { code: string; remiseCents: number; livraisonOfferte: boolean } | null
   /**
    * Pays ouverts à la livraison (zones du back-office), la France d'abord, et
    * pour chacun ses modes. Le choix du pays de livraison change les modes
@@ -212,6 +214,7 @@ export function CheckoutForm({
   lines,
   subtotalCents,
   vatCents,
+  promotion = null,
   countries,
   shippingOptionsByCountry,
   paymentSimulated,
@@ -231,8 +234,9 @@ export function CheckoutForm({
 
   const fieldErrors = state.fieldErrors
   const selected = shippingOptions.find((option) => option.code === methodCode) ?? null
-  const shippingCents = selected?.effectivePriceCents ?? 0
-  const totalCents = subtotalCents + shippingCents
+  const shippingCents = promotion?.livraisonOfferte ? 0 : (selected?.effectivePriceCents ?? 0)
+  const remiseCents = promotion?.remiseCents ?? 0
+  const totalCents = subtotalCents - remiseCents + shippingCents
   const noShipping = shippingOptions.length === 0
 
   return (
@@ -558,6 +562,13 @@ export function CheckoutForm({
               <dt>dont TVA sur les articles</dt>
               <dd>{formatPrice(vatCents)}</dd>
             </div>
+
+            {promotion ? (
+              <div className="flex items-baseline justify-between gap-4 pb-3 text-[12px] text-ok">
+                <dt>Code {promotion.code}</dt>
+                <dd className="font-semibold">{remiseCents > 0 ? `−${formatPrice(remiseCents)}` : 'Appliqué'}</dd>
+              </div>
+            ) : null}
 
             <div className="flex items-baseline justify-between gap-4 pb-3 text-[12px]">
               <dt>Livraison</dt>

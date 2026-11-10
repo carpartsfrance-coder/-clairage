@@ -311,3 +311,29 @@ async function etatLivraisonOfferte(cartId: string): Promise<string | undefined>
     return undefined
   }
 }
+
+/**
+ * Code promo du panier. Le code saisi est enregistré tel quel sur le panier ;
+ * il est vérifié et la remise recalculée à chaque lecture (`getCart`), puis
+ * une dernière fois à la commande. Un code refusé est affiché avec la raison,
+ * et peut être retiré.
+ */
+export async function appliquerCodePromo(formData: FormData): Promise<void> {
+  const saisie = String(formData.get('code') ?? '').trim().slice(0, 40)
+  const store = await cookies()
+  const token = store.get(CART_COOKIE)?.value
+  if (!token) return
+  await prisma.cart.updateMany({
+    where: { token },
+    data: { promotionCode: saisie ? saisie.toUpperCase().replace(/\s+/g, '') : null },
+  })
+  refresh()
+}
+
+export async function retirerCodePromo(): Promise<void> {
+  const store = await cookies()
+  const token = store.get(CART_COOKIE)?.value
+  if (!token) return
+  await prisma.cart.updateMany({ where: { token }, data: { promotionCode: null } })
+  refresh()
+}
