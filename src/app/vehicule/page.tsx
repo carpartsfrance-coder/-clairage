@@ -1,7 +1,7 @@
 import type { ComponentType, SVGProps } from 'react'
 import type { Metadata } from 'next'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
-import { VehicleSelector } from '@/components/vehicle/VehicleSelector'
+import { VehiclePicker } from '@/components/vehicle/VehiclePicker'
 import { ButtonLink } from '@/components/ui/Button'
 import { Alert, Card } from '@/components/ui/Surface'
 import { IconArrowRight, IconCar, IconGear, IconHeadset, IconWrench } from '@/components/ui/icons'
@@ -110,9 +110,7 @@ export default async function Page() {
               juste après, et seulement si votre génération a été vendue avec plusieurs
               équipements.
             </p>
-            <VehicleSelector
-              layout="stacked"
-              currentConfigurationId={vehicle?.configurationId ?? null}
+            <VehiclePicker
               initial={
                 vehicle
                   ? {
@@ -123,7 +121,7 @@ export default async function Page() {
                     }
                   : null
               }
-              className="mt-6"
+              className="-mx-5 mt-6 sm:-mx-7"
             />
           </Card>
         </section>
