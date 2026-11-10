@@ -246,7 +246,11 @@ async function deposer(
 
   const empreinte = createHash('sha256').update(controle.bytes).digest('hex').slice(0, 12)
   const suffixe = `-${empreinte}.${controle.extension}`
-  const existant = await prisma.media.findFirst({ where: { storageKey: { endsWith: suffixe } } })
+  // L'extension peut changer au dépôt (photo allégée en WebP) : on retrouve
+  // le fichier par son empreinte seule.
+  const existant = await prisma.media.findFirst({
+    where: { storageKey: { contains: suffixe.slice(0, suffixe.lastIndexOf('.') + 1) } },
+  })
 
   if (existant) {
     // Le fichier fait foi, sa description aussi : sans cette remise à niveau,

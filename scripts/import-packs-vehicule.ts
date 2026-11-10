@@ -136,7 +136,8 @@ async function vignette(prisma: PrismaClient, url: string, alt: string): Promise
 
   const empreinte = createHash('sha256').update(controle.bytes).digest('hex').slice(0, 12)
   const existant = await prisma.media.findFirst({
-    where: { storageKey: { endsWith: `-${empreinte}.${controle.extension}` } },
+    // L'extension peut changer au dépôt (photo allégée en WebP) : l'empreinte suffit.
+    where: { storageKey: { contains: `-${empreinte}.` } },
   })
   if (existant) return existant.id
 

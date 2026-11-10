@@ -126,8 +126,8 @@ export default async function CulotPage({ params, searchParams }: PageProps) {
       ) : (
         <>
           <ul className="mt-5 grid grid-cols-1 gap-4 min-[368px]:grid-cols-2 fiche:grid-cols-3 min-[1101px]:grid-cols-4">
-            {result.items.map((product) => (
-              <ProductCard key={product.slug} product={product} />
+            {result.items.map((product, index) => (
+              <ProductCard key={product.slug} product={product} prioritaire={index < 4} />
             ))}
           </ul>
 

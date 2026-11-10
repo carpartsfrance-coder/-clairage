@@ -22,7 +22,14 @@ import { IconArrowRight } from '@/components/ui/icons'
  * lignes sont donc affichées, chacune avec son intitulé. Les montants viennent
  * du catalogue, jamais du composant.
  */
-export function ProductCard({ product }: { product: ProductListItem }) {
+export function ProductCard({
+  product,
+  prioritaire = false,
+}: {
+  product: ProductListItem
+  /** Premières cartes de la liste : image chargée tout de suite, sans attendre le défilement. */
+  prioritaire?: boolean
+}) {
   const multiplePackagings = product.variantCount > 1
   const unavailable = product.availability.state === 'OUT_OF_STOCK'
   const incompatible = product.fitment === 'INCOMPATIBLE'
@@ -52,6 +59,8 @@ export function ProductCard({ product }: { product: ProductListItem }) {
               alt=""
               fill
               sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+              loading={prioritaire ? 'eager' : 'lazy'}
+              fetchPriority={prioritaire ? 'high' : 'auto'}
               className="object-contain p-3 sm:p-4"
             />
           ) : (

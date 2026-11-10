@@ -388,8 +388,8 @@ export default async function RecherchePage({
             {result.items.length > 0 ? (
               <>
                 <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {result.items.map((product) => (
-                    <ProductCard key={product.slug} product={product} />
+                  {result.items.map((product, index) => (
+                    <ProductCard key={product.slug} product={product} prioritaire={index < 4} />
                   ))}
                 </ul>
                 <Pagination
