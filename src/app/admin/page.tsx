@@ -173,8 +173,8 @@ export default async function AdminDashboardPage({
           })}
         </div>
         <p className="mt-2 text-xs text-muted">
-          Toutes les commandes payées sont comptées, y compris celles réglées en mode test : c&apos;est
-          le paiement qui porte cet indicateur, pas la commande.
+          Le chiffre d&apos;affaires, le panier moyen et les commandes payées ne comptent pas les
+          paiements de test. Les commandes à préparer les comptent : elles restent à traiter.
         </p>
       </section>
 

@@ -27,6 +27,8 @@
  * fiche d'administration, qui doit expliquer.
  */
 
+import { imagesTypes } from '../images-types'
+
 export type NiveauManque = 'bloquant' | 'important' | 'confort'
 
 export type Manque = {
@@ -39,6 +41,9 @@ export type Manque = {
 
 /** Forme minimale attendue : celle que `getAdminProduct` renvoie déjà. */
 export type ProduitExamine = {
+  slug?: string
+  name?: string
+  vehicleType?: string | null
   status: string
   tagline: string | null
   description: string | null
@@ -102,11 +107,23 @@ export function releverManques(produit: ProduitExamine): Manque[] {
 
   /* ---- Importants : la fiche dessert le produit ou le client ---- */
 
-  if (produit.media.length === 0) {
+  // Sans visuel propre, la fiche montre les visuels d'illustration de son type
+  // (lib/images-types.ts) quand il y en a : ce n'est alors qu'un confort.
+  const illustrations =
+    produit.slug && produit.name
+      ? imagesTypes({ slug: produit.slug, name: produit.name, vehicleType: produit.vehicleType }).length
+      : 0
+  if (produit.media.length === 0 && illustrations === 0) {
     manques.push({
       niveau: 'important',
       champ: 'Visuels',
       consequence: "La fiche s'affiche sans galerie : le client achète sans rien voir.",
+    })
+  } else if (produit.media.length === 0) {
+    manques.push({
+      niveau: 'confort',
+      champ: 'Visuels',
+      consequence: `Pas de photo propre à ce produit : la fiche montre ${illustrations} visuel${illustrations > 1 ? 's' : ''} d'illustration.`,
     })
   }
 

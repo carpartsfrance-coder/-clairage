@@ -129,7 +129,7 @@ export default async function AdminPromotionsPage({
         ) : (
           <Card>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[72rem] text-sm">
+              <table className="w-full min-w-[64rem] text-sm">
                 <caption className="sr-only">Codes promotionnels enregistrés</caption>
                 <thead>
                   <tr className="border-b border-line bg-surface-soft">
@@ -153,9 +153,6 @@ export default async function AdminPromotionsPage({
                     </th>
                     <th scope="col" className={`${thClass} text-right`}>
                       Utilisations
-                    </th>
-                    <th scope="col" className={thClass}>
-                      Cumulable
                     </th>
                     <th scope="col" className={thClass}>
                       Active
@@ -195,7 +192,6 @@ export default async function AdminPromotionsPage({
                       <td className={`${tdClass} text-right whitespace-nowrap tabular-nums`}>
                         {promotion.redemptions} / {promotion.maxRedemptions ?? 'illimité'}
                       </td>
-                      <td className={tdClass}>{promotion.stackable ? 'Oui' : 'Non'}</td>
                       <td className={tdClass}>
                         {promotion.active ? (
                           <Badge tone="ok">Active</Badge>

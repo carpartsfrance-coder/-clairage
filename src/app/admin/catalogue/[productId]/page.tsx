@@ -31,6 +31,7 @@ import {
 } from '@/lib/admin/onglets-produit'
 import { releverManques, type Manque } from '@/lib/admin/completeness'
 import { ordreAffichage } from '@/lib/admin/media-order'
+import { imagesTypes } from '@/lib/images-types'
 import { ProductStatusForm, PublicationForm, SeoForm } from '@/components/admin/ProductEditor'
 import { ProductMediaManager, type VisuelFiche } from '@/components/admin/ProductMediaManager'
 import {
@@ -555,7 +556,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
             <>
               <Bloc
                 titre="Identité du produit"
-                description="Ces champs décrivent le produit, et quatre d’entre eux décident d’où il apparaît : le culot alimente le menu et la recherche par culot, la teinte une facette, le type de véhicule les parcours auto et moto, le niveau de montage la section « Montage »."
+                description="Nom, culot, teinte, type de véhicule : ce qui décide où le produit apparaît."
               >
                 <IdentiteForm
                   productId={product.id}
@@ -581,7 +582,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
 
               <Bloc
                 titre="Contenu commercial"
-                description="La description courte sous-titre le bloc de comparaison des teintes ; le rédactionnel long est la section « La référence ». Sans l’un ni l’autre, la fiche n’a aucun texte à lire."
+                description="Le petit texte d’accroche et le texte long de la fiche."
               >
                 <RedactionnelForm
                   productId={product.id}
@@ -593,7 +594,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
 
               <Bloc
                 titre="Questions et montage"
-                description="Les questions s’affichent sur la fiche et partent dans les données structurées que les moteurs peuvent reprendre. Un guide est rédigé une fois et sert à plusieurs produits : on le rattache ici, on ne l’écrit pas."
+                description="Les questions fréquentes affichées sur la fiche, et le guide de montage lié."
               >
                 <h3 className="text-sm font-semibold">Questions fréquentes</h3>
                 <ProductFaqManager
@@ -614,7 +615,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
 
               <Bloc
                 titre="Compléments facultatifs"
-                description="Le bloc « Complétez votre commande » de la fiche, sous l’achat : c’est là que se vendent l’adaptateur et le décodeur dont le montage a besoin. Un complément déjà fourni par le pack retenu disparaît de lui-même."
+                description="Les accessoires proposés sous le bouton d’achat (adaptateurs, décodeurs…)."
               >
                 <ProductAddonsManager
                   productId={product.id}
@@ -630,7 +631,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
           {onglet === 'medias' ? (
             <Bloc
               titre="Visuels"
-              description="Ajouter, ordonner, décrire et retirer se font ici, à l’endroit où l’absence est constatée. Le texte alternatif aussi : le voir manquer dans un écran et le corriger dans un autre, c’est ce qui fait qu’on ne le corrige jamais."
+              description="Ajouter, ranger, décrire et retirer les photos de la fiche."
             >
               <ProductMediaManager
                 productId={product.id}
@@ -639,6 +640,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
                 maxBytes={MAX_UPLOAD_BYTES}
                 stockageOk={stockage.ok}
                 stockageProbleme={stockage.problem}
+                illustrations={imagesTypes(product).length}
                 mayEdit={mayEdit}
               />
             </Bloc>
@@ -648,7 +650,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
             <>
               <Bloc
                 titre="Conditionnements"
-                description="C’est ce bloc qui fait vendre la fiche : le prix, le taux de TVA et le stock. Le stock d’un kit n’est pas saisi, il se calcule depuis ses composants."
+                description="Prix, TVA et stock."
               >
                 <ProductVariantsManager
                   productId={product.id}
@@ -660,7 +662,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
 
               <Bloc
                 titre="Composition des kits"
-                description="Dès qu’un conditionnement a un composant, la boutique cesse de lire le stock saisi sur lui : elle calcule combien de kits ses composants indispensables permettent de monter, réserve les composants à la commande, et liste les pièces à prendre en rayon. Une quantité fausse ici ne fait pas un affichage faux, elle fait une vente qu’on ne peut pas honorer."
+                description="Pour un kit : les pièces qui le composent. Son stock se calcule tout seul."
                 id="produit-composition"
               >
                 <ProductKitManager
@@ -677,7 +679,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
           {onglet === 'compat' ? (
             <Bloc
               titre="Compatibilités"
-              description="Sans compatibilité documentée, le parcours véhicule ne proposera jamais cette référence. Les mêmes règles qu’à l’écran Véhicules s’appliquent : « confirmée » demande une source et une date, et l’absence de ligne vaut « à vérifier », jamais « incompatible »."
+              description="Les véhicules sur lesquels ce produit se monte. Sans eux, il n’apparaît pas dans la recherche par véhicule."
             >
               <ProductFitmentsManager
                 conditionnements={conditionnementsCompatibles}
@@ -696,7 +698,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
           {onglet === 'carac' ? (
             <Bloc
               titre="Caractéristiques"
-              description="Ce que le client vérifie avant d’acheter. Elles s’affichent sur la fiche dans cet ordre, et un libellé ne peut pas y figurer deux fois."
+              description="Les caractéristiques que le client vérifie avant d’acheter."
             >
               <ProductSpecsManager productId={product.id} specs={specs} mayEdit={mayEdit} />
             </Bloc>
@@ -705,7 +707,7 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
           {onglet === 'seo' ? (
             <Bloc
               titre="Référencement"
-              description="Ce que les moteurs affichent dans leurs résultats. Ni l’un ni l’autre n’apparaît sur la fiche elle-même : le titre de la page et son extrait se décident ici."
+              description="Le titre et le résumé affichés par Google."
             >
               {mayEdit ? (
                 <SeoForm

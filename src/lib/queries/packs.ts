@@ -1,4 +1,5 @@
 import 'server-only'
+import { nomDeLEmplacement } from '../packs-vue'
 import { prisma } from '../db'
 import { lectureCatalogueAvecRepli } from '../cache-catalogue'
 import { recommendPackaging } from '../recommendation'
@@ -142,7 +143,7 @@ export const getPackMake = lectureCatalogueAvecRepli(
 )
 
 export const getPackGeneration = lectureCatalogueAvecRepli(
-  'packs-generation-v1',
+  'packs-generation-v2',
   lireGenerationDesPacks,
   (resultat) => resultat.state === 'unavailable',
 )
@@ -394,7 +395,7 @@ async function lireGenerationDesPacks(
           parEmplacement.get(fitment.position.code) ??
           {
             code: fitment.position.code,
-            label: fitment.position.label,
+            label: nomDeLEmplacement(fitment.position.code, fitment.position.label),
             ordre: fitment.position.position,
             produits: new Map<string, ProduitAgrege>(),
           }

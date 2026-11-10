@@ -32,6 +32,11 @@ export const metadata: Metadata = {
   le reste → neutral. Un statut intermédiaire n'est ni une bonne ni une
   mauvaise nouvelle, et la couleur ne doit pas en inventer une.
 */
+/*
+  Tons : payé ou expédié → ok, en attente → warn, échoué ou annulé → danger,
+  le reste → neutral. Un statut intermédiaire n'est ni une bonne ni une
+  mauvaise nouvelle, et la couleur ne doit pas en inventer une.
+*/
 const statusCopy: Record<string, { label: string; tone: BadgeTone }> = {
   PENDING: { label: 'En attente', tone: 'warn' },
   CONFIRMED: { label: 'Confirmée', tone: 'neutral' },
@@ -56,6 +61,31 @@ const fulfillmentCopy: Record<string, { label: string; tone: BadgeTone }> = {
   PARTIALLY_FULFILLED: { label: 'Partiellement expédiée', tone: 'warn' },
   FULFILLED: { label: 'Expédiée', tone: 'ok' },
   RETURNED: { label: 'Retournée', tone: 'neutral' },
+}
+
+/**
+ * Un seul état par commande, dit simplement. Trois pastilles (commande,
+ * paiement, préparation) obligeaient à les croiser de tête pour savoir quoi
+ * faire (audit du back-office, 10 novembre 2026).
+ */
+function etatDeLaCommande(o: {
+  status: string
+  paymentStatus: string
+  fulfillmentStatus: string
+}): { label: string; tone: BadgeTone } {
+  if (o.status === 'CANCELLED') return { label: 'Annulée', tone: 'danger' }
+  if (o.paymentStatus === 'REFUNDED') return { label: 'Remboursée', tone: 'neutral' }
+  if (o.paymentStatus === 'FAILED' || o.paymentStatus === 'EXPIRED')
+    return { label: 'Paiement échoué', tone: 'danger' }
+  if (o.paymentStatus === 'PENDING' || o.paymentStatus === 'AUTHORIZED')
+    return { label: 'Paiement en attente', tone: 'warn' }
+  if (o.fulfillmentStatus === 'RETURNED') return { label: 'Retournée', tone: 'neutral' }
+  const partiel = o.paymentStatus === 'PARTIALLY_REFUNDED' ? ' · remboursée en partie' : ''
+  if (o.fulfillmentStatus === 'UNFULFILLED') return { label: `À expédier${partiel}`, tone: 'warn' }
+  if (o.fulfillmentStatus === 'PARTIALLY_FULFILLED')
+    return { label: `Expédiée en partie${partiel}`, tone: 'warn' }
+  if (o.status === 'DELIVERED') return { label: `Livrée${partiel}`, tone: 'ok' }
+  return { label: `Expédiée${partiel}`, tone: 'ok' }
 }
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' })
@@ -296,18 +326,13 @@ export default async function Page({
                     Total
                   </th>
                   <th scope="col" className={thClass}>
-                    Paiement
-                  </th>
-                  <th scope="col" className={thClass}>
-                    Préparation
+                    État
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((order) => {
-                  const status = statusCopy[order.status]
-                  const payment = paymentCopy[order.paymentStatus]
-                  const fulfillment = fulfillmentCopy[order.fulfillmentStatus]
+                  const etat = etatDeLaCommande(order)
                   return (
                     <tr key={order.id} className="border-b border-line last:border-0 hover:bg-surface-soft">
                       <td className={tdClass}>
@@ -317,17 +342,15 @@ export default async function Page({
                         >
                           {order.reference}
                         </Link>
-                        {status ? (
-                          <span className="mt-0.5 block">
-                            <Badge tone={status.tone}>{status.label}</Badge>
-                          </span>
-                        ) : null}
                       </td>
                       <td className={`${tdClass} whitespace-nowrap text-muted-strong`}>
                         {dateFormatter.format(order.placedAt ?? order.createdAt)}
                       </td>
                       <td className={`${tdClass} max-w-[18rem]`}>
-                        <span className="block truncate">{order.email}</span>
+                        {order.customerName ? (
+                          <span className="block truncate font-semibold">{order.customerName}</span>
+                        ) : null}
+                        <span className="block truncate text-muted-strong">{order.email}</span>
                         {order.hasAccount ? null : (
                           <span className="block text-xs text-muted">sans compte</span>
                         )}
@@ -336,13 +359,8 @@ export default async function Page({
                       <td className={`${tdClass} text-right font-semibold tabular-nums whitespace-nowrap`}>
                         {formatPrice(order.totalCents)}
                       </td>
-                      <td className={tdClass}>
-                        {payment ? <Badge tone={payment.tone}>{payment.label}</Badge> : null}
-                      </td>
-                      <td className={tdClass}>
-                        {fulfillment ? (
-                          <Badge tone={fulfillment.tone}>{fulfillment.label}</Badge>
-                        ) : null}
+                      <td className={`${tdClass} whitespace-nowrap`}>
+                        <Badge tone={etat.tone}>{etat.label}</Badge>
                       </td>
                     </tr>
                   )

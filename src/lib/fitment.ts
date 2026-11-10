@@ -1,4 +1,5 @@
 import 'server-only'
+import { nomDeLEmplacement } from './packs-vue'
 import { prisma } from './db'
 
 /**
@@ -127,7 +128,7 @@ export async function resolveFitments(
         variantId: row.variantId,
         status: row.status,
         positionCode: row.position.code,
-        positionLabel: row.position.label,
+        positionLabel: nomDeLEmplacement(row.position.code, row.position.label),
         quantity: row.quantity,
         restrictions: row.restrictions,
         roadApproval: row.roadApproval,

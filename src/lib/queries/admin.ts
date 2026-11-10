@@ -28,6 +28,14 @@ export type OrderFilters = {
   page?: number
 }
 
+/** « Jean Dupont », lu dans l'adresse de livraison figée sur la commande. */
+function nomDeLAdresse(adresse: unknown): string | null {
+  if (typeof adresse !== 'object' || adresse === null) return null
+  const a = adresse as Record<string, unknown>
+  const nom = [a.firstName, a.lastName].filter((x) => typeof x === 'string' && x.trim()).join(' ')
+  return nom || null
+}
+
 export async function listOrders(filters: OrderFilters) {
   const page = Math.max(1, filters.page ?? 1)
   const where: Prisma.OrderWhereInput = {}
@@ -76,6 +84,7 @@ export async function listOrders(filters: OrderFilters) {
         createdAt: order.createdAt,
         placedAt: order.placedAt,
         email: order.email,
+        customerName: nomDeLAdresse(order.shippingAddress),
         hasAccount: order.userId !== null,
         status: order.status,
         paymentStatus: order.paymentStatus,
@@ -186,6 +195,40 @@ export async function listCustomers(q?: string, page = 1) {
   } catch (error) {
     console.error('[admin] liste des clients indisponible', error)
     return { items: [], total: 0, page, pageCount: 1 }
+  }
+}
+
+/**
+ * Les clients qui ont commandé sans créer de compte, regroupés par e-mail.
+ * Seules les commandes payées (même remboursées ensuite) comptent : un panier
+ * abandonné au paiement n'est pas un client.
+ */
+export async function listGuestCustomers(q?: string) {
+  const terme = q?.trim() ? `%${q.trim()}%` : null
+  try {
+    return await prisma.$queryRaw<
+      Array<{ email: string; nom: string | null; commandes: number; totalCents: number; derniere: Date }>
+    >`
+      SELECT lower(o."email") AS "email",
+             (array_agg(trim(coalesce(o."shippingAddress"->>'firstName','') || ' ' || coalesce(o."shippingAddress"->>'lastName',''))
+                        ORDER BY o."createdAt" DESC))[1] AS "nom",
+             count(*)::int AS "commandes",
+             sum(o."totalCents")::int AS "totalCents",
+             max(coalesce(o."placedAt", o."createdAt")) AS "derniere"
+      FROM "Order" o
+      WHERE o."userId" IS NULL
+        AND o."paymentStatus" IN ('PAID', 'PARTIALLY_REFUNDED', 'REFUNDED')
+        AND (${terme}::text IS NULL
+             OR o."email" ILIKE ${terme}
+             OR o."phone" ILIKE ${terme}
+             OR (coalesce(o."shippingAddress"->>'firstName','') || ' ' || coalesce(o."shippingAddress"->>'lastName','')) ILIKE ${terme})
+      GROUP BY lower(o."email")
+      ORDER BY max(coalesce(o."placedAt", o."createdAt")) DESC
+      LIMIT 200
+    `
+  } catch (error) {
+    console.error('[admin] clients sans compte indisponibles', error)
+    return []
   }
 }
 
