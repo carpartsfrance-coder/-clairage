@@ -172,6 +172,7 @@ describe('parseVariante', () => {
         packaging: 'PAIR',
         priceCents: 4990,
         compareAtCents: null,
+        costCents: null,
         vatRateId: 'tva-20',
         lowStockThreshold: 2,
         weightGrams: 180,
