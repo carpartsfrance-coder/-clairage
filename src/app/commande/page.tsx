@@ -93,6 +93,15 @@ export default async function CommandePage() {
           }))}
           subtotalCents={cart.subtotalCents}
           vatCents={cart.vatCents}
+          promotion={
+            cart.promotion?.ok
+              ? {
+                  code: cart.promotion.code,
+                  remiseCents: cart.promotion.remiseCents,
+                  livraisonOfferte: cart.promotion.livraisonOfferte,
+                }
+              : null
+          }
           countries={countries}
           shippingOptionsByCountry={shippingOptionsByCountry}
           paymentSimulated={paymentIsSimulated()}

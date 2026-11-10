@@ -4,15 +4,17 @@ import { requireStaff } from '@/lib/admin/guard'
 import { listPromotions } from '@/lib/queries/admin'
 import { formatPrice } from '@/lib/identity'
 import { Badge } from '@/components/ui/Badge'
-import { Alert, Card, EmptyState } from '@/components/ui/Surface'
+import { Card, EmptyState } from '@/components/ui/Surface'
+import { can } from '@/lib/admin/permissions'
+import { PromotionForm, type PromotionInitiale } from '@/components/admin/PromotionForm'
+import { basculerPromotion } from '@/lib/actions/admin-promotions'
+import type { Promotion } from '@prisma/client'
 
 /**
  * Codes promotionnels.
  *
- * Écran de lecture. Il n'y a pas de bouton de création : l'écriture n'est pas
- * implémentée, et surtout un code créé ici ne remiserait rien — le tunnel de
- * commande ne lit pas encore cette table. L'avertissement en tête de page le
- * dit, parce qu'une liste de codes laisse spontanément croire le contraire.
+ * Création, modification et activation des codes. Le panier et la commande
+ * les lisent (lib/promotions.ts) : un code actif marche tout de suite.
  */
 
 export const metadata: Metadata = {
@@ -61,21 +63,61 @@ function periodLabel(startsAt: Date | null, endsAt: Date | null): string {
 const thClass = 'px-3 py-2 text-left text-xs font-semibold text-muted-strong'
 const tdClass = 'px-3 py-2 align-top'
 
-export default async function AdminPromotionsPage() {
-  await requireStaff('promotions.view')
+const jour = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : '')
+const enEuros = (c: number | null) => (c === null ? '' : (c / 100).toFixed(2).replace('.', ','))
+
+function pourLaSaisie(p: Promotion): PromotionInitiale {
+  return {
+    id: p.id,
+    code: p.code,
+    label: p.label,
+    type: p.type,
+    value: p.type === 'PERCENT' ? String(p.value / 100).replace('.', ',') : p.type === 'FIXED' ? enEuros(p.value) : '',
+    minOrder: enEuros(p.minOrderCents),
+    maxRedemptions: p.maxRedemptions?.toString() ?? '',
+    maxPerCustomer: p.maxPerCustomer?.toString() ?? '',
+    startsAt: jour(p.startsAt),
+    endsAt: jour(p.endsAt),
+    freeShipping: p.freeShipping,
+    active: p.active,
+  }
+}
+
+export default async function AdminPromotionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ modifier?: string }>
+}) {
+  const staff = await requireStaff('promotions.view')
+  const peutModifier = can(staff.role, 'promotions.edit')
+  const { modifier } = await searchParams
 
   const promotions = await listPromotions()
+  const enCours = modifier ? promotions.find((p) => p.id === modifier) : undefined
   const plural = promotions.length > 1 ? 's' : ''
 
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-extrabold">Promotions</h1>
 
-      <Alert tone="warn" title="Ces codes ne remisent rien pour l’instant.">
-        Le modèle de données existe, mais ni le panier ni le tunnel de commande ne lisent cette
-        table : la remise d&apos;une commande est aujourd&apos;hui toujours de zéro. Un code
-        communiqué à un client ne fonctionnerait pas.
-      </Alert>
+      {peutModifier ? (
+        enCours ? (
+          <Card className="p-4">
+            <h2 className="mb-3 text-sm font-semibold">
+              Modifier le code <span className="font-mono">{enCours.code}</span>{' '}
+              <a href="/admin/promotions" className="ml-2 text-xs font-normal underline">
+                Fermer
+              </a>
+            </h2>
+            <PromotionForm key={enCours.id} initiale={pourLaSaisie(enCours)} />
+          </Card>
+        ) : (
+          <Card className="p-4">
+            <h2 className="mb-3 text-sm font-semibold">Créer un code promo</h2>
+            <PromotionForm />
+          </Card>
+        )
+      ) : null}
 
       <section aria-labelledby="promotions-resultats" className="flex flex-col gap-2">
         <h2 id="promotions-resultats" className="text-sm font-semibold">
@@ -118,6 +160,11 @@ export default async function AdminPromotionsPage() {
                     <th scope="col" className={thClass}>
                       Active
                     </th>
+                    {peutModifier ? (
+                      <th scope="col" className={thClass}>
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -156,6 +203,21 @@ export default async function AdminPromotionsPage() {
                           <Badge tone="neutral">Inactive</Badge>
                         )}
                       </td>
+                      {peutModifier ? (
+                        <td className={`${tdClass} whitespace-nowrap`}>
+                          <div className="flex items-center gap-3">
+                            <a href={`/admin/promotions?modifier=${promotion.id}`} className="text-xs font-semibold underline">
+                              Modifier
+                            </a>
+                            <form action={basculerPromotion}>
+                              <input type="hidden" name="id" value={promotion.id} />
+                              <button type="submit" className="text-xs underline">
+                                {promotion.active ? 'Désactiver' : 'Activer'}
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
@@ -166,8 +228,8 @@ export default async function AdminPromotionsPage() {
       </section>
 
       <p className="text-sm text-muted">
-        La création et la modification des codes depuis le back-office ne sont pas disponibles :
-        ils se saisissent en base.
+        Le client tape le code dans son panier. La remise est recalculée à la commande, et une
+        utilisation n&apos;est comptée qu&apos;une fois le paiement reçu.
       </p>
     </div>
   )

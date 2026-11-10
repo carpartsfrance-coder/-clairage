@@ -19,6 +19,7 @@ import { IconCart } from '@/components/ui/icons'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { cn } from '@/lib/cn'
+import { appliquerCodePromo, retirerCodePromo } from '@/lib/actions/cart'
 
 export const metadata: Metadata = {
   title: 'Panier',
@@ -408,6 +409,18 @@ export default async function PanierPage() {
                     <dd>{formatPrice(cart.vatCents)}</dd>
                   </div>
 
+                  {cart.promotion?.ok ? (
+                    <div className={cn(totalRow, 'my-3 text-ok')}>
+                      <dt>
+                        Code {cart.promotion.code}
+                        <span className="block text-[9px] font-normal text-muted">{cart.promotion.label}</span>
+                      </dt>
+                      <dd className="font-semibold">
+                        {cart.discountCents > 0 ? `−${formatPrice(cart.discountCents)}` : 'Appliqué'}
+                      </dd>
+                    </div>
+                  ) : null}
+
                   <div className="my-3">
                     <div className={totalRow}>
                       <dt>Livraison</dt>
@@ -417,7 +430,11 @@ export default async function PanierPage() {
                           teaser?.priceLabel === 'Livraison offerte' && 'text-[11px] text-ok',
                         )}
                       >
-                        {teaser ? teaser.priceLabel : 'calculée à l’étape suivante'}
+                        {cart.promotion?.ok && cart.promotion.livraisonOfferte
+                          ? 'Offerte (code promo)'
+                          : teaser
+                            ? teaser.priceLabel
+                            : 'calculée à l’étape suivante'}
                       </dd>
                     </div>
                     {/* Une ligne pour le délai (« à partir de » dit déjà que
@@ -448,9 +465,39 @@ export default async function PanierPage() {
                   */}
                   <div className="mt-[18px] flex items-baseline justify-between gap-4 border-t border-line pt-[17px] text-[18px] font-bold">
                     <dt>{teaser?.isSettled ? 'Total' : 'Total des articles'}</dt>
-                    <dd>{formatPrice(cart.subtotalCents)}</dd>
+                    <dd>{formatPrice(cart.subtotalCents - cart.discountCents)}</dd>
                   </div>
                 </dl>
+
+                {/* Code promo : vérifié ici, puis de nouveau à la commande. */}
+                {cart.promotion ? (
+                  <div className="mt-3 flex items-center justify-between gap-3 text-[11px]">
+                    <span className={cart.promotion.ok ? 'text-ok' : 'text-danger'}>
+                      {cart.promotion.ok ? `Code ${cart.promotion.code} appliqué.` : cart.promotion.erreur}
+                    </span>
+                    <form action={retirerCodePromo}>
+                      <button type="submit" className="underline underline-offset-2">
+                        Retirer
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <form action={appliquerCodePromo} className="mt-3 flex gap-2">
+                    <label htmlFor="code-promo" className="sr-only">
+                      Code promo
+                    </label>
+                    <input
+                      id="code-promo"
+                      name="code"
+                      placeholder="Code promo"
+                      autoComplete="off"
+                      className="h-10 min-w-0 flex-1 rounded-[7px] border border-[#dcdcdc] px-3 text-[16px] uppercase fiche:text-[13px]"
+                    />
+                    <button type="submit" className="h-10 shrink-0 rounded-[7px] border border-ink px-4 text-[12px] font-bold">
+                      Appliquer
+                    </button>
+                  </form>
+                )}
 
                 <p className="mt-2 text-[9px] leading-[1.8] text-[#8c8c8c]">
                   {teaser?.isSettled
