@@ -38,6 +38,7 @@ export type ValeursVariante = {
   packaging: string
   prix: string
   prixBarre: string
+  prixAchat?: string
   vatRateId: string
   seuil: string
   poids: string
@@ -69,6 +70,7 @@ export function valeursAffichees(defauts: ValeursVariante, saisie?: Saisie): Val
     packaging: texteSaisi(saisie, 'packaging', defauts.packaging),
     prix: texteSaisi(saisie, 'prix', defauts.prix),
     prixBarre: texteSaisi(saisie, 'prixBarre', defauts.prixBarre),
+    prixAchat: texteSaisi(saisie, 'prixAchat', defauts.prixAchat ?? ''),
     vatRateId: texteSaisi(saisie, 'vatRateId', defauts.vatRateId),
     seuil: texteSaisi(saisie, 'seuil', defauts.seuil),
     poids: texteSaisi(saisie, 'poids', defauts.poids),
@@ -84,6 +86,7 @@ export const VARIANTE_VIDE: ValeursVariante = {
   packaging: 'UNIT',
   prix: '',
   prixBarre: '',
+  prixAchat: '',
   vatRateId: '',
   seuil: '0',
   poids: '',
@@ -199,9 +202,18 @@ export function ChampsVariante({
           id={`prixBarre-${cle}`}
           name="prixBarre"
           label="Prix barré (facultatif)"
-          hint="Doit dépasser le prix de vente, sinon la remise affichée est nulle."
+          hint="Affiché barré sur la fiche, avec le % de remise. Mettez le prix le plus bas pratiqué ces 30 derniers jours (règle légale)."
           inputMode="decimal"
           defaultValue={valeurs.prixBarre}
+          placeholder=""
+        />
+        <TextField
+          id={`prixAchat-${cle}`}
+          name="prixAchat"
+          label="Prix d’achat HT (facultatif)"
+          hint="Jamais montré au client. Sert à calculer votre marge."
+          inputMode="decimal"
+          defaultValue={valeurs.prixAchat}
           placeholder=""
         />
       </div>

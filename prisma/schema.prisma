@@ -258,6 +258,8 @@ model ProductVariant {
   /// Prix TTC en centimes. Le HT est dérivé via le taux de TVA.
   priceCents        Int
   compareAtCents    Int?
+  /// Prix d'achat HT, facultatif : sert au calcul de la marge, jamais affiché au client.
+  costCents         Int?
   vatRateId         String?
   vatRate           VatRate?  @relation(fields: [vatRateId], references: [id])
   /// Stock physique détenu pour CETTE référence.

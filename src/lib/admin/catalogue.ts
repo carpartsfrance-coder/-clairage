@@ -244,6 +244,8 @@ export type VarianteSaisie = {
   packaging: string
   prix: string
   prixBarre: string
+  /** Prix d'achat HT, facultatif. */
+  prixAchat?: string
   vatRateId: string
   seuil: string
   poids: string
@@ -257,6 +259,7 @@ export type VarianteWriteData = {
   packaging: PackagingValue
   priceCents: number
   compareAtCents: number | null
+  costCents: number | null
   vatRateId: string
   lowStockThreshold: number
   weightGrams: number | null
@@ -292,6 +295,10 @@ export function parseVariante(saisie: VarianteSaisie): ParseResult<VarianteWrite
   const prixBarre = parsePrixBarreCents(saisie.prixBarre, prix.value)
   if (!prixBarre.ok) return prixBarre
 
+  const achat = (saisie.prixAchat ?? '').trim()
+  const prixAchat = achat ? parseMontantCents(achat) : ({ ok: true, value: null } as const)
+  if (!prixAchat.ok) return prixAchat
+
   // Le taux est exigé ici, et non seulement à la publication : sans lui, une
   // commande part avec 0 % de TVA.
   const vatRateId = saisie.vatRateId.trim()
@@ -316,6 +323,7 @@ export function parseVariante(saisie: VarianteSaisie): ParseResult<VarianteWrite
       packaging: saisie.packaging,
       priceCents: prix.value,
       compareAtCents: prixBarre.value,
+      costCents: prixAchat.value,
       vatRateId,
       lowStockThreshold: seuil.value,
       weightGrams: poids.value,
