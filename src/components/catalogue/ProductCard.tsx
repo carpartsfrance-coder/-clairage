@@ -70,7 +70,16 @@ export function ProductCard({ product }: { product: ProductListItem }) {
         </div>
 
         <div className="flex flex-1 flex-col gap-2 border-t border-line p-4">
-          {product.fitment ? <FitmentBadge status={product.fitment} short className="w-fit" /> : null}
+          {/* Un pack fait pour une autre voiture le dit en clair, sans
+              l'alerte orange : il n'y a rien à « vérifier », il n'est pas
+              prévu pour le véhicule retenu. */}
+          {product.pourUnAutreVehicule && product.fitment !== 'INCOMPATIBLE' ? (
+            <Badge tone="neutral" className="w-fit">
+              Pour un autre véhicule
+            </Badge>
+          ) : product.fitment ? (
+            <FitmentBadge status={product.fitment} short className="w-fit" />
+          ) : null}
 
           <p className="font-bold leading-snug">{product.name}</p>
 

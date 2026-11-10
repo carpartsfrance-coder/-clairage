@@ -66,6 +66,13 @@ export type ProductListItem = {
   /** `null` tant qu'aucun véhicule n'est sélectionné : on n'affirme rien. */
   fitment: FitmentStatus | null
   /**
+   * Vrai quand la fiche est composée pour d'autres véhicules que celui retenu
+   * (un pack « BMW X1 » vu avec une Audi A1). Sans cette distinction, la
+   * carte disait « À vérifier » : le client ne comprenait pas ce qu'il y
+   * avait à vérifier sur un pack fait pour une autre voiture.
+   */
+  pourUnAutreVehicule: boolean
+  /**
    * Conditionnement conseillé pour le véhicule retenu.
    *
    * `null` sans véhicule, ou tant qu'aucun conditionnement n'est confirmé. La
@@ -394,7 +401,13 @@ async function lireListe(
   ])
 
   const variantIds = rows.flatMap((product) => product.variants.map((variant) => variant.id))
-  const fitments = await resolveFitments(configurationId, variantIds)
+  const [fitments, autresVehicules] = await Promise.all([
+    resolveFitments(configurationId, variantIds),
+    fichesPourUnAutreVehicule(
+      configurationId,
+      rows.map((product) => product.id),
+    ),
+  ])
 
   let items: ProductListItem[] = rows
     .filter((product) => product.variants.length > 0)
@@ -454,6 +467,8 @@ async function lireListe(
         variantCount: product.variants.length,
         availability,
         fitment: configurationId ? bestStatus(statuses) : null,
+        pourUnAutreVehicule:
+          autresVehicules.has(product.id) && bestStatus(statuses) !== 'CONFIRMED',
         recommended: (() => {
           if (!configurationId) return null
 
@@ -498,11 +513,13 @@ async function lireListe(
   } else if (sort === 'prix-decroissant') {
     items = items.sort((a, b) => b.fromPriceCents - a.fromPriceCents)
   } else if (sort === 'pertinence' && configurationId) {
-    // Confirmé d'abord, incompatible en dernier — mais rien n'est caché.
-    items = items.sort(
-      (a, b) =>
-        fitmentSortWeight[a.fitment ?? 'UNKNOWN'] - fitmentSortWeight[b.fitment ?? 'UNKNOWN'],
-    )
+    // Confirmé d'abord, puis à confirmer, puis les fiches faites pour un
+    // autre véhicule, incompatible en dernier — mais rien n'est caché.
+    const poids = (item: ProductListItem) =>
+      item.pourUnAutreVehicule && item.fitment !== 'INCOMPATIBLE'
+        ? 1.5
+        : fitmentSortWeight[item.fitment ?? 'UNKNOWN']
+    items = items.sort((a, b) => poids(a) - poids(b))
   }
 
   return {
@@ -512,6 +529,40 @@ async function lireListe(
     perPage,
     pageCount: Math.max(1, Math.ceil(total / perPage)),
     facets,
+  }
+}
+
+/**
+ * Les fiches de la page composées pour d'autres générations que celle du
+ * véhicule retenu : elles ont des compatibilités (non « incompatibles »),
+ * mais aucune sur cette génération. Une ampoule générique sans aucune
+ * compatibilité renseignée n'en fait pas partie : pour elle, la question
+ * reste réellement « à confirmer ». Une lecture en échec renvoie un ensemble
+ * vide : les cartes gardent leur badge habituel.
+ */
+async function fichesPourUnAutreVehicule(
+  configurationId: string | null,
+  productIds: string[],
+): Promise<Set<string>> {
+  if (!configurationId || productIds.length === 0) return new Set()
+  try {
+    const configuration = await prisma.vehicleConfiguration.findUnique({
+      where: { id: configurationId },
+      select: { generationId: true },
+    })
+    if (!configuration) return new Set()
+    const lignes = await prisma.$queryRaw<Array<{ productId: string; surCeVehicule: boolean }>>`
+      SELECT v."productId", bool_or(c."generationId" = ${configuration.generationId}) AS "surCeVehicule"
+      FROM "Fitment" f
+      JOIN "ProductVariant" v ON v."id" = f."variantId"
+      JOIN "VehicleConfiguration" c ON c."id" = f."configurationId"
+      WHERE v."productId" = ANY(${productIds})
+        AND f."status" <> 'INCOMPATIBLE'
+        AND c."active"
+      GROUP BY v."productId"`
+    return new Set(lignes.filter((ligne) => !ligne.surCeVehicule).map((ligne) => ligne.productId))
+  } catch {
+    return new Set()
   }
 }
 
