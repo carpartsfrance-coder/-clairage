@@ -235,7 +235,11 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
       lines,
       itemCount: lines.reduce((n, line) => n + line.quantity, 0),
       subtotalCents,
-      vatCents,
+      // TVA contenue après remise : la remise baisse le TTC, donc la TVA.
+      vatCents:
+        promotion?.ok && subtotalCents > 0
+          ? Math.round((vatCents * (subtotalCents - Math.min(promotion.remiseCents, subtotalCents))) / subtotalCents)
+          : vatCents,
       stockIssues,
       conflicts,
       missingAccessories,
