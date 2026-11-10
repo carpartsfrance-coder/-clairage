@@ -302,7 +302,7 @@ export function VehiclePicker({
                             marque?.id === m.id ? 'border-ink bg-surface-muted' : 'border-line',
                           )}
                         >
-                          <BrandMark name={m.name} logo={m.logo ? { url: m.logo, alt: '' } : null} size="md" className="border-0" />
+                          <BrandMark name={m.name} logo={m.logo ? { url: m.logo, alt: "" } : null} size="lg" className="border-0" />
                           <span className="text-[13px] leading-tight font-semibold text-ink">{m.name}</span>
                         </button>
                       </li>
