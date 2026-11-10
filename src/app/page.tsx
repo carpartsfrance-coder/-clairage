@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { demoHomeBlocks } from '../../prisma/demo-data'
 import {
   getFeaturedProducts,
   getRubriquesVitrine,
@@ -84,7 +85,17 @@ export default async function HomePage() {
         qui obligeait à descendre pour agir.
       */}
       <HeroFinder
-        hero={blocks.hero}
+        /*
+          Le visuel vient du code, pas de la base : la voiture de nuit
+          phares allumés a remplacé les ampoules sur table (10 novembre 2026),
+          et la liste de culots n'avait de sens qu'à côté des ampoules.
+        */
+        hero={{
+          ...blocks.hero,
+          image: demoHomeBlocks.hero.image,
+          imageCaption: demoHomeBlocks.hero.imageCaption,
+          bases: [],
+        }}
         /*
           « Je connais ma référence d'ampoule » menait à une recherche vide :
           les packs se choisissent par véhicule et n'affichent pas de

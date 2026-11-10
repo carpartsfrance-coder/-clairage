@@ -100,7 +100,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
             du véhicule, l'outil principal du site, arrive ainsi dans le
             premier écran (parcours client du 10 novembre 2026).
           */}
-          <div className="relative h-[120px] sm:absolute sm:inset-0 sm:h-auto">
+          <div className="relative h-[175px] sm:absolute sm:inset-0 sm:h-auto">
             <Image
               src={chemin(hero.image)}
               alt=""
@@ -115,7 +115,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
                 d'ampoule. Aux trois quarts, les deux ampoules restent entières
                 de 1 024 à 1 920 px, à droite du texte (contrôlé en capture).
               */
-              className="object-cover object-[70%_center] sm:object-[76%_center]"
+              className="object-cover object-[62%_center] sm:object-[80%_center]"
             />
           </div>
 
@@ -128,7 +128,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
             passerait pas le seuil de 4,5. Au-delà de 68 % il a disparu, et
             les ampoules gardent leurs noirs.
           */}
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,transparent_58%,#0b0d10_100%)] sm:bg-[linear-gradient(90deg,#0b0d10f0_0%,#0b0d10e0_34%,#0b0d10b8_50%,#0b0d1052_60%,transparent_68%)]" />
+          <div className="pointer-events-none absolute inset-0 max-sm:h-[175px] bg-[linear-gradient(180deg,transparent_62%,#0b0d10_100%)] sm:bg-[linear-gradient(90deg,#0b0d10eb_0%,#0b0d10d6_26%,#0b0d108a_38%,#0b0d1030_48%,transparent_56%)]" />
 
           <div className="relative z-[1] px-6 py-6 sm:flex sm:min-h-[480px] sm:w-[54%] sm:flex-col sm:justify-center sm:px-10 sm:py-12 lg:min-h-[555px] lg:px-12">
             <p className="m-0 text-[11px] font-bold tracking-[2.2px] text-brand-on-dark uppercase">
