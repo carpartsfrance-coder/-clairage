@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import { requireUser } from '@/lib/auth/session'
 import { getMyOrders } from '@/lib/queries/account'

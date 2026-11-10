@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ProductView } from '@/lib/queries/product'

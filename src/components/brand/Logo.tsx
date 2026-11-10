@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import { identity } from '@/lib/identity'
 import { cn } from '@/lib/cn'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, useState } from 'react'
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 
 /**
  * Curseur avant / après — « Le pack en bref » de la fiche produit.

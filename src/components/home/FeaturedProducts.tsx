@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import { EmptyState } from '@/components/ui/Surface'
 import { IconArrowRight } from '@/components/ui/icons'

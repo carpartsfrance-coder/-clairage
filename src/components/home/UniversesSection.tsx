@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import { IconArrowRight } from '@/components/ui/icons'
 import type { HomeUniverse } from '@/lib/queries/home'

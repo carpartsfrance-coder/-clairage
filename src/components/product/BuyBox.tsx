@@ -3,7 +3,7 @@
 import { leVehicule, typeHorsAmpoules } from '@/lib/types-produit'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import { useRouter } from 'next/navigation'
 import type { VariantView } from '@/lib/queries/product'
 import { buildDeliveryTeaser, type ShippingOffer } from '@/lib/delivery-teaser'

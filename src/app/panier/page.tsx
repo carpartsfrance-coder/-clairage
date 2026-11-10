@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { MoyensDePaiement } from '@/components/paiement/MoyensDePaiement'
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import { refresh } from 'next/cache'
 import { getCart } from '@/lib/cart'

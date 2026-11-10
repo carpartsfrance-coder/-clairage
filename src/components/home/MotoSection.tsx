@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import { ButtonLink } from '@/components/ui/Button'
 import { IconArrowRight } from '@/components/ui/icons'
 
