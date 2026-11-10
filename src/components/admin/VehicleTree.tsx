@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import Link from 'next/link'
 import { manageVehicle, type VehicleAdminState } from '@/lib/actions/admin-vehicles'
 import {
@@ -621,8 +621,19 @@ function BlocMarque({
         ? `Contient ${make.models.length} modèle${make.models.length > 1 ? 's' : ''} : videz-la d'abord, ou désactivez-la.`
         : null
 
+  const [ouverte, setOuverte] = useState(false)
+
   return (
-    <details className="border-b border-line last:border-b-0" open={false}>
+    /*
+      Le contenu (modèles, générations et leurs formulaires) n'est rendu
+      qu'une fois la marque ouverte : tout rendre d'avance faisait une page de
+      40 Mo — 18 000 formulaires — qui mettait dix secondes à venir.
+    */
+    <details
+      className="border-b border-line last:border-b-0"
+      open={ouverte}
+      onToggle={(event) => setOuverte(event.currentTarget.open)}
+    >
       <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-[13px] hover:bg-surface-soft">
         {/*
           La pastille publique elle-même, monogramme de repli compris : ce que
@@ -642,6 +653,8 @@ function BlocMarque({
         {make.active ? null : <Badge tone="neutral">Inactive</Badge>}
         {make.active && modelesActifs === 0 ? <Badge tone="warn">Hors menu</Badge> : null}
       </summary>
+      {ouverte ? (
+      <>
 
       <div className="border-t border-line bg-surface-soft px-3 py-3">
         {/*
@@ -783,6 +796,8 @@ function BlocMarque({
           </div>
         </form>
       </div>
+      </>
+      ) : null}
     </details>
   )
 }
