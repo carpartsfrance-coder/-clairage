@@ -214,18 +214,35 @@ export async function getDashboard(period: Period = '30d'): Promise<DashboardDat
         }),
         // Les kits n'ont pas de stock propre : on ne regarde que les variantes
         // qui en portent un, c'est-à-dire celles qui ne sont pas des kits.
-        prisma.productVariant.findMany({
-          where: { active: true, components: { none: {} }, product: { status: 'PUBLISHED' } },
-          select: {
-            id: true,
-            sku: true,
-            stockOnHand: true,
-            stockReserved: true,
-            lowStockThreshold: true,
-            backorder: true,
-            product: { select: { name: true, slug: true } },
-          },
-        }),
+        //
+        // Calculé en base, et non plus en relisant les 40 000 variantes du
+        // catalogue à chaque ouverture : le tableau de bord mettait 5 s à
+        // s'afficher (audit du back-office, 10 novembre 2026).
+        prisma.$queryRaw<
+          Array<{
+            id: string
+            sku: string
+            sellable: number
+            threshold: number
+            name: string
+            slug: string
+            rupture: boolean
+          }>
+        >`
+          SELECT v."id", v."sku",
+                 GREATEST(0, v."stockOnHand" - v."stockReserved")::int AS "sellable",
+                 v."lowStockThreshold"::int AS "threshold",
+                 p."name", p."slug",
+                 (GREATEST(0, v."stockOnHand" - v."stockReserved") = 0 AND NOT v."backorder") AS "rupture"
+          FROM "ProductVariant" v
+          JOIN "Product" p ON p."id" = v."productId"
+          WHERE v."active" AND p."status" = 'PUBLISHED'
+            AND NOT EXISTS (SELECT 1 FROM "KitComponent" k WHERE k."kitId" = v."id")
+            AND (
+              GREATEST(0, v."stockOnHand" - v."stockReserved") = 0
+              OR GREATEST(0, v."stockOnHand" - v."stockReserved") <= v."lowStockThreshold"
+            )
+        `,
       ])
 
     const grossRevenue = paid._sum.totalCents ?? 0
@@ -263,21 +280,18 @@ export async function getDashboard(period: Period = '30d'): Promise<DashboardDat
     let outOfStock = 0
 
     for (const variant of variants) {
-      const sellable = Math.max(0, variant.stockOnHand - variant.stockReserved)
-      if (sellable === 0) {
-        if (!variant.backorder) outOfStock += 1
+      if (variant.sellable === 0) {
+        if (variant.rupture) outOfStock += 1
         continue
       }
-      if (sellable <= variant.lowStockThreshold) {
-        lowStock.push({
-          id: variant.id,
-          sku: variant.sku,
-          productName: variant.product.name,
-          productSlug: variant.product.slug,
-          sellable,
-          threshold: variant.lowStockThreshold,
-        })
-      }
+      lowStock.push({
+        id: variant.id,
+        sku: variant.sku,
+        productName: variant.name,
+        productSlug: variant.slug,
+        sellable: variant.sellable,
+        threshold: variant.threshold,
+      })
     }
 
     lowStock.sort((a, b) => a.sellable - b.sellable)
