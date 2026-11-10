@@ -42,7 +42,9 @@ const SELECTION = {
     select: { category: { select: { name: true, parent: { select: { name: true } } } } },
   },
   media: {
-    where: { role: { in: ['RESULT', 'PRODUCT', 'KIT_CONTENT'] as Array<'RESULT' | 'PRODUCT' | 'KIT_CONTENT'> } },
+    // Pas les rendus : ils portent le filigrane LEDVROOM, que Google Shopping
+    // refuse (lib/storage/filigrane.ts). Le flux part avec les photos produit.
+    where: { role: { in: ['PRODUCT', 'KIT_CONTENT'] as Array<'PRODUCT' | 'KIT_CONTENT'> } },
     orderBy: { position: 'asc' as const },
     select: { role: true, media: { select: { url: true } } },
   },
@@ -120,9 +122,8 @@ function lirePaquet(apres: string | null) {
 
 function versArticle(produit: ProduitLu, periode: Periode | undefined): ArticleFlux {
   const categorie = produit.categories[0]?.category
-  // La couverture d'abord, comme partout ailleurs sur le site : le rendu
-  // (feu allumé sur le véhicule), puis le produit, puis le contenu du kit.
-  const ordre = ['RESULT', 'PRODUCT', 'KIT_CONTENT']
+  // Le produit, puis le contenu du kit (les rendus filigranés n'y vont pas).
+  const ordre = ['PRODUCT', 'KIT_CONTENT']
   const images = [...produit.media]
     .sort((a, b) => ordre.indexOf(a.role) - ordre.indexOf(b.role))
     .map((entree) => entree.media.url)

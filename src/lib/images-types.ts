@@ -24,8 +24,9 @@
  *   « Visuel d'illustration ») et légende « véhicule non représentatif ».
  * - **Moto : seulement la photo des ampoules.** Les avant / après et la
  *   route montrent une voiture : jamais sur une fiche moto.
- * - **Google Shopping ne reçoit jamais l'avant / après** (texte « AVANT /
- *   APRÈS » sur l'image, refusé par Google) : voir `imagesTypesPourLeFlux`.
+ * - **Google Shopping ne reçoit que la photo du produit** : les visuels sur
+ *   voiture portent le filigrane LEDVROOM (et l'avant / après du texte), que
+ *   Google refuse. Voir `imagesTypesPourLeFlux`.
  *
  * Les fichiers sont dans `public/images-types/`.
  */
@@ -175,8 +176,9 @@ export function couvertureType(produit: ProduitMinimal): { url: string; alt: str
 
 /** Pour Google Shopping : seulement les images sans texte, la photo produit d'abord. */
 export function imagesTypesPourLeFlux(produit: ProduitMinimal): string[] {
+  // Seulement la photo du produit : les visuels sur voiture portent le
+  // filigrane LEDVROOM, refusé par Google Shopping.
   return imagesTypes(produit)
-    .filter((image) => image.sansTexte)
-    .sort((a, b) => (a.role === 'PRODUCT' ? -1 : b.role === 'PRODUCT' ? 1 : 0))
+    .filter((image) => image.sansTexte && image.role === 'PRODUCT')
     .map((image) => image.url)
 }

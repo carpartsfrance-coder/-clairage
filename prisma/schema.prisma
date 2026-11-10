@@ -417,6 +417,8 @@ model Media {
   nature     MediaNature @default(UNSPECIFIED)
   caption    String?
   isDemo     Boolean     @default(false)
+  /// Date de pose du filigrane LEDVROOM (rendus seulement) ; nul = pas encore posé.
+  filigraneAt DateTime?
   createdAt  DateTime    @default(now())
   createdBy  String?
 

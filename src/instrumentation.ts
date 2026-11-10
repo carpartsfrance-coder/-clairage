@@ -32,6 +32,11 @@ export async function register() {
         } catch (error) {
           console.error('[médias] allègement interrompu', error)
         }
+        // Puis le filigrane des rendus (lib/storage/filigraner-existants.ts),
+        // repris toutes les demi-heures pour les rendus ajoutés depuis.
+        const { planifierFiligrane } = await import('./lib/storage/filigraner-existants')
+        planifierFiligrane()
+        setInterval(planifierFiligrane, 30 * 60 * 1000).unref()
       })()
     }, 3 * 60 * 1000).unref()
   }

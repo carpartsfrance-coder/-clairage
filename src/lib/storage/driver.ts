@@ -119,6 +119,8 @@ export async function putFile(options: {
    * est déjà la version allégée (allègement des médias existants).
    */
   empreinteDe?: Buffer
+  /** Empreinte déjà connue (12 caractères), reprise d'une clé existante. */
+  empreinte?: string
   /** Versions réduites déjà calculées (bytes déjà allégés). */
   variantes?: Array<{ largeur: number; bytes: Buffer }>
 }): Promise<StoredFile> {
@@ -131,10 +133,12 @@ export async function putFile(options: {
   const allegee = options.variantes
     ? { bytes: options.bytes, mimeType: options.mimeType, extension: options.extension, variantes: options.variantes }
     : await allegerImage(options.bytes, options.mimeType, options.extension)
-  const digest = createHash('sha256')
-    .update(options.empreinteDe ?? options.bytes)
-    .digest('hex')
-    .slice(0, 12)
+  const digest =
+    options.empreinte ??
+    createHash('sha256')
+      .update(options.empreinteDe ?? options.bytes)
+      .digest('hex')
+      .slice(0, 12)
   const key = `${options.prefix ?? 'medias'}/${randomUUID()}-${digest}.${allegee.extension}`
 
   const deposer = (cle: string, contenu: Buffer, type: string) =>

@@ -38,25 +38,44 @@ export async function allegerImage(
   bytes: Buffer,
   mimeType: string,
   extension: string,
-  { forcer = false }: { forcer?: boolean } = {},
+  {
+    forcer = false,
+    filigrane = false,
+  }: {
+    forcer?: boolean
+    /** Pose le filigrane LEDVROOM (lib/storage/filigrane.ts) sur la photo et ses versions réduites. */
+    filigrane?: boolean
+  } = {},
 ): Promise<ImageAllegee> {
   const photo = mimeType === 'image/jpeg' || mimeType === 'image/png' || mimeType === 'image/webp'
-  if (!photo || (!forcer && bytes.length <= SEUIL_ALLEGEMENT)) return { bytes, mimeType, extension }
+  if (!photo) return { bytes, mimeType, extension }
+  if (filigrane) {
+    const { filigraner } = await import('./filigrane')
+    bytes = await filigraner(bytes)
+    forcer = true
+  }
+  if (!forcer && bytes.length <= SEUIL_ALLEGEMENT) return { bytes, mimeType, extension }
 
   try {
     const { default: sharp } = await import('sharp')
-    const { data, info } = await sharp(bytes, { limitInputPixels: 60_000_000 })
-      .rotate()
-      .resize({ width: COTE_MAX, height: COTE_MAX, fit: 'inside', withoutEnlargement: true })
+    const { EXIF_LEDVROOM } = await import('./filigrane')
+    const signer = <T extends import('sharp').Sharp>(s: T): T => (filigrane ? (s.withExif(EXIF_LEDVROOM) as T) : s)
+    const { data, info } = await signer(
+      sharp(bytes, { limitInputPixels: 60_000_000 })
+        .rotate()
+        .resize({ width: COTE_MAX, height: COTE_MAX, fit: 'inside', withoutEnlargement: true }),
+    )
       .webp({ quality: 82, effort: 2 })
       .toBuffer({ resolveWithObject: true })
     // Un PNG à aplats peut ressortir plus lourd en WebP : on garde le plus léger.
     if (data.length >= bytes.length && !forcer) return { bytes, mimeType, extension }
+    // (Avec le filigrane, `forcer` est vrai : on ne revient jamais à l'original sans lui.)
     const variantes = await Promise.all(
       LARGEURS_VARIANTES.map(async (largeur) => ({
         largeur,
-        bytes: await sharp(data)
-          .resize({ width: largeur, height: largeur, fit: 'inside', withoutEnlargement: true })
+        bytes: await signer(
+          sharp(data).resize({ width: largeur, height: largeur, fit: 'inside', withoutEnlargement: true }),
+        )
           .webp({ quality: 78, effort: 2 })
           .toBuffer(),
       })),
@@ -70,6 +89,8 @@ export async function allegerImage(
       variantes,
     }
   } catch (error) {
+    // Un échec avec filigrane remonte : rendre la photo sans lui la publierait nue.
+    if (filigrane) throw error
     console.error('[stockage] allègement impossible, fichier gardé tel quel', error)
     return { bytes, mimeType, extension }
   }
