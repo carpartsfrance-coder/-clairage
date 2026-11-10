@@ -12,6 +12,19 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/cn'
 
+const FAMILLES: Record<string, string> = {
+  HEADLIGHT: 'Phares',
+  INTERIOR: 'Intérieur',
+  PLATE: 'Plaque',
+  REVERSE: 'Recul',
+  SIDELIGHT: 'Veilleuses',
+  TURN_SIGNAL: 'Clignotants',
+  XENON: 'Xénon',
+  MOTORCYCLE: 'Moto',
+  ACCESSORY: 'Accessoires',
+  OTHER: 'Autre',
+}
+
 export type CategoryRow = {
   id: string
   slug: string
@@ -120,7 +133,7 @@ export function CategoryBoard({ categories }: { categories: CategoryRow[] }) {
                     </span>
                   </td>
 
-                  <td className="px-3 py-2.5 text-[10px] text-muted-strong">{category.family}</td>
+                  <td className="px-3 py-2.5 text-[10px] text-muted-strong">{FAMILLES[category.family] ?? category.family}</td>
 
                   <td className="px-3 py-2.5">{category.publishedProducts}</td>
 

@@ -282,6 +282,22 @@ const SOUS_TITRE_PAR_EMPLACEMENT: Record<string, string> = {
   TURN_REAR: 'Signalisation à l’arrière',
 }
 
+const NOM_PAR_EMPLACEMENT: Record<string, string> = {
+  LOW_BEAM: 'Feux de croisement',
+  HIGH_BEAM: 'Feux de route',
+  FOG: 'Antibrouillards',
+  INTERIOR_DOME: 'Éclairage intérieur',
+  PLATE: 'Éclairage de plaque',
+  REVERSE: 'Feux de recul',
+  SIDELIGHT: 'Veilleuses',
+  TURN_FRONT: 'Clignotants avant',
+}
+
+/** Le libellé d'un emplacement, jamais son code technique (« TURN_FRONT »). */
+export function nomDeLEmplacement(code: string, label: string): string {
+  return label && label !== code ? label : (NOM_PAR_EMPLACEMENT[code] ?? label)
+}
+
 export function sousTitreDeLEmplacement(code: string): string | null {
   return SOUS_TITRE_PAR_EMPLACEMENT[code] ?? null
 }

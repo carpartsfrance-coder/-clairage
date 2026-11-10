@@ -1,3 +1,4 @@
+import { nomUtileDuConditionnement } from '@/lib/nom-conditionnement'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -155,7 +156,9 @@ function readComponents(snapshot: unknown): KitComponent[] {
       typeof raw.quantity === 'number' && Number.isFinite(raw.quantity) && raw.quantity > 0
         ? raw.quantity
         : 1
-    const label = [productName, variantName].filter(Boolean).join(' — ')
+    const label = [productName, nomUtileDuConditionnement(variantName, productName)]
+      .filter(Boolean)
+      .join(' — ')
     return label ? [{ label, quantity }] : []
   })
 }
@@ -330,7 +333,9 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
                       <tr key={line.id} className="border-b border-line last:border-0">
                         <td className={tdClass}>
                           <span className="font-semibold">{line.productName}</span>
-                          <span className="block text-xs text-muted-strong">{line.variantName}</span>
+                          {nomUtileDuConditionnement(line.variantName, line.productName) ? (
+                            <span className="block text-xs text-muted-strong">{line.variantName}</span>
+                          ) : null}
                           {components.length > 0 ? (
                             <ul className="mt-1 flex flex-col gap-0.5 text-xs text-muted">
                               {components.map((component, index) => (
@@ -702,7 +707,9 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
                   <div className={rowClass}>
                     <dt className={dtClass}>Génération</dt>
                     <dd className="text-right font-semibold">
-                      {vehicle.model} {vehicle.generation}
+                      {vehicle.generation.toLowerCase().startsWith(vehicle.model.toLowerCase())
+                        ? vehicle.generation
+                        : `${vehicle.model} ${vehicle.generation}`}
                     </dd>
                   </div>
                   <div className={rowClass}>

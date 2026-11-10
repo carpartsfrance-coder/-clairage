@@ -1,3 +1,4 @@
+import { nomDeLEmplacement } from '@/lib/packs-vue'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
@@ -169,7 +170,7 @@ async function getByPosition(configurationId: string): Promise<GroupeResultat[] 
     for (const row of rows) {
       const group = groups.get(row.position.code) ?? {
         code: row.position.code,
-        label: row.position.label,
+        label: nomDeLEmplacement(row.position.code, row.position.label),
         products: [],
       }
 

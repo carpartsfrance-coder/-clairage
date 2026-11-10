@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireStaff } from '@/lib/admin/guard'
-import { listCustomers } from '@/lib/queries/admin'
+import { listCustomers, listGuestCustomers } from '@/lib/queries/admin'
+import { formatPrice } from '@/lib/identity'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/Field'
@@ -41,7 +42,10 @@ export default async function AdminClientsPage({
   const q = readOne(params, 'q')
   const page = Math.max(1, Number.parseInt(readOne(params, 'page'), 10) || 1)
 
-  const { items, total, pageCount } = await listCustomers(q || undefined, page)
+  const [{ items, total, pageCount }, invites] = await Promise.all([
+    listCustomers(q || undefined, page),
+    listGuestCustomers(q || undefined),
+  ])
 
   // `page` vient de l'URL : rien n'interdit /admin/clients?page=99. Sans ce cas,
   // l'écran annonçait « Aucun client enregistré » juste sous le compte réel —
@@ -213,10 +217,53 @@ export default async function AdminClientsPage({
           </nav>
         ) : null}
 
-        <p className="mt-4 text-xs text-muted">
-          Les commandes passées sans compte n&apos;apparaissent pas ici ; elles se retrouvent depuis
-          la liste des commandes.
+      </section>
+
+      <section aria-labelledby="clients-sans-compte" className="mt-8">
+        <h2 id="clients-sans-compte" className="text-base font-bold">
+          Clients sans compte ({invites.length}
+          {invites.length === 200 ? '+' : ''})
+        </h2>
+        <p className="mt-1 text-sm text-muted-strong">
+          Ils ont commandé et payé sans créer de compte. Cliquez pour voir leurs commandes.
         </p>
+        {invites.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">
+            {q ? 'Aucun client sans compte ne correspond.' : 'Aucun pour l’instant.'}
+          </p>
+        ) : (
+          <Card className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[44rem] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-line text-left">
+                  <th scope="col" className="px-3 py-2 font-semibold">Client</th>
+                  <th scope="col" className="px-3 py-2 font-semibold">E-mail</th>
+                  <th scope="col" className="px-3 py-2 text-right font-semibold">Commandes</th>
+                  <th scope="col" className="px-3 py-2 text-right font-semibold">Total payé</th>
+                  <th scope="col" className="px-3 py-2 font-semibold">Dernière commande</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invites.map((client) => (
+                  <tr key={client.email} className="border-b border-line last:border-b-0">
+                    <td className="px-3 py-1.5">
+                      <Link
+                        href={`/admin/commandes?q=${encodeURIComponent(client.email)}`}
+                        className="inline-flex min-h-9 items-center font-medium underline underline-offset-4 hover:text-brand"
+                      >
+                        {client.nom?.trim() || client.email}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-1.5 text-muted-strong">{client.email}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">{client.commandes}</td>
+                    <td className="px-3 py-1.5 text-right tabular-nums">{formatPrice(client.totalCents)}</td>
+                    <td className="px-3 py-1.5 text-muted-strong">{dateFormatter.format(client.derniere)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        )}
       </section>
     </div>
   )

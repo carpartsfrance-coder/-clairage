@@ -98,6 +98,7 @@ export function ProductMediaManager({
   stockageOk,
   stockageProbleme,
   mayEdit,
+  illustrations = 0,
 }: {
   productId: string
   /** Déjà triés comme la boutique les affichera. */
@@ -108,6 +109,8 @@ export function ProductMediaManager({
   stockageOk: boolean
   stockageProbleme?: string
   mayEdit: boolean
+  /** Visuels d'illustration montrés à la place quand la fiche n'en a pas. */
+  illustrations?: number
 }) {
   const [role, setRole] = useState<MediaRoleValue>('PRODUCT')
 
@@ -130,7 +133,12 @@ export function ProductMediaManager({
   return (
     <div className="mt-3 flex flex-col gap-5">
       <p className="text-sm text-muted-strong">
-        {visuels.length === 0 ? (
+        {visuels.length === 0 && illustrations > 0 ? (
+          <>
+            Pas de photo propre à ce produit. La fiche montre pour l’instant {illustrations} visuel
+            {illustrations > 1 ? 's' : ''} d’illustration. Ajoutez vos photos pour les remplacer.
+          </>
+        ) : visuels.length === 0 ? (
           <>
             Aucun visuel. La fiche s’afficherait sans galerie : le client achèterait sans rien voir.
           </>

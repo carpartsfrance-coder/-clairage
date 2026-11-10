@@ -299,11 +299,6 @@ export default async function AdminCatalogPage({
             ) : null}
           </nav>
         ) : null}
-
-        <p className="mt-4 text-sm text-muted-strong">
-          La création et la modification des produits depuis le back-office ne sont pas encore
-          disponibles ; le catalogue se peuple par le script d&apos;amorçage.
-        </p>
       </section>
     </div>
   )

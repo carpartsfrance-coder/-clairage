@@ -1,3 +1,4 @@
+import { nomUtileDuConditionnement } from '@/lib/nom-conditionnement'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
@@ -67,7 +68,12 @@ export default async function PreparationPage() {
         for (const composant of composants) {
           ajouter(
             composant.component.sku,
-            `${composant.component.product.name} — ${composant.component.name}`,
+            [
+              composant.component.product.name,
+              nomUtileDuConditionnement(composant.component.name, composant.component.product.name),
+            ]
+              .filter(Boolean)
+              .join(' — '),
             composant.quantity * line.quantity,
             order.id,
           )
@@ -75,7 +81,14 @@ export default async function PreparationPage() {
       } else {
         // Pas de kit : on prélève la variante vendue, telle qu’elle a été
         // facturée (nom figé dans la ligne de commande).
-        ajouter(line.sku, `${line.productName} — ${line.variantName}`, line.quantity, order.id)
+        ajouter(
+          line.sku,
+          [line.productName, nomUtileDuConditionnement(line.variantName, line.productName)]
+            .filter(Boolean)
+            .join(' — '),
+          line.quantity,
+          order.id,
+        )
       }
     }
   }
@@ -249,7 +262,10 @@ export default async function PreparationPage() {
                                 {line.sku}
                               </span>
                               <span className="text-slate-ink">
-                                {line.productName} — {line.variantName}
+                                {line.productName}
+                                {nomUtileDuConditionnement(line.variantName, line.productName)
+                                  ? ` — ${line.variantName}`
+                                  : ''}
                               </span>
                             </div>
 
