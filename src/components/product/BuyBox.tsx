@@ -534,6 +534,19 @@ export function BuyBox({
       {/* ---- .price-row ---- */}
       <div className="mb-3 flex items-end justify-between gap-5">
         <div>
+          {/*
+            Prix barré : seulement s'il est saisi et plus haut que le prix de
+            vente. C'est au gérant d'y mettre un vrai prix de référence (le
+            plus bas pratiqué les 30 derniers jours, règle française).
+          */}
+          {selected?.compareAtCents && selected.compareAtCents > selected.priceCents ? (
+            <span className="mb-1 flex items-center gap-2 text-[14px]">
+              <s className="text-[#6b6d70]">{formatPrice(selected.compareAtCents + accessoriesTotal)}</s>
+              <span className="rounded-md bg-brand px-1.5 py-0.5 text-[12px] font-bold text-white">
+                −{Math.round((1 - selected.priceCents / selected.compareAtCents) * 100)} %
+              </span>
+            </span>
+          ) : null}
           <strong className="block text-[34px] leading-[1.05] font-bold tracking-[-1.2px] fiche:text-[40px] fiche:tracking-[-1.5px]">
             {formatPrice(total)}
           </strong>

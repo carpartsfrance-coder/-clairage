@@ -65,6 +65,8 @@ export type VarianteFiche = {
   packaging: string
   priceCents: number
   compareAtCents: number | null
+  costCents: number | null
+  vatRateBp: number
   vatRateId: string | null
   vatRateLabel: string | null
   stockOnHand: number
@@ -228,6 +230,25 @@ function CarteVariante({
             </dd>
           ) : null}
         </div>
+        {variante.costCents !== null ? (
+          <div className="flex items-baseline gap-1.5">
+            <dt className="text-xs text-muted-strong">Marge</dt>
+            {(() => {
+              // Marge HT : prix de vente hors taxe moins prix d'achat HT.
+              const venteHt = Math.round((variante.priceCents * 10000) / (10000 + variante.vatRateBp))
+              const marge = venteHt - variante.costCents
+              const taux = venteHt > 0 ? Math.round((marge / venteHt) * 100) : 0
+              return (
+                <dd className={`tabular-nums font-semibold ${marge < 0 ? 'text-danger' : ''}`}>
+                  {formatPrice(marge)} HT ({taux} %)
+                  <span className="ml-1 text-xs font-normal text-muted">
+                    achat {formatPrice(variante.costCents)} HT
+                  </span>
+                </dd>
+              )
+            })()}
+          </div>
+        ) : null}
         <div className="flex items-baseline gap-1.5">
           <dt className="text-xs text-muted-strong">TVA</dt>
           <dd className={sansTva ? 'text-sm font-semibold text-danger' : 'tabular-nums'}>
@@ -312,6 +333,7 @@ function CarteVariante({
                     packaging: variante.packaging,
                     prix: centsEnSaisie(variante.priceCents),
                     prixBarre: centsEnSaisie(variante.compareAtCents),
+                    prixAchat: centsEnSaisie(variante.costCents),
                     vatRateId: variante.vatRateId ?? '',
                     seuil: String(variante.lowStockThreshold),
                     poids: variante.weightGrams === null ? '' : String(variante.weightGrams),

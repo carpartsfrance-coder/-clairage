@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import {
   setProductStatus,
   updateMediaAlt,
@@ -109,6 +109,15 @@ export function PublicationForm({
     updateProductPublication,
     {},
   )
+  const [filtre, setFiltre] = useState('')
+  // Les rubriques cochées d'abord, puis par chemin : on voit tout de suite où
+  // est rangé le produit, et la recherche trouve le reste.
+  const triees = [...categories].sort(
+    (a, b) =>
+      Number(selectedCategoryIds.includes(b.id)) - Number(selectedCategoryIds.includes(a.id)) ||
+      a.path.localeCompare(b.path, 'fr'),
+  )
+  const mot = filtre.trim().toLowerCase()
 
   return (
     <form action={action}>
@@ -117,17 +126,28 @@ export function PublicationForm({
       <fieldset>
         <legend className="text-xs font-bold">Rubriques</legend>
         <p className="mt-1 text-xs text-muted-strong">
-          Sans rubrique, le produit n’a pas de fil d’Ariane et n’apparaît dans aucun menu. La
-          première cochée porte le fil d’Ariane.
+          Où le produit est rangé dans les menus. Cochez-en au moins une.
         </p>
+        <input
+          type="search"
+          value={filtre}
+          onChange={(e) => setFiltre(e.target.value)}
+          placeholder="Chercher une rubrique…"
+          aria-label="Chercher une rubrique"
+          className="mt-2 h-9 w-full rounded-sm border border-[#d4d4d4] px-2 text-xs"
+        />
         {/*
           `grid-cols-1` explicite : sans lui, la colonne implicite se dimensionne
           sur son contenu, et un chemin de rubrique long pousse la page entière
           en débordement horizontal sous 640 px.
         */}
         <div className="mt-2 grid max-h-64 grid-cols-1 gap-1 overflow-y-auto pr-1">
-          {categories.map((categorie) => (
-            <label key={categorie.id} className="flex min-h-9 items-center gap-2 text-xs">
+          {triees.map((categorie) => (
+            <label
+              key={categorie.id}
+              className="flex min-h-9 items-center gap-2 text-xs"
+              hidden={mot !== '' && !categorie.path.toLowerCase().includes(mot)}
+            >
               <input
                 type="checkbox"
                 name="categoryIds"

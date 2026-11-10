@@ -223,6 +223,8 @@ export default async function AdminProductPage({ params, searchParams }: PagePro
     packaging: variant.packaging,
     priceCents: variant.priceCents,
     compareAtCents: variant.compareAtCents,
+    costCents: variant.costCents,
+    vatRateBp: variant.vatRate?.rateBp ?? 0,
     vatRateId: variant.vatRateId,
     vatRateLabel: variant.vatRate?.label ?? null,
     stockOnHand: variant.stockOnHand,
