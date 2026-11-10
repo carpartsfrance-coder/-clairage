@@ -29,10 +29,13 @@ export async function GET(request: Request) {
   jusqu'aux compatibilités de chaque génération, et chaque ouverture du
   sélecteur le rejouait sur la base.
 */
-const marquesEnCache = lectureCatalogue('selecteur-marques-v1', (type: 'CAR' | 'MOTORCYCLE') =>
-  prisma.vehicleMake.findMany({
+const marquesEnCache = lectureCatalogue('selecteur-marques-v2', async (type: 'CAR' | 'MOTORCYCLE') => {
+  const marques = await prisma.vehicleMake.findMany({
     where: { type, ...MARQUE_VISIBLE },
     orderBy: [{ position: 'asc' }, { name: 'asc' }],
-    select: { id: true, name: true },
-  }),
-)
+    // Le logo, quand l'exploitant en a téléversé un : la grille du sélecteur
+    // se reconnaît au coup d'œil plutôt qu'en lisant 47 noms.
+    select: { id: true, name: true, slug: true, logo: { select: { url: true } } },
+  })
+  return marques.map((m) => ({ id: m.id, name: m.name, slug: m.slug, logo: m.logo?.url ?? null }))
+})
