@@ -2,6 +2,12 @@
 
 import { useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
+import {
+  ETAPES_SIGNALEES,
+  cheminSansIdentifiant,
+  libelleSansDonneePerso,
+  sourceDeLaVisite,
+} from '@/lib/mesure-chemins'
 
 /**
  * Mesure d'audience anonyme : pages vues et clics, pour voir où les visiteurs
@@ -16,7 +22,9 @@ import { usePathname, useSearchParams } from 'next/navigation'
  *   catégorie d'écran (mobile, tablette, ordinateur) ;
  * - aucun service extérieur : tout part vers /api/mesure ;
  * - le visiteur peut refuser (page Cookies), et « Do Not Track » / « Global
- *   Privacy Control » sont respectés.
+ *   Privacy Control » sont respectés ;
+ * - aucun numéro de commande, de facture ni jeton dans les chemins, et aucun
+ *   texte cliqué qui pourrait désigner quelqu'un (lib/mesure-chemins.ts).
  * L'équipe n'est pas comptée : ouvrir le back-office pose le refus sur son
  * navigateur (AdminSansMesure).
  */
@@ -116,7 +124,9 @@ function cibleDe(el: Element): string | undefined {
   if (el instanceof HTMLAnchorElement && el.href) {
     try {
       const u = new URL(el.href, location.href)
-      if (u.origin === location.origin) return u.pathname + (u.hash && u.pathname === location.pathname ? u.hash : '')
+      if (u.origin === location.origin) {
+        return cheminSansIdentifiant(u.pathname) + (u.hash && u.pathname === location.pathname ? u.hash : '')
+      }
       return u.protocol === 'mailto:' ? 'e-mail' : u.protocol === 'tel:' ? 'téléphone' : u.hostname
     } catch {
       return undefined
@@ -133,25 +143,16 @@ export function Mesure() {
   useEffect(() => {
     if (refuse()) return
     const v = visite()
-    let source: string | undefined
-    if (v.nouvelle) {
-      const utm = params.get('utm_source')
-      const campagne = params.get('utm_campaign')
-      if (utm) source = court(campagne ? `${utm} / ${campagne}` : utm, 80)
-      else if (params.get('gclid')) source = 'google (publicité)'
-      else if (params.get('fbclid')) source = 'facebook / instagram'
-      else {
-        try {
-          const ref = document.referrer ? new URL(document.referrer) : null
-          source = ref && ref.origin !== location.origin ? ref.hostname.replace(/^www\./, '') : 'direct'
-        } catch {
-          source = 'direct'
-        }
-      }
-    }
+    // La provenance n'est notée qu'à la première page de la visite.
+    const source = v.nouvelle
+      ? sourceDeLaVisite(params, document.referrer, location.origin)
+      : undefined
+    // Une page peut signaler une étape (la commande réellement payée).
+    const etape = document.querySelector<HTMLElement>('[data-mesure-etape]')?.dataset.mesureEtape
     ajouter({
       kind: 'page',
-      path: pathname,
+      path: cheminSansIdentifiant(pathname),
+      label: etape && ETAPES_SIGNALEES.has(etape) ? etape : undefined,
       query: pathname === '/recherche' ? court(params.get('q'), 80) : undefined,
       source,
       device: ecran(),
@@ -165,12 +166,15 @@ export function Mesure() {
       if (refuse()) return
       const el = (event.target as Element | null)?.closest('a, button, summary, [role="button"], [role="tab"], [role="radio"]')
       if (!el) return
-      const label = court(el.getAttribute('aria-label') || (el as HTMLElement).innerText || el.getAttribute('title'), 80)
+      const label = libelleSansDonneePerso(
+        location.pathname,
+        court(el.getAttribute('aria-label') || (el as HTMLElement).innerText || el.getAttribute('title'), 80),
+      )
       const target = cibleDe(el)
       if (!label && !target) return
       ajouter({
         kind: 'click',
-        path: location.pathname,
+        path: cheminSansIdentifiant(location.pathname),
         target,
         label,
         zone: zoneDe(el),

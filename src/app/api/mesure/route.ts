@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import {
+  ETAPES_SIGNALEES,
+  cheminSansIdentifiant,
+  libelleSansDonneePerso,
+} from '@/lib/mesure-chemins'
 
 /**
  * Réception de la mesure d'audience (components/mesure/Mesure.tsx).
  *
  * Ne garde que ce qui est envoyé, tronqué, et rien de la requête elle-même :
  * ni adresse IP, ni navigateur. Les robots qui se déclarent sont écartés.
+ * Les chemins et les textes cliqués sont nettoyés une seconde fois ici
+ * (lib/mesure-chemins.ts) : un envoi ne prouve pas qu'il vient de notre script.
  * Répond toujours 204 : la mesure ne doit jamais gêner la navigation.
  */
 export const dynamic = 'force-dynamic'
@@ -35,18 +42,27 @@ export async function POST(request: Request) {
     if (typeof e !== 'object' || e === null) return []
     const x = e as Record<string, unknown>
     const kind = texte(x.kind, 10)
-    const path = texte(x.path, 200)
+    const chemin = texte(x.path, 200)
     const visit = texte(x.visit, 64)
-    if (!kind || !KINDS.has(kind) || !path || !path.startsWith('/') || !visit) return []
-    if (path.startsWith('/admin') || path.startsWith('/api')) return []
+    if (!kind || !KINDS.has(kind) || !chemin || !chemin.startsWith('/') || !visit) return []
+    if (chemin.startsWith('/admin') || chemin.startsWith('/api')) return []
+    const path = cheminSansIdentifiant(chemin)
     const device = texte(x.device, 12)
+    const cible = texte(x.target, 200)
+    const libelle = texte(x.label, 80)
     return [
       {
         kind,
         path,
         visit,
-        target: texte(x.target, 200),
-        label: texte(x.label, 80),
+        target: cible?.startsWith('/') ? cheminSansIdentifiant(cible) : cible,
+        // Sur une page vue, le libellé est l'étape signalée par la page, rien d'autre.
+        label:
+          kind === 'page'
+            ? libelle && ETAPES_SIGNALEES.has(libelle)
+              ? libelle
+              : null
+            : (libelleSansDonneePerso(path, libelle) ?? null),
         zone: texte(x.zone, 60),
         query: texte(x.query, 80),
         source: texte(x.source, 80),

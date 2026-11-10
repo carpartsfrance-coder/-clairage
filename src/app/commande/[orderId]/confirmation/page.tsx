@@ -340,6 +340,16 @@ export default async function Page({
         <meta httpEquiv="refresh" content="10" />
       ) : null}
 
+      {captured && !cancelledAfterPayment && !refunded ? (
+        /*
+          Pour la mesure d'audience : cette visite compte comme une vente
+          (components/mesure/Mesure.tsx). Le repère ne porte rien de la
+          commande. Une commande en attente n'en a pas : quand le paiement
+          arrive, le rechargement automatique ci-dessus le fait apparaître.
+        */
+        <div hidden data-mesure-etape="commande-payee" />
+      ) : null}
+
       <Breadcrumb
         items={[{ label: 'Accueil', href: '/' }, { label: `Commande ${order.reference}` }]}
       />

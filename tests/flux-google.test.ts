@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { construireFlux, echapperXml, fraisDePort, texteBrut } from '../src/lib/flux-google'
+import { construireFlux, echapperXml, fraisDePort, texteBrut, tranchePrix } from '../src/lib/flux-google'
 
 const article = {
   slug: 'pack-led-plaque-dacia-duster-2',
@@ -30,6 +30,7 @@ describe('flux Google Merchant Center', () => {
     expect(xml).toContain('<g:country>FR</g:country><g:price>5.90 EUR</g:price>')
     expect(xml).toContain('<g:country>DE</g:country><g:price>12.90 EUR</g:price>')
     expect(xml).toContain('Plaque &amp; recul &gt; Éclairage de plaque')
+    expect(xml).toContain('<g:custom_label_0>20 à 50 €</g:custom_label_0>')
     expect(xml).not.toContain('<b>')
     expect(xml).not.toContain('item_group_id')
   })
@@ -55,5 +56,10 @@ describe('flux Google Merchant Center', () => {
     expect(texteBrut('## Titre\n**gras** [lien](https://x)')).toBe('Titre gras lien')
     expect(fraisDePort({ country: 'FR', modes: [] }, 1000)).toBeNull()
     expect(fraisDePort(tarifs[0], 8000)).toBe(0)
+    expect(tranchePrix(5)).toBe('Moins de 20 €')
+    expect(tranchePrix(1999)).toBe('Moins de 20 €')
+    expect(tranchePrix(2000)).toBe('20 à 50 €')
+    expect(tranchePrix(9990)).toBe('50 à 100 €')
+    expect(tranchePrix(10000)).toBe('100 € et plus')
   })
 })

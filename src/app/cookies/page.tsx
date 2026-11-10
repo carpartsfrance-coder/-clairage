@@ -106,8 +106,9 @@ export default function Page() {
           Elle est anonyme : pas de cookie, pas d’adresse IP, aucun lien avec votre compte ou
           votre commande. Un numéro tiré au hasard est gardé dans l’onglet de votre navigateur
           pendant la visite, et oublié à sa fermeture ou après 30 minutes sans activité. Nous
-          gardons seulement la taille de l’écran (mobile, tablette ou ordinateur). Les données
-          sont effacées au bout de 13 mois.
+          gardons seulement la taille de l’écran (mobile, tablette ou ordinateur) et le site
+          d’où vous arrivez (un moteur de recherche, une publicité…). Les données sont
+          effacées au bout de 13 mois.
         </p>
         <p>
           Cette mesure respecte les conditions de la CNIL pour être dispensée de consentement.
