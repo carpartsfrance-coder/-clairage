@@ -534,7 +534,9 @@ export function CheckoutForm({
               >
                 <span className="min-w-0">
                   <span className="block font-semibold">{line.productName}</span>
-                  <span className="block text-[10px] text-[#7e7e7e]">{line.variantName}</span>
+                  {line.variantName.trim().toLowerCase() !== line.productName.trim().toLowerCase() ? (
+                    <span className="block text-[10px] text-[#7e7e7e]">{line.variantName}</span>
+                  ) : null}
                   <span className="block text-[10px] text-[#7e7e7e]">
                     Quantité : {line.quantity}
                   </span>
