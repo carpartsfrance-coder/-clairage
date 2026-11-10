@@ -264,8 +264,9 @@ export default function Page() {
       <Article numero={9} id="cookies" titre="Cookies">
         <p>
           Le site n’utilise que les cookies nécessaires à son fonctionnement : votre panier, le
-          véhicule choisi et la connexion à votre compte. Aucun cookie de publicité ni de mesure
-          d’audience. Le détail est sur la{' '}
+          véhicule choisi et la connexion à votre compte. Aucun cookie de publicité. La
+          fréquentation du site est mesurée de façon anonyme, sans cookie ni adresse IP, et vous
+          pouvez la refuser. Le détail est sur la{' '}
           <Link href="/cookies" className="underline underline-offset-2">
             page des cookies
           </Link>

@@ -18,10 +18,11 @@ describe('purge des données périmées', () => {
       cart: { deleteMany: appel(5) },
       stockAlert: { deleteMany: appel(0) },
       rateLimit: { deleteMany: appel(4) },
+      visitEvent: { deleteMany: appel(6) },
     }
     const maintenant = new Date('2026-11-30T12:00:00Z')
     const bilan = await purgerDonnees(prisma as never, maintenant)
-    expect(bilan).toEqual({ sessions: 2, ipSessions: 1, ipJournal: 3, motsDePasse: 0, paniers: 5, alertesStock: 0, compteurs: 4 })
+    expect(bilan).toEqual({ mesure: 6, sessions: 2, ipSessions: 1, ipJournal: 3, motsDePasse: 0, paniers: 5, alertesStock: 0, compteurs: 4 })
     // Le journal d'administration garde ses lignes : seule l'adresse IP part.
     expect(prisma.auditLog.updateMany).toHaveBeenCalledWith({
       where: { createdAt: { lt: new Date('2026-10-31T12:00:00Z') }, ip: { not: null } },

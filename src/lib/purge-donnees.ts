@@ -43,6 +43,13 @@ export async function purgerDonnees(
   const s = seuilsDePurge(maintenant)
   const bilan: Record<string, number> = {}
 
+  // Mesure d'audience : 13 mois au plus (recommandation de la CNIL).
+  bilan.mesure = (
+    await prisma.visitEvent.deleteMany({
+      where: { at: { lt: new Date(s.maintenant.getTime() - 395 * 24 * 3600 * 1000) } },
+    })
+  ).count
+
   bilan.sessions = (
     await prisma.session.deleteMany({
       where: { OR: [{ expiresAt: { lt: s.maintenant } }, { revokedAt: { lt: s.ilYaUnJour } }] },
