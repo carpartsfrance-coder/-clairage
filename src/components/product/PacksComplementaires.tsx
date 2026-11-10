@@ -9,6 +9,7 @@ import { formatPrice } from '@/lib/identity'
 import type { PackComplementaire } from '@/lib/queries/packs-complementaires'
 import { IconCheck, IconPlus } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
+import { cleDEmplacement, unParEmplacement } from '@/lib/un-par-emplacement'
 
 /**
  * « Complétez l'éclairage de votre … » — les autres packs du même véhicule.
@@ -48,8 +49,14 @@ export function PacksComplementaires({
   const [enCours, setEnCours] = useState<string | null>(null)
   const [retour, setRetour] = useState<{ ok: boolean; texte: string } | null>(null)
 
-  const restants = packs.filter((pack) => !ajoutes.includes(pack.variantId))
-  const total = packs.reduce((somme, pack) => somme + pack.prixCents, 0)
+  /* « Tout ajouter » : un produit par emplacement (lib/un-par-emplacement). */
+  const essentiels = unParEmplacement(
+    packs,
+    (pack) => cleDEmplacement(pack.titre, pack.nom),
+    (pack) => pack.prixCents,
+  )
+  const restants = essentiels.filter((pack) => !ajoutes.includes(pack.variantId))
+  const total = essentiels.reduce((somme, pack) => somme + pack.prixCents, 0)
 
   const declencheur =
     seuilFranchiseCents !== null && prixDuPackCents < seuilFranchiseCents
@@ -190,13 +197,13 @@ export function PacksComplementaires({
           })}
         </ul>
 
-        {packs.length > 1 ? (
+        {essentiels.length > 1 ? (
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-4 fiche:px-6">
             <p className="text-[15px]">
               <strong>
-                Les {packs.length} packs : {formatPrice(total)}
+                Les {essentiels.length} packs : {formatPrice(total)}
               </strong>
-              <span className="text-[#5f6266]"> · tout l’éclairage en une fois</span>
+              <span className="text-[#5f6266]"> · un pack par emplacement</span>
             </p>
             <button
               type="button"
@@ -208,8 +215,8 @@ export function PacksComplementaires({
                 ? 'Tous ajoutés'
                 : enCours === 'tout'
                   ? 'Ajout…'
-                  : restants.length === packs.length
-                    ? `Ajouter les ${packs.length} packs`
+                  : restants.length === essentiels.length
+                    ? `Ajouter les ${essentiels.length} packs`
                     : `Ajouter les ${restants.length} restants`}
             </button>
           </div>

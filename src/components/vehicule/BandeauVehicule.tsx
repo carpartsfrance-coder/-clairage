@@ -68,8 +68,12 @@ export function BandeauVehicule({
         {/*
           La plaque flotte plutôt qu'elle n'est posée : un halo très pâle
           derrière elle évite le carré blanc découpé sur le dégradé.
+
+          Masquée sur téléphone : posée au-dessus du titre, elle repoussait les
+          packs d'un tiers d'écran pour un logo que la barre véhicule et le
+          titre nomment déjà.
         */}
-        <div className="relative mr-2 ml-auto shrink-0 max-[470px]:mr-0 max-[470px]:ml-0 fiche:mr-6">
+        <div className="relative mr-2 ml-auto shrink-0 max-[470px]:hidden fiche:mr-6">
           <span
             aria-hidden
             className="absolute -inset-7 rounded-full bg-white/[0.07] blur-2xl"

@@ -10,6 +10,7 @@ import type { PackComplementaire } from '@/lib/queries/packs-complementaires'
 import { IconCheck, IconPlus } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 import { presentationDeCarte } from '@/lib/carte-titre'
+import { cleDEmplacement, unParEmplacement } from '@/lib/un-par-emplacement'
 
 /**
  * Colonne d'achat plus fournie, comme chez le concurrent (demande de
@@ -47,6 +48,8 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
   const [erreur, setErreur] = useState<string | null>(null)
   const [tout, setTout] = useState(false)
   if (packs.length === 0) return null
+  /* « Tout ajouter » : un produit par emplacement (lib/un-par-emplacement). */
+  const essentiels = unParEmplacement(packs, (p) => cleDEmplacement(p.titre, p.nom), (p) => p.prixCents)
 
   function ajouter(variantId: string) {
     setErreur(null)
@@ -142,17 +145,18 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
           Voir les {packs.length - 4} autres éclairages pour ce véhicule
         </button>
       ) : null}
-      {packs.length > 1 ? (
+      {essentiels.length > 1 ? (
         <div className="mt-4 rounded-xl bg-[#111214] p-4 text-white">
           <p className="text-[14px] leading-snug">
             <strong>Tout l’éclairage de votre {vehicule}</strong> en une fois :{' '}
-            {packs.length} produits, {formatPrice(packs.reduce((t, p) => t + p.prixCents, 0))}
+            un pack par emplacement, {essentiels.length} produits,{' '}
+            {formatPrice(essentiels.reduce((t, p) => t + p.prixCents, 0))}
           </p>
           <button
             type="button"
-            disabled={enCours !== null || packs.every((p) => ajoutes.includes(p.variantId))}
+            disabled={enCours !== null || essentiels.every((p) => ajoutes.includes(p.variantId))}
             onClick={() => {
-              const ids = packs.map((p) => p.variantId).filter((id) => !ajoutes.includes(id))
+              const ids = essentiels.map((p) => p.variantId).filter((id) => !ajoutes.includes(id))
               setErreur(null)
               setEnCours('tout')
               startTransition(async () => {
@@ -166,11 +170,11 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
             }}
             className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand text-[14px] font-bold hover:bg-brand-dark disabled:opacity-60"
           >
-            {packs.every((p) => ajoutes.includes(p.variantId))
+            {essentiels.every((p) => ajoutes.includes(p.variantId))
               ? 'Tout est dans le panier'
               : enCours === 'tout'
                 ? 'Ajout…'
-                : `Ajouter les ${packs.length} au panier`}
+                : `Ajouter les ${essentiels.length} au panier`}
           </button>
         </div>
       ) : null}

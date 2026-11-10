@@ -32,3 +32,13 @@ describe('estUneReferenceDAmpoule', () => {
     }
   })
 })
+
+describe('années dans la recherche', () => {
+  it('ignore une année quand un autre mot reste', () => {
+    expect(motsDeRecherche('duster 2015')).toEqual([['duster']])
+    expect(motsDeRecherche('duster 2015 led')).toEqual([['duster']])
+  })
+  it('garde une année tapée seule', () => {
+    expect(motsDeRecherche('2015')).toEqual([['2015']])
+  })
+})

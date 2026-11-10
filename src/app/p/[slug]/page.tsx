@@ -11,6 +11,7 @@ import { getPacksComplementaires } from '@/lib/queries/packs-complementaires'
 import { getVehiculeDeLaFiche } from '@/lib/queries/vehicule-de-la-fiche'
 import {
   accrocheSousLeTitre,
+  sansMiseEnGardeDImport,
   anneesCourtes,
   corrigerRedactionnelDImport,
   descriptionSeo,
@@ -448,8 +449,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
           {/* Masqué sur téléphone : le header mobile porte déjà le véhicule.
               Masqué aussi sans véhicule choisi sur une fiche de véhicule :
-              l'encadré « Prévu pour… » du bloc d'achat dit la même chose. */}
-          {vehicle || !concuPour ? (
+              l'encadré « Prévu pour… » du bloc d'achat dit la même chose.
+              Masqué enfin quand la compatibilité est confirmée : l'encadré
+              vert « Compatible avec votre … · Changer » du bloc d'achat le
+              dit déjà, et la voiture était nommée trois fois en haut de page. */}
+          {(vehicle && !product.variants.some((variant) => variant.fitment.status === 'CONFIRMED')) ||
+          (!vehicle && !concuPour) ? (
           <VehicleBar
             vehicle={vehicle}
             concuPour={concuPour}
@@ -595,7 +600,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                     </Prose>
                   ) : product.description ? (
                     <p className="mt-5 text-[16px] leading-[1.7] text-[#c9ccd1] fiche:text-[17px]">
-                      {product.description}
+                      {sansMiseEnGardeDImport(product.description)}
                     </p>
                   ) : null}
 
@@ -1029,7 +1034,8 @@ function CarteConseil({ className, bandeau = false }: { className?: string; band
 /** Le début de la description, coupé proprement vers 220 caractères. */
 function resumeCourt(texte: string | null): string | null {
   if (!texte) return null
-  const t = texte.replace(/\s+/g, ' ').trim()
+  const t = sansMiseEnGardeDImport(texte.replace(/\s+/g, ' ').trim())
+  if (!t) return null
   if (t.length <= 230) return t
   const coupe = t.slice(0, 220)
   return coupe.slice(0, coupe.lastIndexOf(' ')) + '…'

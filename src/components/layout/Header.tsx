@@ -140,12 +140,12 @@ export async function Header() {
 
           {/* La grande recherche n'apparaît en ligne qu'à partir de lg. */}
           {/* .header-search : flex 1, plafonné à 550 px au-delà de 1450 px. */}
-          <div className="ml-auto hidden flex-1 lg:ml-0 lg:block xl:max-w-[550px]">
+          <div className="ml-auto hidden flex-1 lg:ml-0 lg:block xl:max-w-[550px] lg:[body:has([data-tunnel])_&]:hidden">
             <HeaderSearch />
           </div>
 
           <div className="ml-auto flex items-center gap-1 lg:gap-0">
-            <div className="hidden lg:block">
+            <div className="hidden lg:block lg:[body:has([data-tunnel])_&]:hidden">
               <VehicleMenu vehicle={vehicle} />
             </div>
             {/* .header-cart-link : filet à gauche, 24 px de retrait. */}
@@ -166,7 +166,7 @@ export async function Header() {
             </Link>
             <span aria-hidden className="mx-5 hidden h-8 w-px bg-[#e0e0e0] lg:block" />
             {/* Mobile, page défilée : la loupe remplace la barre de recherche. */}
-            <div className="lg:hidden">
+            <div className="lg:hidden [body:has([data-tunnel])_&]:hidden">
               <BoutonRecherche cible="recherche-mobile" />
             </div>
             <CartLink itemCount={cart.itemCount} />
@@ -179,7 +179,7 @@ export async function Header() {
             collant ne garde ainsi que la ligne du logo pendant la lecture. */}
         <div
           id="recherche-mobile"
-          className="container-page pb-2.5 lg:hidden [header[data-scrolled]:not([data-recherche])_&]:h-0 [header[data-scrolled]:not([data-recherche])_&]:overflow-hidden [header[data-scrolled]:not([data-recherche])_&]:pb-0"
+          className="container-page pb-2.5 lg:hidden [body:has([data-tunnel])_&]:hidden [header[data-scrolled]:not([data-recherche])_&]:h-0 [header[data-scrolled]:not([data-recherche])_&]:overflow-hidden [header[data-scrolled]:not([data-recherche])_&]:pb-0"
         >
           <HeaderSearch compact />
         </div>
@@ -193,7 +193,7 @@ export async function Header() {
           depuis le menu. */}
       <div
         className={
-          'overflow-hidden border-b border-line bg-[#f6f6f6] transition-[height] duration-200 motion-reduce:transition-none lg:hidden [body:has([data-fiche-vehicule])_&]:hidden ' +
+          'overflow-hidden border-b border-line bg-[#f6f6f6] transition-[height] duration-200 motion-reduce:transition-none lg:hidden [body:has([data-fiche-vehicule])_&]:hidden [body:has([data-tunnel])_&]:hidden ' +
           'h-9 group-data-scrolled/header:h-0 group-data-scrolled/header:border-b-0'
         }
       >
@@ -202,8 +202,11 @@ export async function Header() {
         </div>
       </div>
 
-      {/* ---------------- Navigation ---------------- */}
-      <nav aria-label="Catégories" className="hidden border-t border-[#eeeeee] lg:block">
+      {/* ---------------- Navigation ----------------
+          Recherche, véhicule et rayons sont masqués pendant la commande
+          (repère `data-tunnel`) : au moment de payer, ils ne servent qu'à
+          sortir du tunnel. Le logo et le panier restent. */}
+      <nav aria-label="Catégories" className="hidden border-t border-[#eeeeee] lg:block lg:[body:has([data-tunnel])_&]:hidden">
         <div
           className={
             /* .shop-category-inner : 46 px, items à 12 px, écart de 28 px. */

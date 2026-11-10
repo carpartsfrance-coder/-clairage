@@ -245,6 +245,25 @@ export function CheckoutForm({
           Vos informations
         </h2>
 
+        {/*
+          Sur téléphone, le récapitulatif vient après le bouton « Payer » : le
+          client payait sans avoir revu sa commande. Une ligne en tête lui
+          donne le nombre d'articles et le total, avec un lien vers le détail.
+        */}
+        <a
+          href="#commande-recapitulatif"
+          className="mb-6 flex items-center justify-between gap-3 rounded-[9px] border border-[#e0e0e0] bg-white px-4 py-3 text-[13px] fiche:hidden"
+        >
+          <span>
+            {(() => {
+              const n = lines.reduce((t, line) => t + line.quantity, 0)
+              return `${n} article${n > 1 ? 's' : ''}`
+            })()}{' '}
+            · <span className="underline underline-offset-2">voir le détail</span>
+          </span>
+          <strong className="text-[15px]">{formatPrice(totalCents)}</strong>
+        </a>
+
         <form action={formAction} className="flex flex-col gap-7">
           {/*
             Pas de titre en dur dans ce bandeau. Il a longtemps affirmé « Votre

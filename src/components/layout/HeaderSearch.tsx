@@ -19,7 +19,7 @@ import { IconArrowRight, IconSearch } from '@/components/ui/icons'
 type Suggestion = {
   label: string
   href: string
-  kind: 'produit' | 'référence' | 'culot' | 'catégorie'
+  kind: 'véhicule' | 'produit' | 'référence' | 'culot' | 'catégorie'
 }
 
 export function HeaderSearch({ compact = false }: { compact?: boolean }) {
@@ -174,7 +174,9 @@ export function HeaderSearch({ compact = false }: { compact?: boolean }) {
                   index === activeIndex ? 'bg-surface-muted' : 'hover:bg-surface-soft',
                 )}
               >
-                <span className="truncate">{item.label}</span>
+                {/* Sur deux lignes plutôt que coupé : « Kit xénon pour Dacia
+                    Duster » et « … Duster 2 » ne se distinguaient qu'à la fin. */}
+                <span className={cn('line-clamp-2', item.kind === 'véhicule' && 'font-bold')}>{item.label}</span>
                 <span className="shrink-0 text-xs uppercase tracking-wide text-muted">{item.kind}</span>
               </button>
             </li>

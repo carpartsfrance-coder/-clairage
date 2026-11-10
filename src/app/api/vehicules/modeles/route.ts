@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { MODELE_VISIBLE } from '@/lib/queries/vehicules-visibles'
+import { GENERATION_VISIBLE, MODELE_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { lectureCatalogue } from '@/lib/cache-catalogue'
 
 export const dynamic = 'force-dynamic'
@@ -18,11 +18,30 @@ export async function GET(request: Request) {
   }
 }
 
-/* Cache partagé du catalogue, par marque (voir lib/cache-catalogue.ts). */
-const modelesEnCache = lectureCatalogue('selecteur-modeles-v1', (makeId: string) =>
-  prisma.vehicleModel.findMany({
+/*
+  Cache partagé du catalogue, par marque (voir lib/cache-catalogue.ts).
+
+  Le nom est suivi des années (« Duster (2010–2017) ») : « Duster / Duster 2 /
+  Duster 3 » ne disait pas au client lequel est le sien. Les années sont
+  celles des générations en ligne du modèle.
+*/
+const modelesEnCache = lectureCatalogue('selecteur-modeles-v2', async (makeId: string) => {
+  const modeles = await prisma.vehicleModel.findMany({
     where: { makeId, ...MODELE_VISIBLE },
     orderBy: { name: 'asc' },
-    select: { id: true, name: true },
-  }),
-)
+    select: {
+      id: true,
+      name: true,
+      generations: { where: GENERATION_VISIBLE, select: { yearFrom: true, yearTo: true } },
+    },
+  })
+  return modeles.map(({ id, name, generations }) => {
+    if (generations.length === 0) return { id, name }
+    const debut = Math.min(...generations.map((g) => g.yearFrom))
+    const fin = generations.some((g) => g.yearTo === null)
+      ? null
+      : Math.max(...generations.map((g) => g.yearTo as number))
+    const annees = fin === null ? `depuis ${debut}` : debut === fin ? `${debut}` : `${debut}–${fin}`
+    return { id, name: `${name} (${annees})` }
+  })
+})

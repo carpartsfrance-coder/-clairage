@@ -146,12 +146,14 @@ export default async function VerificationPage({ searchParams }: PageProps) {
                   </dd>
                 </div>
 
-                <div className="flex items-baseline justify-between gap-4 py-3">
-                  <dt className="text-[#7e7e7e]">Équipement d&apos;origine</dt>
-                  <dd className="text-right font-semibold">
-                    {vehicle?.equipmentLabel ?? 'Non précisé'}
-                  </dd>
-                </div>
+                {/* Affiché seulement s'il est précisé : « Non précisé » faisait
+                    croire au client qu'il lui manquait une information. */}
+                {vehicle?.equipmentLabel ? (
+                  <div className="flex items-baseline justify-between gap-4 py-3">
+                    <dt className="text-[#7e7e7e]">Équipement d&apos;origine</dt>
+                    <dd className="text-right font-semibold">{vehicle.equipmentLabel}</dd>
+                  </div>
+                ) : null}
               </dl>
 
               {vehicle ? null : (
