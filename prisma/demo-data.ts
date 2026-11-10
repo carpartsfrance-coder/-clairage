@@ -441,7 +441,8 @@ export const demoHomeBlocks = {
       ne montre pas l'ampoule réellement expédiée, c'est une autre affaire que
       la mention de rendu — et elle se règle en photographiant le produit.
     */
-    image: '/visuels/hero-ampoules.webp',
+    image: '/visuels/hero-voiture-nuit.webp',
+    imageCaption: 'Visuel d’illustration',
     /*
       Les culots mis en avant, vérifiés au catalogue avant d'être écrits :
       H7 compte 6 produits publiés, H4 et H11 en comptent 2 chacun, H1 en
@@ -449,7 +450,7 @@ export const demoHomeBlocks = {
       recherche démentirait au premier clic — c'est d'ailleurs pourquoi H8,
       H9, HB3 et HB4 n'y figurent pas : le catalogue n'en a aucun.
     */
-    bases: ['H7', 'H4', 'H1', 'H11'],
+    bases: [],
   },
   vehicleBand: {
     eyebrow: 'Mon véhicule',
