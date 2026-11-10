@@ -95,7 +95,12 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
             la fois les ampoules et la zone sombre : le texte se retrouverait
             sur les ampoules.
           */}
-          <div className="relative h-[190px] sm:absolute sm:inset-0 sm:h-auto">
+          {/*
+            Sur téléphone, photo plus basse, sans bouton ni culots : le choix
+            du véhicule, l'outil principal du site, arrive ainsi dans le
+            premier écran (parcours client du 10 novembre 2026).
+          */}
+          <div className="relative h-[120px] sm:absolute sm:inset-0 sm:h-auto">
             <Image
               src={chemin(hero.image)}
               alt=""
@@ -125,7 +130,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
           */}
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(0deg,transparent_58%,#0b0d10_100%)] sm:bg-[linear-gradient(90deg,#0b0d10f0_0%,#0b0d10e0_34%,#0b0d10b8_50%,#0b0d1052_60%,transparent_68%)]" />
 
-          <div className="relative z-[1] px-6 py-8 sm:flex sm:min-h-[480px] sm:w-[54%] sm:flex-col sm:justify-center sm:px-10 sm:py-12 lg:min-h-[555px] lg:px-12">
+          <div className="relative z-[1] px-6 py-6 sm:flex sm:min-h-[480px] sm:w-[54%] sm:flex-col sm:justify-center sm:px-10 sm:py-12 lg:min-h-[555px] lg:px-12">
             <p className="m-0 text-[11px] font-bold tracking-[2.2px] text-brand-on-dark uppercase">
               {hero.eyebrow}
             </p>
@@ -157,7 +162,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
               <ButtonLink
                 href={hero.ctaHref}
                 variant="onDark"
-                className="mt-6 w-fit min-h-[48px] gap-3 rounded-md border-white/40 px-6 text-[15px] sm:mt-7"
+                className="mt-6 w-fit min-h-[48px] gap-3 rounded-md border-white/40 px-6 text-[15px] max-sm:hidden sm:mt-7"
                 iconRight={<IconArrowRight className="size-[18px]" />}
               >
                 {hero.ctaLabel}
@@ -171,7 +176,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
               rayon que la recherche démentirait au premier clic.
             */}
             {bases.length > 0 ? (
-              <p className="m-0 mt-7 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold tracking-[1px] text-white/55 sm:mt-9">
+              <p className="m-0 mt-7 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold tracking-[1px] text-white/55 max-sm:hidden sm:mt-9">
                 {bases.map((base, index) => (
                   <span key={base} className="flex items-center gap-3">
                     {index > 0 ? (

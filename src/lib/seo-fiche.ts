@@ -173,6 +173,16 @@ export function estUneDescriptionDImport(metaDescription: string, description: s
   )
 }
 
+/**
+ * Retire la mise en garde que l'import ajoutait aux textes (« Compatibilité à
+ * vérifier avant commande. »). Affichée sous le titre, elle contredisait
+ * l'encadré vert « Compatible avec votre … » juste en dessous : la
+ * compatibilité est dite par cet encadré, véhicule par véhicule.
+ */
+export function sansMiseEnGardeDImport(texte: string): string {
+  return texte.replace(/\s*Compatibilité à vérifier avant commande\.?/gi, '').trim()
+}
+
 /** L'accroche que l'import écrit : « Pour les phares de votre Audi A1 ». */
 export function estUneAccrocheDImport(accroche: string): boolean {
   return /^Pour les .+ de votre .+$/.test(accroche.trim())

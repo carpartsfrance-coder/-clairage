@@ -94,7 +94,7 @@ export async function Footer() {
           </div>
 
           {/* Sur téléphone : une liste pleine largeur de colonnes repliables. */}
-          <div className="col-span-2 lg:contents">
+          <div className="col-span-2 lg:contents [body:has([data-tunnel])_&]:hidden lg:[body:has([data-tunnel])_&]:hidden">
             {colonnes.map((column) => (
               <ColonneDuPied key={column.title} titre={column.title} liens={column.items} />
             ))}

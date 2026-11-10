@@ -3,6 +3,7 @@ import type { FitmentStatus } from './fitment'
 import type { PackPositionGroup, PackProduct } from './queries/packs'
 import { nomUtileDuConditionnement } from './nom-conditionnement'
 import { estEffetXenon } from './effet-xenon'
+import { cleDEmplacement, unParEmplacement } from './un-par-emplacement'
 
 /**
  * Mise en forme de la page « éclairages d'un véhicule ».
@@ -174,7 +175,13 @@ export function totalVehicule(groupes: PackPositionGroup[]): TotalVehicule {
  * vignettes du dessous.
  */
 export function totalDesCartes(cartes: CarteEclairage[]): TotalVehicule {
-  const retenues = cartes.filter((carte) => carte.status !== 'INCOMPATIBLE')
+  // Un produit par emplacement : les alternatives (effet xénon, kit xénon,
+  // kit LED pour le même croisement) ne s'achètent pas ensemble.
+  const retenues = unParEmplacement(
+    cartes.filter((carte) => carte.status !== 'INCOMPATIBLE'),
+    (carte) => cleDEmplacement(carte.emplacements[0]?.label ?? carte.slug, carte.nom),
+    (carte) => carte.prixCents,
+  )
   return {
     produits: retenues.length,
     emplacements: new Set(retenues.flatMap((carte) => carte.emplacements.map((e) => e.label))).size,

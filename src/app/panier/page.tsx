@@ -234,9 +234,12 @@ export default async function PanierPage() {
                                 {line.productName}
                               </Link>
                             </h3>
-                            <p className="my-0.5 text-[9px] text-[#7e7e7e]">
-                              {line.variantName}
-                            </p>
+                            {/* Le nom de la variante seulement s'il apprend quelque
+                                chose : il recopiait souvent le nom du produit. */}
+                            {line.variantName.trim().toLowerCase() !==
+                            line.productName.trim().toLowerCase() ? (
+                              <p className="my-0.5 text-[9px] text-[#7e7e7e]">{line.variantName}</p>
+                            ) : null}
                             {line.requiredBy ? (
                               <p className="my-0.5 text-[9px] text-[#7e7e7e]">
                                 Ajouté comme accessoire nécessaire
@@ -417,16 +420,14 @@ export default async function PanierPage() {
                         {teaser ? teaser.priceLabel : 'calculée à l’étape suivante'}
                       </dd>
                     </div>
-                    {teaser && !teaser.isSettled ? (
-                      <p className="mt-1 text-right text-[9px] text-muted">
-                        estimation, selon le mode choisi
-                      </p>
-                    ) : null}
+                    {/* Une ligne pour le délai (« à partir de » dit déjà que
+                        le prix dépend du mode), et le reste à ajouter pour la
+                        livraison offerte mis en évidence. */}
                     {teaser?.delayLabel ? (
                       <p className="mt-1 text-right text-[9px] text-muted">{teaser.delayLabel}</p>
                     ) : null}
                     {teaser?.missingForFreeCents ? (
-                      <p className="mt-1 text-right text-[9px] text-muted-strong">
+                      <p className="mt-2 rounded-md bg-ok-soft px-2.5 py-1.5 text-[11px] font-bold text-[#1f5a39]">
                         Plus que {formatPrice(teaser.missingForFreeCents)} pour la livraison offerte.
                       </p>
                     ) : null}

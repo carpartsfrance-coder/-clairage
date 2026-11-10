@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import 'server-only'
+import { equipementPrecise } from './equipement'
 
 /**
  * État de session côté serveur : véhicule sélectionné et panier.
@@ -18,7 +19,7 @@ export type SelectedVehicle = {
   configurationId: string
   /** Libellé compact affiché dans le header : « Volkswagen Golf VII · 2015 ». */
   label: string
-  /** Équipement d'origine, affiché en fiche produit. */
+  /** Équipement d'origine, affiché en fiche produit. `null` s'il n'est pas précisé. */
   equipmentLabel: string | null
   type: 'CAR' | 'MOTORCYCLE'
   /**
@@ -106,7 +107,7 @@ export async function getSelectedVehicle(): Promise<SelectedVehicle | null> {
     return {
       configurationId: config.id,
       label: `${generation.model.make.name} ${generation.name} · ${years}`,
-      equipmentLabel: config.equipment.label,
+      equipmentLabel: equipementPrecise(config.equipment) ? config.equipment.label : null,
       type: generation.model.make.type === 'MOTORCYCLE' ? 'MOTORCYCLE' : 'CAR',
       selection: {
         makeId: generation.model.make.id,

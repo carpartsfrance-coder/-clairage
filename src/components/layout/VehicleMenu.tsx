@@ -164,8 +164,7 @@ export function VehicleMenu({
                   {vehicle ? 'Changer de véhicule' : 'Choisir mon véhicule'}
                 </h2>
                 <p className="mt-0.5 text-sm text-muted-strong">
-                  L&apos;équipement d&apos;origine est demandé avant le choix du kit : c&apos;est
-                  lui qui détermine la compatibilité, pas le culot seul.
+                  Trois choix, et vous ne voyez que ce qui va sur votre voiture.
                 </p>
               </div>
               <button

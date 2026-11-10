@@ -54,6 +54,16 @@ export function motsDeRecherche(saisie: string): string[][] {
     .filter((mot) => mot.length > 0 && !MOTS_VIDES.has(mot))
     .slice(0, 6)
 
+  /*
+    Une année (« duster 2015 ») n'est écrite dans aucun nom de fiche : elle
+    vidait la recherche (parcours client du 10 novembre 2026). Elle est
+    ignorée dès qu'il reste un autre mot ; les fiches portent les années de
+    leur génération, que le client vérifie d'un regard.
+  */
+  const estUneAnnee = (mot: string) => /^(19[5-9]\d|20[0-3]\d)$/.test(mot)
+  const sansAnnees = mots.filter((mot) => !estUneAnnee(mot))
+  if (sansAnnees.length > 0 && sansAnnees.length < mots.length) mots.splice(0, mots.length, ...sansAnnees)
+
   return mots.map((mot) => {
     // Le chiffre romain précédé d'une espace : « Clio IV » oui, « Civic » non.
     if (ROMAINS[mot]) return [mot, ` ${ROMAINS[mot]}`]

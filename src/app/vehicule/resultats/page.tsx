@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { getSelectedVehicle } from '@/lib/session'
+import { equipementPrecise } from '@/lib/equipement'
 import { fitmentSortWeight } from '@/lib/fitment'
 import { availabilityForKit, availabilityForVariant, isPurchasable } from '@/lib/stock'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
@@ -67,6 +68,14 @@ type VehiculeAffiche = {
    * distingue une absence d'un équipement, pas la lecture de son libellé.
    */
   equipmentCode: string | null
+  /** L'équipement retenu est-il précisé (autre chose que « Non précisé ») ? */
+  equipementPrecise: boolean
+  /**
+   * Nombre d'équipements d'origine proposés pour cette génération. À un seul,
+   * il n'y a rien à préciser : ne pas inviter le client à le faire.
+   */
+  nombreEquipements: number
+  generationId: string
   /** Logo du constructeur, s'il a été téléversé. */
   logo: { url: string; alt: string } | null
 }
@@ -98,6 +107,11 @@ async function getVehiculeAffiche(configurationId: string): Promise<VehiculeAffi
       phase: phaseUtile(generation.phase, generation.name),
       equipmentLabel: config.equipment.label,
       equipmentCode: config.equipment.code,
+      equipementPrecise: equipementPrecise(config.equipment),
+      nombreEquipements: await prisma.vehicleConfiguration.count({
+        where: { generationId: config.generationId, active: true },
+      }),
+      generationId: config.generationId,
       logo: generation.model.make.logo
         ? {
             url: generation.model.make.logo.url,
@@ -320,6 +334,12 @@ export default async function Page() {
         }
       />
 
+      {/*
+        Sur téléphone, la barre « Véhicule de référence » répétait ce que
+        disent la barre du site (avec son « Modifier ») et le titre : elle est
+        réservée à l'ordinateur, pour que les packs arrivent plus haut.
+      */}
+      <div className="max-fiche:hidden">
       <BarreVehicule
         nom={titre}
         annees={affiche?.years ?? ''}
@@ -335,29 +355,37 @@ export default async function Page() {
           </ButtonLink>
         }
       />
+      </div>
 
-      {affiche?.equipmentCode && affiche.equipmentCode !== 'NON_PRECISE' ? (
+      {/*
+        L'équipement d'origine n'est mentionné que s'il dit quelque chose :
+        vérifié (« Compatibilités vérifiées pour … »), ou à préciser parce que
+        la génération en a plusieurs — et le lien mène alors au choix de
+        l'équipement, pas à une page où l'on ne peut rien préciser.
+      */}
+      {affiche?.equipementPrecise ? (
         <p className="mt-2 text-[12px] text-muted-strong">
           <IconCheckCircle className="mr-1.5 inline size-3.5 align-[-2px] text-ok" />
           Compatibilités vérifiées pour{' '}
           <span className="font-bold text-slate-ink">{affiche.equipmentLabel}</span>
           {affiche.phase ? ` · ${affiche.phase}` : null}
         </p>
-      ) : (
+      ) : affiche && affiche.nombreEquipements > 1 ? (
         <p className="mt-2 text-[12px] text-muted-strong">
-          <span className="font-bold text-slate-ink">Équipement d’origine non précisé.</span>{' '}
-          Un phare halogène et un xénon n’acceptent pas les mêmes pièces :{' '}
+          Votre phare est halogène, xénon ou LED ?{' '}
           <Link
-            href="/vehicule"
+            href={`/vehicule/${affiche.generationId}/equipement`}
             className="font-bold text-slate-ink underline decoration-line-strong underline-offset-4 hover:text-brand hover:decoration-brand"
           >
-            précisez-le
+            Précisez-le
           </Link>{' '}
-          pour affiner les compatibilités.
+          pour des compatibilités encore plus sûres.
         </p>
-      )}
+      ) : null}
 
-      {cartes.length > 0 ? <PromessesAchat className="mt-3" /> : null}
+      {/* Les promesses sont redites sur chaque fiche et dans le panier : sur
+          téléphone, elles ne passent pas devant les packs. */}
+      {cartes.length > 0 ? <PromessesAchat className="mt-3 max-fiche:hidden" /> : null}
 
       {groups === null ? (
         <Alert

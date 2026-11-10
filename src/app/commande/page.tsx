@@ -71,6 +71,8 @@ export default async function CommandePage() {
         items={[{ label: 'Accueil', href: '/' }, { label: 'Panier', href: '/panier' }, { label: 'Commande' }]}
       />
 
+      {/* Repère du tunnel : l'en-tête et le pied de page s'allègent. */}
+      <span data-tunnel hidden />
       <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         Votre commande
       </h1>

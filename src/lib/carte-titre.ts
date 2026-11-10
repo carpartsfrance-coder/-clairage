@@ -26,15 +26,25 @@ const REGLES: Regle[] = [
   [/^Ampoules xénon d’origine/, 'Ampoules xénon de rechange', 'Identiques à l’origine, pour remplacer une ampoule fatiguée.'],
   [/^Ballast xénon/, 'Ballast xénon de rechange', 'Le boîtier qui allume l’ampoule xénon, type origine.'],
   [/^(Ampoule LED feu stop|Pack ampoules LED feux stop)/, 'Ampoules LED feux stop', 'Un rouge vif qui s’allume instantanément.'],
-  [/^Pack LED clignotants/, 'Ampoules LED de clignotants', 'Une lumière orange vive à la place des ampoules d’origine.'],
+  /*
+    Avant / arrière dans le titre : sur le Dacia Duster, deux cartes « Ampoules
+    LED de clignotants » se suivaient, à 9,90 € et 35,90 €, sans rien pour les
+    distinguer (parcours client du 10 novembre 2026).
+  */
+  [/^Pack LED clignotants avant/, 'Ampoules LED de clignotants avant', 'Une lumière orange vive à la place des ampoules d’origine, à l’avant.'],
+  [/^Pack LED clignotants arrière/, 'Ampoules LED de clignotants arrière', 'Une lumière orange vive à la place des ampoules d’origine, à l’arrière.'],
+  [/^Pack LED clignotants/, 'Ampoules LED de clignotants', 'Orange vif, avec de quoi éviter le clignotement trop rapide.'],
   [/^Pack LED répétiteurs/, 'Ampoules LED de répétiteurs', 'Une lumière orange vive sur les côtés de la voiture.'],
-  [/^Pack LED phares/, 'Ampoules LED', 'Plus blanches et plus puissantes que les ampoules halogènes.'],
-  [/^Pack LED antibrouillard arrière/, 'Ampoules LED', 'Un feu de brouillard arrière rouge vif.'],
-  [/^Pack LED antibrouillards/, 'Ampoules LED', 'Une lumière blanche à la place du jaune de l’halogène.'],
-  [/^Pack LED (veilleuses|feux de jour)/, 'Ampoules LED', 'Un blanc pur, assorti aux phares xénon ou LED.'],
-  [/^Pack LED feux de recul/, 'Ampoules LED', 'Plus de lumière derrière la voiture en marche arrière.'],
-  [/^Pack LED feux de route/, 'Ampoules LED', 'Des pleins phares plus blancs et plus puissants.'],
-  [/^Pack (ampoules )?LED (éclairage de plaque|plaque)/, 'Ampoules LED', 'Une plaque éclairée en blanc pur.'],
+  [/^Pack LED phares/, 'Ampoules LED de phares', 'Plus blanches et plus puissantes que les ampoules halogènes.'],
+  [/^Pack LED antibrouillard arrière/, 'Ampoules LED antibrouillard arrière', 'Un feu de brouillard arrière rouge vif.'],
+  [/^Pack LED antibrouillards/, 'Ampoules LED antibrouillards', 'Une lumière blanche à la place du jaune de l’halogène.'],
+  /* Même raison : trois cartes « Ampoules LED » sous « Veilleuses ». */
+  [/^Pack LED veilleuses et feux de jour/, 'Ampoules LED veilleuses + feux de jour', 'Les deux emplacements dans un seul pack.'],
+  [/^Pack LED veilleuses/, 'Ampoules LED de veilleuses', 'Un blanc pur, assorti aux phares xénon ou LED.'],
+  [/^Pack LED feux de jour/, 'Ampoules LED de feux de jour', 'Des feux de jour d’un blanc net, allumés dès le démarrage.'],
+  [/^Pack LED feux de recul/, 'Ampoules LED de recul', 'Plus de lumière derrière la voiture en marche arrière.'],
+  [/^Pack LED feux de route/, 'Ampoules LED de feux de route', 'Des pleins phares plus blancs et plus puissants.'],
+  [/^Pack (ampoules )?LED (éclairage de plaque|plaque)/, 'Ampoules LED de plaque', 'Une plaque éclairée en blanc pur.'],
   [/^Pack LED (habitacle|plafonnier|intérieur)/, 'Ampoules LED d’habitacle', 'Un intérieur éclairé en blanc, sans ampoules jaunes.'],
   [/^Modules LED de plaque/, 'Modules LED de plaque', 'Les boîtiers complets, à clipser à la place de ceux d’origine.'],
   [/^Centrale de clignotants/, 'Centrale de clignotants', 'Rend la cadence normale aux clignotants LED.'],

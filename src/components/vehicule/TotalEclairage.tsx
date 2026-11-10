@@ -69,8 +69,7 @@ export function TotalEclairage({
             Tout l&apos;éclairage de votre {titre}
           </h3>
           <p className="mt-1 text-[12px] text-muted-strong">
-            Total des {produits} pack{produits > 1 ? 's' : ''} à l&apos;unité ·{' '}
-            {emplacements} emplacement{emplacements > 1 ? 's' : ''}
+            {`Un pack par emplacement, le plus simple à monter · ${emplacements} emplacement${emplacements > 1 ? 's' : ''}`}
           </p>
           {retour ? (
             <p
