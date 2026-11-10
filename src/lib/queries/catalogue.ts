@@ -436,12 +436,37 @@ async function lireListe(
           },
         },
       }
-      const enTete: Prisma.ProductWhereInput = { AND: [where, surCeVehicule] }
-      const ensuite: Prisma.ProductWhereInput = { AND: [where, { NOT: surCeVehicule }] }
-      const nbEnTete = await prisma.product.count({ where: enTete })
-      const premiers = debut < nbEnTete ? await lire(enTete, debut, perPage) : []
-      const suivants = await lire(ensuite, Math.max(0, debut - nbEnTete), perPage - premiers.length)
-      return [...premiers, ...suivants]
+      /*
+        Trois groupes, dans cet ordre : les fiches du véhicule ; les produits
+        sans véhicule attitré (ampoules, modules génériques) ; les packs
+        composés pour d'autres véhicules. Une rubrique sans pack pour ce
+        véhicule (les veilleuses de l'Audi A1) s'ouvre ainsi sur les
+        ampoules qui peuvent lui convenir, pas sur des packs Alfa Romeo.
+      */
+      const aDesVehicules: Prisma.ProductWhereInput = {
+        variants: {
+          some: {
+            active: true,
+            fitments: { some: { status: { not: 'INCOMPATIBLE' }, configuration: { active: true } } },
+          },
+        },
+      }
+      const groupes: Prisma.ProductWhereInput[] = [
+        { AND: [where, surCeVehicule] },
+        { AND: [where, { NOT: aDesVehicules }] },
+        { AND: [where, aDesVehicules, { NOT: surCeVehicule }] },
+      ]
+      const [nb1, nb2] = await Promise.all(
+        groupes.slice(0, 2).map((clause) => prisma.product.count({ where: clause })),
+      )
+      const tailles = [nb1, nb2, Number.POSITIVE_INFINITY]
+      const lus: Array<Awaited<ReturnType<typeof lire>>[number]> = []
+      let decalage = debut
+      for (let i = 0; i < groupes.length && lus.length < perPage; i++) {
+        if (decalage < tailles[i]) lus.push(...(await lire(groupes[i], decalage, perPage - lus.length)))
+        decalage = Math.max(0, decalage - tailles[i])
+      }
+      return lus
     })(),
   ])
 
