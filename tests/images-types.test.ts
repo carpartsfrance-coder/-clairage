@@ -43,10 +43,9 @@ describe('images types par emplacement', () => {
     expect(couvertureType(moto)?.url).toBe('/images-types/produit-led-haute-puissance.webp')
   })
 
-  it("Google Shopping : jamais d'image avec du texte, la photo produit d'abord", () => {
+  it("Google Shopping : seulement la photo produit (ni texte ni filigrane)", () => {
     expect(imagesTypesPourLeFlux({ slug: 'pack-led-veilleuses-audi-a3', name: 'Pack LED veilleuses' })).toEqual([
       '/images-types/produit-led-w5w.webp',
-      '/images-types/veilleuses-apres.webp',
     ])
     expect(imagesTypesPourLeFlux({ slug: 'pack-led-phares-audi-a3', name: 'Pack LED phares' })).toEqual([
       '/images-types/produit-led-haute-puissance.webp',

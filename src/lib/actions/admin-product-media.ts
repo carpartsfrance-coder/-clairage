@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { planifierFiligrane } from '../storage/filigraner-existants'
 import { z } from 'zod'
 import { prisma } from '../db'
 import { requireStaff, audit } from '../admin/guard'
@@ -86,6 +87,8 @@ async function rafraichir(productId: string): Promise<void> {
   revalidatePath(`/admin/catalogue/${productId}`)
   revalidatePath('/admin/medias')
   if (produit) revalidatePath(`/p/${produit.slug}`)
+  // Un rendu ajouté ou passé au rôle « rendu » reçoit son filigrane tout de suite.
+  planifierFiligrane()
 }
 
 /** Position suivante, à la fin du groupe de rôle visé. */
