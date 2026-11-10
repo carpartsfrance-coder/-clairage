@@ -28,8 +28,16 @@ export async function allegerMediasLourds(
       where: {
         id: { notIn: [...ignorees] },
         url: { startsWith: 'https://' },
-        mimeType: { in: ['image/jpeg', 'image/png'] },
-        OR: [{ sizeBytes: null }, { sizeBytes: { gt: SEUIL_ALLEGEMENT } }],
+        NOT: { url: { endsWith: '.v2.webp' } },
+        OR: [
+          // Les photos lourdes…
+          {
+            mimeType: { in: ['image/jpeg', 'image/png'] },
+            OR: [{ sizeBytes: null }, { sizeBytes: { gt: SEUIL_ALLEGEMENT } }],
+          },
+          // … et celles allégées avant les versions réduites (WebP sans « .v2 »).
+          { mimeType: 'image/webp', width: { not: null }, sizeBytes: { gt: 60 * 1024 } },
+        ],
       },
       orderBy: { createdAt: 'asc' },
       select: { id: true, url: true, storageKey: true, mimeType: true },
@@ -40,8 +48,10 @@ export async function allegerMediasLourds(
       const reponse = await fetch(media.url, { signal: AbortSignal.timeout(30_000) })
       if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`)
       const origine = Buffer.from(await reponse.arrayBuffer())
-      const extension = media.mimeType === 'image/png' ? 'png' : 'jpg'
-      const allegee = await allegerImage(origine, media.mimeType, extension)
+      const extension = media.mimeType === 'image/png' ? 'png' : media.mimeType === 'image/webp' ? 'webp' : 'jpg'
+      const allegee = await allegerImage(origine, media.mimeType, extension, {
+        forcer: media.mimeType === 'image/webp',
+      })
 
       if (allegee.bytes === origine) {
         // Rien à gagner : on note sa vraie taille pour ne plus la reprendre.
@@ -58,6 +68,7 @@ export async function allegerMediasLourds(
           extension: allegee.extension,
           prefix: dossier,
           empreinteDe: origine,
+          variantes: allegee.variantes,
         })
         const maj = await prisma.media.updateMany({
           where: { id: media.id, storageKey: media.storageKey },

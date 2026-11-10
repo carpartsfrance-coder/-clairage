@@ -119,6 +119,8 @@ export async function putFile(options: {
    * est déjà la version allégée (allègement des médias existants).
    */
   empreinteDe?: Buffer
+  /** Versions réduites déjà calculées (bytes déjà allégés). */
+  variantes?: Array<{ largeur: number; bytes: Buffer }>
 }): Promise<StoredFile> {
   /*
     Les photos lourdes sont allégées avant d'être stockées. L'empreinte de la
@@ -126,17 +128,23 @@ export async function putFile(options: {
     dépôt de retrouver un fichier déjà envoyé (« -<empreinte>. »), quel que
     soit le format de sortie.
   */
-  const allegee = await allegerImage(options.bytes, options.mimeType, options.extension)
+  const allegee = options.variantes
+    ? { bytes: options.bytes, mimeType: options.mimeType, extension: options.extension, variantes: options.variantes }
+    : await allegerImage(options.bytes, options.mimeType, options.extension)
   const digest = createHash('sha256')
     .update(options.empreinteDe ?? options.bytes)
     .digest('hex')
     .slice(0, 12)
   const key = `${options.prefix ?? 'medias'}/${randomUUID()}-${digest}.${allegee.extension}`
 
-  const stored =
-    driverName() === 's3'
-      ? await putToS3(key, allegee.bytes, allegee.mimeType)
-      : await putToLocal(key, allegee.bytes, allegee.mimeType)
+  const deposer = (cle: string, contenu: Buffer, type: string) =>
+    driverName() === 's3' ? putToS3(cle, contenu, type) : putToLocal(cle, contenu, type)
+  // Les versions réduites d'abord : la photo n'est référencée qu'une fois
+  // toutes ses tailles en place.
+  for (const variante of allegee.variantes ?? []) {
+    await deposer(key.replace(/\.webp$/, `-${variante.largeur}.webp`), variante.bytes, 'image/webp')
+  }
+  const stored = await deposer(key, allegee.bytes, allegee.mimeType)
   return { ...stored, width: allegee.width, height: allegee.height }
 }
 

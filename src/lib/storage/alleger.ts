@@ -8,18 +8,40 @@
  * du temps à s'afficher » (remarque de l'exploitant, 10 novembre 2026).
  *
  * Une photo plus lourde que le seuil est ramenée à 1 600 px au plus (assez
- * pour le zoom de la galerie) et réencodée en WebP : 150 à 300 ko, que
- * l'optimiseur traite dix fois plus vite. Les SVG, PDF et petits fichiers ne
- * sont pas touchés.
+ * pour le zoom de la galerie) et réencodée en WebP, avec deux versions
+ * réduites (480 et 960 px) déposées à côté. Le site les sert directement, sans
+ * repasser par l'optimiseur : sur le demi-processeur du serveur, quinze
+ * conversions à froid lancées ensemble faisaient attendre les images 3 à 4 s.
+ * Les SVG, PDF et petits fichiers ne sont pas touchés.
+ *
+ * Convention de nom, lue par `components/ui/Image.tsx` :
+ *   …-<empreinte>.v2.webp       la photo (1 600 px au plus)
+ *   …-<empreinte>.v2-480.webp   version 480 px
+ *   …-<empreinte>.v2-960.webp   version 960 px
  */
 export const SEUIL_ALLEGEMENT = 400 * 1024
 const COTE_MAX = 1600
 
-export type ImageAllegee = { bytes: Buffer; mimeType: string; extension: string; width?: number; height?: number }
+export const LARGEURS_VARIANTES = [480, 960] as const
 
-export async function allegerImage(bytes: Buffer, mimeType: string, extension: string): Promise<ImageAllegee> {
+export type ImageAllegee = {
+  bytes: Buffer
+  mimeType: string
+  extension: string
+  width?: number
+  height?: number
+  /** Versions réduites, présentes seulement quand la photo a été allégée. */
+  variantes?: Array<{ largeur: number; bytes: Buffer }>
+}
+
+export async function allegerImage(
+  bytes: Buffer,
+  mimeType: string,
+  extension: string,
+  { forcer = false }: { forcer?: boolean } = {},
+): Promise<ImageAllegee> {
   const photo = mimeType === 'image/jpeg' || mimeType === 'image/png' || mimeType === 'image/webp'
-  if (!photo || bytes.length <= SEUIL_ALLEGEMENT) return { bytes, mimeType, extension }
+  if (!photo || (!forcer && bytes.length <= SEUIL_ALLEGEMENT)) return { bytes, mimeType, extension }
 
   try {
     const { default: sharp } = await import('sharp')
@@ -29,8 +51,24 @@ export async function allegerImage(bytes: Buffer, mimeType: string, extension: s
       .webp({ quality: 82, effort: 2 })
       .toBuffer({ resolveWithObject: true })
     // Un PNG à aplats peut ressortir plus lourd en WebP : on garde le plus léger.
-    if (data.length >= bytes.length) return { bytes, mimeType, extension }
-    return { bytes: data, mimeType: 'image/webp', extension: 'webp', width: info.width, height: info.height }
+    if (data.length >= bytes.length && !forcer) return { bytes, mimeType, extension }
+    const variantes = await Promise.all(
+      LARGEURS_VARIANTES.map(async (largeur) => ({
+        largeur,
+        bytes: await sharp(data)
+          .resize({ width: largeur, height: largeur, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 78, effort: 2 })
+          .toBuffer(),
+      })),
+    )
+    return {
+      bytes: data,
+      mimeType: 'image/webp',
+      extension: 'v2.webp',
+      width: info.width,
+      height: info.height,
+      variantes,
+    }
   } catch (error) {
     console.error('[stockage] allègement impossible, fichier gardé tel quel', error)
     return { bytes, mimeType, extension }
