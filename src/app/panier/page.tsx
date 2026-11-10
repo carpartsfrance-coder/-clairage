@@ -443,7 +443,7 @@ export default async function PanierPage() {
                     {teaser?.delayLabel ? (
                       <p className="mt-1 text-right text-[9px] text-muted">{teaser.delayLabel}</p>
                     ) : null}
-                    {teaser?.missingForFreeCents ? (
+                    {teaser?.missingForFreeCents && !(cart.promotion?.ok && cart.promotion.livraisonOfferte) ? (
                       <p className="mt-2 rounded-md bg-ok-soft px-2.5 py-1.5 text-[11px] font-bold text-[#1f5a39]">
                         Plus que {formatPrice(teaser.missingForFreeCents)} pour la livraison offerte.
                       </p>
@@ -500,7 +500,7 @@ export default async function PanierPage() {
                 )}
 
                 <p className="mt-2 text-[9px] leading-[1.8] text-[#8c8c8c]">
-                  {teaser?.isSettled
+                  {teaser?.isSettled || (cart.promotion?.ok && cart.promotion.livraisonOfferte)
                     ? 'Livraison comprise pour la France. Ce total est celui que vous réglerez.'
                     : teaser
                       ? 'Les frais de livraison s’ajoutent à l’étape suivante : le montant exact dépend du mode de livraison choisi et de votre adresse.'
