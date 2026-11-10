@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import type { SelectedVehicle } from '@/lib/session'
 import { VehicleSelector } from '@/components/vehicle/VehicleSelector'

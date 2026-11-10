@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import type { GalleryItem } from '@/lib/queries/product'
 import { cn } from '@/lib/cn'
 import { estComparatifAvantApres } from '@/lib/media-comparatif'

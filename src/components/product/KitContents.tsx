@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import { formatPrice } from '@/lib/identity'
 import { IconHeadset, IconChevronRight } from '@/components/ui/icons'

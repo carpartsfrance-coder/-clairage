@@ -2,7 +2,7 @@
 
 import { presentationDeCarte } from '@/lib/carte-titre'
 import { useMemo, useState } from 'react'
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import { FitmentBadge } from '@/components/ui/Badge'
 import { IconArrowRight, IconChevronDown } from '@/components/ui/icons'

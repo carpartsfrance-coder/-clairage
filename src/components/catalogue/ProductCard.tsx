@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import type { ProductListItem } from '@/lib/queries/catalogue'
 import { formatPrice } from '@/lib/identity'
