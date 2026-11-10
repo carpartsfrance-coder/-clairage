@@ -8,6 +8,8 @@ import { requireStaff, audit, staffName } from '../admin/guard'
 import { orderReservationLines, releaseReservation } from '../stock-reservation'
 import { sendEmail } from '../email'
 import { identity } from '../identity'
+import { rembourserChezLePrestataire } from '../payments'
+import { emettreAvoir } from '../factures'
 
 /**
  * Actions d'administration sur les commandes.
@@ -298,11 +300,41 @@ export async function refundOrder(_previous: AdminState, formData: FormData): Pr
     const lines = restock ? await orderReservationLines(orderId) : []
     const totalRefunded = alreadyRefunded + amountCents
 
+    /*
+      Le remboursement est EXÉCUTÉ chez le prestataire d'abord, puis enregistré.
+      Dans cet ordre : si Mollie refuse (solde insuffisant, paiement trop
+      ancien…), rien n'est écrit et l'erreur est affichée telle quelle. La clé
+      d'idempotence dépend de ce qui était déjà remboursé : un double-clic ne
+      rembourse pas deux fois.
+    */
+    const paiement = order.payments[0]
+    let referencePrestataire: string | null = null
+    if (paiement) {
+      try {
+        referencePrestataire = await rembourserChezLePrestataire({
+          provider: paiement.provider,
+          providerRef: paiement.providerRef,
+          amountCents,
+          currency: order.currency,
+          description: `Remboursement commande ${order.reference}`,
+          idempotencyKey: `remboursement-${orderId}-${alreadyRefunded}-${amountCents}`,
+        })
+      } catch (error) {
+        console.error('[admin] remboursement refusé par le prestataire', error)
+        return {
+          error:
+            "Le prestataire de paiement a refusé le remboursement, rien n'a été enregistré. " +
+            (error instanceof Error ? error.message : ''),
+        }
+      }
+    }
+
     await prisma.$transaction(async (tx) => {
       await tx.refund.create({
         data: {
           orderId,
-          provider: order.payments[0]?.provider ?? 'manuel',
+          provider: paiement?.provider ?? 'manuel',
+          providerRef: referencePrestataire,
           amountCents,
           reason,
           restock,
@@ -363,12 +395,18 @@ export async function refundOrder(_previous: AdminState, formData: FormData): Pr
       }).catch((error) => console.error('[admin] e-mail de remboursement', error))
     }
 
+    // L'avoir (document comptable du remboursement), numéroté à la suite.
+    await emettreAvoir(orderId, amountCents).catch((error) =>
+      console.error('[admin] émission de l’avoir', error),
+    )
+
     revalidatePath(`/admin/commandes/${orderId}`)
     return {
       notice:
-        `Remboursement de ${(amountCents / 100).toFixed(2)} € enregistré. ` +
+        `Remboursement de ${(amountCents / 100).toFixed(2)} € ` +
+        (referencePrestataire ? 'effectué chez Mollie et enregistré. ' : 'enregistré. ') +
         (restock ? 'Articles remis en stock.' : 'Le stock n’a pas été modifié.') +
-        " Il n'a pas été exécuté chez le prestataire de paiement : à faire depuis son tableau de bord.",
+        ' Un avoir a été émis.',
     }
   } catch (error) {
     console.error('[admin] remboursement impossible', error)

@@ -56,3 +56,28 @@ export function resolvePaymentDriver(): PaymentDriver {
 export function paymentIsSimulated(): boolean {
   return resolveProviderChoice().kind === 'simulation'
 }
+
+/**
+ * Exécute un remboursement chez le prestataire qui a encaissé le paiement.
+ *
+ * Renvoie la référence du remboursement chez lui, `null` quand il n'y a rien
+ * à exécuter (paiement simulé). Lève si le prestataire refuse : le
+ * remboursement n'est alors PAS enregistré dans la commande.
+ */
+export async function rembourserChezLePrestataire(input: {
+  provider: string
+  providerRef: string
+  amountCents: number
+  currency: string
+  description: string
+  idempotencyKey: string
+}): Promise<string | null> {
+  if (input.provider === 'simulation') return null
+  const driver = resolvePaymentDriver()
+  if (input.provider === 'mollie' && driver instanceof MollieDriver) {
+    return (await driver.refund(input)).providerRef
+  }
+  throw new Error(
+    `Remboursement automatique indisponible pour « ${input.provider} » : à faire depuis son tableau de bord.`,
+  )
+}

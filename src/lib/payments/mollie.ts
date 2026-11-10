@@ -250,6 +250,38 @@ export class MollieDriver implements PaymentDriver {
     return body
   }
 
+  /**
+   * Rembourse tout ou partie d'un paiement (POST /payments/{id}/refunds).
+   *
+   * Avant, le back-office enregistrait le remboursement sans l'exécuter : il
+   * fallait le refaire à la main dans le tableau de bord Mollie, avec le
+   * risque d'oublier. La clé d'idempotence évite un double remboursement si le
+   * bouton est pressé deux fois.
+   */
+  async refund(input: {
+    providerRef: string
+    amountCents: number
+    currency: string
+    description: string
+    idempotencyKey: string
+  }): Promise<{ providerRef: string }> {
+    const response = await this.fetchImpl(
+      `${this.baseUrl}/payments/${encodeURIComponent(input.providerRef)}/refunds`,
+      {
+        method: 'POST',
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+        headers: this.headers({ 'idempotency-key': input.idempotencyKey }),
+        body: JSON.stringify({
+          amount: { currency: input.currency.toUpperCase(), value: toMollieAmount(input.amountCents) },
+          description: input.description.slice(0, 140),
+        }),
+      },
+    )
+    const body = (await this.readJson(response, 'remboursement')) as { id?: string } | null
+    if (!body?.id) throw new Error('Mollie remboursement : réponse sans identifiant.')
+    return { providerRef: body.id }
+  }
+
   async createSession(input: CreatePaymentInput): Promise<PaymentSession> {
     /*
       Deux origines, et elles n'ont pas le même rôle.

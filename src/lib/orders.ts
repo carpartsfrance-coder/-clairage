@@ -660,6 +660,12 @@ export async function applyPaymentOutcome(
   }
 
   if (outcome === 'paid') {
+    // La facture est émise dès le paiement confirmé (numéro continu). Un échec
+    // ici ne remet pas en cause le paiement : elle sera émise à la demande.
+    await import('./factures')
+      .then(({ emettreFacture }) => emettreFacture(payment.orderId))
+      .catch((error) => console.error('[commande] émission de la facture', error))
+
     /*
       L'e-mail sort de la transaction : un prestataire e-mail indisponible ne
       doit pas annuler un paiement qui a bien eu lieu.

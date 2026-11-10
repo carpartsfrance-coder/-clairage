@@ -258,17 +258,14 @@ export function RefundForm({
         <span>Prévenir le client</span>
       </label>
 
-      {/*
-        Dit avant le clic, pas après : l'action écrit un remboursement dans la
-        commande et n'appelle pas le prestataire de paiement.
-      */}
+      {/* Dit avant le clic : l'action rembourse réellement le client. */}
       <Alert tone="warn">
-        Ce formulaire enregistre le remboursement dans la commande. Il ne le déclenche PAS chez le
-        prestataire de paiement — à faire depuis son tableau de bord.
+        Le client est remboursé tout de suite sur sa carte, via Mollie, puis un avoir est émis. Le
+        remboursement ne peut pas être annulé.
       </Alert>
 
       <Button type="submit" size="sm" disabled={pending}>
-        {pending ? 'Enregistrement…' : 'Enregistrer le remboursement'}
+        {pending ? 'Remboursement…' : 'Rembourser le client'}
       </Button>
     </form>
   )

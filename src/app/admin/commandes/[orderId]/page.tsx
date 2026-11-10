@@ -500,6 +500,53 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
           </section>
 
           {/* ---------------------------------------------------------------
+              Factures et avoirs
+              --------------------------------------------------------------- */}
+          <section aria-labelledby="dossier-documents">
+            <h2 id="dossier-documents" className={h2Class}>
+              Factures et avoirs
+            </h2>
+            <Card className="mt-2 p-4">
+              {order.documents.length === 0 ? (
+                <p className="text-sm text-muted-strong">
+                  {order.paymentStatus === 'PENDING' || cancelled
+                    ? 'La facture est émise automatiquement une fois le paiement confirmé.'
+                    : 'Facture pas encore émise.'}{' '}
+                  {order.paymentStatus !== 'PENDING' && !cancelled ? (
+                    <a href={`/admin/commandes/${order.id}/facture`} className="font-semibold underline underline-offset-2">
+                      L&apos;émettre maintenant
+                    </a>
+                  ) : null}
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-2 text-sm">
+                  {order.documents.map((doc) => (
+                    <li key={doc.id} className="flex flex-wrap items-center justify-between gap-3">
+                      <span>
+                        <span className="font-semibold">{doc.type === 'CREDIT_NOTE' ? 'Avoir' : 'Facture'}</span>{' '}
+                        {doc.number}
+                        <span className="text-muted-strong">
+                          {' · '}
+                          {doc.issuedAt.toLocaleDateString('fr-FR')}
+                          {doc.totalCents !== null ? ` · ${formatPrice(doc.totalCents, { alwaysDecimals: true })}` : ''}
+                        </span>
+                      </span>
+                      <a
+                        href={`/documents/${doc.id}`}
+                        target="_blank"
+                        rel="noopener"
+                        className="font-semibold underline underline-offset-2"
+                      >
+                        Télécharger le PDF
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </section>
+
+          {/* ---------------------------------------------------------------
               Expéditions
               --------------------------------------------------------------- */}
           <section aria-labelledby="dossier-expeditions">

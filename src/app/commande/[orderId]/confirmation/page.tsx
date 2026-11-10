@@ -52,6 +52,7 @@ function findOrder(orderId: string) {
     include: {
       lines: { orderBy: { id: 'asc' } },
       payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+      documents: { where: { type: 'INVOICE' }, take: 1 },
     },
   })
 }
@@ -592,6 +593,19 @@ export default async function Page({
             {isTestPayment ? (
               <p className="mt-4 text-xs text-muted-strong">
                 Ce paiement a été traité en mode test : aucun montant réel n&apos;a été encaissé.
+              </p>
+            ) : null}
+
+            {order.documents[0] ? (
+              <p className="mt-4 text-sm">
+                <a
+                  href={`/documents/${order.documents[0].id}${order.guestToken ? `?t=${encodeURIComponent(order.guestToken)}` : ''}`}
+                  target="_blank"
+                  rel="noopener"
+                  className="font-semibold underline underline-offset-4"
+                >
+                  Télécharger la facture
+                </a>
               </p>
             ) : null}
 
