@@ -10,6 +10,7 @@ import { formatPrice } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Alert, Card } from '@/components/ui/Surface'
+import { SavEtat, SavReponse } from '@/components/admin/SavActions'
 
 /**
  * Dossier d'une demande de service après-vente.
@@ -157,7 +158,8 @@ export default async function AdminTicketPage({
 }: {
   params: Promise<{ ticketId: string }>
 }) {
-  await requireStaff('sav.view')
+  const staffUser = await requireStaff('sav.view')
+  const peutTraiter = can(staffUser.role, 'sav.handle')
 
   const { ticketId } = await params
   const ticket = await loadTicket(ticketId)
@@ -207,10 +209,6 @@ export default async function AdminTicketPage({
         </p>
       </div>
 
-      <Alert tone="info">
-        Le traitement des demandes depuis le back-office n&apos;est pas encore disponible : cet
-        écran est en lecture seule.
-      </Alert>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="flex min-w-0 flex-col gap-5">
@@ -277,10 +275,26 @@ export default async function AdminTicketPage({
                 ))}
               </ul>
             )}
+            {peutTraiter ? (
+              <Card className="mt-3 p-4">
+                <SavReponse ticketId={ticket.id} email={ticket.email} />
+              </Card>
+            ) : null}
           </section>
         </div>
 
         <div className="flex min-w-0 flex-col gap-5">
+          {peutTraiter ? (
+            <section aria-labelledby="sav-traitement">
+              <h2 id="sav-traitement" className={h2Class}>
+                Traitement
+              </h2>
+              <Card className="mt-2 p-4">
+                <SavEtat ticketId={ticket.id} status={ticket.status} resolution={ticket.resolution} />
+              </Card>
+            </section>
+          ) : null}
+
           {/* -----------------------------------------------------------------
               Demandeur
               ----------------------------------------------------------------- */}

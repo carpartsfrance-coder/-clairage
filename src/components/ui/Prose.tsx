@@ -67,7 +67,14 @@ export function Prose({
    */
   sombre?: boolean
 }) {
-  const blocs = children.split(/\n{2,}/).filter((bloc) => bloc.trim().length > 0)
+  // Un texte saisi dans un formulaire arrive en \r\n : sans ce passage, il ne
+  // forme qu'un seul paragraphe.
+  const blocs = children
+    .replace(/\r\n?/g, '\n')
+    // Un intertitre collé à son texte reste un intertitre suivi d'un paragraphe.
+    .replace(/^(## .*)\n(?!\n)/gm, '$1\n\n')
+    .split(/\n{2,}/)
+    .filter((bloc) => bloc.trim().length > 0)
 
   if (sombre) return <ProseEnBref blocs={blocs} className={className} />
 

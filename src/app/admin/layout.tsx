@@ -44,7 +44,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       </a>
 
       {/* ---------------- Bandeau d'administration ---------------- */}
-      <div className="on-dark bg-ink text-white">
+      <div className="on-dark bg-ink text-white print:hidden">
         <div className="flex min-h-14 flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <p className="flex items-center gap-2 text-sm">
             <span className="font-wordmark text-base font-extrabold tracking-wide">{identity.name}</span>

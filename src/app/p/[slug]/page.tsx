@@ -863,6 +863,29 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           </section>
         ) : null}
 
+        {/* ---------------- #montage : guides rédigés dans le back-office ---------------- */}
+        {product.guides.length > 0 ? (
+          <section id="montage" aria-labelledby="titre-montage" className="scroll-mt-32 border-t border-line">
+            <div className="container-page py-10">
+              <h2 id="titre-montage" className="text-[22px] font-bold tracking-[-0.4px]">
+                Guide de montage
+              </h2>
+              <ul className="mt-3 flex flex-col gap-2">
+                {product.guides.map((guide) => (
+                  <li key={guide.slug}>
+                    <Link href={`/guides/${guide.slug}`} className="font-semibold underline underline-offset-4 hover:text-brand">
+                      {guide.title}
+                    </Link>
+                    {guide.durationMinutes ? (
+                      <span className="text-[14px] text-[#6b6d70]"> · environ {guide.durationMinutes} min</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        ) : null}
+
         {/* ---------------- #questions : questions, avis, et un humain ---------------- */}
         {aContenuQuestions ? (
           <section

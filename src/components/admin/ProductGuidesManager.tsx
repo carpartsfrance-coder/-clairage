@@ -122,7 +122,7 @@ export function ProductGuidesManager({
       {disponibles.length === 0 ? (
         <Alert tone="info" title="Aucun guide à rattacher">
           {rattaches.length === 0
-            ? "Aucun guide n'existe encore. Les guides viennent du jeu de données : aucun écran de l'application ne les rédige."
+            ? 'Aucun guide n’existe encore. Écrivez-en un dans le menu « Guides » à gauche.'
             : 'Tous les guides existants sont déjà rattachés à cette fiche.'}
         </Alert>
       ) : (

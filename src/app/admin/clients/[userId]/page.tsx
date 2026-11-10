@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getStaffUser, requireStaff } from '@/lib/admin/guard'
+import { ajouterNoteClient } from '@/lib/actions/admin-clients'
 import { can } from '@/lib/admin/permissions'
+import { Button } from '@/components/ui/Button'
 import { getAdminCustomer } from '@/lib/queries/admin'
 import { formatPrice } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
@@ -377,9 +379,27 @@ export default async function AdminClientPage({ params }: { params: Params }) {
             </ul>
           )}
 
-          <p className="mt-3 text-xs text-muted">
-            L&apos;ajout de notes depuis le back-office n&apos;est pas encore disponible.
-          </p>
+          {can(staff.role, 'customers.note') ? (
+            <form action={ajouterNoteClient} className="mt-3 flex flex-col gap-2">
+              <input type="hidden" name="userId" value={customer.id} />
+              <label htmlFor="note-client" className="text-xs font-bold">
+                Ajouter une note
+              </label>
+              <textarea
+                id="note-client"
+                name="body"
+                rows={3}
+                required
+                className="rounded-sm border border-[#d4d4d4] p-2 text-sm"
+                placeholder="Ex. a appelé le 12/11 pour son décodeur, rappeler mardi."
+              />
+              <div>
+                <Button type="submit" size="sm" variant="secondary">
+                  Ajouter la note
+                </Button>
+              </div>
+            </form>
+          ) : null}
         </section>
       </div>
     </div>
