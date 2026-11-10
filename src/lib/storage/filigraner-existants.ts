@@ -97,7 +97,8 @@ let redemande = false
 
 /** Lance un passage en arrière-plan (sans attendre), ou en redemande un après celui en cours. */
 export function planifierFiligrane(): void {
-  if (process.env.FILIGRANE_MEDIAS === 'off') return
+  // Coupé par défaut : le passage a fait tomber le serveur (10 novembre 2026).
+  if (process.env.FILIGRANE_MEDIAS !== 'on') return
   if (enCours) {
     redemande = true
     return
