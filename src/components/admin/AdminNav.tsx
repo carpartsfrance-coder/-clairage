@@ -53,6 +53,7 @@ const ENTRIES: Entry[] = [
     permission: 'catalog.view',
     Icon: IconSliders,
   },
+  { href: '/admin/guides', label: 'Guides', permission: 'catalog.view', Icon: IconWrench },
   { href: '/admin/medias', label: 'Médias', permission: 'catalog.view', Icon: IconImage },
   { href: '/admin/vehicules', label: 'Véhicules', permission: 'vehicles.view', Icon: IconCar },
   { href: '/admin/imports', label: 'Imports', permission: 'imports.run', Icon: IconImport },
@@ -89,7 +90,7 @@ export function AdminNav({
   const entries = ENTRIES.filter((entry) => can(role, entry.permission))
 
   return (
-    <nav aria-label="Sections de l’administration" className="shrink-0 lg:w-60">
+    <nav aria-label="Sections de l’administration" className="shrink-0 lg:w-60 print:hidden">
       <ul className="flex flex-wrap gap-1 lg:flex-col lg:flex-nowrap">
         {entries.map(({ href, label, Icon }) => {
           const active = isActive(href, here)

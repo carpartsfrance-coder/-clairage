@@ -1,4 +1,6 @@
+import { BoutonImprimer } from '@/components/admin/BoutonImprimer'
 import { nomUtileDuConditionnement } from '@/lib/nom-conditionnement'
+import { listePrelevement } from '@/lib/admin/prelevement'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
@@ -24,12 +26,6 @@ const AGE_ALERTE_JOURS = 3
  * Une ligne de la liste de prélèvement : une référence physique, la quantité
  * totale à sortir du stock, et les commandes qui l’attendent.
  */
-type LigneDePrelevement = {
-  sku: string
-  designation: string
-  quantite: number
-  commandes: Set<string>
-}
 
 function joursDepuis(date: Date): number {
   return Math.floor((Date.now() - date.getTime()) / 86_400_000)
@@ -49,51 +45,7 @@ export default async function PreparationPage() {
     quantité commandée) et on regroupe le tout par SKU, pour ne faire qu’un
     seul tour du stock.
   */
-  const parSku = new Map<string, LigneDePrelevement>()
-
-  function ajouter(sku: string, designation: string, quantite: number, orderId: string) {
-    const ligne = parSku.get(sku)
-    if (ligne) {
-      ligne.quantite += quantite
-      ligne.commandes.add(orderId)
-      return
-    }
-    parSku.set(sku, { sku, designation, quantite, commandes: new Set([orderId]) })
-  }
-
-  for (const order of orders) {
-    for (const line of order.lines) {
-      const composants = line.variant?.components ?? []
-      if (composants.length > 0) {
-        for (const composant of composants) {
-          ajouter(
-            composant.component.sku,
-            [
-              composant.component.product.name,
-              nomUtileDuConditionnement(composant.component.name, composant.component.product.name),
-            ]
-              .filter(Boolean)
-              .join(' — '),
-            composant.quantity * line.quantity,
-            order.id,
-          )
-        }
-      } else {
-        // Pas de kit : on prélève la variante vendue, telle qu’elle a été
-        // facturée (nom figé dans la ligne de commande).
-        ajouter(
-          line.sku,
-          [line.productName, nomUtileDuConditionnement(line.variantName, line.productName)]
-            .filter(Boolean)
-            .join(' — '),
-          line.quantity,
-          order.id,
-        )
-      }
-    }
-  }
-
-  const prelevement = [...parSku.values()].sort((a, b) => a.sku.localeCompare(b.sku, 'fr'))
+  const prelevement = listePrelevement(orders)
   const totalUnites = prelevement.reduce((somme, ligne) => somme + ligne.quantite, 0)
 
   /*
@@ -190,9 +142,12 @@ export default async function PreparationPage() {
               </table>
             </Card>
 
-            <p className="mt-2 text-xs text-muted">
-              L&apos;impression et l&apos;export de la liste ne sont pas encore disponibles.
-            </p>
+            <div className="mt-2 flex gap-3 print:hidden">
+              <BoutonImprimer />
+              <a href="/admin/preparation/export" className="inline-flex h-9 items-center text-sm font-semibold underline">
+                Télécharger la liste (CSV)
+              </a>
+            </div>
           </section>
 
           {/* ---------------- Détail commande par commande ---------------- */}

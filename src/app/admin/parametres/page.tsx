@@ -5,6 +5,7 @@ import { listAuditLog, listSettings, listStaff } from '@/lib/queries/admin'
 import { assessReadiness, type CheckState } from '@/lib/readiness'
 import { Badge } from '@/components/ui/Badge'
 import { Alert, Card, EmptyState } from '@/components/ui/Surface'
+import { PrefixeCommandeForm } from '@/components/admin/ReglagesForm'
 
 /**
  * Paramètres, équipe et journal des actions.
@@ -24,28 +25,10 @@ export const metadata: Metadata = {
 /* Libellés                                                                   */
 /* -------------------------------------------------------------------------- */
 
-/* Groupes connus. Un groupe ajouté en base s'affiche sous sa clé brute plutôt
-   que de disparaître. */
-const groupCopy: Record<string, string> = {
-  general: 'Général',
-  billing: 'Facturation',
-  payments: 'Paiement',
-  email: 'E-mail',
-}
-
 const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'short',
   timeStyle: 'short',
 })
-
-/** Valeur Json rendue telle qu'elle est stockée : c'est un écran technique. */
-function valueText(value: unknown): string {
-  try {
-    return JSON.stringify(value) ?? '—'
-  } catch {
-    return '—'
-  }
-}
 
 type StaffRow = Awaited<ReturnType<typeof listStaff>>[number]
 
@@ -76,14 +59,6 @@ export default async function AdminSettingsPage() {
   // la donnée partir dans la réponse du serveur.
   const team: StaffRow[] = canManageStaff ? await listStaff() : []
   const auditLog = await listAuditLog(50)
-
-  // Regroupement par `group`, dans l'ordre déjà rendu par la requête.
-  const groups = new Map<string, typeof settings>()
-  for (const setting of settings) {
-    const bucket = groups.get(setting.group)
-    if (bucket) bucket.push(setting)
-    else groups.set(setting.group, [setting])
-  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -145,66 +120,36 @@ export default async function AdminSettingsPage() {
         </p>
       </section>
 
-      <Alert tone="info">
-        La modification des paramètres depuis le back-office n&apos;est pas encore disponible : une
-        valeur déjà enregistrée se change en base. Le script d&apos;amorçage ne crée que les
-        réglages manquants — il ne réécrit jamais une valeur existante.
-      </Alert>
-
       {/* ---------------------------------------------------------------------
           Réglages
+          Seuls les réglages que la boutique lit vraiment sont proposés : une
+          valeur modifiable sans effet serait pire que pas de champ du tout.
           --------------------------------------------------------------------- */}
       <section aria-labelledby="parametres-reglages">
         <h2 id="parametres-reglages" className={h2Class}>
           Réglages
         </h2>
-
-        {settings.length === 0 ? (
-          <EmptyState className="mt-2" title="Aucun réglage enregistré." />
-        ) : (
-          <Card className="mt-2">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[48rem] text-sm">
-                <caption className="sr-only">Réglages de la boutique, par groupe</caption>
-                <thead>
-                  <tr className="border-b border-line bg-surface-soft">
-                    <th scope="col" className={thClass}>
-                      Clé
-                    </th>
-                    <th scope="col" className={thClass}>
-                      Libellé
-                    </th>
-                    <th scope="col" className={thClass}>
-                      Valeur
-                    </th>
-                  </tr>
-                </thead>
-                {[...groups.entries()].map(([group, rows]) => (
-                  <tbody key={group}>
-                    <tr className="border-b border-line bg-surface-muted">
-                      <th
-                        scope="rowgroup"
-                        colSpan={3}
-                        className="px-3 py-1.5 text-left text-xs font-bold"
-                      >
-                        {groupCopy[group] ?? group}
-                      </th>
-                    </tr>
-                    {rows.map((setting) => (
-                      <tr key={setting.key} className="border-b border-line">
-                        <td className={`${tdClass} font-mono text-xs`}>{setting.key}</td>
-                        <td className={tdClass}>{setting.label}</td>
-                        <td className={`${tdClass} font-mono text-xs break-all`}>
-                          {valueText(setting.value)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                ))}
-              </table>
-            </div>
-          </Card>
-        )}
+        <Card className="mt-2 flex flex-col gap-4 p-4">
+          <PrefixeCommandeForm
+            valeur={String(settings.find((s) => s.key === 'order.prefix')?.value ?? 'CMD')}
+            modifiable={can(staff.role, 'settings.edit')}
+          />
+          <div className="border-t border-line pt-3 text-sm">
+            <p className="font-semibold">Les autres réglages ont leur page :</p>
+            <ul className="mt-1 list-disc pl-5 text-muted-strong">
+              <li>
+                Prix de livraison et livraison offerte : <a className="underline" href="/admin/livraison">Livraison</a>
+              </li>
+              <li>
+                Codes promo : <a className="underline" href="/admin/promotions">Promotions</a>
+              </li>
+              <li>
+                E-mails envoyés aux clients : <a className="underline" href="/admin/emails">Messages</a>
+              </li>
+              <li>Paiement (clé Mollie) : dans Render, variable MOLLIE_API_KEY.</li>
+            </ul>
+          </div>
+        </Card>
       </section>
 
       {/* ---------------------------------------------------------------------

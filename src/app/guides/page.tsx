@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { identity } from '@/lib/identity'
+import { prisma } from '@/lib/db'
 import { Article, PageLegale } from '@/components/legal/PageLegale'
 
 export const metadata: Metadata = {
@@ -25,8 +26,15 @@ const MISE_A_JOUR = '7 novembre 2026'
  * perdre une heure. Ce qui dépend du véhicule renvoie vers l'équipe. Les
  * guides par véhicule (table `Guide`) viendront s'ajouter sous cette page.
  */
-export default function Page() {
+export default async function Page() {
   const contact = identity.contact
+  const guides = await prisma.guide
+    .findMany({
+      where: { publishedAt: { not: null } },
+      orderBy: { title: 'asc' },
+      select: { slug: true, title: true, summary: true },
+    })
+    .catch(() => [])
 
   return (
     <PageLegale
@@ -120,7 +128,22 @@ export default function Page() {
         </ul>
       </Article>
 
-      <Article numero={5} id="aide" titre="Besoin d'aide pour votre véhicule ?">
+      {guides.length > 0 ? (
+        <Article numero={5} id="guides" titre="Guides par véhicule">
+          <ul className="list-disc pl-5">
+            {guides.map((guide) => (
+              <li key={guide.slug}>
+                <Link href={`/guides/${guide.slug}`} className="underline underline-offset-2">
+                  {guide.title}
+                </Link>
+                {guide.summary ? <span className="text-muted-strong"> — {guide.summary}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </Article>
+      ) : null}
+
+      <Article numero={guides.length > 0 ? 6 : 5} id="aide" titre="Besoin d'aide pour votre véhicule ?">
         <p>
           Envoyez-nous le modèle et l&apos;année de votre véhicule, et si possible une photo de
           l&apos;emplacement, depuis le{' '}
