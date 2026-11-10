@@ -712,10 +712,28 @@ export async function getAdminGeneration(generationId: string) {
  * cet écran ne fait que choisir parmi ceux qui existent. Les deux écrans
  * resteraient à maintenir pour un seul geste.
  */
+/**
+ * Logos proposables pour une marque de véhicule.
+ *
+ * Cette liste chargeait TOUTE la médiathèque (des milliers de photos) et la
+ * page Véhicules la répétait dans un menu déroulant par marque : des
+ * centaines de milliers d'options à rendre. L'ouvrir faisait tomber le site
+ * (erreur 502 pendant une minute, 10 novembre 2026). Seuls les logos
+ * déposés pour les marques (dossier « marques/ ») et ceux déjà rattachés à
+ * une marque sont proposés.
+ */
 export async function listMediaOptions() {
   try {
     return await prisma.media.findMany({
-      where: { mimeType: { startsWith: 'image/' } },
+      where: {
+        mimeType: { startsWith: 'image/' },
+        OR: [
+          { storageKey: { startsWith: 'marques/' } },
+          { storageKey: { startsWith: 'logos/' } },
+          { vehicleMakeLogos: { some: {} } },
+        ],
+      },
+      take: 500,
       orderBy: { createdAt: 'desc' },
       select: { id: true, url: true, alt: true, caption: true, storageKey: true },
     })
