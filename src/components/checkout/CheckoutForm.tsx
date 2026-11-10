@@ -421,7 +421,7 @@ export function CheckoutForm({
                           ) : null}
                         </span>
                         <span className="text-[13px] font-bold whitespace-nowrap">
-                          {option.effectivePriceCents === 0
+                          {option.effectivePriceCents === 0 || promotion?.livraisonOfferte
                             ? 'Offerte'
                             : formatPrice(option.effectivePriceCents)}
                         </span>

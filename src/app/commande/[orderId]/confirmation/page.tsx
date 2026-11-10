@@ -378,7 +378,7 @@ export default async function Page({
               ? ` Un e-mail de confirmation a été préparé pour ${order.email} ; l'envoi réel n'est pas encore activé.`
               : null}
             {emailMention?.kind === 'none'
-              ? ` Aucun e-mail de confirmation n'est encore enregistré pour ${order.email}.`
+              ? ` L'e-mail de confirmation part vers ${order.email} dans quelques instants.`
               : null}
           </p>
           {cancelledAfterPayment && !refunded && !partiallyRefunded ? (
