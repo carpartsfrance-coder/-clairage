@@ -462,8 +462,6 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
                 </p>
               </Card>
             ) : (
-              /* Aucun bouton de téléchargement : la génération des documents
-                 n'existe pas encore, et un bouton mort vaut moins que rien. */
               <Card className="mt-4 p-5">
                 <ul className="flex flex-col gap-3 text-sm">
                   {order.documents.map((doc) => (
@@ -473,10 +471,16 @@ export default async function Page({ params }: { params: Promise<{ orderId: stri
                           {documentCopy[doc.type] ?? doc.number}
                         </span>
                         <span className="text-muted-strong"> · {doc.number}</span>
+                        <span className="text-muted"> · {dateFormatter.format(doc.issuedAt)}</span>
                       </span>
-                      <span className="text-right text-muted">
-                        {dateFormatter.format(doc.issuedAt)}
-                      </span>
+                      <a
+                        href={`/documents/${doc.id}`}
+                        target="_blank"
+                        rel="noopener"
+                        className="text-right font-semibold underline underline-offset-2"
+                      >
+                        Télécharger
+                      </a>
                     </li>
                   ))}
                 </ul>

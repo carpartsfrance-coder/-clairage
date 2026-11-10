@@ -239,9 +239,30 @@ export default async function Page({
             {total} commande{total === 1 ? '' : 's'}
             {filtered ? <span className="text-muted"> correspondant aux filtres</span> : null}
           </h2>
-          {/* Aucune route d'export n'existe : on le dit plutôt que d'afficher
-              un bouton qui ne ferait rien. */}
-          <p className="text-xs text-muted">L&apos;export comptable n&apos;est pas encore disponible.</p>
+          {/* Export comptable : factures et avoirs de la période, en CSV. */}
+          <form action="/admin/commandes/export" method="get" className="flex flex-wrap items-end gap-2 text-xs">
+            <label className="flex flex-col gap-0.5">
+              <span className="text-muted">Export comptable du</span>
+              <input
+                type="date"
+                name="du"
+                defaultValue={new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('sv-SE')}
+                className="h-8 rounded border border-line px-2"
+              />
+            </label>
+            <label className="flex flex-col gap-0.5">
+              <span className="text-muted">au</span>
+              <input
+                type="date"
+                name="au"
+                defaultValue={new Date().toLocaleDateString('sv-SE')}
+                className="h-8 rounded border border-line px-2"
+              />
+            </label>
+            <button type="submit" className="h-8 rounded border border-ink px-3 font-semibold hover:bg-ink hover:text-white">
+              Télécharger (CSV)
+            </button>
+          </form>
         </div>
 
         {items.length === 0 ? (
