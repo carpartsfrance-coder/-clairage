@@ -69,16 +69,31 @@ async function main() {
 
   const debut = Date.now()
   let faits = 0
-  const bilan = await filigranerRendus(prisma, {
-    pauseMs: 0,
-    journal: () => {
-      faits += 50
-      const parImage = (Date.now() - debut) / faits
-      const restant = Math.round(((reste - faits) * parImage) / 60000)
-      console.log(`${faits} / ${reste} — encore ~${Math.max(0, restant)} min`)
-    },
-  })
-  console.log(`Terminé : ${bilan.filigranes} filigrané(s), ${bilan.echecs} échec(s).`)
+  let total = { filigranes: 0, echecs: 0 }
+  // Une connexion à la base coupée (réseau, Mac en veille, base redémarrée)
+  // ne doit pas tout arrêter : on attend, on se reconnecte, on reprend.
+  for (let essai = 1; ; essai++) {
+    try {
+      const bilan = await filigranerRendus(prisma, {
+        pauseMs: 0,
+        journal: () => {
+          faits += 50
+          const parImage = (Date.now() - debut) / faits
+          const restant = Math.round(((reste - faits) * parImage) / 60000)
+          console.log(`${faits} / ${reste} — encore ~${Math.max(0, restant)} min`)
+        },
+      })
+      total = { filigranes: total.filigranes + bilan.filigranes, echecs: total.echecs + bilan.echecs }
+      break
+    } catch (error) {
+      const code = (error as { code?: string }).code ?? ''
+      if (!/^P10(01|02|08|17)$/.test(code) || essai > 30) throw error
+      console.log(`Connexion à la base coupée (${code}). Nouvel essai dans 20 s…`)
+      await new Promise((fin) => setTimeout(fin, 20_000))
+      await prisma.$disconnect().catch(() => {})
+    }
+  }
+  console.log(`Terminé : ${total.filigranes} filigrané(s), ${total.echecs} échec(s).`)
   await prisma.$disconnect()
 }
 
