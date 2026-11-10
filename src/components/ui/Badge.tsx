@@ -65,7 +65,11 @@ export function FitmentBadge({
   const { label, tone } = fitmentCopy[status]
   const Icon = status === 'CONFIRMED' ? IconCheckCircle : status === 'UNKNOWN' ? IconInfo : IconAlert
   const shortLabel =
-    status === 'CONFIRMED' ? 'Confirmé' : status === 'UNKNOWN' ? 'À vérifier' : 'Incompatible'
+    status === 'CONFIRMED'
+      ? 'Compatible'
+      : status === 'UNKNOWN'
+        ? 'Compatibilité à confirmer'
+        : 'Incompatible'
   return (
     <Badge tone={tone} className={className} icon={<Icon className="size-3.5 shrink-0" />}>
       {short ? shortLabel : label}
