@@ -356,6 +356,47 @@ async function lireListe(
 
   const where = buildWhere(filters)
 
+  const orderBy: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] =
+    sort === 'nouveautes'
+      ? { publishedAt: 'desc' }
+      : sort === 'pertinence'
+        ? /*
+            Après la mise en avant du back-office, les fiches qui ont
+            leurs propres visuels (le feu allumé sur leur véhicule)
+            passent devant celles qui n'ont que les images types. Par
+            ordre alphabétique seul, une rubrique s'ouvrait sur des Alfa
+            Romeo sans photo, et les packs les mieux montrés étaient
+            relégués en page 20.
+          */
+          [{ featured: 'desc' }, { media: { _count: 'desc' } }, { name: 'asc' }]
+        : { name: 'asc' }
+
+  // Le tri par prix et le classement par compatibilité au sein de la page
+  // portent sur des valeurs dérivées (prix mini des variantes, statut du
+  // fitment) : ils sont appliqués après lecture, sur la page courante.
+  const lire = (clause: Prisma.ProductWhereInput, skip: number, take: number) =>
+    take <= 0
+      ? Promise.resolve([])
+      : prisma.product.findMany({
+          where: clause,
+          orderBy,
+          skip,
+          take,
+          include: {
+            variants: {
+              where: { active: true },
+              orderBy: { priceCents: 'asc' },
+              include: { components: { include: { component: true } } },
+            },
+            media: {
+              ...ARGS_COUVERTURE,
+              include: { media: true },
+            },
+            categories: { include: { category: true }, take: 1 },
+          },
+        })
+
+  const debut = (page - 1) * perPage
   const [{ total, facets }, rows] = await Promise.all([
     /*
       Le total et les facettes ne dépendent que des filtres — ni de la page,
@@ -364,40 +405,44 @@ async function lireListe(
       lourdes de la liste (tout le périmètre de la rubrique, trois fois).
     */
     comptesEnCache(perimetre(filters)),
-    prisma.product.findMany({
-      where,
-      orderBy:
-        sort === 'nouveautes'
-          ? { publishedAt: 'desc' }
-          : sort === 'pertinence'
-            ? /*
-                Après la mise en avant du back-office, les fiches qui ont
-                leurs propres visuels (le feu allumé sur leur véhicule)
-                passent devant celles qui n'ont que les images types. Par
-                ordre alphabétique seul, une rubrique s'ouvrait sur des Alfa
-                Romeo sans photo, et les packs les mieux montrés étaient
-                relégués en page 20.
-              */
-              [{ featured: 'desc' }, { media: { _count: 'desc' } }, { name: 'asc' }]
-            : { name: 'asc' },
-      // Le tri par prix et le classement par compatibilité portent sur des
-      // valeurs dérivées (prix mini des variantes, statut du fitment) : ils
-      // sont appliqués après lecture, sur la page courante.
-      skip: (page - 1) * perPage,
-      take: perPage,
-      include: {
+    (async () => {
+      /*
+        Véhicule retenu, tri par pertinence : les fiches documentées sur sa
+        génération passent en tête de TOUTE la liste, pas seulement de la
+        page. Sans cela, un propriétaire d'Audi A1 ouvrait « Veilleuses » sur
+        des pages de packs Alfa Romeo et Audi A3, et le sien était en page 3.
+        Rien n'est caché : les autres fiches suivent, dans l'ordre habituel.
+      */
+      const generationId =
+        sort === 'pertinence' && configurationId
+          ? (
+              await prisma.vehicleConfiguration
+                .findUnique({ where: { id: configurationId }, select: { generationId: true } })
+                .catch(() => null)
+            )?.generationId
+          : null
+      if (!generationId) return lire(where, debut, perPage)
+
+      const surCeVehicule: Prisma.ProductWhereInput = {
         variants: {
-          where: { active: true },
-          orderBy: { priceCents: 'asc' },
-          include: { components: { include: { component: true } } },
+          some: {
+            active: true,
+            fitments: {
+              some: {
+                status: { not: 'INCOMPATIBLE' },
+                configuration: { active: true, generationId },
+              },
+            },
+          },
         },
-        media: {
-          ...ARGS_COUVERTURE,
-          include: { media: true },
-        },
-        categories: { include: { category: true }, take: 1 },
-      },
-    }),
+      }
+      const enTete: Prisma.ProductWhereInput = { AND: [where, surCeVehicule] }
+      const ensuite: Prisma.ProductWhereInput = { AND: [where, { NOT: surCeVehicule }] }
+      const nbEnTete = await prisma.product.count({ where: enTete })
+      const premiers = debut < nbEnTete ? await lire(enTete, debut, perPage) : []
+      const suivants = await lire(ensuite, Math.max(0, debut - nbEnTete), perPage - premiers.length)
+      return [...premiers, ...suivants]
+    })(),
   ])
 
   const variantIds = rows.flatMap((product) => product.variants.map((variant) => variant.id))
