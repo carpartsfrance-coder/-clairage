@@ -6,6 +6,7 @@ import './globals.css'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { BarreDeNavigation } from '@/components/layout/BarreDeNavigation'
+import { Mesure } from '@/components/mesure/Mesure'
 import { identity, siteConfig } from '@/lib/identity'
 
 /**
@@ -74,6 +75,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {children}
             </main>
             <Footer />
+            <Suspense fallback={null}>
+              <Mesure />
+            </Suspense>
           </>
         )}
       </body>

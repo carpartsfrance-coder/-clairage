@@ -4,15 +4,16 @@ import { identity } from '@/lib/identity'
 import { SESSION_COOKIE } from '@/lib/auth/session'
 import { CART_COOKIE, VEHICLE_COOKIE } from '@/lib/session'
 import { Article, PageLegale } from '@/components/legal/PageLegale'
+import { RefusMesure } from '@/components/mesure/RefusMesure'
 
 export const metadata: Metadata = {
   title: 'Cookies',
   description:
-    'Les trois cookies déposés par le site, tous nécessaires à son fonctionnement : panier, véhicule choisi et connexion au compte. Aucun cookie de publicité ni de mesure d’audience.',
+    'Les trois cookies déposés par le site, tous nécessaires à son fonctionnement : panier, véhicule choisi et connexion au compte. Aucun cookie de publicité. Une mesure d’audience anonyme, sans cookie, que vous pouvez refuser.',
   alternates: { canonical: '/cookies' },
 }
 
-const MISE_A_JOUR = '7 novembre 2026'
+const MISE_A_JOUR = '10 novembre 2026'
 
 /**
  * Cookies.
@@ -43,8 +44,9 @@ export default function Page() {
       <Article numero={1} id="en-bref" titre="En bref">
         <p>
           {identity.name} n’utilise que <strong>trois cookies</strong>, tous nécessaires au
-          fonctionnement du site. Aucun cookie de publicité, de mesure d’audience ou de réseau
-          social, et aucun traceur d’un autre site.
+          fonctionnement du site. Aucun cookie de publicité ou de réseau social, et aucun
+          traceur d’un autre site. Nous mesurons aussi la fréquentation du site, de façon
+          anonyme et sans cookie (voir plus bas).
         </p>
         <p>
           C’est pour cela qu’aucun bandeau ne vous demande votre accord : la loi dispense de
@@ -94,7 +96,28 @@ export default function Page() {
         </p>
       </Article>
 
-      <Article numero={3} id="paiement" titre="Pendant le paiement">
+      <Article numero={3} id="mesure" titre="Mesure de fréquentation">
+        <p>
+          Pour améliorer le site, nous comptons les pages vues et les liens cliqués : par exemple,
+          combien de visiteurs ouvrent une fiche produit, ou à quelle étape ils quittent la
+          commande. Cette mesure est faite par nous seuls, sans aucun service extérieur.
+        </p>
+        <p>
+          Elle est anonyme : pas de cookie, pas d’adresse IP, aucun lien avec votre compte ou
+          votre commande. Un numéro tiré au hasard est gardé dans l’onglet de votre navigateur
+          pendant la visite, et oublié à sa fermeture ou après 30 minutes sans activité. Nous
+          gardons seulement la taille de l’écran (mobile, tablette ou ordinateur). Les données
+          sont effacées au bout de 13 mois.
+        </p>
+        <p>
+          Cette mesure respecte les conditions de la CNIL pour être dispensée de consentement.
+          Vous pouvez quand même la refuser, et le réglage « Ne pas me pister » de votre navigateur
+          est respecté.
+        </p>
+        <RefusMesure />
+      </Article>
+
+      <Article numero={4} id="paiement" titre="Pendant le paiement">
         <p>
           Pour payer, vous passez sur la page sécurisée de Mollie, notre prestataire de paiement.
           Cette page appartient à Mollie : elle peut déposer ses propres cookies, nécessaires au
@@ -103,7 +126,7 @@ export default function Page() {
         </p>
       </Article>
 
-      <Article numero={4} id="refuser" titre="Supprimer ou bloquer les cookies">
+      <Article numero={5} id="refuser" titre="Supprimer ou bloquer les cookies">
         <p>
           Vous pouvez supprimer ou bloquer les cookies dans les réglages de votre navigateur. Sans
           eux, le site ne peut plus garder votre panier, retenir votre véhicule ni vous garder
@@ -111,10 +134,10 @@ export default function Page() {
         </p>
       </Article>
 
-      <Article numero={5} id="changements" titre="Si cela change">
+      <Article numero={6} id="changements" titre="Si cela change">
         <p>
-          Si nous ajoutons un jour un cookie qui n’est pas indispensable (mesure d’audience,
-          publicité), nous vous demanderons d’abord votre accord, et cette page sera mise à jour.
+          Si nous ajoutons un jour un cookie qui n’est pas indispensable (publicité, outil
+          extérieur), nous vous demanderons d’abord votre accord, et cette page sera mise à jour.
         </p>
         <p>
           Pour le reste de vos données, voir notre{' '}

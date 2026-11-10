@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { AdminNav } from '@/components/admin/AdminNav'
+import { AdminSansMesure } from '@/components/mesure/Mesure'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { requireStaff, staffName } from '@/lib/admin/guard'
@@ -39,6 +40,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         n'est plus un repère de navigation et le clavier traverse la
         navigation complète à chaque page.
       */}
+      <AdminSansMesure />
       <a href="#contenu-admin" className="skip-link">
         Aller au contenu
       </a>

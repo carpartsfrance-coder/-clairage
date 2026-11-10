@@ -1332,3 +1332,33 @@ model EmailLog {
   @@index([toEmail, createdAt])
   @@index([template, createdAt])
 }
+
+/// Mesure d'audience du site, anonyme et sans cookie (lib/mesure.ts).
+/// Une ligne par page vue ou par clic. Aucune adresse IP, aucun identifiant
+/// de compte : `visit` est un numéro tiré au hasard pour un onglet, oublié à
+/// sa fermeture ou après 30 minutes sans activité.
+model VisitEvent {
+  id     String   @id @default(cuid())
+  at     DateTime @default(now())
+  visit  String
+  /// page | click
+  kind   String
+  /// Chemin de la page, sans paramètres.
+  path   String
+  /// Lien cliqué : chemin sur le site, ou domaine d'un site extérieur.
+  target String?
+  /// Texte du lien ou du bouton cliqué.
+  label  String?
+  /// Partie de la page où se trouvait le clic (en-tête, menu, titre de section…).
+  zone   String?
+  /// Termes tapés dans la recherche.
+  query  String?
+  /// Provenance de la visite (première page seulement).
+  source String?
+  /// mobile | tablette | ordinateur
+  device String?
+
+  @@index([at])
+  @@index([visit, at])
+  @@index([kind, at])
+}

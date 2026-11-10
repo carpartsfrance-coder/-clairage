@@ -270,7 +270,7 @@ export function BuyBox({
   }
 
   return (
-    <div>
+    <div data-zone="Bloc d’achat">
       {/*
         .fit-note — refonte LEDVROOM : une seule ligne.
 
