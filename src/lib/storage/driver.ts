@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, writeFile, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { ALLOWED_MIME, sniffMime } from './file-type'
+import { allegerImage } from './alleger'
 
 /**
  * Stockage des médias.
@@ -26,6 +27,9 @@ export type StoredFile = {
   url: string
   sizeBytes: number
   mimeType: string
+  /** Dimensions, quand l'image a été allégée (lib/storage/alleger.ts). */
+  width?: number
+  height?: number
 }
 
 export type StorageDriverName = 'local' | 's3'
@@ -104,29 +108,36 @@ export async function inspectUpload(
   return { ok: true, mimeType: sniffed, extension: ALLOWED_MIME.get(sniffed)!, bytes }
 }
 
-/**
- * Clé de stockage.
- *
- * Elle porte un identifiant aléatoire et une empreinte du contenu : deux
- * téléversements du même fichier ne se marchent pas dessus, et une clé ne peut
- * pas être devinée à partir du nom d'origine.
- */
-function buildKey(prefix: string, extension: string, bytes: Buffer): string {
-  const digest = createHash('sha256').update(bytes).digest('hex').slice(0, 12)
-  return `${prefix}/${randomUUID()}-${digest}.${extension}`
-}
-
 export async function putFile(options: {
   bytes: Buffer
   mimeType: string
   extension: string
   /** Dossier logique : « produits », « guides », « sav »… */
   prefix?: string
+  /**
+   * Fichier d'origine dont la clé doit porter l'empreinte, quand `bytes` en
+   * est déjà la version allégée (allègement des médias existants).
+   */
+  empreinteDe?: Buffer
 }): Promise<StoredFile> {
-  const key = buildKey(options.prefix ?? 'medias', options.extension, options.bytes)
+  /*
+    Les photos lourdes sont allégées avant d'être stockées. L'empreinte de la
+    clé reste celle du fichier d'ORIGINE : c'est elle qui permet aux scripts de
+    dépôt de retrouver un fichier déjà envoyé (« -<empreinte>. »), quel que
+    soit le format de sortie.
+  */
+  const allegee = await allegerImage(options.bytes, options.mimeType, options.extension)
+  const digest = createHash('sha256')
+    .update(options.empreinteDe ?? options.bytes)
+    .digest('hex')
+    .slice(0, 12)
+  const key = `${options.prefix ?? 'medias'}/${randomUUID()}-${digest}.${allegee.extension}`
 
-  if (driverName() === 's3') return putToS3(key, options.bytes, options.mimeType)
-  return putToLocal(key, options.bytes, options.mimeType)
+  const stored =
+    driverName() === 's3'
+      ? await putToS3(key, allegee.bytes, allegee.mimeType)
+      : await putToLocal(key, allegee.bytes, allegee.mimeType)
+  return { ...stored, width: allegee.width, height: allegee.height }
 }
 
 async function putToLocal(key: string, bytes: Buffer, mimeType: string): Promise<StoredFile> {

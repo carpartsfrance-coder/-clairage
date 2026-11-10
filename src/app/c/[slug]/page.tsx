@@ -406,8 +406,8 @@ export default async function CategoryPage({
             />
           ) : (
             <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {result.items.map((item) => (
-                <ProductCard key={item.slug} product={item} />
+              {result.items.map((item, index) => (
+                <ProductCard key={item.slug} product={item} prioritaire={index < 4} />
               ))}
             </ul>
           )}

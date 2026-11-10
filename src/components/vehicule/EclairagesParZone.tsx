@@ -143,7 +143,7 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
       </div>
 
       <ul className="grid grid-cols-2 gap-[11px] min-[651px]:grid-cols-3 min-[860px]:grid-cols-4 min-[860px]:gap-[15px]">
-        {visibles.map((carte) => {
+        {visibles.map((carte, index) => {
           const zonePrincipale = zoneDeLEmplacement(carte.emplacements[0].code)
           const presentation = presentationDeCarte(carte.nom, carte.conditionnement)
           const incompatible = carte.status === 'INCOMPATIBLE'
@@ -168,6 +168,10 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
                       alt=""
                       fill
                       sizes="(min-width: 860px) 340px, (min-width: 651px) 33vw, 50vw"
+                      /* Les premières cartes se chargent tout de suite : on les
+                         voyait vides (fond noir) le temps du défilement. */
+                      loading={index < 4 ? 'eager' : 'lazy'}
+                      fetchPriority={index < 4 ? 'high' : 'auto'}
                       className="object-cover object-[center_54%]"
                     />
                   ) : null}

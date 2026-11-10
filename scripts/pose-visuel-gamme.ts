@@ -146,7 +146,10 @@ async function main() {
 
   const empreinte = createHash('sha256').update(controle.bytes).digest('hex').slice(0, 12)
   const suffixe = `-${empreinte}.${controle.extension}`
-  let media = await prisma.media.findFirst({ where: { storageKey: { endsWith: suffixe } } })
+  // L'extension peut changer au dépôt (photo allégée en WebP) : l'empreinte suffit.
+  let media = await prisma.media.findFirst({
+    where: { storageKey: { contains: suffixe.slice(0, suffixe.lastIndexOf('.') + 1) } },
+  })
 
   /*
     Garde-fou : le stockage doit être celui de la base visée.

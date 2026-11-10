@@ -43,6 +43,19 @@ const nextConfig: NextConfig = {
       cassent en bandes.
     */
     qualities: [75, 90],
+    /*
+      Images plus rapides (remarque de l'exploitant, 10 novembre 2026).
+
+      - Trente jours de cache navigateur au lieu de quatre heures : une photo
+        déjà vue ne se redemande plus à chaque visite. Les adresses des médias
+        portent une empreinte du contenu, une photo changée change d'adresse.
+      - Moins de largeurs générées (5 + 4 au lieu de 8 + 8) : la même version
+        sert à plus d'écrans, le cache de l'optimiseur — vidé à chaque mise en
+        ligne — se remplit plus vite, et il y a moins de conversions à froid.
+    */
+    minimumCacheTTL: 60 * 60 * 24 * 30,
+    deviceSizes: [640, 828, 1080, 1440, 1920],
+    imageSizes: [64, 128, 256, 384],
     // Les medias durables sont servis depuis un stockage objet S3-compatible.
     // Le domaine est fourni par MEDIA_PUBLIC_HOST (voir .env.example).
     remotePatterns: process.env.MEDIA_PUBLIC_HOST
@@ -84,6 +97,17 @@ const nextConfig: NextConfig = {
         part de la photo LEDVROOM existante pour créer la même photo dans une
         autre finition (claire / fumée…). Lecture seule, images publiques.
       */
+      /*
+        Les images du dossier public : sept jours de cache (au lieu de « à
+        revalider à chaque fois »), une journée de plus servie pendant la
+        revalidation.
+      */
+      ...['/produits-ampoules/:path*', '/images-types/:path*', '/photos-options/:path*', '/marque/:path*', '/visuels/:path*'].map(
+        (source) => ({
+          source,
+          headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
+        }),
+      ),
       ...['/produits-ampoules/:path*', '/images-types/:path*'].map((source) => ({
         source,
         headers: [{ key: 'Access-Control-Allow-Origin', value: 'https://chatgpt.com' }],
