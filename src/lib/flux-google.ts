@@ -68,6 +68,21 @@ export function texteBrut(texte: string): string {
 
 const prix = (centimes: number) => `${(centimes / 100).toFixed(2)} EUR`
 
+/**
+ * Tranche de prix, envoyée en « étiquette personnalisée 0 » (`custom_label_0`).
+ *
+ * Google Ads ne sait pas trier les produits par prix. Or un clic payé ne se
+ * rentabilise pas sur un article à quelques euros : l'étiquette permet de
+ * sortir les petits prix d'une campagne, ou de miser moins sur eux. Le prix
+ * étant déjà public dans le flux, l'étiquette n'apprend rien à personne.
+ */
+export function tranchePrix(priceCents: number): string {
+  if (priceCents < 2000) return 'Moins de 20 €'
+  if (priceCents < 5000) return '20 à 50 €'
+  if (priceCents < 10000) return '50 à 100 €'
+  return '100 € et plus'
+}
+
 /** Le mode le moins cher du pays, au prix de cet article. `null` si aucun. */
 export function fraisDePort(tarif: TarifPays, priceCents: number): number | null {
   const prixPossibles = tarif.modes.map((mode) =>
@@ -129,6 +144,7 @@ export function lignesDeLArticle(
       // « Véhicules et accessoires » : la catégorie où Google accepte les
       // visuels d'illustration (règles des images produit de Merchant Center).
       `<g:google_product_category>888</g:google_product_category>`,
+      `<g:custom_label_0>${echapperXml(tranchePrix(variante.priceCents))}</g:custom_label_0>`,
     ]
     if (plusieurs) champs.push(`<g:item_group_id>${echapperXml(article.slug)}</g:item_group_id>`)
     if (article.productType) {

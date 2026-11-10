@@ -29,9 +29,21 @@ const ETAPES: Array<{ cle: string; label: string; condition: Prisma.Sql }> = [
   {
     cle: 'confirmee',
     label: 'Commande payée',
-    condition: Prisma.sql`path LIKE '/commande/%/confirmation'`,
+    // La page de confirmation s'affiche aussi quand le paiement échoue ou
+    // attend : seule celle d'un paiement encaissé porte ce repère.
+    condition: Prisma.sql`path LIKE '/commande/%/confirmation' AND label = 'commande-payee'`,
   },
 ]
+
+/** Le parcours d'achat d'une provenance (pub Google, accès direct…). */
+export type ParcoursProvenance = {
+  source: string
+  visites: number
+  fiche: number
+  panier: number
+  commande: number
+  payees: number
+}
 
 export async function lireStatistiques(p: Periode, page: string | null) {
   const { depuis } = p
@@ -68,10 +80,31 @@ export async function lireStatistiques(p: Periode, page: string | null) {
       SELECT lower(query) AS query, count(DISTINCT visit)::int AS fois
       FROM "VisitEvent" WHERE at >= ${depuis} AND kind = 'page' AND query IS NOT NULL
       GROUP BY lower(query) ORDER BY fois DESC LIMIT 40`,
-    prisma.$queryRaw<Array<{ source: string; visites: number }>>`
-      SELECT source, count(DISTINCT visit)::int AS visites
-      FROM "VisitEvent" WHERE at >= ${depuis} AND source IS NOT NULL
-      GROUP BY source ORDER BY visites DESC LIMIT 20`,
+    // Pour chaque provenance, jusqu'où ses visites sont allées. La provenance
+    // est notée sur la première page de la visite ; les étapes sont les mêmes
+    // que celles du parcours d'achat ci-dessus.
+    prisma.$queryRaw<ParcoursProvenance[]>`
+      WITH v AS (
+        SELECT visit, max(source) AS source FROM "VisitEvent"
+        WHERE at >= ${depuis} AND source IS NOT NULL
+        GROUP BY visit
+      ), e AS (
+        SELECT visit,
+               bool_or(path LIKE '/p/%') AS fiche,
+               bool_or(path = '/panier') AS panier,
+               bool_or(path = '/commande') AS commande,
+               bool_or(path LIKE '/commande/%/confirmation' AND label = 'commande-payee') AS payee
+        FROM "VisitEvent" WHERE at >= ${depuis} AND kind = 'page'
+        GROUP BY visit
+      )
+      SELECT v.source,
+             count(*)::int AS visites,
+             count(*) FILTER (WHERE e.fiche)::int AS fiche,
+             count(*) FILTER (WHERE e.panier)::int AS panier,
+             count(*) FILTER (WHERE e.commande)::int AS commande,
+             count(*) FILTER (WHERE e.payee)::int AS payees
+      FROM v JOIN e USING (visit)
+      GROUP BY v.source ORDER BY visites DESC LIMIT 25`,
     prisma.$queryRaw<Array<{ device: string; visites: number }>>`
       SELECT coalesce(device, 'inconnu') AS device, count(DISTINCT visit)::int AS visites
       FROM "VisitEvent" WHERE at >= ${depuis}

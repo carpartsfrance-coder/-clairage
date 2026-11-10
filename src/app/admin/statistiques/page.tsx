@@ -13,6 +13,10 @@ export const metadata: Metadata = { title: 'Statistiques', robots: { index: fals
 
 const nb = (n: number) => n.toLocaleString('fr-FR')
 const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)} %` : '—')
+/** Avec une décimale : un taux d'achat se lit souvent entre 0 et 5 %. */
+const pct1 = (a: number, b: number) =>
+  b > 0 ? `${((a / b) * 100).toFixed(1).replace('.', ',')} %` : '—'
+const nomSource = (source: string) => (source === 'direct' ? 'Accès direct ou inconnu' : source)
 
 const NOMS_PAGES: Array<[RegExp, string]> = [
   [/^\/$/, 'Accueil'],
@@ -141,8 +145,47 @@ export default async function StatistiquesPage({
             </Card>
           </section>
 
+          <section aria-labelledby="t-provenances">
+            <h2 id="t-provenances" className="mb-2 text-base font-bold">
+              D’où viennent les visites, et lesquelles achètent
+            </h2>
+            <Card className="overflow-x-auto">
+              <table className="w-full min-w-[44rem] text-sm">
+                <thead>
+                  <tr className="border-b border-line bg-surface-soft">
+                    <th className={th}>Provenance</th>
+                    <th className={`${th} text-right`}>Visites</th>
+                    <th className={`${th} text-right`}>Fiche produit</th>
+                    <th className={`${th} text-right`}>Panier</th>
+                    <th className={`${th} text-right`}>Commande commencée</th>
+                    <th className={`${th} text-right`}>Commandes payées</th>
+                    <th className={`${th} text-right`}>Taux d’achat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {s.sources.length === 0 ? (
+                    <tr><td className={td} colSpan={7}>Aucune provenance notée sur cette période.</td></tr>
+                  ) : s.sources.map((r) => (
+                    <tr key={r.source} className="border-b border-line last:border-0">
+                      <td className={`${td} font-semibold`}><span className="block max-w-[16rem] truncate">{nomSource(r.source)}</span></td>
+                      <td className={`${td} text-right tabular-nums`}>{nb(r.visites)}</td>
+                      <td className={`${td} text-right tabular-nums text-muted-strong`}>{nb(r.fiche)}</td>
+                      <td className={`${td} text-right tabular-nums text-muted-strong`}>{nb(r.panier)}</td>
+                      <td className={`${td} text-right tabular-nums text-muted-strong`}>{nb(r.commande)}</td>
+                      <td className={`${td} text-right font-semibold tabular-nums`}>{nb(r.payees)}</td>
+                      <td className={`${td} text-right tabular-nums`}>{pct1(r.payees, r.visites)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+            <p className="mt-2 text-xs text-muted-strong">
+              Un clic sur une publicité Google est reconnu de lui-même : il apparaît en « google (publicité) ». Une vente compte pour la provenance de la visite où elle a eu lieu : si quelqu’un revient plus tard par un autre chemin pour acheter, elle compte pour ce chemin-là.
+            </p>
+          </section>
+
           <div className="grid gap-6 lg:grid-cols-2">
-            <section aria-labelledby="t-pages">
+            <section aria-labelledby="t-pages" className="min-w-0">
               <h2 id="t-pages" className="mb-2 text-base font-bold">Pages les plus visitées</h2>
               <Card className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -152,7 +195,12 @@ export default async function StatistiquesPage({
                       <tr key={r.path} className="border-b border-line last:border-0">
                         <td className={td}>
                           {nomPage(r.path) ? <span className="block font-semibold">{nomPage(r.path)}</span> : null}
-                          <a href={r.path} target="_blank" rel="noreferrer" className="block max-w-[22rem] truncate font-mono text-xs text-muted-strong hover:underline">{r.path}</a>
+                          {r.path.includes('…') ? (
+                            // Chemin dont l'identifiant a été retiré : il ne mène nulle part.
+                            <span className="block max-w-[22rem] truncate font-mono text-xs text-muted-strong">{r.path}</span>
+                          ) : (
+                            <a href={r.path} target="_blank" rel="noreferrer" className="block max-w-[22rem] truncate font-mono text-xs text-muted-strong hover:underline">{r.path}</a>
+                          )}
                         </td>
                         <td className={`${td} text-right tabular-nums`}>{nb(r.visites)}</td>
                         <td className={`${td} text-right tabular-nums text-muted-strong`}>{nb(r.vues)}</td>
@@ -164,7 +212,7 @@ export default async function StatistiquesPage({
               </Card>
             </section>
 
-            <section aria-labelledby="t-sorties">
+            <section aria-labelledby="t-sorties" className="min-w-0">
               <h2 id="t-sorties" className="mb-2 text-base font-bold">Où les visiteurs s’arrêtent</h2>
               <Card className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -212,8 +260,8 @@ export default async function StatistiquesPage({
             </Card>
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            <section aria-labelledby="t-recherches">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <section aria-labelledby="t-recherches" className="min-w-0">
               <h2 id="t-recherches" className="mb-2 text-base font-bold">Ce qu’ils cherchent</h2>
               <Card className="p-3 text-sm">
                 {s.recherches.length === 0 ? <p className="text-muted-strong">Aucune recherche.</p> : (
@@ -228,17 +276,7 @@ export default async function StatistiquesPage({
                 )}
               </Card>
             </section>
-            <section aria-labelledby="t-sources">
-              <h2 id="t-sources" className="mb-2 text-base font-bold">D’où ils viennent</h2>
-              <Card className="p-3 text-sm">
-                <ul className="flex flex-col gap-1.5">
-                  {s.sources.map((r) => (
-                    <li key={r.source} className="flex justify-between gap-3"><span className="truncate">{r.source === 'direct' ? 'Accès direct ou inconnu' : r.source}</span><span className="tabular-nums text-muted-strong">{nb(r.visites)}</span></li>
-                  ))}
-                </ul>
-              </Card>
-            </section>
-            <section aria-labelledby="t-ecrans">
+            <section aria-labelledby="t-ecrans" className="min-w-0">
               <h2 id="t-ecrans" className="mb-2 text-base font-bold">Sur quel écran</h2>
               <Card className="p-3 text-sm">
                 <ul className="flex flex-col gap-1.5">

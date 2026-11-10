@@ -41,6 +41,12 @@ export const metadata: Metadata = {
   },
   // Tant que la boutique n'est pas ouverte, rien n'est proposé à l'indexation.
   robots: siteConfig.demoBanner ? { index: false, follow: false } : undefined,
+  // Preuve de propriété du site pour Google (Merchant Center, Search Console) :
+  // le code donné par Google, mis dans GOOGLE_SITE_VERIFICATION sur Render.
+  // Ce code est public par nature (il est lu dans la page) : ce n'est pas un secret.
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
 }
 
 export const viewport: Viewport = {
