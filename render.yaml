@@ -38,7 +38,17 @@ services:
   - type: web
     name: lumera-web
     runtime: node
-    plan: starter
+    # 1 CPU, 2 Go (passée le 14 novembre 2026). Sous l'offre starter (512 Mo),
+    # la mémoire montait sans jamais redescendre pendant le passage de
+    # Googlebot : les fiches produit lisent les cookies, donc Next les rend à
+    # chaque visite sans les mettre en cache, et le robot en demande des
+    # centaines par heure. Au bout de deux jours l'instance touchait les
+    # 512 Mo et Render tuait le processus. Le 14 novembre à 02h30, le site a
+    # renvoyé des 502 pendant deux minutes ; Google Merchant Center a refusé
+    # 68 produits pour « page du produit non disponible ».
+    # Garder ce plan aligné sur celui du tableau de bord : une synchronisation
+    # du Blueprint le réappliquerait.
+    plan: 1c-2g
     region: frankfurt
     branch: main
     # `prisma migrate deploy` applique les migrations déjà écrites et versionnées.
