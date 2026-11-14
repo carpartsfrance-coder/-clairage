@@ -3,20 +3,18 @@ import { redirectionVersDomainePublic } from '@/lib/domaine'
 import { siteConfig } from '@/lib/identity'
 
 /**
- * Expose le chemin de la requête aux composants serveur.
+ * Redirige l'adresse technique de Render vers le domaine public.
  *
  * Ce fichier s'appelle `proxy.ts` et non `middleware.ts` : depuis Next 16, le
  * « middleware » a été renommé « proxy ». Le comportement est identique, seuls
  * le nom du fichier et celui de la fonction exportée changent.
  *
- * Next ne donne pas le chemin aux mises en page : une mise en page imbriquée ne
- * peut donc pas savoir qu'elle rend une page du back-office. On le lui dit par
- * un en-tête, ce qui permet à la mise en page racine de ne pas poser l'en-tête
- * et le pied de page de la boutique au-dessus d'un outil de travail.
- *
- * L'autre solution serait deux mises en page racines via des groupes de routes,
- * ce qui obligerait à déplacer toutes les routes publiques. Pour un seul
- * en-tête à poser, le coût ne le vaut pas.
+ * Il posait aussi un en-tête `x-pathname`, pour que la mise en page racine
+ * sache si elle rendait une page du back-office et s'abstienne alors de poser
+ * l'en-tête et le pied de page de la boutique. Cette lecture rendait **toutes**
+ * les pages dynamiques : aucune ne pouvait plus être mise en cache. Le décor de
+ * la boutique vit désormais dans un groupe de routes `(boutique)`, qui répond à
+ * la même question sans rien lire de la requête — l'en-tête n'a plus d'objet.
  */
 export function proxy(request: NextRequest) {
   // Adresse technique de Render → domaine public (voir lib/domaine.ts).
@@ -27,9 +25,7 @@ export function proxy(request: NextRequest) {
   )
   if (destination) return NextResponse.redirect(destination, 308)
 
-  const headers = new Headers(request.headers)
-  headers.set('x-pathname', request.nextUrl.pathname)
-  return NextResponse.next({ request: { headers } })
+  return NextResponse.next()
 }
 
 export const config = {

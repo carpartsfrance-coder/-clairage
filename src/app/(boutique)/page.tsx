@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { demoHomeBlocks } from '../../prisma/demo-data'
+import { demoHomeBlocks } from '../../../prisma/demo-data'
 import {
   getFeaturedProducts,
   getRubriquesVitrine,
