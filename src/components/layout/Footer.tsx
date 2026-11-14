@@ -6,26 +6,6 @@ import { commercialTerms, dureeGarantie, formatPrice, identity, promesseRetour, 
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
 import { getNavigation } from '@/lib/queries/navigation'
 import { MoyensDePaiement } from '@/components/paiement/MoyensDePaiement'
-import { cacheLife } from 'next/cache'
-
-/**
- * L'année du « © 2026 » du bas de page.
- *
- * Lire l'heure est la seule chose ici qu'un pré-rendu ne peut pas connaître
- * d'avance, et le pied de page est dans la mise en page racine : s'il devait
- * se calculer à chaque requête, **aucune page du site** ne pourrait plus être
- * mise en cache. On met donc la valeur en cache pour la journée, plutôt que de
- * rendre tout le site dynamique pour quatre chiffres.
- *
- * Conséquence assumée : le 1er janvier, le pied de page peut porter l'année
- * précédente pendant au plus une journée.
- */
-async function anneeCourante(): Promise<number> {
-  'use cache'
-  cacheLife('days')
-  return new Date().getFullYear()
-}
-
 /**
  * Pied de page — `.home-footer` du code de référence.
  *
@@ -74,7 +54,7 @@ export async function Footer() {
         )
       : footerNav
   const hasLegalIdentity = Boolean(legal.companyName)
-  const year = await anneeCourante()
+  const year = new Date().getFullYear()
 
   // .footer-manifesto : les repères de la référence, mais lus depuis les
   // conditions commerciales. Un seuil non renseigné ne s'affiche pas.

@@ -6,14 +6,6 @@ import { CART_COOKIE, VEHICLE_COOKIE } from '@/lib/session'
 import { Article, PageLegale } from '@/components/legal/PageLegale'
 import { RefusMesure } from '@/components/mesure/RefusMesure'
 
-/*
-  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
-  la dispense de la vérification ; elle se comporte exactement comme avant.
-  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
-  commentaire de `cacheComponents` dans next.config.ts.
-*/
-export const instant = false
-
 export const metadata: Metadata = {
   title: 'Cookies',
   description:

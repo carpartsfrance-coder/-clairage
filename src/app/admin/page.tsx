@@ -10,14 +10,6 @@ import { getDashboard, PERIOD_LABELS, type Metric, type Period } from '@/lib/adm
 import { formatPrice } from '@/lib/identity'
 import { cn } from '@/lib/cn'
 
-/*
-  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
-  la dispense de la vérification ; elle se comporte exactement comme avant.
-  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
-  commentaire de `cacheComponents` dans next.config.ts.
-*/
-export const instant = false
-
 export const metadata: Metadata = {
   title: 'Tableau de bord',
   robots: { index: false, follow: false },
@@ -98,9 +90,9 @@ export default async function AdminDashboardPage({
 }: {
   searchParams: Promise<{ periode?: string; refus?: string }>
 }) {
-  // Cette page lit l'heure courante (date du jour, fenêtres glissantes).
-  // Le pré-rendu ne peut pas la connaître : on la rend à la requête,
-  // comme avant le passage au pré-rendu partiel.
+  // Cette page lit l'heure courante (date du jour, fenêtres glissantes). Un
+  // pré-rendu la figerait à l'heure de la construction : on la rend à la
+  // requête.
   await connection()
 
   const staff = await requireStaff('dashboard.view')

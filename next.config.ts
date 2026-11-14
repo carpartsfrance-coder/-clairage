@@ -4,36 +4,55 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   /*
-    Pré-rendu partiel (« Cache Components »).
+    Pré-rendu partiel (« Cache Components ») : essayé le 14 novembre 2026,
+    retiré le même jour. À ne pas rallumer sans avoir lu ce qui suit.
 
-    **Pourquoi.** Jusqu'ici, aucune page du site n'était mise en cache : la
-    mise en page racine lit un en-tête (`headers()`) et le header lit les
-    cookies véhicule et panier. Dans l'ancien modèle, un seul de ces appels
-    rend TOUTE la page dynamique. Résultat : chacune des 31 000 fiches était
-    rendue de zéro à chaque passage de Googlebot — une vingtaine de requêtes
-    SQL par visite, des centaines de visites par heure. La mémoire montait
-    jusqu'au plafond de l'instance, qui se faisait tuer (14 novembre 2026,
-    02h30 : deux minutes de 502, 68 produits refusés par Merchant Center).
+    **Ce qu'on cherchait.** Aucune page du site n'est mise en cache : la mise
+    en page racine et l'en-tête lisent les cookies véhicule et panier, et un
+    seul de ces appels rend toute la page dynamique. Chacune des 31 000 fiches
+    est donc rendue de zéro à chaque passage de Googlebot. C'est ce qui a fait
+    monter la mémoire jusqu'au plafond de l'instance le 14 novembre à 02h30 :
+    deux minutes de 502, 68 produits refusés par Merchant Center. Le plafond,
+    lui, a été relevé à 2 Go (voir render.yaml) : c'est la protection qui tient
+    aujourd'hui.
 
-    **Ce que ça change.** Une page est désormais découpée : ce qui ne dépend
-    pas du visiteur est pré-rendu une fois et resservi tel quel, ce qui en
-    dépend (panier, véhicule retenu) est entouré d'un `<Suspense>` et se
-    calcule à chaque requête. Googlebot est classé robot « DOM » par Next
-    (`shared/lib/router/utils/is-bot.js`), il reçoit donc la version
-    pré-rendue comme un visiteur ordinaire.
+    **Pourquoi c'est retiré.** Le pré-rendu partiel envoie d'abord une coquille
+    pré-calculée, puis complète. Or « démarrer le flux envoie les en-têtes et
+    fige le code HTTP » (documentation de Next, convention `loading`) : la
+    réponse part en 200 avant que la page ait interrogé la base. Les pages
+    publiques décident après cette interrogation, et trois réponses y ont
+    perdu leur statut — mesuré sur le commit d'avant, puis sur celui d'après :
 
-    **État de la migration.** Ce réglage est global : il s'applique aux 65
-    pages d'un coup. Pour ne pas tout changer en même temps, chaque page porte
-    pour l'instant `export const instant = false`, qui la dispense de la
-    vérification. Les pages sont reprises une par une ; retirer cette ligne
-    d'une page, c'est la faire entrer dans le nouveau modèle. Tant qu'elle y
-    est, la page se comporte exactement comme avant.
+      /p/<adresse renommée>   308 vers la nouvelle adresse  ->  200
+      /p/<fiche inconnue>     404                           ->  200
+      /compte, /admin         307 vers la connexion         ->  200
 
-    `partialPrefetching` doit être posé explicitement, sinon Next avertit à
-    chaque démarrage.
+    Les redirections avaient toujours lieu, mais exécutées par le navigateur.
+    Google ne les traite pas comme des redirections permanentes. Le 8 novembre
+    2026, 690 adresses de fiches et 55 pages de génération ont été renommées
+    (migration 20261108200000) : leur 308 doit tenir, c'est tout ce qui relie
+    l'ancienne adresse indexée à la nouvelle.
+
+    Ce n'est pas réparable en déplaçant une frontière `<Suspense>` : essayé,
+    sans effet. Ni par une règle de réécriture dans le proxy, car 97 fiches
+    publiées portent encore le suffixe « -photo-manquante » et seraient
+    cassées par une règle qui le retire aveuglément.
+
+    **Par quel bout reprendre.** Mettre la *coquille* en cache est
+    incompatible avec les vrais codes HTTP. Mettre les *requêtes* en cache ne
+    l'est pas : un `use cache` sur `getProduct`, `getNavigation` et les autres
+    supprime le travail de base de données qui fait monter la mémoire, tout en
+    laissant la page se rendre à la requête — donc les 308 et les 404 tiennent.
+    C'est cette voie qu'il faut prendre. Si la coquille devait malgré tout
+    être pré-rendue un jour, il faudrait d'abord servir les 745 adresses
+    renommées avant tout rendu (table `redirects()` ou contrôle dans le
+    proxy, comme la documentation de Next le recommande pour les 404).
+
+    Rallumer `cacheComponents` oblige aussi à reposer `export const instant =
+    false` sur les pages non encore reprises : sans le drapeau, cet export
+    fait échouer la construction, et sans l'export les pages qui lisent les
+    cookies la font échouer aussi.
   */
-  cacheComponents: true,
-  partialPrefetching: true,
   experimental: {
     /*
       Construction sur Render : sans limite, Next lance un processus de

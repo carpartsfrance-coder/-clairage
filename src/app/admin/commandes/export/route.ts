@@ -8,8 +8,9 @@ import { exportComptable } from '@/lib/factures'
  * `?du=AAAA-MM-JJ&au=AAAA-MM-JJ` (au inclus). Par défaut : le mois en cours.
  */
 export async function GET(request: Request) {
-  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
-  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  // Jamais pré-rendu : la réponse dépend de la requête. `connection()` le dit
+  // explicitement, là où l'ancien `dynamic = 'force-dynamic'` le réglait par
+  // configuration de segment.
   await connection()
 
   const staff = await getStaffUser()

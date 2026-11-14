@@ -159,8 +159,9 @@ function versArticle(produit: ProduitLu, periode: Periode | undefined): ArticleF
  * redémarrait — le site entier répondait 502 le temps du redémarrage.
  */
 export async function GET() {
-  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
-  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  // Jamais pré-rendu : la réponse dépend de la requête. `connection()` le dit
+  // explicitement, là où l'ancien `dynamic = 'force-dynamic'` le réglait par
+  // configuration de segment.
   await connection()
 
   if (siteConfig.demoBanner) {

@@ -21,8 +21,9 @@ type Suggestion = { label: string; href: string; kind: 'véhicule' | 'produit' |
  *   sauf si le client tape lui-même une référence.
  */
 export async function GET(request: Request) {
-  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
-  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  // Jamais pré-rendu : la réponse dépend de la requête. `connection()` le dit
+  // explicitement, là où l'ancien `dynamic = 'force-dynamic'` le réglait par
+  // configuration de segment.
   await connection()
 
   const query = (new URL(request.url).searchParams.get('q') ?? '').trim()

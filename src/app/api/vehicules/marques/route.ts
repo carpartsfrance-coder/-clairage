@@ -11,8 +11,9 @@ import { lectureCatalogue } from '@/lib/cache-catalogue'
  * fait perdre au client le temps qu'il a passé à se reconnaître.
  */
 export async function GET(request: Request) {
-  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
-  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  // Jamais pré-rendu : la réponse dépend de la requête. `connection()` le dit
+  // explicitement, là où l'ancien `dynamic = 'force-dynamic'` le réglait par
+  // configuration de segment.
   await connection()
 
   const type = new URL(request.url).searchParams.get('type') === 'MOTORCYCLE' ? 'MOTORCYCLE' : 'CAR'

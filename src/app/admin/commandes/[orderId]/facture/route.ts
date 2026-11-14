@@ -5,8 +5,9 @@ import { emettreFacture } from '@/lib/factures'
 
 /** Émet (si besoin) la facture d'une commande payée, puis ouvre son PDF. */
 export async function GET(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
-  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
-  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  // Jamais pré-rendu : la réponse dépend de la requête. `connection()` le dit
+  // explicitement, là où l'ancien `dynamic = 'force-dynamic'` le réglait par
+  // configuration de segment.
   await connection()
 
   const staff = await getStaffUser()
