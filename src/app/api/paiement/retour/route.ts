@@ -1,12 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/session'
 import { canViewOrder } from '@/lib/order-access'
 import { reconcilePayment } from '@/lib/orders'
 import { origineDeLaRequete } from '@/lib/origine'
-
-export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
 
 /**
  * Retour du client depuis la page de paiement du prestataire.
@@ -35,6 +32,10 @@ export const runtime = 'nodejs'
  * passe par le même verrou d'idempotence. La rejouer n'a aucun effet.
  */
 export async function GET(request: Request) {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   const url = new URL(request.url)
   // Toutes les redirections se construisent sur l'origine réellement demandée :
   // dépendre de NEXT_PUBLIC_SITE_URL ferait sortir le client du site si cette

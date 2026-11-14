@@ -4,8 +4,6 @@ import { prisma } from '@/lib/db'
 import { GENERATION_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { VEHICLE_COOKIE } from '@/lib/session'
 
-export const dynamic = 'force-dynamic'
-
 const payloadSchema = z.object({
   modelId: z.string().min(1),
   year: z.number().int().min(1950).max(new Date().getFullYear() + 1),

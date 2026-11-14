@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import { VEHICLE_COOKIE } from '@/lib/session'
 import { origineDeLaRequete } from '@/lib/origine'
 
-export const dynamic = 'force-dynamic'
-
 /**
  * Retire le véhicule de la session.
  *

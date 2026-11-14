@@ -3,6 +3,37 @@ import type { NextConfig } from 'next'
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  /*
+    Pré-rendu partiel (« Cache Components »).
+
+    **Pourquoi.** Jusqu'ici, aucune page du site n'était mise en cache : la
+    mise en page racine lit un en-tête (`headers()`) et le header lit les
+    cookies véhicule et panier. Dans l'ancien modèle, un seul de ces appels
+    rend TOUTE la page dynamique. Résultat : chacune des 31 000 fiches était
+    rendue de zéro à chaque passage de Googlebot — une vingtaine de requêtes
+    SQL par visite, des centaines de visites par heure. La mémoire montait
+    jusqu'au plafond de l'instance, qui se faisait tuer (14 novembre 2026,
+    02h30 : deux minutes de 502, 68 produits refusés par Merchant Center).
+
+    **Ce que ça change.** Une page est désormais découpée : ce qui ne dépend
+    pas du visiteur est pré-rendu une fois et resservi tel quel, ce qui en
+    dépend (panier, véhicule retenu) est entouré d'un `<Suspense>` et se
+    calcule à chaque requête. Googlebot est classé robot « DOM » par Next
+    (`shared/lib/router/utils/is-bot.js`), il reçoit donc la version
+    pré-rendue comme un visiteur ordinaire.
+
+    **État de la migration.** Ce réglage est global : il s'applique aux 65
+    pages d'un coup. Pour ne pas tout changer en même temps, chaque page porte
+    pour l'instant `export const instant = false`, qui la dispense de la
+    vérification. Les pages sont reprises une par une ; retirer cette ligne
+    d'une page, c'est la faire entrer dans le nouveau modèle. Tant qu'elle y
+    est, la page se comporte exactement comme avant.
+
+    `partialPrefetching` doit être posé explicitement, sinon Next avertit à
+    chaque démarrage.
+  */
+  cacheComponents: true,
+  partialPrefetching: true,
   experimental: {
     /*
       Construction sur Render : sans limite, Next lance un processus de

@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import { GENERATION_VISIBLE, MODELE_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { lectureCatalogue } from '@/lib/cache-catalogue'
 
-export const dynamic = 'force-dynamic'
-
 /** Modèles d'une marque qui mènent à au moins un produit en ligne. */
 export async function GET(request: Request) {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   const makeId = new URL(request.url).searchParams.get('makeId')
   if (!makeId) return NextResponse.json({ items: [] })
   try {

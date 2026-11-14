@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, connection } from 'next/server'
 import { getStaffUser } from '@/lib/admin/guard'
 import { can } from '@/lib/admin/permissions'
 import { emettreFacture } from '@/lib/factures'
 
-export const dynamic = 'force-dynamic'
-
 /** Émet (si besoin) la facture d'une commande payée, puis ouvre son PDF. */
 export async function GET(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   const staff = await getStaffUser()
   if (!staff || !can(staff.role, 'orders.view')) return new NextResponse('Accès refusé.', { status: 403 })
   const { orderId } = await params

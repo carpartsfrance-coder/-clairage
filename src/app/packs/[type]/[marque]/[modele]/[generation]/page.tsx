@@ -28,6 +28,14 @@ import { TotalEclairage } from '@/components/vehicule/TotalEclairage'
 import { PromessesAchat } from '@/components/confiance/PromessesAchat'
 import { dureeGarantie } from '@/lib/identity'
 
+/*
+  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
+  la dispense de la vérification ; elle se comporte exactement comme avant.
+  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
+  commentaire de `cacheComponents` dans next.config.ts.
+*/
+export const instant = false
+
 type PageProps = {
   params: Promise<{ type: string; marque: string; modele: string; generation: string }>
 }

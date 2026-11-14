@@ -20,10 +20,8 @@ import { applyPaymentOutcome } from '@/lib/orders'
 */
 const RECEIVED = { received: true } as const
 
-export const dynamic = 'force-dynamic'
 // Le corps doit rester tel quel : la signature porte sur les octets envoyés.
 // Toute normalisation (parsing JSON puis re-sérialisation) la casserait.
-export const runtime = 'nodejs'
 
 /**
  * Webhook de paiement.

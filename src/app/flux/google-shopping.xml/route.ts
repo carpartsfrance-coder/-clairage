@@ -1,3 +1,4 @@
+import { connection } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { identity, siteConfig } from '@/lib/identity'
@@ -12,8 +13,6 @@ import {
 } from '@/lib/flux-google'
 import { imagesTypesPourLeFlux } from '@/lib/images-types'
 import { nomAvecPeriode } from '@/lib/seo-fiche'
-
-export const dynamic = 'force-dynamic'
 
 /**
  * Flux produits pour Google Merchant Center (fiches gratuites et Shopping).
@@ -160,6 +159,10 @@ function versArticle(produit: ProduitLu, periode: Periode | undefined): ArticleF
  * redémarrait — le site entier répondait 502 le temps du redémarrage.
  */
 export async function GET() {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   if (siteConfig.demoBanner) {
     return new Response('Flux désactivé en préproduction.', { status: 404 })
   }

@@ -12,6 +12,14 @@ import { IconTruck } from '@/components/ui/icons'
 import { emailIsSimulated } from '@/lib/email'
 import { formatPrice } from '@/lib/identity'
 
+/*
+  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
+  la dispense de la vérification ; elle se comporte exactement comme avant.
+  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
+  commentaire de `cacheComponents` dans next.config.ts.
+*/
+export const instant = false
+
 /**
  * Confirmation de commande.
  *
@@ -28,7 +36,6 @@ import { formatPrice } from '@/lib/identity'
 // L'état lu change sous la page (le webhook peut arriver une seconde après le
 // client) : aucune mise en cache, sinon on servirait une page « en attente »
 // alors que le paiement est confirmé depuis longtemps.
-export const revalidate = 0
 
 /**
  * Lien vers la prise de contact, sujet et référence déjà posés.

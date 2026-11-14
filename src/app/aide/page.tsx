@@ -1,3 +1,4 @@
+import { connection } from 'next/server'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/auth/session'
@@ -6,6 +7,14 @@ import { faqGeneraleParDefaut } from '@/lib/faq-generale'
 import { FaqStructuredData } from '@/components/seo/StructuredData'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Card } from '@/components/ui/Surface'
+
+/*
+  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
+  la dispense de la vérification ; elle se comporte exactement comme avant.
+  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
+  commentaire de `cacheComponents` dans next.config.ts.
+*/
+export const instant = false
 
 export const metadata: Metadata = {
   title: 'Aide & contact',
@@ -28,6 +37,11 @@ export const metadata: Metadata = {
  * n'est inventé pour remplir le reste.
  */
 export default async function AidePage() {
+  // Cette page lit l'heure courante (date du jour, fenêtres glissantes).
+  // Le pré-rendu ne peut pas la connaître : on la rend à la requête,
+  // comme avant le passage au pré-rendu partiel.
+  await connection()
+
   const [faqPubliee, guides, user, faqParDefaut] = await Promise.all([
     listGeneralFaq(),
     countPublishedGuides(),
