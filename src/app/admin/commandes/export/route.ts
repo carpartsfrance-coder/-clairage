@@ -1,15 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, connection } from 'next/server'
 import { getStaffUser } from '@/lib/admin/guard'
 import { can } from '@/lib/admin/permissions'
 import { exportComptable } from '@/lib/factures'
-
-export const dynamic = 'force-dynamic'
 
 /**
  * Export comptable (CSV) des factures et avoirs d'une période.
  * `?du=AAAA-MM-JJ&au=AAAA-MM-JJ` (au inclus). Par défaut : le mois en cours.
  */
 export async function GET(request: Request) {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   const staff = await getStaffUser()
   if (!staff || !can(staff.role, 'orders.view')) return new NextResponse('Accès refusé.', { status: 403 })
   const sp = new URL(request.url).searchParams

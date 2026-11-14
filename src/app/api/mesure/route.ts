@@ -15,7 +15,6 @@ import {
  * (lib/mesure-chemins.ts) : un envoi ne prouve pas qu'il vient de notre script.
  * Répond toujours 204 : la mesure ne doit jamais gêner la navigation.
  */
-export const dynamic = 'force-dynamic'
 
 const ROBOT = /bot|crawl|spider|slurp|headless|preview|lighthouse|pingdom|monitor/i
 const KINDS = new Set(['page', 'click'])

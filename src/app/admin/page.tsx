@@ -1,3 +1,4 @@
+import { connection } from 'next/server'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Alert, Card } from '@/components/ui/Surface'
@@ -8,6 +9,14 @@ import { can, PERMISSIONS, type Permission } from '@/lib/admin/permissions'
 import { getDashboard, PERIOD_LABELS, type Metric, type Period } from '@/lib/admin/metrics'
 import { formatPrice } from '@/lib/identity'
 import { cn } from '@/lib/cn'
+
+/*
+  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
+  la dispense de la vérification ; elle se comporte exactement comme avant.
+  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
+  commentaire de `cacheComponents` dans next.config.ts.
+*/
+export const instant = false
 
 export const metadata: Metadata = {
   title: 'Tableau de bord',
@@ -89,6 +98,11 @@ export default async function AdminDashboardPage({
 }: {
   searchParams: Promise<{ periode?: string; refus?: string }>
 }) {
+  // Cette page lit l'heure courante (date du jour, fenêtres glissantes).
+  // Le pré-rendu ne peut pas la connaître : on la rend à la requête,
+  // comme avant le passage au pré-rendu partiel.
+  await connection()
+
   const staff = await requireStaff('dashboard.view')
   const { periode, refus } = await searchParams
   const period = readPeriod(periode)

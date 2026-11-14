@@ -1,8 +1,17 @@
+import { connection } from 'next/server'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireStaff } from '@/lib/admin/guard'
 import { lireStatistiques, periode } from '@/lib/queries/mesure'
 import { Card, EmptyState } from '@/components/ui/Surface'
+
+/*
+  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
+  la dispense de la vérification ; elle se comporte exactement comme avant.
+  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
+  commentaire de `cacheComponents` dans next.config.ts.
+*/
+export const instant = false
 
 /**
  * Statistiques de visite : où vont les visiteurs, ce qu'ils cliquent, où ils
@@ -41,6 +50,11 @@ export default async function StatistiquesPage({
 }: {
   searchParams: Promise<{ jours?: string; page?: string }>
 }) {
+  // Cette page lit l'heure courante (date du jour, fenêtres glissantes).
+  // Le pré-rendu ne peut pas la connaître : on la rend à la requête,
+  // comme avant le passage au pré-rendu partiel.
+  await connection()
+
   await requireStaff('dashboard.view')
   const params = await searchParams
   const p = periode(Number(params.jours ?? 7))

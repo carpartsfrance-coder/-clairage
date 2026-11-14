@@ -1,9 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import { GENERATION_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { lectureCatalogue } from '@/lib/cache-catalogue'
-
-export const dynamic = 'force-dynamic'
 
 /**
  * Années couvertes par les générations d'un modèle.
@@ -13,6 +11,10 @@ export const dynamic = 'force-dynamic'
  * véhicules sans produit serait un cul-de-sac proposé en toute confiance.
  */
 export async function GET(request: Request) {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   const modelId = new URL(request.url).searchParams.get('modelId')
   if (!modelId) return NextResponse.json({ items: [] })
   try {

@@ -1,9 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import { MARQUE_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { lectureCatalogue } from '@/lib/cache-catalogue'
-
-export const dynamic = 'force-dynamic'
 
 /**
  * Marques proposées par le sélecteur, pour un type de véhicule.
@@ -13,6 +11,10 @@ export const dynamic = 'force-dynamic'
  * fait perdre au client le temps qu'il a passé à se reconnaître.
  */
 export async function GET(request: Request) {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   const type = new URL(request.url).searchParams.get('type') === 'MOTORCYCLE' ? 'MOTORCYCLE' : 'CAR'
   try {
     const items = await marquesEnCache(type)

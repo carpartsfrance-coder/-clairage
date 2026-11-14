@@ -1,3 +1,4 @@
+import { connection } from 'next/server'
 import { BoutonImprimer } from '@/components/admin/BoutonImprimer'
 import { nomUtileDuConditionnement } from '@/lib/nom-conditionnement'
 import { listePrelevement } from '@/lib/admin/prelevement'
@@ -7,6 +8,14 @@ import { Badge } from '@/components/ui/Badge'
 import { Card, EmptyState } from '@/components/ui/Surface'
 import { requireStaff } from '@/lib/admin/guard'
 import { listToPrepare } from '@/lib/queries/admin'
+
+/*
+  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
+  la dispense de la vérification ; elle se comporte exactement comme avant.
+  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
+  commentaire de `cacheComponents` dans next.config.ts.
+*/
+export const instant = false
 
 export const metadata: Metadata = {
   title: 'Préparation',
@@ -32,6 +41,11 @@ function joursDepuis(date: Date): number {
 }
 
 export default async function PreparationPage() {
+  // Cette page lit l'heure courante (date du jour, fenêtres glissantes).
+  // Le pré-rendu ne peut pas la connaître : on la rend à la requête,
+  // comme avant le passage au pré-rendu partiel.
+  await connection()
+
   // Préparer une commande est un droit distinct de la simple lecture.
   await requireStaff('orders.fulfil')
 

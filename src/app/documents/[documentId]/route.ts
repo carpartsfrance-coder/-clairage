@@ -1,12 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getStaffUser } from '@/lib/admin/guard'
 import { can } from '@/lib/admin/permissions'
 import { getCurrentUser } from '@/lib/auth/session'
 import { donneesDuDocument } from '@/lib/factures'
 import { canViewOrder } from '@/lib/order-access'
-
-export const dynamic = 'force-dynamic'
 
 /**
  * Téléchargement d'une facture ou d'un avoir (PDF).
@@ -16,6 +14,10 @@ export const dynamic = 'force-dynamic'
  * (`?t=<jeton de suivi>`). Personne d'autre : une facture porte une adresse.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ documentId: string }> }) {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   const { documentId } = await params
   const jeton = new URL(request.url).searchParams.get('t')
 

@@ -6,6 +6,14 @@ import { IconCheck } from '@/components/ui/icons'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { RegisterForm } from '@/components/auth/AuthForms'
 
+/*
+  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
+  la dispense de la vérification ; elle se comporte exactement comme avant.
+  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
+  commentaire de `cacheComponents` dans next.config.ts.
+*/
+export const instant = false
+
 export const metadata: Metadata = {
   title: 'Créer un compte',
   robots: { index: false, follow: false },

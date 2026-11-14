@@ -1,8 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import { assessEnvironment } from '@/lib/readiness'
-
-export const dynamic = 'force-dynamic'
 
 /**
  * Route de vérification de santé consommée par Render.
@@ -19,6 +17,10 @@ export const dynamic = 'force-dynamic'
  * nommées, jamais une valeur.
  */
 export async function GET() {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   const startedAt = performance.now()
   const environment = assessEnvironment()
 

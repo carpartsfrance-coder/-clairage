@@ -1,10 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import { GENERATION_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { CHEMIN_PAR_TYPE } from '@/lib/queries/packs'
 import { motsDeRecherche } from '@/lib/recherche-mots'
-
-export const dynamic = 'force-dynamic'
 
 type Suggestion = { label: string; href: string; kind: 'véhicule' | 'produit' | 'référence' | 'culot' }
 
@@ -23,6 +21,10 @@ type Suggestion = { label: string; href: string; kind: 'véhicule' | 'produit' |
  *   sauf si le client tape lui-même une référence.
  */
 export async function GET(request: Request) {
+  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
+  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  await connection()
+
   const query = (new URL(request.url).searchParams.get('q') ?? '').trim()
   if (query.length < 2) return NextResponse.json({ items: [] })
 
