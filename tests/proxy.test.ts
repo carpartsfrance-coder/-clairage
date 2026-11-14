@@ -5,12 +5,16 @@ import { config, proxy } from '../src/proxy'
 /**
  * Convention « proxy » (l'ancien « middleware », renommé par Next 16).
  *
- * Ce que ces tests protègent : la mise en page racine décide d'afficher ou non
- * l'en-tête et le pied de page de la boutique **uniquement** d'après l'en-tête
- * `x-pathname`, que ce fichier pose. Si l'export était renommé, le fichier
- * déplacé, ou le filtre de chemins resserré par mégarde, l'en-tête
- * disparaîtrait sans erreur — et le back-office se retrouverait coiffé de la
- * navigation de la boutique, avec une vingtaine de liens parasites au clavier.
+ * Ce fichier posait un en-tête `x-pathname`, que la mise en page racine lisait
+ * pour savoir si elle devait coiffer la page de l'en-tête et du pied de page de
+ * la boutique. Cette lecture rendait **toutes** les pages du site dynamiques :
+ * aucune ne pouvait être mise en cache. La distinction passe désormais par le
+ * groupe de routes `(boutique)`, qui répond à la même question sans rien lire
+ * de la requête.
+ *
+ * Ces tests protègent donc deux choses : que le proxy laisse passer les
+ * requêtes sans les détourner, et qu'il **ne réintroduise pas** le couplage
+ * qu'on vient de retirer.
  *
  * Le seul import de `../src/proxy` est déjà une garde : il échoue si le fichier
  * change de nom ou si la fonction n'est plus exportée sous ce nom.
@@ -21,7 +25,7 @@ function requete(url: string): NextRequest {
 }
 
 /**
- * Récupère l'en-tête de requête que le proxy a ajouté.
+ * Récupère l'en-tête de requête que le proxy a ajouté, s'il y en a un.
  *
  * Next ne renvoie pas l'en-tête tel quel : il le transporte dans la réponse
  * sous le préfixe `x-middleware-request-`, et liste les noms surchargés dans
@@ -44,22 +48,21 @@ function matche(pathname: string): boolean {
 }
 
 describe('proxy', () => {
-  it('pose le chemin demandé dans x-pathname', async () => {
-    const response = proxy(requete('http://localhost:3400/admin/parametres'))
-    expect(enTeteAjoute(response, 'x-pathname')).toBe('/admin/parametres')
-  })
-
-  it('transmet le chemin sans la chaîne de requête', async () => {
-    const response = proxy(requete('http://localhost:3400/recherche?q=led&page=2'))
-
-    // La mise en page compare un préfixe : une chaîne de requête collée au
-    // chemin ferait échouer la comparaison.
-    expect(enTeteAjoute(response, 'x-pathname')).toBe('/recherche')
+  it('ne pose plus x-pathname', () => {
+    /*
+      Garde-fou : remettre cet en-tête n'est anodin qu'en apparence. Dès qu'une
+      mise en page le lit, elle lit la requête — et tout ce qu'elle enveloppe
+      cesse d'être mis en cache.
+    */
+    for (const chemin of ['/admin/parametres', '/recherche?q=led&page=2', '/p/kit-led-h7']) {
+      const response = proxy(requete(`http://localhost:3400${chemin}`))
+      expect(enTeteAjoute(response, 'x-pathname'), chemin).toBeNull()
+    }
   })
 
   it('laisse passer la requête au lieu de la détourner', () => {
     const response = proxy(requete('http://localhost:3400/'))
-    // Ni redirection ni réécriture : ce proxy n'est là que pour un en-tête.
+    // Ni redirection ni réécriture tant que l'hôte est déjà le bon.
     expect(response.status).toBe(200)
     expect(response.headers.get('location')).toBeNull()
   })

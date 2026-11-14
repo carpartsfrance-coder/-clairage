@@ -1,45 +1,25 @@
 import type { Metadata } from 'next'
-import { ButtonLink } from '@/components/ui/Button'
-import { mainNav } from '@/lib/navigation'
-import { IconArrowRight } from '@/components/ui/icons'
+import { DecorBoutique } from '@/components/layout/DecorBoutique'
+import { PageIntrouvable } from '@/components/layout/PageIntrouvable'
 
 export const metadata: Metadata = {
   title: 'Page introuvable',
   robots: { index: false, follow: false },
 }
 
-/** 404 : on propose des sorties réelles plutôt qu'un cul-de-sac. */
+/**
+ * 404 des URL qui ne correspondent à aucune route.
+ *
+ * Elle pose le décor de la boutique elle-même, et c'est nécessaire : une URL
+ * inconnue n'appartient à aucun groupe de routes, donc ni `(boutique)/layout`
+ * ni aucune autre mise en page de groupe ne s'y applique — seule la racine, qui
+ * ne contient que la coquille du document. Sans cet appel, une faute de frappe
+ * dans une adresse menait à une page nue, sans en-tête ni pied de page.
+ */
 export default function NotFound() {
   return (
-    <div className="container-page py-20">
-      <p className="eyebrow text-brand">Erreur 404</p>
-      <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">Cette page n&apos;existe pas.</h1>
-      <p className="mt-3 max-w-xl text-lg text-muted-strong">
-        Le lien est peut-être ancien, ou la page a été déplacée. Vous pouvez repartir de votre
-        véhicule, ou parcourir les univers.
-      </p>
-
-      <div className="mt-8 flex flex-wrap gap-3">
-        <ButtonLink href="/vehicule" iconRight={<IconArrowRight className="size-5" />}>
-          Partir de mon véhicule
-        </ButtonLink>
-        <ButtonLink href="/" variant="secondary">
-          Accueil
-        </ButtonLink>
-      </div>
-
-      <nav aria-label="Univers" className="mt-10">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Univers</h2>
-        <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
-          {mainNav.map((item) => (
-            <li key={item.href}>
-              <a href={item.href} className="font-semibold underline underline-offset-4 hover:text-brand">
-                {item.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </div>
+    <DecorBoutique>
+      <PageIntrouvable />
+    </DecorBoutique>
   )
 }

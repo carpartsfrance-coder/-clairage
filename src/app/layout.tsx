@@ -1,21 +1,25 @@
 import type { Metadata, Viewport } from 'next'
-import { Suspense } from 'react'
-import { headers } from 'next/headers'
 import { Inter, Montserrat } from 'next/font/google'
 import './globals.css'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
-import { BarreDeNavigation } from '@/components/layout/BarreDeNavigation'
-import { Mesure } from '@/components/mesure/Mesure'
 import { identity, siteConfig } from '@/lib/identity'
 
-/*
-  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
-  la dispense de la vérification ; elle se comporte exactement comme avant.
-  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
-  commentaire de `cacheComponents` dans next.config.ts.
-*/
-export const instant = false
+/**
+ * Mise en page racine — volontairement réduite à la coquille du document.
+ *
+ * Elle ne contient plus que ce qui est vrai partout : la langue, les polices,
+ * la feuille de style et les balises de tête. **Aucune lecture de la requête**,
+ * donc aucune raison d'empêcher une page d'être pré-rendue.
+ *
+ * Avant, c'est ici que se posaient l'en-tête et le pied de page de la
+ * boutique, et il fallait lire l'en-tête `x-pathname` pour savoir s'il fallait
+ * s'abstenir sur le back-office. Cette seule lecture rendait **toutes** les
+ * pages du site dynamiques : plus rien ne pouvait être mis en cache, et les
+ * 31 000 fiches étaient recalculées à chaque passage de Googlebot.
+ *
+ * Le décor de la boutique vit désormais dans `(boutique)/layout.tsx`, un
+ * groupe de routes qui ne change aucune URL ; le back-office garde le sien
+ * dans `admin/layout.tsx`. Personne n'a plus besoin de savoir où il se trouve.
+ */
 
 /**
  * Les deux polices sont téléchargées à la construction et servies depuis le
@@ -63,38 +67,14 @@ export const viewport: Viewport = {
   themeColor: '#212428',
 }
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Le back-office a sa propre mise en page : poser l'en-tête et le pied de
-  // page de la boutique par-dessus un outil de travail encombre l'écran et
-  // ajoute une vingtaine de liens inutiles à la navigation au clavier.
-  const pathname = (await headers()).get('x-pathname') ?? ''
-  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/')
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang={identity.locale.lang} className={`${inter.variable} ${montserrat.variable}`}>
-      <body className="flex min-h-dvh flex-col">
-        {isAdmin ? (
-          children
-        ) : (
-          <>
-            {/* Retour visuel immédiat au clic sur un lien (voir le composant). */}
-            <Suspense fallback={null}>
-              <BarreDeNavigation />
-            </Suspense>
-            <a href="#contenu" className="skip-link">
-              Aller au contenu
-            </a>
-            <Header />
-            <main id="contenu" className="flex-1">
-              {children}
-            </main>
-            <Footer />
-            <Suspense fallback={null}>
-              <Mesure />
-            </Suspense>
-          </>
-        )}
-      </body>
+      {/*
+        `flex min-h-dvh flex-col` reste ici : la boutique s'en sert pour coller
+        le pied de page en bas, le back-office pour occuper la hauteur.
+      */}
+      <body className="flex min-h-dvh flex-col">{children}</body>
     </html>
   )
 }
