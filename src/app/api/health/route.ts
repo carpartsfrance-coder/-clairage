@@ -17,8 +17,9 @@ import { assessEnvironment } from '@/lib/readiness'
  * nommées, jamais une valeur.
  */
 export async function GET() {
-  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
-  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  // Jamais pré-rendu : la réponse dépend de la requête. `connection()` le dit
+  // explicitement, là où l'ancien `dynamic = 'force-dynamic'` le réglait par
+  // configuration de segment.
   await connection()
 
   const startedAt = performance.now()

@@ -32,8 +32,9 @@ import { origineDeLaRequete } from '@/lib/origine'
  * passe par le même verrou d'idempotence. La rejouer n'a aucun effet.
  */
 export async function GET(request: Request) {
-  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
-  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  // Jamais pré-rendu : la réponse dépend de la requête. `connection()` le dit
+  // explicitement, là où l'ancien `dynamic = 'force-dynamic'` le réglait par
+  // configuration de segment.
   await connection()
 
   const url = new URL(request.url)

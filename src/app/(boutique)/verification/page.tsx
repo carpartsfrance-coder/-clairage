@@ -8,14 +8,6 @@ import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { EmptyState } from '@/components/ui/Surface'
 import { FitmentCheckForm } from '@/components/product/FitmentCheckForm'
 
-/*
-  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
-  la dispense de la vérification ; elle se comporte exactement comme avant.
-  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
-  commentaire de `cacheComponents` dans next.config.ts.
-*/
-export const instant = false
-
 export const metadata: Metadata = {
   title: 'Faire vérifier mon véhicule',
   robots: { index: false, follow: false },

@@ -14,8 +14,9 @@ import { canViewOrder } from '@/lib/order-access'
  * (`?t=<jeton de suivi>`). Personne d'autre : une facture porte une adresse.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ documentId: string }> }) {
-  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
-  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  // Jamais pré-rendu : la réponse dépend de la requête. `connection()` le dit
+  // explicitement, là où l'ancien `dynamic = 'force-dynamic'` le réglait par
+  // configuration de segment.
   await connection()
 
   const { documentId } = await params

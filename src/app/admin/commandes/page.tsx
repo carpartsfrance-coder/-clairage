@@ -9,14 +9,6 @@ import { Button } from '@/components/ui/Button'
 import { Card, EmptyState } from '@/components/ui/Surface'
 import { SelectField, TextField } from '@/components/ui/Field'
 
-/*
-  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
-  la dispense de la vérification ; elle se comporte exactement comme avant.
-  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
-  commentaire de `cacheComponents` dans next.config.ts.
-*/
-export const instant = false
-
 /**
  * Liste des commandes.
  *
@@ -159,9 +151,9 @@ export default async function Page({
 }: {
   searchParams: Promise<RawParams>
 }) {
-  // Cette page lit l'heure courante (date du jour, fenêtres glissantes).
-  // Le pré-rendu ne peut pas la connaître : on la rend à la requête,
-  // comme avant le passage au pré-rendu partiel.
+  // Cette page lit l'heure courante (date du jour, fenêtres glissantes). Un
+  // pré-rendu la figerait à l'heure de la construction : on la rend à la
+  // requête.
   await connection()
 
   await requireStaff('orders.view')

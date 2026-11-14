@@ -3,14 +3,6 @@ import Link from 'next/link'
 import { commercialTerms, identity } from '@/lib/identity'
 import { Article, PageLegale } from '@/components/legal/PageLegale'
 
-/*
-  Pré-rendu partiel : cette page n'est pas encore reprise. `instant = false`
-  la dispense de la vérification ; elle se comporte exactement comme avant.
-  Retirer cette ligne, c'est la faire entrer dans le nouveau modèle — voir le
-  commentaire de `cacheComponents` dans next.config.ts.
-*/
-export const instant = false
-
 export const metadata: Metadata = {
   title: 'Moyens de paiement',
   description:

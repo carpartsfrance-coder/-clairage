@@ -13,15 +13,18 @@ import { Mesure } from '@/components/mesure/Mesure'
  * Sans ce composant, une faute de frappe dans une adresse menait à une page
  * sans en-tête ni pied de page, dont on ne pouvait plus rien faire.
  *
- * **L'en-tête n'est pas dans la coquille statique.** Il affiche le panier et le
- * véhicule retenu, tous deux tirés des cookies : il ne peut pas être pré-rendu
- * une fois pour tous les visiteurs. Il est donc entouré d'un `<Suspense>` et
- * arrive juste après le reste de la page, servi depuis le cache. Le repli garde
- * sa hauteur exacte, pour que le contenu ne saute pas quand l'en-tête se pose.
+ * **L'en-tête arrive après le reste.** Il affiche le panier et le véhicule
+ * retenu, tous deux tirés des cookies, et quatre requêtes avant de pouvoir
+ * s'afficher. Entouré d'un `<Suspense>`, il n'empêche plus le contenu de la
+ * page de partir : celui-ci s'affiche d'abord, l'en-tête se pose ensuite. Le
+ * repli garde sa hauteur exacte, pour que rien ne saute à ce moment-là.
  *
- * Le pied de page, lui, ne lit rien de la requête (son seuil de livraison et
- * son menu passent par le cache du catalogue, son année est mise en cache à la
- * journée) : il fait partie de la coquille.
+ * Attention si l'on touche à ces frontières : aucune page du site n'est
+ * pré-rendue, et c'est ce qui permet à une page de répondre 404 sur une fiche
+ * inconnue ou 308 sur une adresse renommée — une réponse qui commence par une
+ * coquille pré-calculée est figée à 200. Le pré-rendu partiel a été essayé le
+ * 14 novembre 2026 pour cette raison, puis retiré ; le commentaire de
+ * `next.config.ts` raconte ce qu'il faudrait régler avant d'y revenir.
  */
 export function DecorBoutique({ children }: { children: React.ReactNode }) {
   return (

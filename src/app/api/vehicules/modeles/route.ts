@@ -5,8 +5,9 @@ import { lectureCatalogue } from '@/lib/cache-catalogue'
 
 /** Modèles d'une marque qui mènent à au moins un produit en ligne. */
 export async function GET(request: Request) {
-  // Jamais pré-rendu : la réponse dépend de la requête. Remplace
-  // `dynamic = 'force-dynamic'`, incompatible avec le pré-rendu partiel.
+  // Jamais pré-rendu : la réponse dépend de la requête. `connection()` le dit
+  // explicitement, là où l'ancien `dynamic = 'force-dynamic'` le réglait par
+  // configuration de segment.
   await connection()
 
   const makeId = new URL(request.url).searchParams.get('makeId')
