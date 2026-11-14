@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation'
 import { cache } from 'react'
 import { adresseDuCulot } from '@/lib/culot'
 import { prisma } from '@/lib/db'
-import { listProducts } from '@/lib/queries/catalogue'
+import { PER_PAGE, listProducts } from '@/lib/queries/catalogue'
+import { indexationDeListe } from '@/lib/seo/listes-paginees'
 import { getSelectedVehicle } from '@/lib/session'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Pagination } from '@/components/catalogue/Pagination'
@@ -51,15 +52,32 @@ const lireCulot = cache(async function lireCulot(code: string) {
   }
 })
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { base } = await params
   const culot = await lireCulot(base)
   if (!culot) return { title: 'Culot introuvable' }
 
+  /*
+    Même traitement que les rubriques : une page 2 montre d'autres références,
+    elle est donc canonique d'elle-même et porte son numéro. La renvoyer sur la
+    page 1 revenait à dire à Google que les deux sont la même page. Au-delà de
+    la dernière, le listing est vide mais répond 200 : hors index, pour ne pas
+    ouvrir un nombre illimité de pages vides.
+  */
+  const { page: pageParam } = await searchParams
+  const page = Math.max(1, Number(pageParam) || 1)
+  const { numerotee, horsIndex } = indexationDeListe({
+    page,
+    dernierePage: Math.max(1, Math.ceil(culot.count / PER_PAGE)),
+    filtree: false,
+  })
+  const adresse = `/culot/${culot.base.toLowerCase()}`
+
   return {
-    title: `Ampoules ${culot.base}`,
+    title: numerotee ? `Ampoules ${culot.base} — page ${page}` : `Ampoules ${culot.base}`,
     description: `Les références en culot ${culot.base} disponibles au catalogue.`,
-    alternates: { canonical: `/culot/${culot.base.toLowerCase()}` },
+    alternates: { canonical: numerotee ? `${adresse}?page=${page}` : adresse },
+    ...(horsIndex ? { robots: { index: false, follow: true } } : {}),
   }
 }
 

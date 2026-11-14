@@ -121,7 +121,7 @@ export type CatalogueResult = {
   }
 }
 
-const PER_PAGE = 24
+export const PER_PAGE = 24
 
 const PACKAGING_LABELS: Record<string, string> = {
   UNIT: "À l'unité",

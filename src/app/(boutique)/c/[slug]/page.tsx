@@ -11,6 +11,7 @@ import { SelectField } from '@/components/ui/Field'
 import { EmptyState } from '@/components/ui/Surface'
 import { IconClose, IconSliders } from '@/components/ui/icons'
 import {
+  PER_PAGE,
   SORT_OPTIONS,
   getCategory,
   listProducts,
@@ -18,6 +19,7 @@ import {
   type Facet,
   type SortKey,
 } from '@/lib/queries/catalogue'
+import { indexationDeListe } from '@/lib/seo/listes-paginees'
 import { getSelectedVehicle } from '@/lib/session'
 import { prisma } from '@/lib/db'
 
@@ -151,7 +153,7 @@ export async function generateMetadata({
   }
 
   const filters = parseFilters(await searchParams)
-  const narrowed = activeCount(filters) > 0 || filters.page > 1
+  const filtree = activeCount(filters) > 0
   /*
     Une rubrique sans produit en ligne reste ouverte (un lien ancien ne doit
     pas tomber sur une erreur), mais hors index : une page « aucun produit »
@@ -167,18 +169,47 @@ export async function generateMetadata({
     })
     .catch(() => 1)
 
+  /*
+    Filtres et pagination ne se traitent pas pareil, alors qu'ils l'étaient.
+
+    Un filtre coché donne un sous-ensemble de la rubrique, et il y a autant de
+    pages que de combinaisons de cases : hors index, canonique sur la rubrique
+    nue.
+
+    Une page 2 n'est pas un sous-ensemble : elle montre d'autres produits. La
+    renvoyer sur la page 1 par une canonique revenait à affirmer à Google
+    qu'elles sont la même page — c'est faux — et le `noindex` qui
+    l'accompagnait faisait le reste : Google explore de moins en moins les
+    pages qu'on lui demande d'ignorer, et finit par ne plus suivre leurs
+    liens. Or la pagination est l'un des deux chemins internes vers les
+    30 000 fiches (178 pages pour la seule rubrique « phares-led »), et la
+    Search Console montrait le 14 novembre 2026 que 12 857 adresses étaient
+    « détectées, actuellement non indexées » — connues de Google, jamais
+    visitées. Ces pages sont donc indexables et canoniques d'elles-mêmes,
+    avec leur numéro dans le titre pour ne pas en présenter 178 identiques.
+
+    Au-delà de la dernière page, le listing est vide mais répond quand même
+    200 : celles-là restent hors index, sinon `?page=5000` ouvrirait un nombre
+    illimité de pages vides à explorer.
+  */
+  const { numerotee, horsIndex } = indexationDeListe({
+    page: filters.page,
+    dernierePage: Math.max(1, Math.ceil(enLigne / PER_PAGE)),
+    filtree,
+    vide: enLigne === 0,
+  })
+  const titre = category.metaTitle ?? category.name
+
   return {
-    title: category.metaTitle ?? category.name,
+    title: numerotee ? `${titre} — page ${filters.page}` : titre,
     // Repli quand la rubrique n'a ni description ni méta (quatre rubriques en
     // production) : Google fabriquait sinon un extrait à partir des filtres.
     description:
       category.metaDescription ??
       category.description ??
       `${category.name} : packs prêts à monter, choisis pour votre véhicule. Sélectionnez votre marque et votre modèle pour voir ce qui lui correspond.`,
-    // La canonique ignore les filtres : une combinaison de cases cochées ne
-    // doit pas devenir une page de plus à indexer.
-    alternates: { canonical: `/c/${slug}` },
-    ...(narrowed || enLigne === 0 ? { robots: { index: false, follow: true } } : {}),
+    alternates: { canonical: numerotee ? `/c/${slug}?page=${filters.page}` : `/c/${slug}` },
+    ...(horsIndex ? { robots: { index: false, follow: true } } : {}),
   }
 }
 
