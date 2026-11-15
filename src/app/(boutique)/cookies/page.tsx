@@ -5,15 +5,36 @@ import { SESSION_COOKIE } from '@/lib/auth/session'
 import { CART_COOKIE, VEHICLE_COOKIE } from '@/lib/session'
 import { Article, PageLegale } from '@/components/legal/PageLegale'
 import { RefusMesure } from '@/components/mesure/RefusMesure'
+import { ChoixConsentement } from '@/components/consentement/ChoixConsentement'
+import { baliseGoogleAdsConfiguree } from '@/lib/google-ads'
+
+/**
+ * Y a-t-il une balise publicitaire sur le site ?
+ *
+ * Toute cette page en dépend, jusqu'à sa description : tant que
+ * l'identifiant de conversion Google Ads n'est pas renseigné, le site n'a
+ * aucun cookie de publicité et aucun bandeau, et la page doit le dire. Dès
+ * qu'il l'est, elle doit dire l'inverse. Une page de cookies qui décrit un
+ * site qui n'existe plus est pire qu'une page absente.
+ */
+const PUBLICITE = baliseGoogleAdsConfiguree()
 
 export const metadata: Metadata = {
   title: 'Cookies',
-  description:
-    'Les trois cookies déposés par le site, tous nécessaires à son fonctionnement : panier, véhicule choisi et connexion au compte. Aucun cookie de publicité. Une mesure d’audience anonyme, sans cookie, que vous pouvez refuser.',
+  description: PUBLICITE
+    ? 'Les cookies déposés par le site : trois cookies nécessaires à son fonctionnement — panier, véhicule choisi, connexion au compte — et, avec votre accord seulement, la mesure des publicités Google. Une mesure d’audience anonyme, sans cookie, que vous pouvez refuser.'
+    : 'Les trois cookies déposés par le site, tous nécessaires à son fonctionnement : panier, véhicule choisi et connexion au compte. Aucun cookie de publicité. Une mesure d’audience anonyme, sans cookie, que vous pouvez refuser.',
   alternates: { canonical: '/cookies' },
 }
 
-const MISE_A_JOUR = '10 novembre 2026'
+/**
+ * Les articles qui suivent la mesure publicitaire glissent d'un rang quand
+ * elle existe. Les numéros sont écrits en clair plutôt que comptés : on doit
+ * pouvoir renvoyer à « l'article 5 » sans se demander lequel c'était.
+ */
+const DECALAGE = PUBLICITE ? 1 : 0
+
+const MISE_A_JOUR = '16 novembre 2026'
 
 /**
  * Cookies.
@@ -29,8 +50,15 @@ const MISE_A_JOUR = '10 novembre 2026'
  * (`maxAge` du panier et du véhicule, `expires` de la session).
  *
  * Ajouter une mesure d'audience, un pixel publicitaire ou une vidéo intégrée
- * change tout : il faudra un bandeau de consentement **avant** de les charger,
+ * change tout : il faut un bandeau de consentement **avant** de les charger,
  * et une mise à jour de cette page.
+ *
+ * C'est ce qui est arrivé le 16 novembre 2026 avec la balise de conversion
+ * Google Ads, posée pour que les enchères de la campagne Shopping sachent ce
+ * qu'une annonce rapporte. Elle n'est chargée qu'après un accord explicite,
+ * et seulement si l'identifiant de conversion est renseigné : d'où les deux
+ * versions de cette page, pilotées par `PUBLICITE`. Les trois cookies de
+ * fonctionnement, eux, n'ont pas changé.
  */
 export default function Page() {
   const contact = identity.contact
@@ -43,15 +71,30 @@ export default function Page() {
     >
       <Article numero={1} id="en-bref" titre="En bref">
         <p>
-          {identity.name} n’utilise que <strong>trois cookies</strong>, tous nécessaires au
-          fonctionnement du site. Aucun cookie de publicité ou de réseau social, et aucun
-          traceur d’un autre site. Nous mesurons aussi la fréquentation du site, de façon
-          anonyme et sans cookie (voir plus bas).
+          {identity.name} dépose <strong>trois cookies</strong> nécessaires au fonctionnement du
+          site, et aucun traceur d’un autre site. Nous mesurons aussi la fréquentation du site,
+          de façon anonyme et sans cookie (voir plus bas).
         </p>
-        <p>
-          C’est pour cela qu’aucun bandeau ne vous demande votre accord : la loi dispense de
-          consentement les cookies indispensables au service que vous demandez.
-        </p>
+        {PUBLICITE ? (
+          <>
+            <p>
+              S’ajoute une seule chose qui ne soit pas indispensable : la mesure de nos
+              publicités Google, qui dépose des cookies publicitaires.{' '}
+              <strong>Elle n’est chargée qu’avec votre accord</strong>, et c’est pour cela qu’un
+              bandeau vous pose la question. Refuser ne change rien au site ni à votre commande.
+            </p>
+            <p>
+              Les trois cookies de fonctionnement, eux, n’ont pas besoin de votre accord : la loi
+              dispense de consentement les cookies indispensables au service que vous demandez.
+            </p>
+          </>
+        ) : (
+          <p>
+            Aucun cookie de publicité ou de réseau social. C’est pour cela qu’aucun bandeau ne
+            vous demande votre accord : la loi dispense de consentement les cookies
+            indispensables au service que vous demandez.
+          </p>
+        )}
       </Article>
 
       <Article numero={2} id="liste" titre="Les cookies du site">
@@ -118,7 +161,32 @@ export default function Page() {
         <RefusMesure />
       </Article>
 
-      <Article numero={4} id="paiement" titre="Pendant le paiement">
+      {PUBLICITE ? (
+        <Article numero={4} id="publicite" titre="Mesure de nos publicités (avec votre accord)">
+          <p>
+            Nous diffusons des annonces sur Google. Pour savoir lesquelles valent leur coût,
+            nous indiquons à Google qu’une commande a eu lieu, avec son montant, sa devise et sa
+            référence — rien d’autre : ni votre nom, ni votre adresse, ni les articles achetés.
+            Google rapproche cette commande du clic publicitaire qui vous a amené, et s’en sert
+            aussi pour ses propres usages publicitaires. Cela suppose des cookies déposés par
+            Google.
+          </p>
+          <p>
+            <strong>Rien de tout cela n’a lieu sans votre accord.</strong> Tant que vous n’avez
+            pas accepté, le script de Google n’est même pas téléchargé : aucune requête ne part
+            vers ses serveurs. Vous pouvez refuser au bandeau, et revenir sur votre choix ici à
+            tout moment. Si votre navigateur annonce « Global Privacy Control » ou « Do Not
+            Track », nous le prenons pour un refus et ne vous demandons rien.
+          </p>
+          <p>
+            Refuser n’enlève rien : le site, votre panier et votre commande fonctionnent à
+            l’identique, et la mesure de fréquentation décrite plus haut continue, anonymement.
+          </p>
+          <ChoixConsentement />
+        </Article>
+      ) : null}
+
+      <Article numero={4 + DECALAGE} id="paiement" titre="Pendant le paiement">
         <p>
           Pour payer, vous passez sur la page sécurisée de Mollie, notre prestataire de paiement.
           Cette page appartient à Mollie : elle peut déposer ses propres cookies, nécessaires au
@@ -127,7 +195,7 @@ export default function Page() {
         </p>
       </Article>
 
-      <Article numero={5} id="refuser" titre="Supprimer ou bloquer les cookies">
+      <Article numero={5 + DECALAGE} id="refuser" titre="Supprimer ou bloquer les cookies">
         <p>
           Vous pouvez supprimer ou bloquer les cookies dans les réglages de votre navigateur. Sans
           eux, le site ne peut plus garder votre panier, retenir votre véhicule ni vous garder
@@ -135,10 +203,11 @@ export default function Page() {
         </p>
       </Article>
 
-      <Article numero={6} id="changements" titre="Si cela change">
+      <Article numero={6 + DECALAGE} id="changements" titre="Si cela change">
         <p>
-          Si nous ajoutons un jour un cookie qui n’est pas indispensable (publicité, outil
-          extérieur), nous vous demanderons d’abord votre accord, et cette page sera mise à jour.
+          {PUBLICITE
+            ? 'Si nous ajoutons un jour un autre cookie qui n’est pas indispensable (un autre réseau publicitaire, une vidéo intégrée, un outil extérieur), nous vous demanderons d’abord votre accord, et cette page sera mise à jour.'
+            : 'Si nous ajoutons un jour un cookie qui n’est pas indispensable (publicité, outil extérieur), nous vous demanderons d’abord votre accord, et cette page sera mise à jour.'}
         </p>
         <p>
           Pour le reste de vos données, voir notre{' '}

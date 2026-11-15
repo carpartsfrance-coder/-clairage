@@ -10,7 +10,13 @@ import { ButtonLink } from '@/components/ui/Button'
 import { Alert, Card } from '@/components/ui/Surface'
 import { IconTruck } from '@/components/ui/icons'
 import { emailIsSimulated } from '@/lib/email'
-import { formatPrice } from '@/lib/identity'
+import { formatPrice, identity } from '@/lib/identity'
+import { ConversionAchat } from '@/components/consentement/ConversionAchat'
+import {
+  baliseGoogleAdsConfiguree,
+  paiementReportable,
+  valeurConversionCents,
+} from '@/lib/google-ads'
 
 /**
  * Confirmation de commande.
@@ -340,13 +346,33 @@ export default async function Page({
       ) : null}
 
       {captured && !cancelledAfterPayment && !refunded ? (
-        /*
-          Pour la mesure d'audience : cette visite compte comme une vente
-          (components/mesure/Mesure.tsx). Le repère ne porte rien de la
-          commande. Une commande en attente n'en a pas : quand le paiement
-          arrive, le rechargement automatique ci-dessus le fait apparaître.
-        */
-        <div hidden data-mesure-etape="commande-payee" />
+        <>
+          {/*
+            Pour la mesure d'audience : cette visite compte comme une vente
+            (components/mesure/Mesure.tsx). Le repère ne porte rien de la
+            commande. Une commande en attente n'en a pas : quand le paiement
+            arrive, le rechargement automatique ci-dessus le fait apparaître.
+          */}
+          <div hidden data-mesure-etape="commande-payee" />
+          {/*
+            Et la même vente remontée à Google Ads, si et seulement si trois
+            conditions tiennent : l'action de conversion existe dans le compte
+            (ses deux valeurs sont dans l'environnement), le paiement n'est pas
+            un essai, et le visiteur a donné son accord — ce dernier point est
+            vérifié dans le navigateur, seul endroit qui connaisse sa réponse.
+            La valeur envoyée est le TTC remisé sans le port : `lib/google-ads.ts`
+            dit pourquoi. Un remboursement total, ou une annulation après
+            encaissement, ne remonte rien : la condition ci-dessus les exclut
+            déjà, comme pour la mesure maison.
+          */}
+          {baliseGoogleAdsConfiguree() && paiementReportable(isTestPayment) ? (
+            <ConversionAchat
+              reference={order.reference}
+              valeurCents={valeurConversionCents(order)}
+              devise={identity.locale.currency}
+            />
+          ) : null}
+        </>
       ) : null}
 
       <Breadcrumb
