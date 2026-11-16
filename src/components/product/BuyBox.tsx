@@ -251,6 +251,19 @@ export function BuyBox({
     client qui a bien ce véhicule-là et n'a pas mis à jour son choix.
   */
   const pourUnAutre = autreVehicule && Boolean(concuPour) && Boolean(vehicleLabel) && !incompatible
+  /*
+    Vérifier d'abord, ou acheter d'abord ?
+
+    Sur un pack composé pour un véhicule, la compatibilité EST le produit :
+    quand elle n'est pas établie, la vérification reste l'action principale.
+    Sur une ampoule vendue à la référence (T4W, H7…), le client vient le plus
+    souvent avec sa référence en tête : lui faire passer « Faire vérifier »
+    devant « Ajouter au panier » freinait l'achat sans le protéger de rien
+    (audit du 16 novembre 2026). L'achat repasse devant, la vérification
+    reste proposée juste dessous, et l'avertissement au-dessus du prix ne
+    change pas.
+  */
+  const verifierDAbord = inconnu && Boolean(concuPour)
   const purchasable = isPurchasable(selected.availability) && !incompatible
   /*
     Rupture au sens strict : ni stock, ni vente à découvert. Une pièce
@@ -705,7 +718,7 @@ export function BuyBox({
             </button>
           </div>
         </div>
-      ) : inconnu ? (
+      ) : verifierDAbord ? (
         <div className="flex flex-col gap-2">
           <Link
             href={lienVerification}
@@ -756,6 +769,16 @@ export function BuyBox({
           </button>
         </div>
       )}
+
+      {inconnu && !verifierDAbord && !pourUnAutre && !rupture ? (
+        <Link
+          href={lienVerification}
+          className="mt-2.5 flex min-h-11 items-center gap-2 text-[14px] font-semibold text-ink underline underline-offset-2 hover:text-brand-dark"
+        >
+          <IconShield className="size-[18px] shrink-0" />
+          Vérifier si cette référence convient à mon véhicule
+        </Link>
+      ) : null}
 
       {feedback ? (
         <Alert
@@ -886,7 +909,7 @@ export function BuyBox({
                 <span className="truncate">Voir les packs de mon véhicule</span>
                 <IconChevronRight className="size-[18px] shrink-0" />
               </Link>
-            ) : inconnu ? (
+            ) : verifierDAbord ? (
               <Link
                 href={lienVerification}
                 className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
