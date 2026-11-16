@@ -44,7 +44,12 @@ const REGLES: Regle[] = [
   [/^Pack LED feux de jour/, 'Ampoules LED de feux de jour', 'Des feux de jour d’un blanc net, allumés dès le démarrage.'],
   [/^Pack LED feux de recul/, 'Ampoules LED de recul', 'Plus de lumière derrière la voiture en marche arrière.'],
   [/^Pack LED feux de route/, 'Ampoules LED de feux de route', 'Des pleins phares plus blancs et plus puissants.'],
-  [/^Pack (ampoules )?LED (éclairage de plaque|plaque)/, 'Ampoules LED de plaque', 'Une plaque éclairée en blanc pur.'],
+  /*
+    Ampoules ou modules complets : les deux cartes se suivent souvent sous
+    « Éclairage de plaque ». Leurs phrases disent maintenant ce qui les
+    distingue — garder ou remplacer les boîtiers (relecture du 17 novembre 2026).
+  */
+  [/^Pack (ampoules )?LED (éclairage de plaque|plaque)/, 'Ampoules LED de plaque', 'Les ampoules seules : vos boîtiers d’origine restent en place.'],
   [/^Pack LED (habitacle|plafonnier|intérieur)/, 'Ampoules LED d’habitacle', 'Un intérieur éclairé en blanc, sans ampoules jaunes.'],
   [/^Modules LED de plaque/, 'Modules LED de plaque', 'Les boîtiers complets, à clipser à la place de ceux d’origine.'],
   [/^Centrale de clignotants/, 'Centrale de clignotants', 'Rend la cadence normale aux clignotants LED.'],
