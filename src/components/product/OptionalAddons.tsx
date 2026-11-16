@@ -52,9 +52,12 @@ const PACKAGING_LABELS: Record<Addon['packaging'], string> = {
 export function OptionalAddons({
   addons,
   vehicleSelected,
+  sansLiens = false,
 }: {
   addons: Addon[]
   vehicleSelected: boolean
+  /** Pack véhicule : pas de lien vers la fiche du complément (voir KitContents). */
+  sansLiens?: boolean
 }) {
   const router = useRouter()
   const configuration = useProductConfiguration()
@@ -214,13 +217,18 @@ export function OptionalAddons({
                     <span className="text-[9px] text-muted-strong">
                       {incompatible ? (
                         <>
-                          Ne convient pas au véhicule retenu.{' '}
-                          <Link
-                            href={`/p/${addon.slug}`}
-                            className="font-semibold underline underline-offset-2"
-                          >
-                            Voir la fiche
-                          </Link>
+                          Ne convient pas au véhicule retenu.
+                          {sansLiens ? null : (
+                            <>
+                              {' '}
+                              <Link
+                                href={`/p/${addon.slug}`}
+                                className="font-semibold underline underline-offset-2"
+                              >
+                                Voir la fiche
+                              </Link>
+                            </>
+                          )}
                         </>
                       ) : (
                         availabilityLabel(addon.availability)

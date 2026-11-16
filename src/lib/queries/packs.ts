@@ -7,6 +7,7 @@ import { availabilityForKit, availabilityForVariant, isPurchasable } from '../st
 import type { FitmentStatus } from '../fitment'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
 import { couvertureType } from '../images-types'
+import { altSansReference } from '../sans-reference'
 import {
   COMPATIBILITE_EN_LIGNE,
   GENERATION_VISIBLE,
@@ -476,8 +477,16 @@ async function lireGenerationDesPacks(
             productSlug: slug,
             productName: fitment.variant.product.name,
             tagline: fitment.variant.product.tagline,
+            // Un pack véhicule ne nomme pas son ampoule, même dans le texte
+            // alternatif de sa photo (lib/sans-reference.ts).
             image: cover
-              ? { url: cover.url, alt: cover.alt ?? fitment.variant.product.name }
+              ? {
+                  url: cover.url,
+                  alt: altSansReference(
+                    cover.alt,
+                    `${fitment.variant.product.name} — visuel d’illustration`,
+                  ),
+                }
               : null,
             candidats: [candidat],
           })
