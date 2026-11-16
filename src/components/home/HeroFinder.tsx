@@ -99,8 +99,15 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
             Sur téléphone, photo plus basse, sans bouton ni culots : le choix
             du véhicule, l'outil principal du site, arrive ainsi dans le
             premier écran (parcours client du 10 novembre 2026).
+
+            Resserré encore le 16 novembre 2026 (audit mobile à 390 px) : le
+            bandeau prenait 430 px et la première liste du sélecteur tombait
+            sous la ligne de flottaison. Bande photo de 130 px, sous-titre
+            masqué, titre un cran plus petit : le bandeau fait moins de 300 px
+            et la liste « Marque » se lit sans faire défiler. La promesse
+            reste devant l'outil, comme voulu plus haut.
           */}
-          <div className="relative h-[175px] sm:absolute sm:inset-0 sm:h-auto">
+          <div className="relative h-[130px] sm:absolute sm:inset-0 sm:h-auto">
             <Image
               src={chemin(hero.image)}
               alt=""
@@ -128,9 +135,9 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
             passerait pas le seuil de 4,5. Au-delà de 68 % il a disparu, et
             les ampoules gardent leurs noirs.
           */}
-          <div className="pointer-events-none absolute inset-0 max-sm:h-[175px] bg-[linear-gradient(180deg,transparent_62%,#0b0d10_100%)] sm:bg-[linear-gradient(90deg,#0b0d10eb_0%,#0b0d10d6_26%,#0b0d108a_38%,#0b0d1030_48%,transparent_56%)]" />
+          <div className="pointer-events-none absolute inset-0 max-sm:h-[130px] bg-[linear-gradient(180deg,transparent_62%,#0b0d10_100%)] sm:bg-[linear-gradient(90deg,#0b0d10eb_0%,#0b0d10d6_26%,#0b0d108a_38%,#0b0d1030_48%,transparent_56%)]" />
 
-          <div className="relative z-[1] px-6 py-6 sm:flex sm:min-h-[480px] sm:w-[54%] sm:flex-col sm:justify-center sm:px-10 sm:py-12 lg:min-h-[555px] lg:px-12">
+          <div className="relative z-[1] px-6 pt-5 pb-4 sm:flex sm:min-h-[480px] sm:w-[54%] sm:flex-col sm:justify-center sm:px-10 sm:py-12 lg:min-h-[555px] lg:px-12">
             <p className="m-0 text-[11px] font-bold tracking-[2.2px] text-brand-on-dark uppercase">
               {hero.eyebrow}
             </p>
@@ -145,12 +152,12 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
                 en quatre lignes jusqu'à 1 535 px : 60 px puis 68 px le
                 gardent sur deux.
               */
-              className="m-0 mt-3 text-[38px] leading-[0.98] font-extrabold tracking-[-1.6px] text-white sm:text-[54px] sm:tracking-[-2.4px] xl:text-[60px] xl:tracking-[-2.8px] 2xl:text-[68px] 2xl:tracking-[-3px]"
+              className="m-0 mt-2.5 text-[34px] leading-[0.98] font-extrabold tracking-[-1.4px] text-white sm:mt-3 sm:text-[54px] sm:tracking-[-2.4px] xl:text-[60px] xl:tracking-[-2.8px] 2xl:text-[68px] 2xl:tracking-[-3px]"
             >
               <span className="whitespace-pre-line">{hero.title}</span>
             </h1>
 
-            <p className="m-0 mt-4 text-[14px] leading-[1.65] text-white/85 sm:mt-5 sm:text-[16px]">
+            <p className="m-0 mt-4 text-[14px] leading-[1.65] text-white/85 max-sm:hidden sm:mt-5 sm:text-[16px]">
               {hero.subtitle.split(/\r?\n/).map((ligne, index) => (
                 <span key={ligne} className={index === 0 ? undefined : 'block'}>
                   {ligne}
@@ -191,7 +198,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
             ) : null}
 
             {hero.imageCaption ? (
-              <p className="m-0 mt-5 text-[11px] text-white/45">{hero.imageCaption}</p>
+              <p className="m-0 mt-3 text-[11px] text-white/45 sm:mt-5">{hero.imageCaption}</p>
             ) : null}
           </div>
         </div>
@@ -199,14 +206,14 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
         {/* ----------------------------------------------------- la carte */}
         <aside
           id="choisir-mon-vehicule"
-          className="scroll-mt-28 rounded-md border border-line bg-white p-6 sm:p-8 lg:order-first"
+          className="scroll-mt-28 rounded-md border border-line bg-white p-5 sm:p-8 lg:order-first"
         >
           <p className="m-0 flex items-center gap-2 text-[11px] font-bold tracking-[1.6px] text-muted-strong uppercase">
             <IconCar className="size-[18px] shrink-0" />
             {finder.eyebrow}
           </p>
 
-          <h2 className="mt-2.5 mb-5 text-[30px] leading-[1.08] font-extrabold tracking-[-1.1px] text-ink lg:text-[36px] lg:tracking-[-1.4px]">
+          <h2 className="mt-2 mb-4 text-[26px] leading-[1.08] font-extrabold tracking-[-1px] text-ink sm:mt-2.5 sm:mb-5 sm:text-[30px] sm:tracking-[-1.1px] lg:text-[36px] lg:tracking-[-1.4px]">
             {finder.title}
           </h2>
 
