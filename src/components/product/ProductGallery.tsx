@@ -42,11 +42,6 @@ function estPackshot(role: GalleryItem['role']) {
 }
 
 /** Autant de colonnes que de vignettes, jusqu'à quatre. */
-const COLONNES: Record<number, string> = {
-  2: 'grid-cols-2',
-  3: 'grid-cols-3',
-  4: 'grid-cols-4',
-}
 
 /** Vue « Dans le pack » : la composition, à la place du visuel. */
 const VUE_PACK: 'pack' = 'pack'
@@ -313,11 +308,15 @@ export function ProductGallery({
           <div
             role="tablist"
             aria-label="Vues du produit"
-            className={cn(
-              'grid gap-2',
-              COLONNES[Math.min(onglets.length, 4)] ?? 'grid-cols-3',
-              'fiche:flex fiche:w-[84px] fiche:shrink-0 fiche:flex-col fiche:gap-2.5',
-            )}
+            /*
+              Cinq colonnes fixes sur téléphone, quel que soit le nombre de
+              vignettes. Elles se partageaient toute la largeur : deux
+              vignettes y faisaient 175 px de côté chacune, et repoussaient le
+              prix et le bouton d'achat d'autant sous la ligne de flottaison
+              (audit mobile du 17 novembre 2026). À 64 px, elles restent
+              faciles à toucher.
+            */
+            className="grid grid-cols-5 gap-2 fiche:flex fiche:w-[84px] fiche:shrink-0 fiche:flex-col fiche:gap-2.5"
           >
             {onglets.map((onglet, position) => {
               const actif = onglet.vue === vue
