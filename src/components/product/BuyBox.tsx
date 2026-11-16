@@ -4,7 +4,7 @@ import { leVehicule, typeHorsAmpoules } from '@/lib/types-produit'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from '@/components/ui/Image'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import type { VariantView } from '@/lib/queries/product'
 import { buildDeliveryTeaser, type ShippingOffer } from '@/lib/delivery-teaser'
 import { addToCart } from '@/lib/actions/cart'
@@ -111,6 +111,11 @@ export function BuyBox({
   autreVehicule?: boolean
 }) {
   const router = useRouter()
+  /*
+    Les liens « Changer » mènent à la page /vehicule : elle doit savoir d'où
+    l'on vient pour y renvoyer le client une fois son véhicule choisi.
+  */
+  const lienChoixVehicule = `/vehicule?retour=${encodeURIComponent(usePathname())}`
   const [pending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null)
 
@@ -318,7 +323,7 @@ export function BuyBox({
             Compatible avec votre {vehicleLabel}
           </strong>
           <Link
-            href="/vehicule"
+            href={lienChoixVehicule}
             className="shrink-0 font-semibold underline underline-offset-2 hover:text-ink"
           >
             Changer
@@ -343,9 +348,9 @@ export function BuyBox({
             {leVehicule(concuPour, moto)}.
           </p>
           <p className="mt-1 text-[13px] leading-[1.6]">
-            Votre véhicule : <strong>{vehicleLabel}</strong>. Ses packs existent, un par
-            emplacement.{' '}
-            <Link href="/vehicule" className="font-semibold underline underline-offset-2">
+            Votre véhicule : <strong>{vehicleLabel}</strong>. Découvrez les packs disponibles
+            pour lui.{' '}
+            <Link href={lienChoixVehicule} className="font-semibold underline underline-offset-2">
               Changer de véhicule
             </Link>
           </p>
@@ -375,7 +380,11 @@ export function BuyBox({
       {incompatible ? (
         <Alert
           tone="danger"
-          title="Cette référence ne convient pas à votre véhicule."
+          title={
+            concuPour
+              ? 'Ce pack ne convient pas au véhicule sélectionné.'
+              : 'Cette référence ne convient pas à votre véhicule.'
+          }
           className="mb-5"
         >
           {selected.fitment.restrictions ??
@@ -397,7 +406,7 @@ export function BuyBox({
           }
           className="mb-5"
         >
-          <Link href="/vehicule" className="font-semibold underline underline-offset-4">
+          <Link href={lienChoixVehicule} className="font-semibold underline underline-offset-4">
             Vérifier avec mon véhicule
           </Link>{' '}
           (version et équipement d&apos;origine).
@@ -408,7 +417,7 @@ export function BuyBox({
         <Alert tone="info" title="Indiquez votre véhicule." className="mb-5">
           Le bon éclairage dépend du bloc optique et de l&apos;équipement d&apos;origine, pas
           seulement du culot.{' '}
-          <Link href="/vehicule" className="font-semibold underline underline-offset-4">
+          <Link href={lienChoixVehicule} className="font-semibold underline underline-offset-4">
             Choisir mon véhicule
           </Link>{' '}
           pour savoir si cette référence vous convient.
@@ -912,27 +921,33 @@ export function BuyBox({
 
             {/* La barre fixe ne propose rien d'autre que le bloc d'achat. */}
             {pourUnAutre ? (
+              /*
+                Libellés courts dans la barre : à 320 px, « Voir les packs de
+                mon véhicule » débordait de l'écran (contrôlé à 320, 360 et
+                390 px). Le bouton du bloc d'achat garde la phrase entière, et
+                `min-w-0` laisse l'ellipse jouer plutôt que de déborder.
+              */
               <Link
                 href="/vehicule/resultats"
-                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
+                className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
               >
-                <span className="truncate">Voir les packs de mon véhicule</span>
+                <span className="truncate">Packs de mon véhicule</span>
                 <IconChevronRight className="size-[18px] shrink-0" />
               </Link>
             ) : verifierDAbord ? (
               <Link
                 href={lienVerification}
-                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
+                className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
               >
                 <IconShield className="size-[18px] shrink-0" />
-                <span className="truncate">Faire vérifier mon véhicule</span>
+                <span className="truncate">Vérifier mon véhicule</span>
               </Link>
             ) : (
               <button
                 type="button"
                 disabled={!purchasable || pending}
                 onClick={submit}
-                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none"
+                className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none"
               >
                 <IconCart className="size-[18px] shrink-0" />
                 <span className="truncate">{libelleBouton}</span>

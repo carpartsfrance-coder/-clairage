@@ -58,10 +58,17 @@ export function VehiclePicker({
   initial = null,
   onDone,
   className,
+  retour = null,
 }: {
   initial?: VehiclePickerInitial | null
   onDone?: () => void
   className?: string
+  /**
+   * Page où revenir après le choix, quand le sélecteur n'est pas ouvert
+   * dessus : la page /vehicule, atteinte par « Changer » depuis une fiche,
+   * la reçoit en paramètre. Sans elle, la page courante.
+   */
+  retour?: string | null
 }) {
   const router = useRouter()
   const [type, setType] = useState<VehicleType>(initial?.type ?? 'CAR')
@@ -167,7 +174,7 @@ export function VehiclePicker({
           serveur y renvoie le client (lib/retour-vehicule.ts) au lieu de la
           liste des résultats. Ailleurs, il l'ignore.
         */
-        body: JSON.stringify({ modelId: modele.id, year: annee, retour: window.location.pathname }),
+        body: JSON.stringify({ modelId: modele.id, year: annee, retour: retour ?? window.location.pathname }),
       })
       const data = (await reponse.json()) as { redirect?: string; error?: string }
       if (!reponse.ok) throw new Error(data.error ?? 'Sélection impossible')

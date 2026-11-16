@@ -46,8 +46,23 @@ export async function POST(request: Request) {
 
   try {
     if (configurationId) {
+      /*
+        L'équipement doit appartenir au modèle et à l'année envoyés, sur une
+        génération visible — les mêmes règles que le premier passage. « Actif »
+        seul laissait fixer n'importe quelle configuration du référentiel
+        (relecture du 16 novembre 2026).
+      */
       const config = await prisma.vehicleConfiguration.findFirst({
-        where: { id: configurationId, active: true },
+        where: {
+          id: configurationId,
+          active: true,
+          generation: {
+            modelId,
+            ...GENERATION_VISIBLE,
+            yearFrom: { lte: year },
+            OR: [{ yearTo: null }, { yearTo: { gte: year } }],
+          },
+        },
         select: { id: true },
       })
       if (!config) return NextResponse.json({ error: 'Configuration inconnue.' }, { status: 404 })

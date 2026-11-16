@@ -156,6 +156,17 @@ export default async function Page({
     'use server'
     const configurationId = String(formData.get('configurationId') ?? '')
     if (!configurationId) return
+    /*
+      L'identifiant vient du formulaire : il doit désigner un équipement actif
+      DE CETTE génération, elle-même visible. Sans ce contrôle, n'importe
+      quelle configuration active pouvait être écrite dans le cookie depuis
+      cette page (relecture du 16 novembre 2026).
+    */
+    const valide = await prisma.vehicleConfiguration.findFirst({
+      where: { id: configurationId, active: true, generationId, generation: GENERATION_VISIBLE },
+      select: { id: true },
+    })
+    if (!valide) return
     // Revérifiée ici : le champ caché vient du navigateur comme le reste.
     const suite = retourApresChoix(formData.get('retour')) ?? '/vehicule/resultats'
     const store = await cookies()

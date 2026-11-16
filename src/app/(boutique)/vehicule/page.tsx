@@ -2,6 +2,7 @@ import type { ComponentType, SVGProps } from 'react'
 import type { Metadata } from 'next'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { VehiclePicker } from '@/components/vehicle/VehiclePicker'
+import { retourApresChoix } from '@/lib/retour-vehicule'
 import { ButtonLink } from '@/components/ui/Button'
 import { Alert, Card } from '@/components/ui/Surface'
 import { IconArrowRight, IconCar, IconGear, IconHeadset, IconWrench } from '@/components/ui/icons'
@@ -47,8 +48,20 @@ const steps: Step[] = [
   },
 ]
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ retour?: string | string[] }>
+}) {
   const vehicle = await getSelectedVehicle()
+  /*
+    Ouverte par « Changer » depuis une fiche, la page reçoit la fiche en
+    paramètre et la transmet au sélecteur : le client y revient une fois son
+    véhicule choisi. Sans cela, la page courante (/vehicule) était refusée
+    comme retour, et le client finissait sur la liste des résultats (relecture
+    du 16 novembre 2026). Validée comme partout (lib/retour-vehicule.ts).
+  */
+  const retour = retourApresChoix((await searchParams).retour)
 
   return (
     <div className="pb-16">
@@ -122,6 +135,7 @@ export default async function Page() {
                   : null
               }
               className="-mx-5 mt-6 sm:-mx-7"
+              retour={retour}
             />
           </Card>
         </section>
