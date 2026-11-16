@@ -15,6 +15,7 @@ import {
   type Zone,
   cartesTriees,
   nomDeLaZone,
+  regrouperLesAlternatives,
   zoneDeLEmplacement,
   zonesPresentes,
 } from '@/lib/packs-vue'
@@ -142,115 +143,53 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
         </label>
       </div>
 
-      <ul className="grid grid-cols-2 gap-[11px] min-[651px]:grid-cols-3 min-[860px]:grid-cols-4 min-[860px]:gap-[15px]">
-        {visibles.map((carte, index) => {
-          const zonePrincipale = zoneDeLEmplacement(carte.emplacements[0].code)
-          const presentation = presentationDeCarte(carte.nom, carte.conditionnement)
-          const incompatible = carte.status === 'INCOMPATIBLE'
+      {/*
+        « Recommandés » réunit les solutions d'un même éclairage sous un seul
+        titre (regrouperLesAlternatives) : effet xénon, kit LED et kit xénon
+        HID pour les feux de croisement se lisaient comme trois achats, alors
+        qu'il en faut un. Un éclairage à une seule solution — la quasi-totalité
+        — reste une vignette parmi les autres. Les tris par prix gardent la
+        grille à plat : on y compare des prix, pas des éclairages.
+
+        `grid-flow-row-dense` : un groupe occupe toute une ligne ; sans cela,
+        une vignette seule avant lui laisserait le reste de sa ligne vide.
+      */}
+      <ul className="grid grid-flow-row-dense grid-cols-2 gap-[11px] min-[651px]:grid-cols-3 min-[860px]:grid-cols-4 min-[860px]:gap-[15px]">
+        {(tri === 'conseilles'
+          ? regrouperLesAlternatives(visibles)
+          : visibles.map((carte) => ({ cle: carte.slug, emplacement: '', cartes: [carte] }))
+        ).map((groupe) => {
+          const index = visibles.indexOf(groupe.cartes[0])
+          if (groupe.cartes.length === 1) {
+            return (
+              <li key={groupe.cle}>
+                <CarteDEclairage carte={groupe.cartes[0]} index={index} />
+              </li>
+            )
+          }
           return (
-            <li key={carte.slug}>
-              <article
-                className={cn(
-                  'group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-white shadow-soft transition-shadow hover:border-line-strong hover:shadow-pop',
-                  incompatible && 'opacity-75',
-                )}
-              >
-                {/*
-                  La photo occupe toute la largeur, sans marge, sur un fond
-                  sombre : c'est ce qui donne à la grille son unité, le
-                  catalogue mêlant des produits détourés sur blanc et des
-                  photos de feux allumés sur fond noir.
-                */}
-                <div className="relative block aspect-[1.64] overflow-hidden bg-[#282b2f]">
-                  {carte.image ? (
-                    <Image
-                      src={carte.image.url}
-                      alt=""
-                      fill
-                      sizes="(min-width: 860px) 340px, (min-width: 651px) 33vw, 50vw"
-                      /* Les premières cartes se chargent tout de suite : on les
-                         voyait vides (fond noir) le temps du défilement. */
-                      loading={index < 4 ? 'eager' : 'lazy'}
-                      fetchPriority={index < 4 ? 'high' : 'auto'}
-                      className="object-cover object-[center_54%]"
-                    />
-                  ) : null}
-                  <span className="absolute top-2.5 left-2.5 rounded-[4px] bg-[#18191b] px-[7px] py-1 text-[11px] leading-[1.05] font-bold tracking-[0.09em] text-white uppercase max-[470px]:top-[7px] max-[470px]:left-[7px]">
-                    {nomDeLaZone(zonePrincipale)}
+            <li
+              key={groupe.cle}
+              className="col-span-full rounded-[13px] border border-line bg-surface-soft p-[9px] min-[651px]:p-3"
+            >
+              <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-1">
+                <h3 className="text-[15px] font-extrabold tracking-[-0.02em]">
+                  {groupe.emplacement}
+                  <span className="ml-2 text-[12px] font-bold text-muted-strong">
+                    {groupe.cartes.length} solutions au choix
                   </span>
-                  {carte.status !== 'CONFIRMED' ? (
-                    <FitmentBadge
-                      status={carte.status}
-                      short
-                      className="absolute right-2.5 bottom-2.5 bg-white/95"
-                    />
-                  ) : null}
-                </div>
-
-                <div className="flex flex-1 flex-col p-2.5 min-[651px]:p-[13px]">
-                  {/* L'emplacement en étiquette, ce qu'est le produit en titre. */}
-                  <p className="text-[11px] font-bold tracking-[0.04em] text-brand uppercase">
-                    {carte.emplacements.map((e) => e.label).join(' · ')}
-                  </p>
-                  <h3 className="mt-1 text-[14px] leading-[1.22] font-extrabold tracking-[-0.023em] min-[651px]:text-[15px]">
-                    {presentation.titre ?? carte.emplacements.map((e) => e.label).join(' · ')}
-                  </h3>
-                  {presentation.phrase ? (
-                    <p className="mt-[5px] text-[12px] leading-[1.4] text-muted-strong">
-                      {presentation.phrase}
-                    </p>
-                  ) : null}
-
-                  {carte.quantite ? (
-                    <p className="mt-1 text-[11px] text-muted-strong">
-                      {carte.quantite} nécessaires pour cet emplacement
-                    </p>
-                  ) : null}
-
-                  {/* La réserve appartient à SON conditionnement : « adaptateurs
-                      non inclus » ne vaut pas pour le kit qui les contient. */}
-                  {carte.reserve ? (
-                    <p className="mt-2 rounded-[5px] bg-warn-soft px-2 py-1.5 text-[11px] leading-snug text-warn">
-                      {carte.reserve}
-                    </p>
-                  ) : null}
-
-                  {carte.autres.length > 0 ? (
-                    <p className="mt-2 text-[11px] text-muted-strong">
-                      {carte.autres.map((autre) => (
-                        <span key={autre.nom} className="block">
-                          {autre.nom}{' '}
-                          <span className="font-bold text-slate-ink">
-                            {formatPrice(autre.prixCents)}
-                          </span>
-                        </span>
-                      ))}
-                    </p>
-                  ) : null}
-
-                  {carte.verifie ? (
-                    <p className="mt-2 text-[11px] text-muted">{carte.verifie}</p>
-                  ) : null}
-
-                  <div className="mt-auto flex items-center justify-between gap-1.5 pt-3.5 max-[470px]:flex-col max-[470px]:items-stretch max-[470px]:pt-2">
-                    <strong className="text-[19px] font-extrabold tracking-[-0.036em] whitespace-nowrap">
-                      {formatPrice(carte.prixCents)}
-                    </strong>
-                    {/*
-                      `after:inset-0` étend le lien à toute la vignette : on
-                      clique la carte, pas seulement son bouton, et le lecteur
-                      d'écran n'annonce pourtant qu'un seul lien.
-                    */}
-                    <Link
-                      href={`/p/${carte.slug}`}
-                      className="inline-flex min-h-[38px] items-center justify-center gap-[5px] rounded-lg border border-line bg-white px-[9px] text-[11px] font-bold whitespace-nowrap text-slate-ink transition-colors after:absolute after:inset-0 after:content-[''] hover:border-brand hover:bg-surface-paper hover:text-brand"
-                    >
-                      {incompatible ? 'Voir pourquoi' : 'Voir le pack'}
-                      <IconArrowRight className="size-3.5 shrink-0" />
-                    </Link>
-                  </div>
-                </div>
-              </article>
+                </h3>
+                <p className="text-[12px] text-muted-strong">
+                  Un seul pack suffit pour cet éclairage.
+                </p>
+              </div>
+              <ul className="grid grid-cols-2 gap-[11px] min-[651px]:grid-cols-3 min-[860px]:grid-cols-4 min-[860px]:gap-[15px]">
+                {groupe.cartes.map((carte) => (
+                  <li key={carte.slug}>
+                    <CarteDEclairage carte={carte} index={visibles.indexOf(carte)} />
+                  </li>
+                ))}
+              </ul>
             </li>
           )
         })}
@@ -258,3 +197,118 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
     </>
   )
 }
+
+/**
+ * Une vignette d'éclairage. `index` règle le chargement des photos : les
+ * premières partent tout de suite, les autres au défilement.
+ */
+function CarteDEclairage({ carte, index }: { carte: CarteEclairage; index: number }) {
+  const zonePrincipale = zoneDeLEmplacement(carte.emplacements[0].code)
+  const presentation = presentationDeCarte(carte.nom, carte.conditionnement)
+  const incompatible = carte.status === 'INCOMPATIBLE'
+  return (
+    <article
+      className={cn(
+        'group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-white shadow-soft transition-shadow hover:border-line-strong hover:shadow-pop',
+        incompatible && 'opacity-75',
+      )}
+    >
+      {/*
+        La photo occupe toute la largeur, sans marge, sur un fond
+        sombre : c'est ce qui donne à la grille son unité, le
+        catalogue mêlant des produits détourés sur blanc et des
+        photos de feux allumés sur fond noir.
+      */}
+      <div className="relative block aspect-[1.64] overflow-hidden bg-[#282b2f]">
+        {carte.image ? (
+          <Image
+            src={carte.image.url}
+            alt=""
+            fill
+            sizes="(min-width: 860px) 340px, (min-width: 651px) 33vw, 50vw"
+            /* Les premières cartes se chargent tout de suite : on les
+               voyait vides (fond noir) le temps du défilement. */
+            loading={index < 4 ? 'eager' : 'lazy'}
+            fetchPriority={index < 4 ? 'high' : 'auto'}
+            className="object-cover object-[center_54%]"
+          />
+        ) : null}
+        <span className="absolute top-2.5 left-2.5 rounded-[4px] bg-[#18191b] px-[7px] py-1 text-[11px] leading-[1.05] font-bold tracking-[0.09em] text-white uppercase max-[470px]:top-[7px] max-[470px]:left-[7px]">
+          {nomDeLaZone(zonePrincipale)}
+        </span>
+        {carte.status !== 'CONFIRMED' ? (
+          <FitmentBadge
+            status={carte.status}
+            short
+            className="absolute right-2.5 bottom-2.5 bg-white/95"
+          />
+        ) : null}
+      </div>
+
+      <div className="flex flex-1 flex-col p-2.5 min-[651px]:p-[13px]">
+        {/* L'emplacement en étiquette, ce qu'est le produit en titre. */}
+        <p className="text-[11px] font-bold tracking-[0.04em] text-brand uppercase">
+          {carte.emplacements.map((e) => e.label).join(' · ')}
+        </p>
+        <h3 className="mt-1 text-[14px] leading-[1.22] font-extrabold tracking-[-0.023em] min-[651px]:text-[15px]">
+          {presentation.titre ?? carte.emplacements.map((e) => e.label).join(' · ')}
+        </h3>
+        {presentation.phrase ? (
+          <p className="mt-[5px] text-[12px] leading-[1.4] text-muted-strong">
+            {presentation.phrase}
+          </p>
+        ) : null}
+
+        {carte.quantite ? (
+          <p className="mt-1 text-[11px] text-muted-strong">
+            {carte.quantite} nécessaires pour cet emplacement
+          </p>
+        ) : null}
+
+        {/* La réserve appartient à SON conditionnement : « adaptateurs
+            non inclus » ne vaut pas pour le kit qui les contient. */}
+        {carte.reserve ? (
+          <p className="mt-2 rounded-[5px] bg-warn-soft px-2 py-1.5 text-[11px] leading-snug text-warn">
+            {carte.reserve}
+          </p>
+        ) : null}
+
+        {carte.autres.length > 0 ? (
+          <p className="mt-2 text-[11px] text-muted-strong">
+            {carte.autres.map((autre) => (
+              <span key={autre.nom} className="block">
+                {autre.nom}{' '}
+                <span className="font-bold text-slate-ink">
+                  {formatPrice(autre.prixCents)}
+                </span>
+              </span>
+            ))}
+          </p>
+        ) : null}
+
+        {carte.verifie ? (
+          <p className="mt-2 text-[11px] text-muted">{carte.verifie}</p>
+        ) : null}
+
+        <div className="mt-auto flex items-center justify-between gap-1.5 pt-3.5 max-[470px]:flex-col max-[470px]:items-stretch max-[470px]:pt-2">
+          <strong className="text-[19px] font-extrabold tracking-[-0.036em] whitespace-nowrap">
+            {formatPrice(carte.prixCents)}
+          </strong>
+          {/*
+            `after:inset-0` étend le lien à toute la vignette : on
+            clique la carte, pas seulement son bouton, et le lecteur
+            d'écran n'annonce pourtant qu'un seul lien.
+          */}
+          <Link
+            href={`/p/${carte.slug}`}
+            className="inline-flex min-h-[38px] items-center justify-center gap-[5px] rounded-lg border border-line bg-white px-[9px] text-[11px] font-bold whitespace-nowrap text-slate-ink transition-colors after:absolute after:inset-0 after:content-[''] hover:border-brand hover:bg-surface-paper hover:text-brand"
+          >
+            {incompatible ? 'Voir pourquoi' : 'Voir le pack'}
+            <IconArrowRight className="size-3.5 shrink-0" />
+          </Link>
+        </div>
+      </div>
+    </article>
+  )
+}
+

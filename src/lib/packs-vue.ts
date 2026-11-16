@@ -445,3 +445,36 @@ export function titreDesTechnologies(cartes: Array<{ nom: string }>): string {
   if (avecXenon) return 'Éclairage xénon'
   return 'Éclairage LED'
 }
+
+/** Des cartes qui se remplacent l'une l'autre, pour un même éclairage. */
+export type GroupeDAlternatives = {
+  cle: string
+  /** « Feux de croisement » : ce que toutes les cartes du groupe éclairent. */
+  emplacement: string
+  cartes: CarteEclairage[]
+}
+
+/**
+ * Les cartes regroupées par éclairage, dans l'ordre où elles arrivent.
+ *
+ * Sur une page véhicule, trois solutions pour les feux de croisement — effet
+ * xénon, kit LED, kit xénon HID — s'alignaient comme trois produits à
+ * acheter (audit du 16 novembre 2026). Elles sont maintenant réunies sous
+ * leur éclairage, qui dit qu'il en faut une seule. La règle des alternatives
+ * est celle du total « Tout l'éclairage » (`cleDEmplacement`) : la page et
+ * la somme ne peuvent pas se contredire.
+ *
+ * Un groupe d'une seule carte reste une carte : c'est le cas de 98 % des
+ * emplacements du catalogue, et il n'y a là rien à comparer.
+ */
+export function regrouperLesAlternatives(cartes: CarteEclairage[]): GroupeDAlternatives[] {
+  const groupes = new Map<string, GroupeDAlternatives>()
+  for (const carte of cartes) {
+    const emplacement = carte.emplacements[0]?.label ?? carte.slug
+    const cle = cleDEmplacement(emplacement, carte.nom)
+    const groupe = groupes.get(cle) ?? { cle, emplacement, cartes: [] }
+    groupe.cartes.push(carte)
+    groupes.set(cle, groupe)
+  }
+  return [...groupes.values()]
+}

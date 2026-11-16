@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   libelleVoirLesPacks,
   phraseDesEmplacements,
+  regrouperLesAlternatives,
   resumeDeGeneration,
   titreDesTechnologies,
 } from '@/lib/packs-vue'
@@ -96,5 +97,32 @@ describe('titreDesTechnologies', () => {
     ).toBe('Éclairage LED et xénon')
     expect(titreDesTechnologies([{ nom: 'Kit xénon HID' }])).toBe('Éclairage xénon')
     expect(titreDesTechnologies([])).toBe('Éclairage LED')
+  })
+})
+
+describe('regrouperLesAlternatives', () => {
+  const carte = (slug: string, label: string, nom = `Pack ${slug}`) =>
+    ({ slug, nom, emplacements: [{ code: label, label }] }) as unknown as Parameters<
+      typeof regrouperLesAlternatives
+    >[0][number]
+
+  it('réunit les solutions d’un même éclairage, à la place de la première', () => {
+    const groupes = regrouperLesAlternatives([
+      carte('xenon', 'Feux de croisement', 'Pack ampoules effet xénon'),
+      carte('plaque', 'Éclairage de plaque'),
+      carte('kit-led', 'Feux de croisement', 'Kit LED'),
+    ])
+    expect(groupes.map((g) => [g.emplacement, g.cartes.map((c) => c.slug)])).toEqual([
+      ['Feux de croisement', ['xenon', 'kit-led']],
+      ['Éclairage de plaque', ['plaque']],
+    ])
+  })
+
+  it('sépare feux de jour et veilleuses, comme le total', () => {
+    const groupes = regrouperLesAlternatives([
+      carte('veilleuses', 'Veilleuses', 'Ampoules LED de veilleuses'),
+      carte('jour', 'Veilleuses', 'Ampoules LED de feux de jour'),
+    ])
+    expect(groupes).toHaveLength(2)
   })
 })
