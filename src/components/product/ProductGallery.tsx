@@ -210,9 +210,18 @@ export function ProductGallery({
     <div>
       <div className="flex flex-col gap-2.5 fiche:flex-row-reverse fiche:items-start fiche:gap-3">
         {/* .main-visual */}
+        {/*
+          Sur téléphone, le cadre passe en 4:3 : carré, il occupait toute la
+          largeur ET autant en hauteur (près de 360 px à 390 px de large), et
+          repoussait le prix sous la ligne de flottaison (relecture du
+          17 novembre 2026). Un packshot reste contenu en entier, un rendu est
+          recadré au centre. La composition (« Dans le pack ») garde le carré :
+          sa liste ne doit pas être coupée. Carré au-delà de 800 px.
+        */}
         <div
           className={cn(
-            'relative aspect-square w-full overflow-hidden rounded-xl fiche:min-w-0 fiche:flex-1 fiche:rounded-2xl',
+            'relative w-full overflow-hidden rounded-xl fiche:aspect-square fiche:min-w-0 fiche:flex-1 fiche:rounded-2xl',
+            packAffiche ? 'aspect-square' : 'aspect-[4/3]',
             comparatifAffiche ? 'bg-[#18191b]' : 'bg-[#f2f2f2]',
           )}
         >
