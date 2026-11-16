@@ -805,8 +805,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           >
             <div className="mb-6 fiche:mb-8 fiche:flex fiche:items-end fiche:justify-between fiche:gap-8">
               <div>
+                {/* « Tout est prévu » ne disait rien de la section. Le surtitre
+                    nomme ce qu'elle montre (relecture du 17 novembre 2026). */}
                 <p className="mb-2 text-[12px] font-bold tracking-[1.4px] text-brand uppercase">
-                  Tout est prévu
+                  {vehiculeDeLaFiche ? 'Ce que vous recevez' : 'Détails du produit'}
                 </p>
                 <h2
                   id="titre-contenu"

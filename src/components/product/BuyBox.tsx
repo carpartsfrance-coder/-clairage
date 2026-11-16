@@ -408,9 +408,15 @@ export function BuyBox({
         </Alert>
       ) : null}
 
+      {/*
+        Ton neutre, pas vert : le vert dit « compatible », et rien n'est
+        encore confirmé tant que le client n'a pas indiqué sa version et son
+        équipement d'origine (relecture du 17 novembre 2026). Il reste réservé
+        à « Compatible avec votre … », plus haut.
+      */}
       {!vehicleLabel && concuPour ? (
         <Alert
-          tone="ok"
+          tone="info"
           title={
             typeHorsAmpoules(productName)
               ? `Prévu pour ${leVehicule(concuPour, moto)}.`
@@ -425,8 +431,13 @@ export function BuyBox({
         </Alert>
       ) : null}
 
+      {/*
+        Sur ordinateur, la barre « Votre véhicule » au-dessus de la galerie dit
+        déjà qu'aucun véhicule n'est choisi : l'encadré ne s'affiche que sur
+        téléphone, où cette barre est masquée. Un seul message par écran.
+      */}
       {!vehicleLabel && !concuPour ? (
-        <Alert tone="info" title="Indiquez votre véhicule." className="mb-5">
+        <Alert tone="info" title="Indiquez votre véhicule." className="mb-5 fiche:hidden">
           Le bon éclairage dépend du bloc optique et de l&apos;équipement d&apos;origine, pas
           seulement du culot.{' '}
           <Link href={lienChoixVehicule} className="font-semibold underline underline-offset-4">
@@ -453,7 +464,7 @@ export function BuyBox({
       {variants.length > 1 && !optionsDesVariantes(variants) ? (
         <fieldset>
           <div className="mb-2.5 flex items-center justify-between gap-4 text-[15px] font-bold">
-            <legend>Choisissez votre kit</legend>
+            <legend>{titreDuChoix(variants)}</legend>
             <a
               href={contentAnchor}
               className="shrink-0 text-[13px] font-normal text-[#55585b] underline underline-offset-2 hover:text-ink"
@@ -1115,4 +1126,21 @@ function ChoixDOptions({
       </div>
     </fieldset>
   )
+}
+
+/**
+ * Le titre de la liste des conditionnements, d'après ce qui les distingue.
+ *
+ * Il disait « Choisissez votre kit » partout, y compris sur une ampoule W5W
+ * vendue à l'unité en trois teintes, où l'on choisit une couleur de lumière
+ * (relecture du 17 novembre 2026).
+ */
+export function titreDuChoix(variants: Array<{ name: string; packaging: VariantView['packaging'] }>): string {
+  const teinte = /\d[\d\s\u202f]*\s?K\b/
+  const memeConditionnement = new Set(variants.map((variant) => variant.packaging)).size === 1
+  if (memeConditionnement && variants.every((variant) => teinte.test(variant.name))) {
+    return 'Choisissez votre couleur de lumière'
+  }
+  if (!memeConditionnement) return 'Choisissez votre conditionnement'
+  return variants[0]?.packaging === 'KIT' ? 'Choisissez votre kit' : 'Choisissez votre version'
 }
