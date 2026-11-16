@@ -896,7 +896,17 @@ export function BuyBox({
                 {formatPrice(total)}
               </strong>
               <span className="mt-0.5 block text-[11px] leading-[1.4] whitespace-nowrap text-[#6b6d70] fiche:text-[12px]">
-                TTC{delivery?.priceLabel ? ` · ${delivery.priceLabel.toLowerCase()}` : null}
+                TTC
+                {/*
+                  La livraison ne tient pas sur téléphone : « TTC · livraison à
+                  partir de 5,90 € », insécable, prenait 170 px à 390 px de
+                  large et tronquait le bouton voisin en « Faire vérifier mon
+                  vé… » (audit du 16 novembre 2026). Le bloc d'achat la dit
+                  déjà, juste au-dessus.
+                */}
+                {delivery?.priceLabel ? (
+                  <span className="max-fiche:hidden"> · {delivery.priceLabel.toLowerCase()}</span>
+                ) : null}
               </span>
             </div>
 
