@@ -418,3 +418,42 @@
     transform: scaleX(0.9);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Plancher de contraste
+   -------------------------------------------------------------------------- */
+
+/*
+  Même logique que le plancher de lisibilité ci-dessus, pour la couleur.
+
+  L'audit du 16 novembre 2026 (Lighthouse, 97/100 en accessibilité) relevait
+  du texte trop pâle. Neuf gris, posés en valeurs arbitraires sur fond blanc
+  ou gris clair, restaient sous le seuil de 4,5:1 exigé pour du texte
+  courant : #7e7e7e (4,06), #7a7a7a (4,29), #828282 (3,84), #808080 (3,95),
+  #8b8b8b (3,41), #8c8c8c (3,36), #898989 (3,50), #8a8a8a (3,45) et
+  #888888 (3,54). Ils sont relevés ensemble sur #666a6f : 5,45:1 sur blanc,
+  4,77:1 sur le gris le plus foncé des fonds du site (#eef0f2). La teinte
+  reste un gris neutre, un cran plus soutenu ; la hiérarchie est gardée.
+
+  Tous ces usages sont sur fond clair (relevé dans le code le 16 novembre).
+  Les gris posés sur les bandeaux sombres ne sont pas dans cette liste, et
+  les `placeholder:` non plus : ce sont d'autres classes.
+
+  Dans la couche `utilities`, et non hors couche comme le plancher de taille :
+  hors couche, la règle l'emporterait aussi sur `hover:text-…` (« Aide &
+  contact » dans l'en-tête ne foncerait plus au survol). Dans la couche, elle
+  ne bat que la classe qu'elle remplace, posée plus tôt.
+*/
+@layer utilities {
+  .text-\[\#7e7e7e\],
+  .text-\[\#7a7a7a\],
+  .text-\[\#828282\],
+  .text-\[\#808080\],
+  .text-\[\#8b8b8b\],
+  .text-\[\#8c8c8c\],
+  .text-\[\#898989\],
+  .text-\[\#8a8a8a\],
+  .text-\[\#888888\] {
+    color: #666a6f;
+  }
+}
