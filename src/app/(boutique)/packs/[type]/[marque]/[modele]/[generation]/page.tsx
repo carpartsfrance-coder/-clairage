@@ -276,6 +276,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                 emplacements={total.emplacements}
                 totalCents={total.totalCents}
                 variantIds={total.variantIds}
+                lignes={total.lignes}
               />
             ) : null}
 

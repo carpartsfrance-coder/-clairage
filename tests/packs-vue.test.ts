@@ -130,6 +130,7 @@ describe('totalVehicule', () => {
       emplacements: 0,
       totalCents: 0,
       variantIds: [],
+      lignes: [],
     })
   })
 })
@@ -276,6 +277,11 @@ describe('totalDesCartes', () => {
       totalCents: 11880,
       // Le bouton « ajouter tous les packs » n'achète que ces deux-là.
       variantIds: ['v-phares', 'v-plaque'],
+      // Et le détail affiché les nomme, dans l'ordre de la page.
+      lignes: [
+        { nom: 'Pack phares', emplacement: 'Feux de croisement', prixCents: 10390 },
+        { nom: 'Pack plaque', emplacement: 'Éclairage de plaque', prixCents: 1490 },
+      ],
     })
   })
 
@@ -289,6 +295,7 @@ describe('totalDesCartes', () => {
       emplacements: 1,
       totalCents: 10390,
       variantIds: ['v-phares'],
+      lignes: [{ nom: 'Pack phares', emplacement: 'Feux de croisement', prixCents: 10390 }],
     })
   })
 })

@@ -435,6 +435,7 @@ export default async function Page() {
                 emplacements={total.emplacements}
                 totalCents={total.totalCents}
                 variantIds={total.variantIds}
+                lignes={total.lignes}
               />
             ) : null}
 

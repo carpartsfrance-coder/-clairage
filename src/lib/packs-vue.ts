@@ -1,4 +1,5 @@
 import { natureDuProduit } from './types-produit'
+import { presentationDeCarte } from './carte-titre'
 import type { FitmentStatus } from './fitment'
 import type { PackPositionGroup, PackProduct } from './queries/packs'
 import { nomUtileDuConditionnement } from './nom-conditionnement'
@@ -149,6 +150,15 @@ export type TotalVehicule = {
    * mettre au panier, et le bouton ne l'invente pas.
    */
   variantIds: string[]
+  /**
+   * Le détail de la sélection, dans l'ordre de la page.
+   *
+   * La bande annonçait « 8 emplacements » puis « Ajouter les 9 packs » sans
+   * dire lesquels (audit du 16 novembre 2026) : un emplacement peut compter
+   * deux packs distincts — feux de jour et veilleuses, répétiteurs et
+   * clignotants. Le client voit maintenant ce qu'il ajoute, ligne à ligne.
+   */
+  lignes: Array<{ nom: string; emplacement: string; prixCents: number }>
 }
 
 /**
@@ -189,6 +199,13 @@ export function totalDesCartes(cartes: CarteEclairage[]): TotalVehicule {
     variantIds: retenues
       .map((carte) => carte.variantId)
       .filter((id): id is string => id !== null),
+    lignes: retenues.map((carte) => ({
+      // Le titre que porte la carte (« Ampoules effet xénon »), pas le nom
+      // complet de la fiche : le détail doit se lire comme les vignettes.
+      nom: presentationDeCarte(carte.nom, carte.conditionnement).titre ?? carte.nom,
+      emplacement: carte.emplacements.map((e) => e.label).join(', '),
+      prixCents: carte.prixCents,
+    })),
   }
 }
 
