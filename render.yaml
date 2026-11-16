@@ -173,6 +173,23 @@ services:
       - key: EMAIL_API_KEY
         sync: false
 
+      # --- Conversions Google Ads --------------------------------------------
+      # Les deux valeurs de l'action de conversion « Achat » du compte
+      # LEDVROOM. Déclarées ici en `sync: false` pour une seule raison : une
+      # synchronisation du blueprint efface les variables qui n'y figurent
+      # pas. Sans ces deux lignes, le suivi des conversions s'arrêterait un
+      # jour tout seul, sans message, et personne ne saurait pourquoi les
+      # ventes ont cessé de remonter.
+      #
+      # ⚠ Elles commandent le bandeau de consentement : tant qu'elles sont
+      #   vides, le site ne charge aucun script Google, n'affiche aucun
+      #   bandeau, et /cookies dit qu'il n'y a pas de cookie de publicité.
+      #   Voir lib/google-ads.ts et components/consentement/.
+      - key: NEXT_PUBLIC_GOOGLE_ADS_ID
+        sync: false
+      - key: NEXT_PUBLIC_GOOGLE_ADS_LIBELLE_ACHAT
+        sync: false
+
       # --- Travaux de fond ---------------------------------------------------
       # Partagé avec le cron : protège /api/jobs/run contre un appel public.
       - key: JOB_RUNNER_TOKEN
