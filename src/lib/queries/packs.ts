@@ -304,8 +304,8 @@ export type PackGeneration = {
   /**
    * Générations visibles du modèle, celle-ci comprise.
    *
-   * À une seule, la page du modèle renvoie ici même : le fil d'Ariane mène
-   * alors à la marque plutôt que de proposer un lien qui tourne en rond.
+   * À une seule, la page du modèle renvoie ici même : le fil d'Ariane affiche
+   * alors le nom du modèle sans lien, plutôt qu'un lien qui tourne en rond.
    */
   modelGenerationCount: number
   generationName: string

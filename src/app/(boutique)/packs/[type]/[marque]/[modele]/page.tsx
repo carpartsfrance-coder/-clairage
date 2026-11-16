@@ -8,7 +8,9 @@ import {
   type PackLookup,
   type PackModel,
 } from '@/lib/queries/packs'
+import { dureeGarantie } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
+import { BreadcrumbStructuredData } from '@/components/seo/StructuredData'
 import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { IconChevronRight } from '@/components/ui/icons'
 import { GenerationThumb } from '@/components/packs/GenerationThumb'
@@ -66,9 +68,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       : { title: 'Packs par véhicule' }
   }
 
+  // Même raison que la page marque : dire au client ce qu'il trouvera.
+  const { makeName, model } = read.data
+  const periodes = model.generations.map((generation) => generation.years)
   return {
-    title: `Éclairage ${read.data.makeName} ${read.data.model.name}`,
-    description: `Les générations de ${read.data.makeName} ${read.data.model.name} et leurs éclairages documentés.`,
+    title: `Éclairage LED ${makeName} ${model.name} : packs par génération`,
+    description: [
+      `Choisissez la génération de votre ${makeName} ${model.name}${
+        periodes.length > 1 ? ` (${periodes.join(', ')})` : ''
+      } pour voir les packs LED et effet xénon composés pour elle.`,
+      dureeGarantie() ? `Garantie ${dureeGarantie()}.` : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
     alternates: { canonical: `/packs/${type}/${marque}/${modele}` },
   }
 }
@@ -107,16 +119,19 @@ export default async function PacksModelePage({ params }: PageProps) {
     redirect(`/packs/${type}/${marque}/${modele}/${seule.slug}`)
   }
 
+  // Le même fil pour l'affichage et pour Google (BreadcrumbList) : deux
+  // listes finiraient par diverger, et c'est le balisage qu'on ne relit pas.
+  const filDAriane = [
+    { label: 'Accueil', href: '/' },
+    { label: libelle.long, href: `/packs/${type}` },
+    { label: makeName, href: `/packs/${type}/${marque}` },
+    { label: model.name },
+  ]
+
   return (
     <div className="container-page pb-10 fiche:pb-14">
-      <Breadcrumb
-        items={[
-          { label: 'Accueil', href: '/' },
-          { label: libelle.long, href: `/packs/${type}` },
-          { label: makeName, href: `/packs/${type}/${marque}` },
-          { label: model.name },
-        ]}
-      />
+      <Breadcrumb items={filDAriane} />
+      <BreadcrumbStructuredData items={filDAriane} />
 
       <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         Éclairage {makeName} {model.name}

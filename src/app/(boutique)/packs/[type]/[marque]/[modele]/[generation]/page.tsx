@@ -9,6 +9,7 @@ import {
 } from '@/lib/queries/packs'
 import { getSelectedVehicle } from '@/lib/session'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
+import { BreadcrumbStructuredData } from '@/components/seo/StructuredData'
 import { EmptyState } from '@/components/ui/Surface'
 import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { ButtonLink } from '@/components/ui/Button'
@@ -143,24 +144,28 @@ export default async function PacksGenerationPage({ params }: PageProps) {
     vehicle && data.equipments.some((e) => e.configurationId === vehicle.configurationId),
   )
 
+  // Le même fil pour l'affichage et pour Google (BreadcrumbList) : deux
+  // listes finiraient par diverger, et c'est le balisage qu'on ne relit pas.
+  const filDAriane = [
+    { label: 'Accueil', href: '/' },
+    { label: libelle.long, href: `/packs/${type}` },
+    { label: data.makeName, href: `/packs/${type}/${marque}` },
+    {
+      label: data.modelName,
+      // Modèle à une seule génération : sa page renvoie ici même. Le nom
+      // reste affiché, sans lien qui tournerait en rond.
+      href: data.modelGenerationCount > 1 ? `/packs/${type}/${marque}/${modele}` : undefined,
+    },
+    { label: `${data.generationName} ${data.years}` },
+  ]
+
   return (
     <div className="container-page pb-10 fiche:pb-14">
-      <Breadcrumb
-        items={[
-          { label: 'Accueil', href: '/' },
-          { label: libelle.long, href: `/packs/${type}` },
-          { label: data.makeName, href: `/packs/${type}/${marque}` },
-          {
-            label: data.modelName,
-            // Modèle à une seule génération : sa page renvoie ici, le lien
-            // mène donc à la marque, où le client peut choisir un autre modèle.
-            href:
-              data.modelGenerationCount > 1
-                ? `/packs/${type}/${marque}/${modele}`
-                : `/packs/${type}/${marque}`,
-          },
-          { label: `${data.generationName} ${data.years}` },
-        ]}
+      <Breadcrumb items={filDAriane} />
+      {/* Google veut une adresse à chaque étape sauf la dernière : une étape
+          sans page (modèle à une seule génération) n'y figure pas. */}
+      <BreadcrumbStructuredData
+        items={filDAriane.filter((etape, index) => etape.href || index === filDAriane.length - 1)}
       />
 
       <BandeauVehicule

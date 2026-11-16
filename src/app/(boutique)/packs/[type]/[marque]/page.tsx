@@ -7,7 +7,9 @@ import {
   getPackMake,
   type PackModel,
 } from '@/lib/queries/packs'
+import { dureeGarantie } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
+import { BreadcrumbStructuredData } from '@/components/seo/StructuredData'
 import { MakeSearch } from '@/components/packs/MakeSearch'
 import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { IconChevronRight } from '@/components/ui/icons'
@@ -53,9 +55,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       : { title: 'Packs par véhicule' }
   }
 
+  /*
+    « Les éclairages documentés pour les modèles Renault » ne disait pas ce
+    que la page offre (audit du 16 novembre 2026). Le titre nomme la
+    recherche du client, la description la promesse et le nombre de modèles,
+    tirés du catalogue — rien qui ne soit sur la page.
+  */
+  const nombreDeModeles = make.data.models.length
   return {
-    title: `Éclairage ${make.data.name}`,
-    description: `Les éclairages documentés pour les modèles ${make.data.name}.`,
+    title: `Éclairage LED ${make.data.name} : packs par modèle`,
+    description: [
+      `Choisissez votre ${make.data.name} et sa génération : packs LED et effet xénon composés pour votre véhicule, emplacement par emplacement.`,
+      nombreDeModeles > 1 ? `${nombreDeModeles} modèles proposés.` : '',
+      dureeGarantie() ? `Garantie ${dureeGarantie()}.` : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
     alternates: { canonical: `/packs/${type}/${marque}` },
   }
 }
@@ -91,15 +106,18 @@ export default async function PacksMarquePage({ params }: PageProps) {
 
   const { name: makeName, models } = make.data
 
+  // Le même fil pour l'affichage et pour Google (BreadcrumbList) : deux
+  // listes finiraient par diverger, et c'est le balisage qu'on ne relit pas.
+  const filDAriane = [
+    { label: 'Accueil', href: '/' },
+    { label: libelle.long, href: `/packs/${type}` },
+    { label: makeName },
+  ]
+
   return (
     <div className="container-page pb-10 fiche:pb-14">
-      <Breadcrumb
-        items={[
-          { label: 'Accueil', href: '/' },
-          { label: libelle.long, href: `/packs/${type}` },
-          { label: makeName },
-        ]}
-      />
+      <Breadcrumb items={filDAriane} />
+      <BreadcrumbStructuredData items={filDAriane} />
 
       <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         Éclairage {makeName}
