@@ -378,8 +378,16 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             {
               Icon: IconReturn,
               titre: promesseRetour() ?? '',
+              /*
+                « Le temps d'essayer, sinon on rembourse » promettait l'essai,
+                alors qu'après le délai légal l'article doit revenir neuf et
+                complet (identity.ts, FAQ, page Livraison & retours) : une
+                ampoule ne s'essaie pas sans être montée. L'audit du
+                16 novembre 2026 y voyait un risque de litige. La phrase dit
+                maintenant la règle réelle.
+              */
               texte: commercialTerms.satisfaitDays
-                ? 'Le temps d’essayer, sinon on rembourse'
+                ? 'Article neuf et complet : on rembourse'
                 : 'Le temps de changer d’avis',
             },
           ]
