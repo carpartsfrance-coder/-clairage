@@ -292,12 +292,16 @@ export function CheckoutForm({
               la commande partait sur son compte avec un contact différent — sans
               que rien ne le signale.
             */}
+            {/*
+              Une ligne, pas un paragraphe : sur téléphone, trois lignes
+              d'explication repoussaient les champs sous l'écran (audit du
+              16 novembre 2026). Le champ e-mail, prérempli et modifiable,
+              dit lui-même qu'on peut changer l'adresse de contact.
+            */}
             {account ? (
               <p className="mt-2 text-[11px] leading-[1.7] text-muted-strong">
-                Connecté avec <strong className="text-slate-ink">{account.email}</strong> : cette
-                commande sera rattachée à ce compte et visible dans votre espace client. Vous
-                pouvez indiquer une autre adresse de contact ci-dessous si la confirmation doit
-                partir ailleurs.
+                Connecté avec <strong className="text-slate-ink">{account.email}</strong> : la
+                commande sera rattachée à votre compte.
               </p>
             ) : null}
 
