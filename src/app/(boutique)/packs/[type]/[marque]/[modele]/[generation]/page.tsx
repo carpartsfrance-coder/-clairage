@@ -24,6 +24,7 @@ import {
   cartesDesPacks,
   libelleVoirLesPacks,
   phraseDesEmplacements,
+  titreDesTechnologies,
   totalDesCartes,
 } from '@/lib/packs-vue'
 import { phaseUtile } from '@/lib/resultats-vue'
@@ -88,12 +89,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const data = lecture.data
   const emplacements = [...new Set(data.groups.map((groupe) => groupe.label))]
+  // « Packs LED » seulement quand tout l'est : même règle que le bandeau.
+  const technologies = titreDesTechnologies(cartesDesPacks(data.groups))
+  const packsDe = technologies === 'Éclairage LED' ? 'Packs LED' : 'Packs LED et xénon'
   return {
     title: `Éclairage ${data.makeName} ${data.generationName} ${data.years}`,
     description: [
       emplacements.length > 0
-        ? `Packs LED pour ${data.makeName} ${data.generationName} (${data.years}) : ${emplacements.slice(0, 5).join(', ').toLowerCase()}${emplacements.length > 5 ? '…' : '.'}`
-        : `Éclairage LED pour ${data.makeName} ${data.generationName} (${data.years}).`,
+        ? `${technologies === 'Éclairage xénon' ? 'Packs xénon' : packsDe} pour ${data.makeName} ${data.generationName} (${data.years}) : ${emplacements.slice(0, 5).join(', ').toLowerCase()}${emplacements.length > 5 ? '…' : '.'}`
+        : `${technologies} pour ${data.makeName} ${data.generationName} (${data.years}).`,
       'Composés pour votre véhicule, à monter à la place des ampoules d’origine.',
       dureeGarantie() ? `Garantie ${dureeGarantie()}.` : '',
     ]
@@ -170,7 +174,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
 
       <BandeauVehicule
         surtitre={`${data.makeName} ${data.generationName} · ${data.years}`}
-        titre="Éclairage LED"
+        titre={titreDesTechnologies(cartes)}
         sousTitre={`pour ${data.makeName} ${data.generationName}`}
         description={phraseDesEmplacements(data.groups)}
         marque={data.makeName}

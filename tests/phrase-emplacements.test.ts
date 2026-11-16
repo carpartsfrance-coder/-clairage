@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { libelleVoirLesPacks, phraseDesEmplacements, resumeDeGeneration } from '@/lib/packs-vue'
+import {
+  libelleVoirLesPacks,
+  phraseDesEmplacements,
+  resumeDeGeneration,
+  titreDesTechnologies,
+} from '@/lib/packs-vue'
 import type { PackPositionGroup } from '@/lib/queries/packs'
 
 const groupe = (code: string, label: string, n = 1): PackPositionGroup => ({
@@ -76,5 +81,20 @@ describe('resumeDeGeneration', () => {
     expect(resumeDeGeneration({ packCount: 0, configurationCount: 1, hasFitments: false })).toBe(
       'Compatibilités non encore relevées',
     )
+  })
+})
+
+
+describe('titreDesTechnologies', () => {
+  it('garde « LED » et ajoute « xénon » quand la page en propose', () => {
+    expect(titreDesTechnologies([{ nom: 'Pack LED plaque' }])).toBe('Éclairage LED')
+    expect(
+      titreDesTechnologies([
+        { nom: 'Pack ampoules effet xénon phares pour Renault Clio 4' },
+        { nom: 'Pack LED plaque' },
+      ]),
+    ).toBe('Éclairage LED et xénon')
+    expect(titreDesTechnologies([{ nom: 'Kit xénon HID' }])).toBe('Éclairage xénon')
+    expect(titreDesTechnologies([])).toBe('Éclairage LED')
   })
 })

@@ -19,7 +19,7 @@ import {
 import { ARGS_COUVERTURE, couverture } from '@/lib/media-couverture'
 import { couvertureType } from '@/lib/images-types'
 import { cartesDesResultats, phaseUtile, type GroupeResultat } from '@/lib/resultats-vue'
-import { libelleVoirLesPacks, totalDesCartes } from '@/lib/packs-vue'
+import { libelleVoirLesPacks, titreDesTechnologies, totalDesCartes } from '@/lib/packs-vue'
 import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
 import { BarreVehicule } from '@/components/vehicule/BarreVehicule'
 import { PromessesAchat } from '@/components/confiance/PromessesAchat'
@@ -313,7 +313,7 @@ export default async function Page() {
       */}
       <BandeauVehicule
         surtitre={affiche ? `${titre} · ${affiche.years}` : titre}
-        titre="Éclairage LED"
+        titre={titreDesTechnologies(cartes)}
         sousTitre={`pour ${titre}`}
         description={
           cartes.length > 0

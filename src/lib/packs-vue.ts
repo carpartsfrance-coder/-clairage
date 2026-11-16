@@ -426,3 +426,22 @@ export function resumeDeGeneration(generation: {
     ? `${packs} · ${generation.configurationCount} équipements d'origine`
     : packs
 }
+
+/**
+ * Le titre du bandeau d'une page véhicule, fidèle à ce qu'elle propose.
+ *
+ * Il disait « Éclairage LED » partout, y compris au-dessus d'ampoules
+ * halogènes effet xénon et de kits xénon HID (audit du 16 novembre 2026).
+ * Les cartes le précisent déjà ; le titre le dit maintenant aussi, sans
+ * perdre « LED », qui est ce que le client cherche : « Éclairage LED et
+ * xénon » dès qu'une carte n'est pas en LED, « Éclairage xénon » s'il n'y a
+ * que cela, « Éclairage LED » sinon.
+ */
+export function titreDesTechnologies(cartes: Array<{ nom: string }>): string {
+  const xenon = (nom: string) => estEffetXenon(nom) || /x[ée]non/i.test(nom)
+  const avecXenon = cartes.some((carte) => xenon(carte.nom))
+  const avecLed = cartes.some((carte) => !xenon(carte.nom))
+  if (avecXenon && avecLed) return 'Éclairage LED et xénon'
+  if (avecXenon) return 'Éclairage xénon'
+  return 'Éclairage LED'
+}
