@@ -158,13 +158,29 @@ export function ProductGallery({
   const comparatifAffiche = !(vue === VUE_PACK && composition.length > 0) && estComparatifAvantApres(current)
   const packAffiche = vue === VUE_PACK && avecPack
 
-  /** Onglets : les visuels, puis la composition quand il y en a une. */
+  /*
+    Onglets : les visuels, puis la composition quand il y en a une.
+
+    Trois rendus s'annonçaient tous « Le rendu » à un lecteur d'écran, qui ne
+    pouvait pas les distinguer (audit d'accessibilité du 16 novembre 2026).
+    Un libellé qui revient est numéroté : « Le rendu, vue 2 sur 3 ».
+  */
+  const totalParLibelle = new Map<string, number>()
+  for (const item of items) {
+    totalParLibelle.set(item.thumbLabel, (totalParLibelle.get(item.thumbLabel) ?? 0) + 1)
+  }
+  const rangParLibelle = new Map<string, number>()
   const onglets: Array<{ cle: string; libelle: string; vue: Vue }> = [
-    ...items.map((item, itemIndex) => ({
-      cle: `${item.url}-${itemIndex}`,
-      libelle: item.thumbLabel,
-      vue: itemIndex,
-    })),
+    ...items.map((item, itemIndex) => {
+      const total = totalParLibelle.get(item.thumbLabel) ?? 1
+      const rang = (rangParLibelle.get(item.thumbLabel) ?? 0) + 1
+      rangParLibelle.set(item.thumbLabel, rang)
+      return {
+        cle: `${item.url}-${itemIndex}`,
+        libelle: total > 1 ? `${item.thumbLabel}, vue ${rang} sur ${total}` : item.thumbLabel,
+        vue: itemIndex,
+      }
+    }),
     ...(avecPack ? [{ cle: VUE_PACK, libelle: 'Dans le pack', vue: VUE_PACK }] : []),
   ]
 
