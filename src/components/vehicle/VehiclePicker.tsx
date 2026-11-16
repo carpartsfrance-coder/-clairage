@@ -162,7 +162,12 @@ export function VehiclePicker({
       const reponse = await fetch('/api/vehicule', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ modelId: modele.id, year: annee }),
+        /*
+          La page courante voyage avec le choix : depuis une fiche produit, le
+          serveur y renvoie le client (lib/retour-vehicule.ts) au lieu de la
+          liste des résultats. Ailleurs, il l'ignore.
+        */
+        body: JSON.stringify({ modelId: modele.id, year: annee, retour: window.location.pathname }),
       })
       const data = (await reponse.json()) as { redirect?: string; error?: string }
       if (!reponse.ok) throw new Error(data.error ?? 'Sélection impossible')
