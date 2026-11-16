@@ -167,6 +167,9 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
           return (
             <li
               key={groupe.cle}
+              // La mesure d'audience range les clics par zone : on saura si
+              // les groupes de solutions sont ouverts, et lesquels.
+              data-zone={`Solutions au choix · ${groupe.emplacement}`}
               className="col-span-full rounded-[13px] border border-line bg-surface-soft p-[9px] min-[651px]:p-3"
             >
               <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-1">
