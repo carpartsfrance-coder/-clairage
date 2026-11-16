@@ -2,6 +2,7 @@ import 'server-only'
 import { prisma } from '../db'
 import { getPackGeneration } from './packs'
 import { cartesDesPacks, sousTitreDeLEmplacement } from '../packs-vue'
+import { cleDEmplacement, unParEmplacement } from '../un-par-emplacement'
 
 /**
  * Les autres packs du même véhicule, pour « Complétez l'éclairage » sur la
@@ -114,15 +115,28 @@ export async function getPacksComplementaires(
     const ici = new Set(
       (cartes.find((carte) => carte.slug === productSlug)?.emplacements ?? []).map((e) => e.code),
     )
-    const packs = cartes
-      .filter(
-        (carte) =>
-          carte.slug !== productSlug &&
-          !carte.emplacements.some((e) => ici.has(e.code)) &&
-          carte.status === 'CONFIRMED' &&
-          carte.variantId !== null &&
-          (confirmesPourLeClient === null || confirmesPourLeClient.has(carte.slug)),
-      )
+    const candidates = cartes.filter(
+      (carte) =>
+        carte.slug !== productSlug &&
+        !carte.emplacements.some((e) => ici.has(e.code)) &&
+        carte.status === 'CONFIRMED' &&
+        carte.variantId !== null &&
+        (confirmesPourLeClient === null || confirmesPourLeClient.has(carte.slug)),
+    )
+    /*
+      Une proposition par emplacement, comme « Tout l'éclairage ».
+
+      Le panier proposait côte à côte deux cartes titrées « Éclairage de
+      plaque » — des ampoules d'un côté, des modules complets de l'autre —
+      comme s'il fallait prendre les deux (audit du 16 novembre 2026). Ce sont
+      des alternatives : on garde la moins chère, la même que retient le total
+      de la page véhicule. Les autres restent sur cette page.
+    */
+    const packs = unParEmplacement(
+      candidates,
+      (carte) => cleDEmplacement(carte.emplacements[0]?.label ?? carte.slug, carte.nom),
+      (carte) => carte.prixCents,
+    )
       .slice(0, MAXIMUM)
       .map((carte) => {
         const premier = carte.emplacements[0]
