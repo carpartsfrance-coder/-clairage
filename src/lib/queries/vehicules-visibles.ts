@@ -47,7 +47,7 @@ import type { Prisma } from '@prisma/client'
  * l'est pas. L'exclure reviendrait à masquer des véhicules qui ont bien des
  * produits.
  */
-const COMPATIBILITE_EN_LIGNE: Prisma.FitmentWhereInput = {
+export const COMPATIBILITE_EN_LIGNE: Prisma.FitmentWhereInput = {
   variant: { active: true, product: { status: 'PUBLISHED' } },
 }
 

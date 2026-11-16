@@ -7,7 +7,12 @@ import { availabilityForKit, availabilityForVariant, isPurchasable } from '../st
 import type { FitmentStatus } from '../fitment'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
 import { couvertureType } from '../images-types'
-import { GENERATION_VISIBLE, MARQUE_VISIBLE, MODELE_VISIBLE } from './vehicules-visibles'
+import {
+  COMPATIBILITE_EN_LIGNE,
+  GENERATION_VISIBLE,
+  MARQUE_VISIBLE,
+  MODELE_VISIBLE,
+} from './vehicules-visibles'
 
 /**
  * Parcours « packs par véhicule » : marque → modèle → génération → éclairages.
@@ -70,6 +75,12 @@ export type PackModel = {
     configurationCount: number
     /** Vrai dès qu'au moins une compatibilité est enregistrée. */
     hasFitments: boolean
+    /**
+     * Packs en ligne pour cette génération : le nombre de cartes que montre
+     * sa page (produits publiés, variante active, configuration active,
+     * comptés une fois chacun — la même règle que `lireGenerationDesPacks`).
+     */
+    packCount: number
     /**
      * Visuel de la génération. Facultatif, et purement d'aide à la
      * reconnaissance : le nom et les millésimes identifient le véhicule.
@@ -198,7 +209,17 @@ async function lireMarqueDesPacks(
                 _count: { select: { configurations: { where: { active: true } } } },
                 configurations: {
                   where: { active: true },
-                  select: { _count: { select: { fitments: true } } },
+                  select: {
+                    _count: { select: { fitments: true } },
+                    // De quoi compter les packs que la page de la génération
+                    // affichera : « 13 packs disponibles » dit au client ce
+                    // qu'il va trouver, « 1 équipement d'origine documenté »
+                    // ne lui disait rien (audit du 16 novembre 2026).
+                    fitments: {
+                      where: COMPATIBILITE_EN_LIGNE,
+                      select: { variant: { select: { productId: true } } },
+                    },
+                  },
                 },
                 // En « SET NULL » : supprimer un média détache le visuel sans
                 // emporter la génération, et la ligne s'affiche sans vignette.
@@ -226,6 +247,11 @@ async function lireMarqueDesPacks(
               phase: generation.phase,
               configurationCount: generation._count.configurations,
               hasFitments: generation.configurations.some((config) => config._count.fitments > 0),
+              packCount: new Set(
+                generation.configurations.flatMap((config) =>
+                  config.fitments.map((fitment) => fitment.variant.productId),
+                ),
+              ).size,
               photo: generation.photo
                 ? { url: generation.photo.url, alt: generation.photo.alt ?? generation.name }
                 : null,

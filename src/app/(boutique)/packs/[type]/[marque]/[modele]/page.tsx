@@ -12,6 +12,7 @@ import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { IconChevronRight } from '@/components/ui/icons'
 import { GenerationThumb } from '@/components/packs/GenerationThumb'
+import { resumeDeGeneration } from '@/lib/packs-vue'
 
 type PageProps = { params: Promise<{ type: string; marque: string; modele: string }> }
 
@@ -141,11 +142,7 @@ export default async function PacksModelePage({ params }: PageProps) {
                 </span>
                 <span className="mt-0.5 block text-[9px] text-[#828282]">
                   {generation.phase ? `${generation.phase} · ` : null}
-                  {generation.hasFitments
-                    ? generation.configurationCount > 1
-                      ? `${generation.configurationCount} équipements d'origine documentés`
-                      : "1 équipement d'origine documenté"
-                    : 'Compatibilités non encore relevées'}
+                  {resumeDeGeneration(generation)}
                 </span>
               </span>
               <IconChevronRight className="size-4 shrink-0 text-muted" />

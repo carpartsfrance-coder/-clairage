@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { libelleVoirLesPacks, phraseDesEmplacements } from '@/lib/packs-vue'
+import { libelleVoirLesPacks, phraseDesEmplacements, resumeDeGeneration } from '@/lib/packs-vue'
 import type { PackPositionGroup } from '@/lib/queries/packs'
 
 const groupe = (code: string, label: string, n = 1): PackPositionGroup => ({
@@ -52,5 +52,29 @@ describe('libelleVoirLesPacks', () => {
   it('accorde au singulier', () => {
     expect(libelleVoirLesPacks(1)).toBe('Voir le pack')
     expect(libelleVoirLesPacks(13)).toBe('Voir les 13 packs')
+  })
+})
+
+
+describe('resumeDeGeneration', () => {
+  it('annonce les packs, pas les équipements', () => {
+    expect(resumeDeGeneration({ packCount: 13, configurationCount: 1, hasFitments: true })).toBe(
+      '13 packs disponibles',
+    )
+    expect(resumeDeGeneration({ packCount: 1, configurationCount: 1, hasFitments: true })).toBe(
+      '1 pack disponible',
+    )
+  })
+
+  it("garde le nombre d'équipements quand il y a un choix à faire", () => {
+    expect(resumeDeGeneration({ packCount: 4, configurationCount: 2, hasFitments: true })).toBe(
+      "4 packs disponibles · 2 équipements d'origine",
+    )
+  })
+
+  it('ne promet rien sans compatibilité relevée', () => {
+    expect(resumeDeGeneration({ packCount: 0, configurationCount: 1, hasFitments: false })).toBe(
+      'Compatibilités non encore relevées',
+    )
   })
 })

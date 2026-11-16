@@ -387,3 +387,25 @@ export function phraseDesEmplacements(groupes: PackPositionGroup[]): string {
 export function libelleVoirLesPacks(total: number): string {
   return total === 1 ? 'Voir le pack' : `Voir les ${total} packs`
 }
+
+/**
+ * Ce que la liste des générations dit de chacune : combien de packs attendent
+ * le client, et s'il aura un équipement d'origine à préciser.
+ *
+ * Elle disait « 1 équipement d'origine documenté » — vrai, mais sans rapport
+ * avec l'achat : la Clio 4 menait ensuite à 13 packs (audit du 16 novembre
+ * 2026). Le nombre d'équipements n'est gardé que lorsqu'il y en a plusieurs :
+ * c'est alors une étape de plus, et il vaut mieux l'annoncer.
+ */
+export function resumeDeGeneration(generation: {
+  packCount: number
+  configurationCount: number
+  hasFitments: boolean
+}): string {
+  if (!generation.hasFitments || generation.packCount === 0) return 'Compatibilités non encore relevées'
+  const packs =
+    generation.packCount === 1 ? '1 pack disponible' : `${generation.packCount} packs disponibles`
+  return generation.configurationCount > 1
+    ? `${packs} · ${generation.configurationCount} équipements d'origine`
+    : packs
+}
