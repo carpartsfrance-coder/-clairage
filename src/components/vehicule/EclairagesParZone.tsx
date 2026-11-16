@@ -186,7 +186,7 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
               <ul className="grid grid-cols-2 gap-[11px] min-[651px]:grid-cols-3 min-[860px]:grid-cols-4 min-[860px]:gap-[15px]">
                 {groupe.cartes.map((carte) => (
                   <li key={carte.slug}>
-                    <CarteDEclairage carte={carte} index={visibles.indexOf(carte)} />
+                    <CarteDEclairage carte={carte} index={visibles.indexOf(carte)} dansUnGroupe />
                   </li>
                 ))}
               </ul>
@@ -202,7 +202,17 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
  * Une vignette d'éclairage. `index` règle le chargement des photos : les
  * premières partent tout de suite, les autres au défilement.
  */
-function CarteDEclairage({ carte, index }: { carte: CarteEclairage; index: number }) {
+function CarteDEclairage({
+  carte,
+  index,
+  dansUnGroupe = false,
+}: {
+  carte: CarteEclairage
+  index: number
+  /** Sous le titre d'un groupe (`h3`), la vignette titre en `h4`. */
+  dansUnGroupe?: boolean
+}) {
+  const Titre = dansUnGroupe ? 'h4' : 'h3'
   const zonePrincipale = zoneDeLEmplacement(carte.emplacements[0].code)
   const presentation = presentationDeCarte(carte.nom, carte.conditionnement)
   const incompatible = carte.status === 'INCOMPATIBLE'
@@ -250,9 +260,9 @@ function CarteDEclairage({ carte, index }: { carte: CarteEclairage; index: numbe
         <p className="text-[11px] font-bold tracking-[0.04em] text-brand uppercase">
           {carte.emplacements.map((e) => e.label).join(' · ')}
         </p>
-        <h3 className="mt-1 text-[14px] leading-[1.22] font-extrabold tracking-[-0.023em] min-[651px]:text-[15px]">
+        <Titre className="mt-1 text-[14px] leading-[1.22] font-extrabold tracking-[-0.023em] min-[651px]:text-[15px]">
           {presentation.titre ?? carte.emplacements.map((e) => e.label).join(' · ')}
-        </h3>
+        </Titre>
         {presentation.phrase ? (
           <p className="mt-[5px] text-[12px] leading-[1.4] text-muted-strong">
             {presentation.phrase}
