@@ -192,29 +192,49 @@ export function totalVehicule(groupes: PackPositionGroup[]): TotalVehicule {
  * vignettes du dessous.
  */
 export function totalDesCartes(cartes: CarteEclairage[]): TotalVehicule {
-  // Un produit par emplacement : les alternatives (effet xénon, kit xénon,
-  // kit LED pour le même croisement) ne s'achètent pas ensemble.
+  const cle = (carte: CarteEclairage) =>
+    cleDEmplacement(carte.emplacements[0]?.label ?? carte.slug, carte.nom)
+  const candidates = cartes.filter((carte) => carte.status !== 'INCOMPATIBLE')
+  /*
+    Un produit par emplacement, choisi parmi ceux que le bouton peut ajouter :
+    les alternatives (effet xénon, kit xénon, kit LED pour le même croisement)
+    ne s'achètent pas ensemble.
+
+    La relecture du 17 novembre 2026 a relevé deux écarts, corrigés ici :
+    - la moins chère était retenue même sans conditionnement à ajouter (une
+      rupture), et une alternative disponible était alors ignorée ;
+    - le total additionnait ces cartes que le bouton n'ajoute pas : « 9 packs »
+      au prix, 8 au panier.
+    Le total, le nombre et le bouton portent désormais sur la même liste. Un
+    éclairage sans aucune solution ajoutable reste dans le détail, signalé
+    « indisponible », hors total.
+  */
   const retenues = unParEmplacement(
-    cartes.filter((carte) => carte.status !== 'INCOMPATIBLE'),
-    (carte) => cleDEmplacement(carte.emplacements[0]?.label ?? carte.slug, carte.nom),
+    candidates.filter((carte) => carte.variantId !== null),
+    cle,
     (carte) => carte.prixCents,
+  )
+  const couverts = new Set(retenues.map(cle))
+  const indisponibles = unParEmplacement(
+    candidates.filter((carte) => carte.variantId === null && !couverts.has(cle(carte))),
+    cle,
+    (carte) => carte.prixCents,
+  )
+  const dansLOrdre = candidates.filter(
+    (carte) => retenues.includes(carte) || indisponibles.includes(carte),
   )
   return {
     produits: retenues.length,
     emplacements: new Set(retenues.flatMap((carte) => carte.emplacements.map((e) => e.label))).size,
     totalCents: retenues.reduce((somme, carte) => somme + carte.prixCents, 0),
-    variantIds: retenues
-      .map((carte) => carte.variantId)
-      .filter((id): id is string => id !== null),
-    lignes: retenues.map((carte) => ({
+    variantIds: retenues.map((carte) => carte.variantId as string),
+    lignes: dansLOrdre.map((carte) => ({
       slug: carte.slug,
       // Le titre que porte la carte (« Ampoules effet xénon »), pas le nom
       // complet de la fiche : le détail doit se lire comme les vignettes.
       nom: presentationDeCarte(carte.nom, carte.conditionnement).titre ?? carte.nom,
       emplacement: carte.emplacements.map((e) => e.label).join(', '),
       prixCents: carte.prixCents,
-      // Une carte sans conditionnement conseillé (rupture…) compte dans le
-      // total affiché, mais le bouton ne peut pas l'ajouter : le détail le dit.
       ajoutable: carte.variantId !== null,
     })),
   }
@@ -515,7 +535,7 @@ export function decompteDesPacks(cartes: CarteEclairage[]): string {
  * Les groupes d'alternatives dans l'ordre d'un tri.
  *
  * « Recommandés » garde l'ordre d'arrivée. Les tris par prix classent les
- * groupes selon leur solution la moins chère — un groupe n'est jamais coupé
+ * groupes selon leur prix de tête (voir plus bas) — un groupe n'est jamais coupé
  * en deux par un tri, sans quoi les solutions d'un même éclairage se
  * retrouveraient à nouveau éparpillées (relecture du 17 novembre 2026).
  */
@@ -523,12 +543,17 @@ export function groupesTries(cartes: CarteEclairage[], tri: Tri): GroupeDAlterna
   const groupes = regrouperLesAlternatives(cartes)
   if (tri === 'conseilles') return groupes
   const sens = tri === 'prix-croissant' ? 1 : -1
-  const minimum = (groupe: GroupeDAlternatives) =>
-    Math.min(...groupe.cartes.map((carte) => carte.prixCents))
+  /*
+    Le prix qui classe un groupe est celui de sa première carte une fois
+    triée : le moins cher en « croissant », le plus cher en « décroissant ».
+    Classer par le minimum dans les deux sens mettait en tête d'un tri
+    décroissant un groupe ouvert sur un pack plus cher que celui d'en
+    dessous (relecture du 17 novembre 2026).
+  */
   return groupes
     .map((groupe) => ({
       ...groupe,
       cartes: [...groupe.cartes].sort((a, b) => sens * (a.prixCents - b.prixCents)),
     }))
-    .sort((a, b) => sens * (minimum(a) - minimum(b)))
+    .sort((a, b) => sens * (a.cartes[0].prixCents - b.cartes[0].prixCents))
 }

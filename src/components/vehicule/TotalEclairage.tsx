@@ -102,7 +102,7 @@ export function TotalEclairage({
                       <span className="font-semibold text-slate-ink">{ligne.emplacement}</span> ·{' '}
                       {ligne.nom}
                       {ligne.ajoutable ? null : (
-                        <span className="text-danger"> — indisponible, non ajouté</span>
+                        <span className="text-danger"> — indisponible, non compris dans le total</span>
                       )}
                     </span>
                     <span className="shrink-0 whitespace-nowrap">{formatPrice(ligne.prixCents)}</span>
