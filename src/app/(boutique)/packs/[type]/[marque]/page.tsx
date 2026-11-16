@@ -140,56 +140,92 @@ export default async function PacksMarquePage({ params }: PageProps) {
         label="Rechercher un modèle"
       />
 
-      <ul className="mt-5 flex flex-col gap-3">
-        {models.map((model) => (
-          <li key={model.slug} className="rounded-[9px] border border-[#e1e1e1]">
-            <div className="flex items-center justify-between gap-4 border-b border-line px-4 py-3">
-              <h2 className="text-[14px] font-bold">
-                <Link
-                  href={lienDuModele(type, marque, model)}
-                  className="underline-offset-[3px] hover:underline"
-                >
-                  {model.name}
-                </Link>
-              </h2>
-              <span className="shrink-0 text-[9px] text-[#828282]">
-                {model.generations.length > 1
-                  ? `${model.generations.length} générations`
-                  : '1 génération'}
-              </span>
-            </div>
+      {/*
+        Deux colonnes dès 768 px, et une seule ligne par modèle à génération
+        unique.
 
-            {/*
+        La page Renault faisait près de 8 000 px sur téléphone pour 57 modèles
+        (audit du 16 novembre 2026) : chaque modèle à une génération y prenait
+        deux étages — « Arkana · 1 génération », puis « Arkana 2021–2025 » —
+        qui disaient deux fois la même chose. Il n'en prend plus qu'un, qui
+        mène tout droit à la génération.
+      */}
+      <ul className="mt-5 grid items-start gap-3 md:grid-cols-2">
+        {models.map((model) =>
+          model.generations.length === 1 && model.generations[0] ? (
+            <li key={model.slug} className="rounded-[9px] border border-[#e1e1e1]">
+              <Link
+                href={`/packs/${type}/${marque}/${model.slug}/${model.generations[0].slug}`}
+                className="flex min-h-14 items-center justify-between gap-4 rounded-[9px] px-4 py-2.5 transition-colors hover:bg-surface-soft"
+              >
+                <GenerationThumb photo={model.generations[0].photo} className="h-[38px] w-[56px]" />
+                <span className="min-w-0 flex-1">
+                  <h2 className="text-[14px] font-bold">
+                    {model.name}
+                    <span className="ml-2 text-[12px] font-normal text-[#686c67]">
+                      {model.generations[0].years}
+                    </span>
+                  </h2>
+                  <span className="mt-0.5 block text-[9px] text-[#828282]">
+                    {model.generations[0].phase ? `${model.generations[0].phase} · ` : null}
+                    {resumeDeGeneration(model.generations[0])}
+                  </span>
+                </span>
+                <IconChevronRight className="size-4 shrink-0 text-muted" />
+              </Link>
+            </li>
+          ) : (
+            <li key={model.slug} className="rounded-[9px] border border-[#e1e1e1]">
+              <div className="flex items-center justify-between gap-4 border-b border-line px-4 py-3">
+                <h2 className="text-[14px] font-bold">
+                  <Link
+                    href={lienDuModele(type, marque, model)}
+                    className="underline-offset-[3px] hover:underline"
+                  >
+                    {model.name}
+                  </Link>
+                </h2>
+                <span className="shrink-0 text-[9px] text-[#828282]">
+                  {model.generations.length > 1
+                    ? `${model.generations.length} générations`
+                    : '1 génération'}
+                </span>
+              </div>
+
+              {/*
               Les générations sont listées directement : avec une ou deux par
               modèle, ouvrir une page intermédiaire pour choisir entre deux
               liens coûterait un clic pour rien. La page du modèle existe tout
               de même, et le titre y mène.
             */}
-            <ul className="divide-y divide-line">
-              {model.generations.map((generation) => (
-                <li key={generation.slug}>
-                  <Link
-                    href={`/packs/${type}/${marque}/${model.slug}/${generation.slug}`}
-                    className="flex min-h-14 items-center justify-between gap-4 px-4 py-2.5 transition-colors hover:bg-surface-soft"
-                  >
-                    <GenerationThumb photo={generation.photo} className="h-[38px] w-[56px]" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[12px] font-semibold">
-                        {generation.name}
-                        <span className="ml-2 font-normal text-[#686c67]">{generation.years}</span>
+              <ul className="divide-y divide-line">
+                {model.generations.map((generation) => (
+                  <li key={generation.slug}>
+                    <Link
+                      href={`/packs/${type}/${marque}/${model.slug}/${generation.slug}`}
+                      className="flex min-h-14 items-center justify-between gap-4 px-4 py-2.5 transition-colors hover:bg-surface-soft"
+                    >
+                      <GenerationThumb photo={generation.photo} className="h-[38px] w-[56px]" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[12px] font-semibold">
+                          {generation.name}
+                          <span className="ml-2 font-normal text-[#686c67]">
+                            {generation.years}
+                          </span>
+                        </span>
+                        <span className="mt-0.5 block text-[9px] text-[#828282]">
+                          {generation.phase ? `${generation.phase} · ` : null}
+                          {resumeDeGeneration(generation)}
+                        </span>
                       </span>
-                      <span className="mt-0.5 block text-[9px] text-[#828282]">
-                        {generation.phase ? `${generation.phase} · ` : null}
-                        {resumeDeGeneration(generation)}
-                      </span>
-                    </span>
-                    <IconChevronRight className="size-4 shrink-0 text-muted" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </li>
-        ))}
+                      <IconChevronRight className="size-4 shrink-0 text-muted" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ),
+        )}
       </ul>
     </div>
   )
