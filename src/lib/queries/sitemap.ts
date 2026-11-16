@@ -18,7 +18,15 @@ import { GENERATION_VISIBLE, MARQUE_VISIBLE, MODELE_VISIBLE } from './vehicules-
  *     plus de pages, ce qui coûte beaucoup plus cher qu'une erreur visible.
  */
 
-export type SitemapEntry = { path: string; lastModified: Date }
+/**
+ * `lastModified` n'est posé que lorsqu'une vraie date existe (la fiche, la
+ * catégorie, le guide). Les pages véhicule recevaient l'heure de génération
+ * du plan : chaque lecture annonçait à Google 3 000 pages « modifiées à
+ * l'instant ». Google demande des dates exactes, ou rien — un `lastmod`
+ * qui ment tout le temps finit ignoré pour tout le site (audit du
+ * 16 novembre 2026).
+ */
+export type SitemapEntry = { path: string; lastModified?: Date }
 
 export async function listSitemapProducts(): Promise<SitemapEntry[]> {
   const rows = await prisma.product.findMany({
@@ -80,7 +88,6 @@ export async function listSitemapPacks(): Promise<SitemapEntry[]> {
     },
   })
 
-  const maintenant = new Date()
   const types = new Set<string>()
   const marques = new Set<string>()
   const generationsParModele = new Map<string, number>()
@@ -94,15 +101,15 @@ export async function listSitemapPacks(): Promise<SitemapEntry[]> {
     types.add(`/packs/${type}`)
     marques.add(marque)
     generationsParModele.set(modele, (generationsParModele.get(modele) ?? 0) + 1)
-    pages.push({ path: `${modele}/${generation.slug}`, lastModified: maintenant })
+    pages.push({ path: `${modele}/${generation.slug}` })
   }
 
   return [
-    ...[...types].map((path) => ({ path, lastModified: maintenant })),
-    ...[...marques].map((path) => ({ path, lastModified: maintenant })),
+    ...[...types].map((path) => ({ path })),
+    ...[...marques].map((path) => ({ path })),
     ...[...generationsParModele]
       .filter(([, nombre]) => nombre > 1)
-      .map(([path]) => ({ path, lastModified: maintenant })),
+      .map(([path]) => ({ path })),
     ...pages,
   ]
 }
