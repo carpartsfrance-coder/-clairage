@@ -376,12 +376,20 @@ export default async function PanierPage() {
                 </div>
               ) : null}
 
+              {/*
+                Avec un véhicule retenu, la suite logique est SA page : le
+                catalogue général faisait sortir le client de son univers
+                véhicule (audit du 16 novembre 2026). Sans véhicule, le
+                catalogue reste la porte d'entrée.
+              */}
               <p className="mt-6">
                 <Link
-                  href="/c"
+                  href={vehicle ? '/vehicule/resultats' : '/c'}
                   className="text-[11px] font-semibold underline underline-offset-[3px] hover:text-brand"
                 >
-                  Continuer mes achats
+                  {vehicle
+                    ? `Continuer mes achats pour ma ${vehicle.label.split(' · ')[0]}`
+                    : 'Continuer mes achats'}
                 </Link>
               </p>
             </section>
