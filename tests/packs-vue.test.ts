@@ -279,8 +279,8 @@ describe('totalDesCartes', () => {
       variantIds: ['v-phares', 'v-plaque'],
       // Et le détail affiché les nomme, dans l'ordre de la page.
       lignes: [
-        { nom: 'Pack phares', emplacement: 'Feux de croisement', prixCents: 10390 },
-        { nom: 'Pack plaque', emplacement: 'Éclairage de plaque', prixCents: 1490 },
+        { slug: 'phares', nom: 'Pack phares', emplacement: 'Feux de croisement', prixCents: 10390, ajoutable: true },
+        { slug: 'plaque', nom: 'Pack plaque', emplacement: 'Éclairage de plaque', prixCents: 1490, ajoutable: true },
       ],
     })
   })
@@ -295,7 +295,9 @@ describe('totalDesCartes', () => {
       emplacements: 1,
       totalCents: 10390,
       variantIds: ['v-phares'],
-      lignes: [{ nom: 'Pack phares', emplacement: 'Feux de croisement', prixCents: 10390 }],
+      lignes: [
+        { slug: 'phares', nom: 'Pack phares', emplacement: 'Feux de croisement', prixCents: 10390, ajoutable: true },
+      ],
     })
   })
 })

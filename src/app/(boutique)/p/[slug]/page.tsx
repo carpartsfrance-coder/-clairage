@@ -552,6 +552,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                       ? complementaires.vehicule
                       : null
                   }
+                  venteParReference={!concuPour && Boolean(product.bulbBase)}
                   autreVehicule={Boolean(
                     vehicle &&
                       vehiculeDeLaFiche &&

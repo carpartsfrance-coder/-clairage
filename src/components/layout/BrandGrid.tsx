@@ -88,7 +88,9 @@ export function BrandGrid({
             */}
             <span
               className={cn(
-                'w-full min-w-0 truncate text-[11px] leading-tight',
+                // Deux lignes plutôt qu'une coupure : « Harley-Davidson » se
+                // lisait « Harley-Davi… » sur petit écran.
+                'line-clamp-2 w-full min-w-0 text-[11px] leading-tight break-words',
                 entry.logo ? 'text-muted-strong' : 'font-semibold',
               )}
             >

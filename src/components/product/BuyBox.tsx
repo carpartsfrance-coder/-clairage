@@ -81,6 +81,7 @@ export function BuyBox({
   contentAnchor = '#dans-votre-kit',
   vehiculeDesComplements = null,
   autreVehicule = false,
+  venteParReference = false,
 }: {
   productName: string
   /** Premier visuel du produit : la barre fixe rappelle ce qu'on achète. */
@@ -109,6 +110,11 @@ export function BuyBox({
    * client en a choisi un autre. Voir `pourUnAutre` plus bas.
    */
   autreVehicule?: boolean
+  /**
+   * Ampoule vendue à sa référence (un culot est renseigné, aucun véhicule
+   * n'est attaché à la fiche) : le client vient avec sa référence en tête.
+   */
+  venteParReference?: boolean
 }) {
   const router = useRouter()
   /*
@@ -268,7 +274,13 @@ export function BuyBox({
     reste proposée juste dessous, et l'avertissement au-dessus du prix ne
     change pas.
   */
-  const verifierDAbord = inconnu && Boolean(concuPour)
+  /*
+    La relecture du 17 novembre 2026 a resserré la règle : l'achat ne passe
+    devant que sur une ampoule vendue à sa référence. Un kit ou un accessoire
+    technique dont la compatibilité est inconnue garde la vérification en
+    premier.
+  */
+  const verifierDAbord = inconnu && !venteParReference
   const purchasable = isPurchasable(selected.availability) && !incompatible
   /*
     Rupture au sens strict : ni stock, ni vente à découvert. Une pièce

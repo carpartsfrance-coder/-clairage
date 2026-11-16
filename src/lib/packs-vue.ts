@@ -158,7 +158,14 @@ export type TotalVehicule = {
    * deux packs distincts — feux de jour et veilleuses, répétiteurs et
    * clignotants. Le client voit maintenant ce qu'il ajoute, ligne à ligne.
    */
-  lignes: Array<{ nom: string; emplacement: string; prixCents: number }>
+  lignes: Array<{
+    slug: string
+    nom: string
+    emplacement: string
+    prixCents: number
+    /** Faux quand la carte n'a pas de conditionnement à mettre au panier. */
+    ajoutable: boolean
+  }>
 }
 
 /**
@@ -200,11 +207,15 @@ export function totalDesCartes(cartes: CarteEclairage[]): TotalVehicule {
       .map((carte) => carte.variantId)
       .filter((id): id is string => id !== null),
     lignes: retenues.map((carte) => ({
+      slug: carte.slug,
       // Le titre que porte la carte (« Ampoules effet xénon »), pas le nom
       // complet de la fiche : le détail doit se lire comme les vignettes.
       nom: presentationDeCarte(carte.nom, carte.conditionnement).titre ?? carte.nom,
       emplacement: carte.emplacements.map((e) => e.label).join(', '),
       prixCents: carte.prixCents,
+      // Une carte sans conditionnement conseillé (rupture…) compte dans le
+      // total affiché, mais le bouton ne peut pas l'ajouter : le détail le dit.
+      ajoutable: carte.variantId !== null,
     })),
   }
 }
@@ -392,10 +403,15 @@ export function phraseDesEmplacements(groupes: PackPositionGroup[]): string {
 
   const bas = (libelle: string) => libelle.charAt(0).toLowerCase() + libelle.slice(1)
   const [premier, deuxieme, troisieme] = libelles
+  // Un emplacement peut offrir plusieurs solutions : la phrase ne dit jamais
+  // « un pack par emplacement » (relecture ChatGPT du 17 novembre 2026).
+  const produits = new Set(groupes.flatMap((groupe) => groupe.products.map((p) => p.productSlug))).size
 
-  if (libelles.length === 1) return `${premier} : le pack composé pour ce véhicule.`
-  if (libelles.length === 2) return `${premier} et ${bas(deuxieme)} : un pack composé pour chacun.`
-  return `Un pack composé pour chaque emplacement : ${bas(premier)}, ${bas(deuxieme)}, ${bas(troisieme)}${
+  if (libelles.length === 1) {
+    return `${premier} : ${produits > 1 ? 'les packs composés' : 'le pack composé'} pour ce véhicule.`
+  }
+  if (libelles.length === 2) return `${premier} et ${bas(deuxieme)} : les packs composés pour ce véhicule.`
+  return `Les éclairages proposés pour ce véhicule : ${bas(premier)}, ${bas(deuxieme)}, ${bas(troisieme)}${
     libelles.length > 3 ? '…' : '.'
   }`
 }

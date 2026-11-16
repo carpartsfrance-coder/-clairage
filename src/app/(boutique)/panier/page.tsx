@@ -388,7 +388,7 @@ export default async function PanierPage() {
                   className="text-[11px] font-semibold underline underline-offset-[3px] hover:text-brand"
                 >
                   {vehicle
-                    ? `Continuer mes achats pour ma ${vehicle.label.split(' · ')[0]}`
+                    ? `Continuer mes achats pour votre ${vehicle.label.split(' · ')[0]}`
                     : 'Continuer mes achats'}
                 </Link>
               </p>

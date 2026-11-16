@@ -112,13 +112,20 @@ export async function getPacksComplementaires(
     // « Compléter », pas « remplacer » : les produits du même emplacement que
     // celui de la fiche (un autre kit pour les mêmes phares) n'y ont pas leur
     // place — on propose les AUTRES emplacements du véhicule.
-    const ici = new Set(
-      (cartes.find((carte) => carte.slug === productSlug)?.emplacements ?? []).map((e) => e.code),
-    )
+    /*
+      L'emplacement « physique », pas son code : clignotants avant et
+      répétiteurs latéraux partagent parfois TURN_FRONT, et regarder un pack de
+      clignotants masquait les répétiteurs (relecture du 17 novembre 2026).
+      `cleDEmplacement` les distingue, comme pour le total de la page véhicule.
+    */
+    const cles = (carte: (typeof cartes)[number]) =>
+      carte.emplacements.map((e) => cleDEmplacement(e.label, carte.nom))
+    const courante = cartes.find((carte) => carte.slug === productSlug)
+    const ici = new Set(courante ? cles(courante) : [])
     const candidates = cartes.filter(
       (carte) =>
         carte.slug !== productSlug &&
-        !carte.emplacements.some((e) => ici.has(e.code)) &&
+        !cles(carte).some((cle) => ici.has(cle)) &&
         carte.status === 'CONFIRMED' &&
         carte.variantId !== null &&
         (confirmesPourLeClient === null || confirmesPourLeClient.has(carte.slug)),

@@ -8,10 +8,14 @@ import {
 } from '@/lib/packs-vue'
 import type { PackPositionGroup } from '@/lib/queries/packs'
 
+let compteur = 0
 const groupe = (code: string, label: string, n = 1): PackPositionGroup => ({
   code,
   label,
-  products: Array.from({ length: n }, () => ({}) as PackPositionGroup['products'][number]),
+  products: Array.from(
+    { length: n },
+    () => ({ productSlug: `p${compteur++}` }) as PackPositionGroup['products'][number],
+  ),
 })
 
 describe('phraseDesEmplacements', () => {
@@ -21,7 +25,7 @@ describe('phraseDesEmplacements', () => {
     )
     expect(
       phraseDesEmplacements([groupe('LOW_BEAM', 'Feux de croisement'), groupe('PLATE', 'Éclairage de plaque')]),
-    ).toBe('Feux de croisement et éclairage de plaque : un pack composé pour chacun.')
+    ).toBe('Feux de croisement et éclairage de plaque : les packs composés pour ce véhicule.')
   })
 
   it('nomme les trois premiers emplacements, puis s’arrête', () => {
@@ -32,17 +36,21 @@ describe('phraseDesEmplacements', () => {
       groupe('INTERIOR_DOME', 'Plafonnier'),
     ])
     expect(phrase).toBe(
-      'Un pack composé pour chaque emplacement : feux de croisement, veilleuses, éclairage de plaque…',
+      'Les éclairages proposés pour ce véhicule : feux de croisement, veilleuses, éclairage de plaque…',
+    )
+  })
+
+  it('accorde au pluriel quand un emplacement a plusieurs solutions', () => {
+    expect(phraseDesEmplacements([groupe('PLATE', 'Éclairage de plaque', 2)])).toBe(
+      'Éclairage de plaque : les packs composés pour ce véhicule.',
     )
   })
 
   it('ignore les emplacements vides et les doublons', () => {
+    // Le même produit relevé deux fois sous le même emplacement : un seul pack.
+    const plaque = groupe('PLATE', 'Éclairage de plaque')
     expect(
-      phraseDesEmplacements([
-        groupe('LOW_BEAM', 'Feux de croisement', 0),
-        groupe('PLATE', 'Éclairage de plaque'),
-        groupe('PLATE', 'Éclairage de plaque'),
-      ]),
+      phraseDesEmplacements([groupe('LOW_BEAM', 'Feux de croisement', 0), plaque, { ...plaque }]),
     ).toBe('Éclairage de plaque : le pack composé pour ce véhicule.')
     expect(phraseDesEmplacements([])).toBe('Aucun éclairage n’est encore documenté pour cette génération.')
   })

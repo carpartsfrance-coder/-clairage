@@ -38,7 +38,13 @@ export function TotalEclairage({
   /** Les conditionnements conseillés, ceux-là mêmes qui composent le total. */
   variantIds: string[]
   /** Ce que contient la sélection, ligne à ligne (`totalDesCartes`). */
-  lignes?: Array<{ nom: string; emplacement: string; prixCents: number }>
+  lignes?: Array<{
+    slug: string
+    nom: string
+    emplacement: string
+    prixCents: number
+    ajoutable: boolean
+  }>
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -77,7 +83,9 @@ export function TotalEclairage({
             Tout l&apos;éclairage de votre {titre}
           </h3>
           <p className="mt-1 text-[12px] text-muted-strong">
-            {`Pour chaque éclairage, le pack le plus simple à monter · ${produits} packs`}
+            {/* « Le plus simple à monter » n'était pas démontré : la règle
+                retient la solution la moins chère (relecture ChatGPT). */}
+            {`Une solution par éclairage, sans doublon · ${produits} packs`}
           </p>
           {lignes.length > 0 ? (
             <details className="group mt-1.5">
@@ -89,10 +97,13 @@ export function TotalEclairage({
               </summary>
               <ul className="mt-1.5 flex flex-col gap-1 text-[12px] leading-[1.5] text-muted-strong">
                 {lignes.map((ligne) => (
-                  <li key={`${ligne.emplacement}-${ligne.nom}`} className="flex justify-between gap-3">
+                  <li key={ligne.slug} className="flex justify-between gap-3">
                     <span className="min-w-0">
                       <span className="font-semibold text-slate-ink">{ligne.emplacement}</span> ·{' '}
                       {ligne.nom}
+                      {ligne.ajoutable ? null : (
+                        <span className="text-danger"> — indisponible, non ajouté</span>
+                      )}
                     </span>
                     <span className="shrink-0 whitespace-nowrap">{formatPrice(ligne.prixCents)}</span>
                   </li>
@@ -130,7 +141,9 @@ export function TotalEclairage({
             </>
           ) : (
             <>
-              Ajouter les {produits} packs
+              {/* Le nombre de ce que le bouton ajoute vraiment, pas de ce que
+                  la bande additionne : une carte en rupture n'y entre pas. */}
+              {variantIds.length === 1 ? 'Ajouter le pack' : `Ajouter les ${variantIds.length} packs`}
               <IconPlus className="size-4 shrink-0" />
             </>
           )}
