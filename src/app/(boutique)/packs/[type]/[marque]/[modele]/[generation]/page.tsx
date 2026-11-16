@@ -19,7 +19,12 @@ import {
   IconHeadset,
   IconInfo,
 } from '@/components/ui/icons'
-import { cartesDesPacks, totalDesCartes } from '@/lib/packs-vue'
+import {
+  cartesDesPacks,
+  libelleVoirLesPacks,
+  phraseDesEmplacements,
+  totalDesCartes,
+} from '@/lib/packs-vue'
 import { phaseUtile } from '@/lib/resultats-vue'
 import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
 import { BarreVehicule } from '@/components/vehicule/BarreVehicule'
@@ -162,11 +167,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
         surtitre={`${data.makeName} ${data.generationName} · ${data.years}`}
         titre="Éclairage LED"
         sousTitre={`pour ${data.makeName} ${data.generationName}`}
-        description={
-          totalProduits > 0
-            ? 'Trouvez le bon pack, des phares au plafonnier.'
-            : 'Aucun éclairage n’est encore documenté pour cette génération.'
-        }
+        description={phraseDesEmplacements(data.groups)}
         marque={data.makeName}
         logo={data.makeLogo}
         action={
@@ -176,7 +177,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
               className="min-h-[43px] gap-2.5 rounded-lg px-[15px] text-[12px]"
               iconRight={<IconArrowRight className="size-4 rotate-90" />}
             >
-              Voir les {totalProduits} pack{totalProduits > 1 ? 's' : ''}
+              {libelleVoirLesPacks(totalProduits)}
             </ButtonLink>
           ) : null
         }

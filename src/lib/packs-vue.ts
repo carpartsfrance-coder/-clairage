@@ -352,3 +352,38 @@ export function zonesPresentes(codes: string[]): typeof ZONES[number][] {
   const vues = new Set(codes.map(zoneDeLEmplacement))
   return ZONES.filter((zone) => zone.cle === 'tout' || vues.has(zone.cle as Exclude<Zone, 'tout'>))
 }
+
+/**
+ * La phrase sous le titre de la page d'un véhicule, tirée de ce qui y est
+ * vraiment proposé.
+ *
+ * Elle disait partout « Trouvez le bon pack, des phares au plafonnier. »,
+ * y compris sur la Renault 4 E-Tech, qui n'a qu'un pack d'éclairage de plaque
+ * (audit du 16 novembre 2026). Elle nomme maintenant les emplacements
+ * couverts, dans l'ordre de la page, et n'en promet aucun autre.
+ */
+export function phraseDesEmplacements(groupes: PackPositionGroup[]): string {
+  const libelles = [
+    ...new Set(
+      groupes
+        .filter((groupe) => groupe.products.length > 0)
+        .map((groupe) => nomDeLEmplacement(groupe.code, groupe.label).trim())
+        .filter(Boolean),
+    ),
+  ]
+  if (libelles.length === 0) return 'Aucun éclairage n’est encore documenté pour cette génération.'
+
+  const bas = (libelle: string) => libelle.charAt(0).toLowerCase() + libelle.slice(1)
+  const [premier, deuxieme, troisieme] = libelles
+
+  if (libelles.length === 1) return `${premier} : le pack composé pour ce véhicule.`
+  if (libelles.length === 2) return `${premier} et ${bas(deuxieme)} : un pack composé pour chacun.`
+  return `Un pack composé pour chaque emplacement : ${bas(premier)}, ${bas(deuxieme)}, ${bas(troisieme)}${
+    libelles.length > 3 ? '…' : '.'
+  }`
+}
+
+/** « Voir le pack » ou « Voir les 13 packs » — jamais « Voir les 1 pack ». */
+export function libelleVoirLesPacks(total: number): string {
+  return total === 1 ? 'Voir le pack' : `Voir les ${total} packs`
+}

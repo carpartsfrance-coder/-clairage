@@ -19,7 +19,7 @@ import {
 import { ARGS_COUVERTURE, couverture } from '@/lib/media-couverture'
 import { couvertureType } from '@/lib/images-types'
 import { cartesDesResultats, phaseUtile, type GroupeResultat } from '@/lib/resultats-vue'
-import { totalDesCartes } from '@/lib/packs-vue'
+import { libelleVoirLesPacks, totalDesCartes } from '@/lib/packs-vue'
 import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
 import { BarreVehicule } from '@/components/vehicule/BarreVehicule'
 import { PromessesAchat } from '@/components/confiance/PromessesAchat'
@@ -329,7 +329,7 @@ export default async function Page() {
               className="min-h-[43px] gap-2.5 rounded-lg px-[15px] text-[12px]"
               iconRight={<IconArrowRight className="size-4 rotate-90" />}
             >
-              Voir les {cartes.length} pack{cartes.length > 1 ? 's' : ''}
+              {libelleVoirLesPacks(cartes.length)}
             </ButtonLink>
           ) : null
         }
