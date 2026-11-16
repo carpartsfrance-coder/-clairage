@@ -275,6 +275,13 @@ export type PackPositionGroup = {
 export type PackGeneration = {
   makeName: string
   modelName: string
+  /**
+   * Générations visibles du modèle, celle-ci comprise.
+   *
+   * À une seule, la page du modèle renvoie ici même : le fil d'Ariane mène
+   * alors à la marque plutôt que de proposer un lien qui tourne en rond.
+   */
+  modelGenerationCount: number
   generationName: string
   years: string
   phase: string | null
@@ -324,7 +331,14 @@ async function lireGenerationDesPacks(
         },
       },
       include: {
-        model: { include: { make: { include: { logo: { select: { url: true, alt: true } } } } } },
+        model: {
+          include: {
+            make: { include: { logo: { select: { url: true, alt: true } } } },
+            // Combien de générations ce modèle montre-t-il ? Le fil d'Ariane
+            // en dépend : voir `modelGenerationCount`.
+            _count: { select: { generations: { where: GENERATION_VISIBLE } } },
+          },
+        },
         configurations: {
           where: { active: true },
           include: {
@@ -496,6 +510,7 @@ async function lireGenerationDesPacks(
             }
           : null,
         modelName: generation.model.name,
+        modelGenerationCount: generation.model._count.generations,
         generationName: generation.name,
         years: yearsLabel(generation.yearFrom, generation.yearTo),
         phase: generation.phase,

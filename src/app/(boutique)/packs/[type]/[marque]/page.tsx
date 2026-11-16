@@ -5,6 +5,7 @@ import {
   LIBELLE_PAR_CHEMIN,
   TYPE_PAR_CHEMIN,
   getPackMake,
+  type PackModel,
 } from '@/lib/queries/packs'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { MakeSearch } from '@/components/packs/MakeSearch'
@@ -58,6 +59,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
+/**
+ * Où mène le nom d'un modèle.
+ *
+ * Avec une seule génération, la page du modèle n'aurait qu'une ligne à
+ * proposer : le lien saute cette étape et ouvre la génération.
+ */
+function lienDuModele(type: string, marque: string, model: PackModel): string {
+  const [seule] = model.generations
+  return model.generations.length === 1 && seule
+    ? `/packs/${type}/${marque}/${model.slug}/${seule.slug}`
+    : `/packs/${type}/${marque}/${model.slug}`
+}
+
 export default async function PacksMarquePage({ params }: PageProps) {
   const { type, marque } = await params
   const vehicleType = TYPE_PAR_CHEMIN[type]
@@ -98,7 +112,7 @@ export default async function PacksMarquePage({ params }: PageProps) {
         makes={models.map((model) => ({
           slug: model.slug,
           name: model.name,
-          href: `/packs/${type}/${marque}/${model.slug}`,
+          href: lienDuModele(type, marque, model),
           hint:
             model.generations.length > 1
               ? `${model.generations.length} générations`
@@ -113,7 +127,7 @@ export default async function PacksMarquePage({ params }: PageProps) {
             <div className="flex items-center justify-between gap-4 border-b border-line px-4 py-3">
               <h2 className="text-[14px] font-bold">
                 <Link
-                  href={`/packs/${type}/${marque}/${model.slug}`}
+                  href={lienDuModele(type, marque, model)}
                   className="underline-offset-[3px] hover:underline"
                 >
                   {model.name}

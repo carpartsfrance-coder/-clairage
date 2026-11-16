@@ -145,7 +145,15 @@ export default async function PacksGenerationPage({ params }: PageProps) {
           { label: 'Accueil', href: '/' },
           { label: libelle.long, href: `/packs/${type}` },
           { label: data.makeName, href: `/packs/${type}/${marque}` },
-          { label: data.modelName, href: `/packs/${type}/${marque}/${modele}` },
+          {
+            label: data.modelName,
+            // Modèle à une seule génération : sa page renvoie ici, le lien
+            // mène donc à la marque, où le client peut choisir un autre modèle.
+            href:
+              data.modelGenerationCount > 1
+                ? `/packs/${type}/${marque}/${modele}`
+                : `/packs/${type}/${marque}`,
+          },
           { label: `${data.generationName} ${data.years}` },
         ]}
       />

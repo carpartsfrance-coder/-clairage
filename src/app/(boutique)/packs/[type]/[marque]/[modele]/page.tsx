@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import {
   LIBELLE_PAR_CHEMIN,
   TYPE_PAR_CHEMIN,
@@ -87,6 +87,24 @@ export default async function PacksModelePage({ params }: PageProps) {
   if (read.state === 'absent') notFound()
 
   const { makeName, model } = read.data
+
+  /*
+    Une seule génération : rien à choisir ici, on y mène directement.
+
+    La page imposait un clic pour une liste d'une ligne — l'audit du
+    16 novembre 2026 l'a relevé sur la Renault Clio 4. Le sitemap ne liste
+    déjà que les modèles à plusieurs générations, et les liens internes
+    pointent désormais tout droit sur la génération : ce renvoi ne sert plus
+    qu'aux adresses partagées ou tapées à la main.
+
+    Renvoi temporaire (307), pas permanent : le jour où une deuxième
+    génération est publiée, cette page doit redevenir un choix, et un 308 mis
+    en cache par le navigateur l'en empêcherait.
+  */
+  const [seule] = model.generations
+  if (model.generations.length === 1 && seule) {
+    redirect(`/packs/${type}/${marque}/${modele}/${seule.slug}`)
+  }
 
   return (
     <div className="container-page pb-10 fiche:pb-14">
