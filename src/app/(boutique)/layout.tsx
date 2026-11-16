@@ -16,5 +16,23 @@ import { DecorBoutique } from '@/components/layout/DecorBoutique'
  * dans la boutique ? » — sans rien lire de la requête.
  */
 export default function BoutiqueLayout({ children }: { children: React.ReactNode }) {
-  return <DecorBoutique>{children}</DecorBoutique>
+  /*
+    Les photos produit viennent du stockage objet, un autre domaine que le
+    site. Annoncer ce domaine dans la tête de page laisse le navigateur ouvrir
+    la connexion (DNS, TLS) pendant qu'il lit encore le HTML, au lieu
+    d'attendre la première <img> : c'est autant de gagné sur l'affichage de la
+    photo principale d'une fiche, mesuré à 4,2 s sur téléphone (PageSpeed,
+    16 novembre 2026). Sans domaine configuré, rien n'est émis.
+  */
+  const hoteMedias = process.env.MEDIA_PUBLIC_HOST
+
+  return (
+    <>
+      {/* React place ce <link> dans la tête du document. Sans `crossOrigin` :
+          les photos sont chargées par des <img> ordinaires, et une
+          préconnexion « anonyme » ne leur servirait pas. */}
+      {hoteMedias ? <link rel="preconnect" href={`https://${hoteMedias}`} /> : null}
+      <DecorBoutique>{children}</DecorBoutique>
+    </>
+  )
 }
