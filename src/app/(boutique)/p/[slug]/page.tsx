@@ -544,6 +544,11 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                       ? complementaires.vehicule
                       : null
                   }
+                  autreVehicule={Boolean(
+                    vehicle &&
+                      vehiculeDeLaFiche &&
+                      vehiculeDeLaFiche.generation.id !== vehicle.selection.generationId,
+                  )}
                 />
               </div>
 

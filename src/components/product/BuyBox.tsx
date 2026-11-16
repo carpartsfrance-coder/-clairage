@@ -80,6 +80,7 @@ export function BuyBox({
   moto = false,
   contentAnchor = '#dans-votre-kit',
   vehiculeDesComplements = null,
+  autreVehicule = false,
 }: {
   productName: string
   /** Premier visuel du produit : la barre fixe rappelle ce qu'on achète. */
@@ -103,6 +104,11 @@ export function BuyBox({
    * (section `#completer`). Null : pas de lien vers ces packs.
    */
   vehiculeDesComplements?: string | null
+  /**
+   * Vrai quand la fiche est composée pour un véhicule (`concuPour`) et que le
+   * client en a choisi un autre. Voir `pourUnAutre` plus bas.
+   */
+  autreVehicule?: boolean
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -233,6 +239,18 @@ export function BuyBox({
     en avant : vérifier passe devant, acheter reste possible et le dit.
   */
   const inconnu = Boolean(vehicleLabel) && selected.fitment.status === 'UNKNOWN'
+  /*
+    Pack composé pour un autre véhicule que celui du client.
+
+    Le cas était rendu comme une compatibilité inconnue : « Compatibilité à
+    vérifier pour votre Clio 4 » et « Faire vérifier mon véhicule » en bouton
+    principal, sur le pack d'une Corsa E. Il n'y a rien à vérifier : la fiche
+    dit elle-même pour quel véhicule elle est composée. La bonne suite est le
+    pack du même emplacement pour SON véhicule — la liste des résultats les
+    range par emplacement. L'achat reste possible juste dessous, pour le
+    client qui a bien ce véhicule-là et n'a pas mis à jour son choix.
+  */
+  const pourUnAutre = autreVehicule && Boolean(concuPour) && Boolean(vehicleLabel) && !incompatible
   const purchasable = isPurchasable(selected.availability) && !incompatible
   /*
     Rupture au sens strict : ni stock, ni vente à découvert. Une pièce
@@ -304,7 +322,22 @@ export function BuyBox({
         une ligne, le détail est accessible juste dessous, et c'est la
         vérification qui devient l'action principale (plus bas).
       */}
-      {vehicleLabel && inconnu ? (
+      {pourUnAutre && concuPour ? (
+        <div className="mb-4 rounded-xl bg-warn-soft p-3.5 text-[#7a4a1c]">
+          <p className="flex items-center gap-2.5 text-[14px] font-bold">
+            <IconInfo className="size-4 shrink-0" />
+            {typeHorsAmpoules(productName) ? 'Prévu pour' : 'Pack composé pour'}{' '}
+            {leVehicule(concuPour, moto)}.
+          </p>
+          <p className="mt-1 text-[13px] leading-[1.6]">
+            Votre véhicule : <strong>{vehicleLabel}</strong>. Ses packs existent, un par
+            emplacement.{' '}
+            <Link href="/vehicule" className="font-semibold underline underline-offset-2">
+              Changer de véhicule
+            </Link>
+          </p>
+        </div>
+      ) : vehicleLabel && inconnu ? (
         <div className="mb-4 rounded-xl bg-warn-soft p-3.5 text-[#7a4a1c]">
           <p className="flex items-center gap-2.5 text-[14px] font-bold">
             <IconInfo className="size-4 shrink-0" />
@@ -643,6 +676,35 @@ export function BuyBox({
       */}
       {rupture ? (
         <StockAlertForm variantId={selected.id} />
+      ) : pourUnAutre ? (
+        <div className="flex flex-col gap-2">
+          <Link
+            href="/vehicule/resultats"
+            className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-brand px-5 py-3 text-[16px] font-bold text-white transition-colors hover:bg-brand-dark"
+          >
+            <span className="flex-1">Voir les packs de mon véhicule</span>
+            <IconChevronRight className="ml-auto size-[18px] shrink-0" />
+          </Link>
+
+          <div className="flex gap-2.5">
+            <SelecteurQuantite
+              valeur={quantite}
+              onChange={setQuantite}
+              maximum={selected.availability.sellable}
+              disabled={!purchasable || pending}
+            />
+            <button
+              ref={boutonRef}
+              type="button"
+              disabled={!purchasable || pending}
+              onClick={submit}
+              className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl border border-[#c4c4c4] bg-white px-4 py-2.5 text-[14px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <IconCart className="size-[18px] shrink-0" />
+              {pending ? 'Ajout en cours…' : 'Ajouter ce pack au panier'}
+            </button>
+          </div>
+        </div>
       ) : inconnu ? (
         <div className="flex flex-col gap-2">
           <Link
@@ -816,7 +878,15 @@ export function BuyBox({
             </div>
 
             {/* La barre fixe ne propose rien d'autre que le bloc d'achat. */}
-            {inconnu ? (
+            {pourUnAutre ? (
+              <Link
+                href="/vehicule/resultats"
+                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
+              >
+                <span className="truncate">Voir les packs de mon véhicule</span>
+                <IconChevronRight className="size-[18px] shrink-0" />
+              </Link>
+            ) : inconnu ? (
               <Link
                 href={lienVerification}
                 className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
