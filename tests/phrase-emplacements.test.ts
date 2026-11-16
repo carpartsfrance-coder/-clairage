@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   libelleVoirLesPacks,
   phraseDesEmplacements,
+  decompteDesPacks,
+  groupesTries,
   regrouperLesAlternatives,
   resumeDeGeneration,
   titreDesTechnologies,
@@ -132,5 +134,37 @@ describe('regrouperLesAlternatives', () => {
       carte('jour', 'Veilleuses', 'Ampoules LED de feux de jour'),
     ])
     expect(groupes).toHaveLength(2)
+  })
+})
+
+describe('groupesTries et decompteDesPacks', () => {
+  const carte = (slug: string, label: string, prixCents: number, nom = `Pack ${slug}`) =>
+    ({ slug, nom, prixCents, emplacements: [{ code: label, label }] }) as unknown as Parameters<
+      typeof groupesTries
+    >[0][number]
+  const cartes = [
+    carte('xenon', 'Feux de croisement', 3690, 'Pack ampoules effet xénon'),
+    carte('plaque', 'Éclairage de plaque', 2690),
+    carte('kit-led', 'Feux de croisement', 10490, 'Kit LED'),
+    carte('hid', 'Feux de croisement', 8090, 'Kit xénon HID'),
+  ]
+
+  it('ne coupe jamais un groupe, quel que soit le tri', () => {
+    const croissant = groupesTries(cartes, 'prix-croissant')
+    expect(croissant.map((g) => g.cartes.map((c) => c.slug))).toEqual([
+      ['plaque'],
+      ['xenon', 'hid', 'kit-led'],
+    ])
+    const decroissant = groupesTries(cartes, 'prix-decroissant')
+    expect(decroissant.map((g) => g.cartes.map((c) => c.slug))).toEqual([
+      ['kit-led', 'hid', 'xenon'],
+      ['plaque'],
+    ])
+  })
+
+  it('dit combien d’éclairages se cachent derrière les packs', () => {
+    expect(decompteDesPacks(cartes)).toBe('4 packs pour 2 éclairages')
+    expect(decompteDesPacks([cartes[1]])).toBe('1 pack')
+    expect(decompteDesPacks([cartes[0], cartes[1]])).toBe('2 packs')
   })
 })

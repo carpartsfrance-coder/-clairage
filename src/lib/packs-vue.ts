@@ -494,3 +494,41 @@ export function regrouperLesAlternatives(cartes: CarteEclairage[]): GroupeDAlter
   }
   return [...groupes.values()]
 }
+
+/**
+ * « 13 packs pour 9 éclairages » : le décompte sous « Choisissez votre
+ * éclairage ».
+ *
+ * Il ne disait que « 13 packs », que le client pouvait lire comme treize
+ * achats nécessaires. Le nombre d'éclairages — groupes d'alternatives, même
+ * règle que la grille — dit combien de choses il y a vraiment à choisir.
+ */
+export function decompteDesPacks(cartes: CarteEclairage[]): string {
+  const packs = cartes.length
+  const eclairages = regrouperLesAlternatives(cartes).length
+  const libellePacks = packs === 1 ? '1 pack' : `${packs} packs`
+  if (eclairages === packs) return libellePacks
+  return `${libellePacks} pour ${eclairages} éclairage${eclairages > 1 ? 's' : ''}`
+}
+
+/**
+ * Les groupes d'alternatives dans l'ordre d'un tri.
+ *
+ * « Recommandés » garde l'ordre d'arrivée. Les tris par prix classent les
+ * groupes selon leur solution la moins chère — un groupe n'est jamais coupé
+ * en deux par un tri, sans quoi les solutions d'un même éclairage se
+ * retrouveraient à nouveau éparpillées (relecture du 17 novembre 2026).
+ */
+export function groupesTries(cartes: CarteEclairage[], tri: Tri): GroupeDAlternatives[] {
+  const groupes = regrouperLesAlternatives(cartes)
+  if (tri === 'conseilles') return groupes
+  const sens = tri === 'prix-croissant' ? 1 : -1
+  const minimum = (groupe: GroupeDAlternatives) =>
+    Math.min(...groupe.cartes.map((carte) => carte.prixCents))
+  return groupes
+    .map((groupe) => ({
+      ...groupe,
+      cartes: [...groupe.cartes].sort((a, b) => sens * (a.prixCents - b.prixCents)),
+    }))
+    .sort((a, b) => sens * (minimum(a) - minimum(b)))
+}

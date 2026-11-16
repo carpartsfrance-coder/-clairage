@@ -14,8 +14,8 @@ import {
   type Tri,
   type Zone,
   cartesTriees,
+  groupesTries,
   nomDeLaZone,
-  regrouperLesAlternatives,
   zoneDeLEmplacement,
   zonesPresentes,
 } from '@/lib/packs-vue'
@@ -144,21 +144,18 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
       </div>
 
       {/*
-        « Recommandés » réunit les solutions d'un même éclairage sous un seul
-        titre (regrouperLesAlternatives) : effet xénon, kit LED et kit xénon
-        HID pour les feux de croisement se lisaient comme trois achats, alors
-        qu'il en faut un. Un éclairage à une seule solution — la quasi-totalité
-        — reste une vignette parmi les autres. Les tris par prix gardent la
-        grille à plat : on y compare des prix, pas des éclairages.
+        Les solutions d'un même éclairage sont réunies sous un seul titre
+        (regrouperLesAlternatives) : effet xénon, kit LED et kit xénon HID pour
+        les feux de croisement se lisaient comme trois achats, alors qu'il en
+        faut un. Un éclairage à une seule solution — la quasi-totalité — reste
+        une vignette parmi les autres. Les tris par prix classent les groupes
+        par leur prix d'entrée sans jamais les couper (groupesTries).
 
         `grid-flow-row-dense` : un groupe occupe toute une ligne ; sans cela,
         une vignette seule avant lui laisserait le reste de sa ligne vide.
       */}
       <ul className="grid grid-flow-row-dense grid-cols-2 gap-[11px] min-[651px]:grid-cols-3 min-[860px]:grid-cols-4 min-[860px]:gap-[15px]">
-        {(tri === 'conseilles'
-          ? regrouperLesAlternatives(visibles)
-          : visibles.map((carte) => ({ cle: carte.slug, emplacement: '', cartes: [carte] }))
-        ).map((groupe) => {
+        {groupesTries(visibles, tri).map((groupe) => {
           const index = visibles.indexOf(groupe.cartes[0])
           if (groupe.cartes.length === 1) {
             return (
@@ -176,7 +173,8 @@ export function EclairagesParZone({ cartes }: { cartes: CarteEclairage[] }) {
                 <h3 className="text-[15px] font-extrabold tracking-[-0.02em]">
                   {groupe.emplacement}
                   <span className="ml-2 text-[12px] font-bold text-muted-strong">
-                    {groupe.cartes.length} solutions au choix
+                    {groupe.cartes.length} solutions au choix · dès{' '}
+                    {formatPrice(Math.min(...groupe.cartes.map((carte) => carte.prixCents)))}
                   </span>
                 </h3>
                 <p className="text-[12px] text-muted-strong">

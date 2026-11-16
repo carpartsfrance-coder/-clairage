@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/icons'
 import {
   cartesDesPacks,
+  decompteDesPacks,
   libelleVoirLesPacks,
   phraseDesEmplacements,
   titreDesTechnologies,
@@ -267,7 +268,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                 Choisissez votre éclairage
               </h2>
               <p className="text-[13px] whitespace-nowrap text-muted-strong">
-                {totalProduits} pack{totalProduits > 1 ? 's' : ''}
+                {decompteDesPacks(cartes)}
               </p>
             </div>
 
