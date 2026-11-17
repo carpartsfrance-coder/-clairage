@@ -3,12 +3,18 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { GENERATION_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { VEHICLE_COOKIE } from '@/lib/session'
+import { retourApresChoix } from '@/lib/retour-vehicule'
 
 const payloadSchema = z.object({
   modelId: z.string().min(1),
   year: z.number().int().min(1950).max(new Date().getFullYear() + 1),
   /** Fourni au second passage, quand l'équipement d'origine a été choisi. */
   configurationId: z.string().min(1).optional(),
+  /**
+   * Page d'où le sélecteur a été ouvert. Validée par `retourApresChoix` : une
+   * valeur refusée ne fait pas échouer la sélection, elle est ignorée.
+   */
+  retour: z.unknown().optional(),
 })
 
 /**
@@ -31,15 +37,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Véhicule incomplet.' }, { status: 400 })
   }
   const { modelId, year, configurationId } = parsed.data
+  // Fiche ou catégorie d'où vient le client : il y revient, au lieu de
+  // devoir retrouver sa page depuis la liste des résultats.
+  const retour = retourApresChoix(parsed.data.retour)
+  const suite = retour ?? '/vehicule/resultats'
+  const etapeEquipement = (generationId: string) =>
+    `/vehicule/${generationId}/equipement${retour ? `?retour=${encodeURIComponent(retour)}` : ''}`
 
   try {
     if (configurationId) {
+      /*
+        L'équipement doit appartenir au modèle et à l'année envoyés, sur une
+        génération visible — les mêmes règles que le premier passage. « Actif »
+        seul laissait fixer n'importe quelle configuration du référentiel
+        (relecture du 16 novembre 2026).
+      */
       const config = await prisma.vehicleConfiguration.findFirst({
-        where: { id: configurationId, active: true },
+        where: {
+          id: configurationId,
+          active: true,
+          generation: {
+            modelId,
+            ...GENERATION_VISIBLE,
+            yearFrom: { lte: year },
+            OR: [{ yearTo: null }, { yearTo: { gte: year } }],
+          },
+        },
         select: { id: true },
       })
       if (!config) return NextResponse.json({ error: 'Configuration inconnue.' }, { status: 404 })
-      return setVehicle(config.id, '/vehicule/resultats')
+      return setVehicle(config.id, suite)
     }
 
     const generation = await prisma.vehicleGeneration.findFirst({
@@ -71,12 +98,12 @@ export async function POST(request: Request) {
     if (configurations.length === 0) {
       // Le véhicule existe, mais aucune configuration n'est documentée :
       // on le dit, on ne laisse pas croire que le catalogue est vide.
-      return NextResponse.json({ redirect: `/vehicule/${generation.id}/equipement` })
+      return NextResponse.json({ redirect: etapeEquipement(generation.id) })
     }
     if (configurations.length > 1) {
-      return NextResponse.json({ redirect: `/vehicule/${generation.id}/equipement` })
+      return NextResponse.json({ redirect: etapeEquipement(generation.id) })
     }
-    return setVehicle(configurations[0].id, '/vehicule/resultats')
+    return setVehicle(configurations[0].id, suite)
   } catch (error) {
     console.error('[vehicule] selection', error)
     return NextResponse.json({ error: 'Sélection indisponible pour le moment.' }, { status: 503 })

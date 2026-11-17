@@ -2,6 +2,7 @@ import 'server-only'
 import { prisma } from '../db'
 import { getPackGeneration } from './packs'
 import { cartesDesPacks, sousTitreDeLEmplacement } from '../packs-vue'
+import { cleDEmplacement, unParEmplacement } from '../un-par-emplacement'
 
 /**
  * Les autres packs du même véhicule, pour « Complétez l'éclairage » sur la
@@ -111,18 +112,38 @@ export async function getPacksComplementaires(
     // « Compléter », pas « remplacer » : les produits du même emplacement que
     // celui de la fiche (un autre kit pour les mêmes phares) n'y ont pas leur
     // place — on propose les AUTRES emplacements du véhicule.
-    const ici = new Set(
-      (cartes.find((carte) => carte.slug === productSlug)?.emplacements ?? []).map((e) => e.code),
+    /*
+      L'emplacement « physique », pas son code : clignotants avant et
+      répétiteurs latéraux partagent parfois TURN_FRONT, et regarder un pack de
+      clignotants masquait les répétiteurs (relecture du 17 novembre 2026).
+      `cleDEmplacement` les distingue, comme pour le total de la page véhicule.
+    */
+    const cles = (carte: (typeof cartes)[number]) =>
+      carte.emplacements.map((e) => cleDEmplacement(e.label, carte.nom))
+    const courante = cartes.find((carte) => carte.slug === productSlug)
+    const ici = new Set(courante ? cles(courante) : [])
+    const candidates = cartes.filter(
+      (carte) =>
+        carte.slug !== productSlug &&
+        !cles(carte).some((cle) => ici.has(cle)) &&
+        carte.status === 'CONFIRMED' &&
+        carte.variantId !== null &&
+        (confirmesPourLeClient === null || confirmesPourLeClient.has(carte.slug)),
     )
-    const packs = cartes
-      .filter(
-        (carte) =>
-          carte.slug !== productSlug &&
-          !carte.emplacements.some((e) => ici.has(e.code)) &&
-          carte.status === 'CONFIRMED' &&
-          carte.variantId !== null &&
-          (confirmesPourLeClient === null || confirmesPourLeClient.has(carte.slug)),
-      )
+    /*
+      Une proposition par emplacement, comme « Tout l'éclairage ».
+
+      Le panier proposait côte à côte deux cartes titrées « Éclairage de
+      plaque » — des ampoules d'un côté, des modules complets de l'autre —
+      comme s'il fallait prendre les deux (audit du 16 novembre 2026). Ce sont
+      des alternatives : on garde la moins chère, la même que retient le total
+      de la page véhicule. Les autres restent sur cette page.
+    */
+    const packs = unParEmplacement(
+      candidates,
+      (carte) => cleDEmplacement(carte.emplacements[0]?.label ?? carte.slug, carte.nom),
+      (carte) => carte.prixCents,
+    )
       .slice(0, MAXIMUM)
       .map((carte) => {
         const premier = carte.emplacements[0]

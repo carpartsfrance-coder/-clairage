@@ -26,9 +26,15 @@ import { useProductConfiguration } from './ProductConfiguration'
 export function KitContents({
   image,
   imageAlt,
+  sansLiens = false,
 }: {
   image: string | null
   imageAlt: string
+  /**
+   * Pack véhicule : pas de lien vers la fiche de chaque composant. Son
+   * adresse et sa page nomment le type d'ampoule (lib/sans-reference.ts).
+   */
+  sansLiens?: boolean
 }) {
   const configuration = useProductConfiguration()
   const selected = configuration?.selected
@@ -94,12 +100,16 @@ export function KitContents({
               <div className="min-w-0 flex-1">
                 <strong className="text-[16px]">
                   {composant.quantity > 1 ? `${composant.quantity} × ` : ''}
-                  <Link
-                    href={`/p/${composant.productSlug}`}
-                    className="underline-offset-[3px] hover:underline"
-                  >
-                    {composant.productName}
-                  </Link>
+                  {sansLiens ? (
+                    composant.productName
+                  ) : (
+                    <Link
+                      href={`/p/${composant.productSlug}`}
+                      className="underline-offset-[3px] hover:underline"
+                    >
+                      {composant.productName}
+                    </Link>
+                  )}
                 </strong>
                 <p className="my-[3px] text-[13px] text-[#5f6266]">
                   {composant.variantName}

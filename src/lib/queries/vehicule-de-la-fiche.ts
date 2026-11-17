@@ -71,6 +71,7 @@ export const getVehiculeDeLaFiche = cache(
         marque: { nom: make.name, slug: make.slug },
         modele: { nom: model.name, slug: model.slug },
         generation: {
+          id: generation.id,
           nom: generation.name,
           slug: generation.slug,
           phase: generation.phase,

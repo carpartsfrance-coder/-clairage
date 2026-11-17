@@ -115,13 +115,33 @@ describe('totalVehicule', () => {
     expect(total.produits).toBe(1)
   })
 
-  it('retombe sur le prix d’entrée faute de conditionnement conseillé', () => {
+  it('n’additionne pas ce que le bouton ne peut pas ajouter', () => {
+    // Sans conditionnement conseillé, rien à mettre au panier : la carte est
+    // signalée dans le détail, hors total (relecture du 17 novembre 2026).
     const total = totalVehicule([
       groupe('LOW', 'Feux de croisement', [
         produit('phares', 10390, { recommended: null, fromPriceCents: 9990 }),
       ]),
     ])
-    expect(total.totalCents).toBe(9990)
+    expect(total.totalCents).toBe(0)
+    expect(total.produits).toBe(0)
+    expect(total.variantIds).toEqual([])
+    expect(total.lignes).toEqual([
+      { slug: 'phares', nom: 'Pack phares', emplacement: 'Feux de croisement', prixCents: 9990, ajoutable: false },
+    ])
+  })
+
+  it('préfère une alternative disponible à une moins chère en rupture', () => {
+    const total = totalVehicule([
+      groupe('LOW', 'Feux de croisement', [
+        produit('effet-xenon', 3690, { recommended: null, fromPriceCents: 3690 }),
+        produit('kit-led', 10490),
+      ]),
+    ])
+    expect(total.variantIds).toEqual(['v-kit-led'])
+    expect(total.totalCents).toBe(10490)
+    // L'effet xénon en rupture n'apparaît pas : l'éclairage est couvert.
+    expect(total.lignes.map((l) => l.slug)).toEqual(['kit-led'])
   })
 
   it('ne fabrique pas de total sur une page vide', () => {
@@ -130,6 +150,7 @@ describe('totalVehicule', () => {
       emplacements: 0,
       totalCents: 0,
       variantIds: [],
+      lignes: [],
     })
   })
 })
@@ -276,6 +297,11 @@ describe('totalDesCartes', () => {
       totalCents: 11880,
       // Le bouton « ajouter tous les packs » n'achète que ces deux-là.
       variantIds: ['v-phares', 'v-plaque'],
+      // Et le détail affiché les nomme, dans l'ordre de la page.
+      lignes: [
+        { slug: 'phares', nom: 'Pack phares', emplacement: 'Feux de croisement', prixCents: 10390, ajoutable: true },
+        { slug: 'plaque', nom: 'Pack plaque', emplacement: 'Éclairage de plaque', prixCents: 1490, ajoutable: true },
+      ],
     })
   })
 
@@ -289,6 +315,9 @@ describe('totalDesCartes', () => {
       emplacements: 1,
       totalCents: 10390,
       variantIds: ['v-phares'],
+      lignes: [
+        { slug: 'phares', nom: 'Pack phares', emplacement: 'Feux de croisement', prixCents: 10390, ajoutable: true },
+      ],
     })
   })
 })

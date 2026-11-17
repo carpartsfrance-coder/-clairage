@@ -7,6 +7,7 @@ import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { GENERATION_VISIBLE } from '@/lib/queries/vehicules-visibles'
 import { VEHICLE_COOKIE } from '@/lib/session'
+import { retourApresChoix } from '@/lib/retour-vehicule'
 import { identity } from '@/lib/identity'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { ButtonLink } from '@/components/ui/Button'
@@ -88,10 +89,14 @@ export async function generateMetadata({
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ generationId: string }>
+  searchParams: Promise<{ retour?: string | string[] }>
 }) {
   const { generationId } = await params
+  // Fiche d'où le client a ouvert le sélecteur (lib/retour-vehicule.ts).
+  const retour = retourApresChoix((await searchParams).retour)
   const contactPath = identity.contact.contactPath
   const read = await getGeneration(generationId)
 
@@ -151,6 +156,19 @@ export default async function Page({
     'use server'
     const configurationId = String(formData.get('configurationId') ?? '')
     if (!configurationId) return
+    /*
+      L'identifiant vient du formulaire : il doit désigner un équipement actif
+      DE CETTE génération, elle-même visible. Sans ce contrôle, n'importe
+      quelle configuration active pouvait être écrite dans le cookie depuis
+      cette page (relecture du 16 novembre 2026).
+    */
+    const valide = await prisma.vehicleConfiguration.findFirst({
+      where: { id: configurationId, active: true, generationId, generation: GENERATION_VISIBLE },
+      select: { id: true },
+    })
+    if (!valide) return
+    // Revérifiée ici : le champ caché vient du navigateur comme le reste.
+    const suite = retourApresChoix(formData.get('retour')) ?? '/vehicule/resultats'
     const store = await cookies()
     store.set(VEHICLE_COOKIE, configurationId, {
       httpOnly: true,
@@ -159,7 +177,7 @@ export default async function Page({
       path: '/',
       maxAge: 60 * 60 * 24 * 180,
     })
-    redirect('/vehicule/resultats')
+    redirect(suite)
   }
 
   const make = generation.model.make
@@ -228,6 +246,7 @@ export default async function Page({
         ) : (
           <>
             <form action={choisir}>
+              {retour ? <input type="hidden" name="retour" value={retour} /> : null}
               <ul className="mt-4 flex flex-col gap-3">
                 {configurations.map((config) => (
                   <li key={config.id}>

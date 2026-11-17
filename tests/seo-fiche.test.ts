@@ -17,13 +17,13 @@ import { formatPrice } from '../src/lib/identity'
 const A1: VehiculeDeLaFiche = {
   marque: { nom: 'Audi', slug: 'audi' },
   modele: { nom: 'A1', slug: 'a1' },
-  generation: { nom: 'A1', slug: 'a1', phase: null, anneeDebut: 2010, anneeFin: 2018 },
+  generation: { id: 'gen-a1', nom: 'A1', slug: 'a1', phase: null, anneeDebut: 2010, anneeFin: 2018 },
   chemin: '/packs/auto/audi/a1/a1',
   cheminMarque: '/packs/auto/audi',
 }
 const A1_II: VehiculeDeLaFiche = {
   ...A1,
-  generation: { nom: 'A1 II', slug: 'a1-ii', phase: null, anneeDebut: 2018, anneeFin: null },
+  generation: { id: 'gen-a1-ii', nom: 'A1 II', slug: 'a1-ii', phase: null, anneeDebut: 2018, anneeFin: null },
   chemin: '/packs/auto/audi/a1/a1-ii',
 }
 
@@ -247,7 +247,7 @@ describe('description : la garantie', () => {
     const { descriptionSeo: decrire } = await import('../src/lib/seo-fiche')
     const texte = decrire(
       { name: 'Pack LED veilleuses pour Audi A1', tagline: null, description: null, metaTitle: null, metaDescription: null } as never,
-      { marque: { nom: 'Audi', slug: 'audi' }, modele: { nom: 'A1', slug: 'a1' }, generation: { nom: 'A1', slug: 'a1', phase: null, anneeDebut: 2010, anneeFin: 2018 }, chemin: null, cheminMarque: null } as never,
+      { marque: { nom: 'Audi', slug: 'audi' }, modele: { nom: 'A1', slug: 'a1' }, generation: { id: 'gen-a1', nom: 'A1', slug: 'a1', phase: null, anneeDebut: 2010, anneeFin: 2018 }, chemin: null, cheminMarque: null } as never,
       { seuilFranchiseCents: 5000, retourJours: 14, garantie: '5 ans' },
     )
     expect(texte).toMatch(/Garantie 5 ans, livraison offerte dès 50/)

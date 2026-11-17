@@ -29,6 +29,8 @@ export type VehiculeDeLaFiche = {
   marque: { nom: string; slug: string }
   modele: { nom: string; slug: string }
   generation: {
+    /** Pour savoir si le véhicule choisi par le client est bien celui-ci. */
+    id: string
     nom: string
     slug: string
     phase: string | null

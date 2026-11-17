@@ -4,6 +4,7 @@ import { notFound, permanentRedirect, redirect } from 'next/navigation'
 import { ficheJumelle, ficheRenommee } from '@/lib/queries/adresses-renommees'
 import { getProduct } from '@/lib/queries/product'
 import { pageDeRepliFiche } from '@/lib/queries/repli-fiche'
+import { ficheSansReferences } from '@/lib/sans-reference'
 import { getSelectedVehicle } from '@/lib/session'
 import { getStaffUser } from '@/lib/admin/guard'
 import { getShippingOffers } from '@/lib/shipping'
@@ -107,6 +108,8 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     getVehiculeDeLaFiche(product.slug),
     getShippingOffers(),
   ])
+  // L'image de partage d'un pack véhicule ne nomme pas son ampoule non plus.
+  const visuelPartage = vehicule ? ficheSansReferences(product).gallery[0] : product.gallery[0]
   const title = titreSeo(product, vehicule)
   const description = descriptionSeo(product, vehicule, {
     garantie: dureeGarantie(),
@@ -122,9 +125,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       title,
       description,
       url: `/p/${product.slug}`,
-      images: product.gallery[0]
-        ? [{ url: product.gallery[0].url, alt: product.gallery[0].alt }]
-        : undefined,
+      images: visuelPartage ? [{ url: visuelPartage.url, alt: visuelPartage.alt }] : undefined,
     },
   }
 }
@@ -158,9 +159,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const staff = apercuDemande ? await getStaffUser() : null
   const apercu = apercuDemande && staff !== null
 
-  const product = await getProduct(slug, vehicle?.configurationId ?? null, { brouillon: apercu })
+  const produitLu = await getProduct(slug, vehicle?.configurationId ?? null, { brouillon: apercu })
 
-  if (!product) {
+  if (!produitLu) {
     // Fiche retirée de la vente (pas encore de photos, archivée…) : le
     // visiteur venu de Google arrive sur la page de son véhicule plutôt que
     // sur « Page introuvable ». Redirection temporaire : la fiche reviendra.
@@ -175,10 +176,19 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
   const [shippingOffers, complementaires, vehiculeDeLaFiche, modelesReferences] = await Promise.all([
     getShippingOffers(),
-    getPacksComplementaires(product.slug, vehicle?.configurationId ?? null),
-    getVehiculeDeLaFiche(product.slug),
+    getPacksComplementaires(produitLu.slug, vehicle?.configurationId ?? null),
+    getVehiculeDeLaFiche(produitLu.slug),
     getModelesReferences(),
   ])
+
+  /*
+    Un pack composé pour un véhicule ne nomme jamais son type d'ampoule
+    (règle de l'exploitant) : textes alternatifs des photos, composants et
+    accessoires passent au filtre (lib/sans-reference.ts). Le 17 novembre
+    2026, la photo du kit xénon de l'Audi A3 8V se décrivait encore « Kit
+    Xénon HID H1 35W… ». Une fiche vendue à la référence reste intacte.
+  */
+  const product = vehiculeDeLaFiche ? ficheSansReferences(produitLu) : produitLu
 
   /* Pour le coup de pouce « livraison offerte » de la section Complétez. */
   const prixDuPackCents =
@@ -378,8 +388,16 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             {
               Icon: IconReturn,
               titre: promesseRetour() ?? '',
+              /*
+                « Le temps d'essayer, sinon on rembourse » promettait l'essai,
+                alors qu'après le délai légal l'article doit revenir neuf et
+                complet (identity.ts, FAQ, page Livraison & retours) : une
+                ampoule ne s'essaie pas sans être montée. L'audit du
+                16 novembre 2026 y voyait un risque de litige. La phrase dit
+                maintenant la règle réelle.
+              */
               texte: commercialTerms.satisfaitDays
-                ? 'Le temps d’essayer, sinon on rembourse'
+                ? 'Article neuf et complet : on rembourse'
                 : 'Le temps de changer d’avis',
             },
           ]
@@ -544,6 +562,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                       ? complementaires.vehicule
                       : null
                   }
+                  venteParReference={!concuPour && Boolean(product.bulbBase)}
+                  autreVehicule={Boolean(
+                    vehicle &&
+                      vehiculeDeLaFiche &&
+                      vehiculeDeLaFiche.generation.id !== vehicle.selection.generationId,
+                  )}
                 />
               </div>
 
@@ -781,8 +805,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           >
             <div className="mb-6 fiche:mb-8 fiche:flex fiche:items-end fiche:justify-between fiche:gap-8">
               <div>
+                {/* « Tout est prévu » ne disait rien de la section. Le surtitre
+                    nomme ce qu'elle montre (relecture du 17 novembre 2026). */}
                 <p className="mb-2 text-[12px] font-bold tracking-[1.4px] text-brand uppercase">
-                  Tout est prévu
+                  {vehiculeDeLaFiche ? 'Ce que vous recevez' : 'Détails du produit'}
                 </p>
                 <h2
                   id="titre-contenu"
@@ -800,6 +826,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               <KitContents
                 image={visuelKit?.url ?? null}
                 imageAlt={visuelKit?.alt ?? `${product.name} — contenu`}
+                sansLiens={Boolean(vehiculeDeLaFiche)}
               />
             ) : null}
 
@@ -854,7 +881,11 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               </p>
             </div>
 
-            <OptionalAddons addons={product.optionalAddons} vehicleSelected={Boolean(vehicle)} />
+            <OptionalAddons
+              addons={product.optionalAddons}
+              vehicleSelected={Boolean(vehicle)}
+              sansLiens={Boolean(vehiculeDeLaFiche)}
+            />
 
             <p className="mt-4 text-[13px] leading-[1.6] text-[#6b6d70]">
               Les adaptateurs et décodeurs exigés par votre kit ne sont pas ici : ils figurent dans

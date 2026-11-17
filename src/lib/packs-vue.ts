@@ -1,4 +1,5 @@
 import { natureDuProduit } from './types-produit'
+import { presentationDeCarte } from './carte-titre'
 import type { FitmentStatus } from './fitment'
 import type { PackPositionGroup, PackProduct } from './queries/packs'
 import { nomUtileDuConditionnement } from './nom-conditionnement'
@@ -149,6 +150,22 @@ export type TotalVehicule = {
    * mettre au panier, et le bouton ne l'invente pas.
    */
   variantIds: string[]
+  /**
+   * Le détail de la sélection, dans l'ordre de la page.
+   *
+   * La bande annonçait « 8 emplacements » puis « Ajouter les 9 packs » sans
+   * dire lesquels (audit du 16 novembre 2026) : un emplacement peut compter
+   * deux packs distincts — feux de jour et veilleuses, répétiteurs et
+   * clignotants. Le client voit maintenant ce qu'il ajoute, ligne à ligne.
+   */
+  lignes: Array<{
+    slug: string
+    nom: string
+    emplacement: string
+    prixCents: number
+    /** Faux quand la carte n'a pas de conditionnement à mettre au panier. */
+    ajoutable: boolean
+  }>
 }
 
 /**
@@ -175,20 +192,51 @@ export function totalVehicule(groupes: PackPositionGroup[]): TotalVehicule {
  * vignettes du dessous.
  */
 export function totalDesCartes(cartes: CarteEclairage[]): TotalVehicule {
-  // Un produit par emplacement : les alternatives (effet xénon, kit xénon,
-  // kit LED pour le même croisement) ne s'achètent pas ensemble.
+  const cle = (carte: CarteEclairage) =>
+    cleDEmplacement(carte.emplacements[0]?.label ?? carte.slug, carte.nom)
+  const candidates = cartes.filter((carte) => carte.status !== 'INCOMPATIBLE')
+  /*
+    Un produit par emplacement, choisi parmi ceux que le bouton peut ajouter :
+    les alternatives (effet xénon, kit xénon, kit LED pour le même croisement)
+    ne s'achètent pas ensemble.
+
+    La relecture du 17 novembre 2026 a relevé deux écarts, corrigés ici :
+    - la moins chère était retenue même sans conditionnement à ajouter (une
+      rupture), et une alternative disponible était alors ignorée ;
+    - le total additionnait ces cartes que le bouton n'ajoute pas : « 9 packs »
+      au prix, 8 au panier.
+    Le total, le nombre et le bouton portent désormais sur la même liste. Un
+    éclairage sans aucune solution ajoutable reste dans le détail, signalé
+    « indisponible », hors total.
+  */
   const retenues = unParEmplacement(
-    cartes.filter((carte) => carte.status !== 'INCOMPATIBLE'),
-    (carte) => cleDEmplacement(carte.emplacements[0]?.label ?? carte.slug, carte.nom),
+    candidates.filter((carte) => carte.variantId !== null),
+    cle,
     (carte) => carte.prixCents,
+  )
+  const couverts = new Set(retenues.map(cle))
+  const indisponibles = unParEmplacement(
+    candidates.filter((carte) => carte.variantId === null && !couverts.has(cle(carte))),
+    cle,
+    (carte) => carte.prixCents,
+  )
+  const dansLOrdre = candidates.filter(
+    (carte) => retenues.includes(carte) || indisponibles.includes(carte),
   )
   return {
     produits: retenues.length,
     emplacements: new Set(retenues.flatMap((carte) => carte.emplacements.map((e) => e.label))).size,
     totalCents: retenues.reduce((somme, carte) => somme + carte.prixCents, 0),
-    variantIds: retenues
-      .map((carte) => carte.variantId)
-      .filter((id): id is string => id !== null),
+    variantIds: retenues.map((carte) => carte.variantId as string),
+    lignes: dansLOrdre.map((carte) => ({
+      slug: carte.slug,
+      // Le titre que porte la carte (« Ampoules effet xénon »), pas le nom
+      // complet de la fiche : le détail doit se lire comme les vignettes.
+      nom: presentationDeCarte(carte.nom, carte.conditionnement).titre ?? carte.nom,
+      emplacement: carte.emplacements.map((e) => e.label).join(', '),
+      prixCents: carte.prixCents,
+      ajoutable: carte.variantId !== null,
+    })),
   }
 }
 
@@ -351,4 +399,161 @@ export function cartesTriees(cartes: CarteEclairage[], tri: Tri): CarteEclairage
 export function zonesPresentes(codes: string[]): typeof ZONES[number][] {
   const vues = new Set(codes.map(zoneDeLEmplacement))
   return ZONES.filter((zone) => zone.cle === 'tout' || vues.has(zone.cle as Exclude<Zone, 'tout'>))
+}
+
+/**
+ * La phrase sous le titre de la page d'un véhicule, tirée de ce qui y est
+ * vraiment proposé.
+ *
+ * Elle disait partout « Trouvez le bon pack, des phares au plafonnier. »,
+ * y compris sur la Renault 4 E-Tech, qui n'a qu'un pack d'éclairage de plaque
+ * (audit du 16 novembre 2026). Elle nomme maintenant les emplacements
+ * couverts, dans l'ordre de la page, et n'en promet aucun autre.
+ */
+export function phraseDesEmplacements(groupes: PackPositionGroup[]): string {
+  const libelles = [
+    ...new Set(
+      groupes
+        .filter((groupe) => groupe.products.length > 0)
+        .map((groupe) => nomDeLEmplacement(groupe.code, groupe.label).trim())
+        .filter(Boolean),
+    ),
+  ]
+  if (libelles.length === 0) return 'Aucun éclairage n’est encore documenté pour cette génération.'
+
+  const bas = (libelle: string) => libelle.charAt(0).toLowerCase() + libelle.slice(1)
+  const [premier, deuxieme, troisieme] = libelles
+  // Un emplacement peut offrir plusieurs solutions : la phrase ne dit jamais
+  // « un pack par emplacement » (relecture ChatGPT du 17 novembre 2026).
+  const produits = new Set(groupes.flatMap((groupe) => groupe.products.map((p) => p.productSlug))).size
+
+  if (libelles.length === 1) {
+    return `${premier} : ${produits > 1 ? 'les packs composés' : 'le pack composé'} pour ce véhicule.`
+  }
+  if (libelles.length === 2) return `${premier} et ${bas(deuxieme)} : les packs composés pour ce véhicule.`
+  return `Les éclairages proposés pour ce véhicule : ${bas(premier)}, ${bas(deuxieme)}, ${bas(troisieme)}${
+    libelles.length > 3 ? '…' : '.'
+  }`
+}
+
+/** « Voir le pack » ou « Voir les 13 packs » — jamais « Voir les 1 pack ». */
+export function libelleVoirLesPacks(total: number): string {
+  return total === 1 ? 'Voir le pack' : `Voir les ${total} packs`
+}
+
+/**
+ * Ce que la liste des générations dit de chacune : combien de packs attendent
+ * le client, et s'il aura un équipement d'origine à préciser.
+ *
+ * Elle disait « 1 équipement d'origine documenté » — vrai, mais sans rapport
+ * avec l'achat : la Clio 4 menait ensuite à 13 packs (audit du 16 novembre
+ * 2026). Le nombre d'équipements n'est gardé que lorsqu'il y en a plusieurs :
+ * c'est alors une étape de plus, et il vaut mieux l'annoncer.
+ */
+export function resumeDeGeneration(generation: {
+  packCount: number
+  configurationCount: number
+  hasFitments: boolean
+}): string {
+  if (!generation.hasFitments || generation.packCount === 0) return 'Compatibilités non encore relevées'
+  const packs =
+    generation.packCount === 1 ? '1 pack disponible' : `${generation.packCount} packs disponibles`
+  return generation.configurationCount > 1
+    ? `${packs} · ${generation.configurationCount} équipements d'origine`
+    : packs
+}
+
+/**
+ * Le titre du bandeau d'une page véhicule, fidèle à ce qu'elle propose.
+ *
+ * Il disait « Éclairage LED » partout, y compris au-dessus d'ampoules
+ * halogènes effet xénon et de kits xénon HID (audit du 16 novembre 2026).
+ * Les cartes le précisent déjà ; le titre le dit maintenant aussi, sans
+ * perdre « LED », qui est ce que le client cherche : « Éclairage LED et
+ * xénon » dès qu'une carte n'est pas en LED, « Éclairage xénon » s'il n'y a
+ * que cela, « Éclairage LED » sinon.
+ */
+export function titreDesTechnologies(cartes: Array<{ nom: string }>): string {
+  const xenon = (nom: string) => estEffetXenon(nom) || /x[ée]non/i.test(nom)
+  const avecXenon = cartes.some((carte) => xenon(carte.nom))
+  const avecLed = cartes.some((carte) => !xenon(carte.nom))
+  if (avecXenon && avecLed) return 'Éclairage LED et xénon'
+  if (avecXenon) return 'Éclairage xénon'
+  return 'Éclairage LED'
+}
+
+/** Des cartes qui se remplacent l'une l'autre, pour un même éclairage. */
+export type GroupeDAlternatives = {
+  cle: string
+  /** « Feux de croisement » : ce que toutes les cartes du groupe éclairent. */
+  emplacement: string
+  cartes: CarteEclairage[]
+}
+
+/**
+ * Les cartes regroupées par éclairage, dans l'ordre où elles arrivent.
+ *
+ * Sur une page véhicule, trois solutions pour les feux de croisement — effet
+ * xénon, kit LED, kit xénon HID — s'alignaient comme trois produits à
+ * acheter (audit du 16 novembre 2026). Elles sont maintenant réunies sous
+ * leur éclairage, qui dit qu'il en faut une seule. La règle des alternatives
+ * est celle du total « Tout l'éclairage » (`cleDEmplacement`) : la page et
+ * la somme ne peuvent pas se contredire.
+ *
+ * Un groupe d'une seule carte reste une carte : c'est le cas de 98 % des
+ * emplacements du catalogue, et il n'y a là rien à comparer.
+ */
+export function regrouperLesAlternatives(cartes: CarteEclairage[]): GroupeDAlternatives[] {
+  const groupes = new Map<string, GroupeDAlternatives>()
+  for (const carte of cartes) {
+    const emplacement = carte.emplacements[0]?.label ?? carte.slug
+    const cle = cleDEmplacement(emplacement, carte.nom)
+    const groupe = groupes.get(cle) ?? { cle, emplacement, cartes: [] }
+    groupe.cartes.push(carte)
+    groupes.set(cle, groupe)
+  }
+  return [...groupes.values()]
+}
+
+/**
+ * « 13 packs pour 9 éclairages » : le décompte sous « Choisissez votre
+ * éclairage ».
+ *
+ * Il ne disait que « 13 packs », que le client pouvait lire comme treize
+ * achats nécessaires. Le nombre d'éclairages — groupes d'alternatives, même
+ * règle que la grille — dit combien de choses il y a vraiment à choisir.
+ */
+export function decompteDesPacks(cartes: CarteEclairage[]): string {
+  const packs = cartes.length
+  const eclairages = regrouperLesAlternatives(cartes).length
+  const libellePacks = packs === 1 ? '1 pack' : `${packs} packs`
+  if (eclairages === packs) return libellePacks
+  return `${libellePacks} pour ${eclairages} éclairage${eclairages > 1 ? 's' : ''}`
+}
+
+/**
+ * Les groupes d'alternatives dans l'ordre d'un tri.
+ *
+ * « Recommandés » garde l'ordre d'arrivée. Les tris par prix classent les
+ * groupes selon leur prix de tête (voir plus bas) — un groupe n'est jamais coupé
+ * en deux par un tri, sans quoi les solutions d'un même éclairage se
+ * retrouveraient à nouveau éparpillées (relecture du 17 novembre 2026).
+ */
+export function groupesTries(cartes: CarteEclairage[], tri: Tri): GroupeDAlternatives[] {
+  const groupes = regrouperLesAlternatives(cartes)
+  if (tri === 'conseilles') return groupes
+  const sens = tri === 'prix-croissant' ? 1 : -1
+  /*
+    Le prix qui classe un groupe est celui de sa première carte une fois
+    triée : le moins cher en « croissant », le plus cher en « décroissant ».
+    Classer par le minimum dans les deux sens mettait en tête d'un tri
+    décroissant un groupe ouvert sur un pack plus cher que celui d'en
+    dessous (relecture du 17 novembre 2026).
+  */
+  return groupes
+    .map((groupe) => ({
+      ...groupe,
+      cartes: [...groupe.cartes].sort((a, b) => sens * (a.prixCents - b.prixCents)),
+    }))
+    .sort((a, b) => sens * (a.cartes[0].prixCents - b.cartes[0].prixCents))
 }

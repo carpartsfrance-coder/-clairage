@@ -46,9 +46,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const packs = await listSitemapPacks()
 
   return [
+    // Pas de `lastModified` sur les pages fixes : leur date de modification
+    // n'est connue nulle part, et l'heure du plan n'en est pas une.
     ...STATIC_PAGES.map((page) => ({
       url: `${siteConfig.url}${page.path}`,
-      lastModified: now,
       changeFrequency: page.changeFrequency,
       priority: page.priority,
     })),

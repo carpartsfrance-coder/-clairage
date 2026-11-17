@@ -115,6 +115,20 @@ export async function faqFicheParDefaut(
           ? `Il est prévu pour ${leVehicule(concuPour, moto)}. En cas de doute sur votre version, écrivez-nous avec le modèle exact avant de commander : nous vérifions.`
           : `Il est composé pour ${leVehicule(concuPour, moto)} : les ampoules et les LED correspondent aux emplacements d’origine de ce véhicule. Si le vôtre a reçu des phares différents de ceux montés en usine (xénon, LED d’origine), écrivez-nous avec le modèle exact avant de commander : nous vérifions.`,
       }
-    : generales.find((question) => question.question.startsWith('Comment être sûr')) ?? generales[0]
+    : type
+      ? generales.find((question) => question.question.startsWith('Comment être sûr')) ?? generales[0]
+      : /*
+          Ampoule vendue à la référence : la question générale parlait de
+          « pack », hors de propos ici (relecture du 17 novembre 2026). Le
+          client a une référence en main ; ce qu'il doit savoir, c'est qu'elle
+          ne suffit pas toujours.
+        */
+        {
+          question: /^kit\b/i.test(nomDuProduit.trim())
+            ? 'Ce kit convient-il à mon véhicule ?'
+            : 'Cette ampoule convient-elle à mon véhicule ?',
+          answer:
+            'La référence de l’ampoule ne suffit pas toujours : le bloc optique et l’équipement d’origine comptent aussi. Choisissez votre véhicule (marque, modèle, année) : la fiche vous dit alors si cette référence lui convient. En cas de doute, écrivez-nous avec le modèle exact : nous vérifions avant l’envoi.',
+        }
   return [compatibilite, ...sansPaiement]
 }

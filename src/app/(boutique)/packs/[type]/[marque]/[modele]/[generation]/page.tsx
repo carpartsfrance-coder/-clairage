@@ -9,6 +9,7 @@ import {
 } from '@/lib/queries/packs'
 import { getSelectedVehicle } from '@/lib/session'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
+import { BreadcrumbStructuredData } from '@/components/seo/StructuredData'
 import { EmptyState } from '@/components/ui/Surface'
 import { PackReadFailure } from '@/components/packs/PackReadFailure'
 import { ButtonLink } from '@/components/ui/Button'
@@ -19,7 +20,14 @@ import {
   IconHeadset,
   IconInfo,
 } from '@/components/ui/icons'
-import { cartesDesPacks, totalDesCartes } from '@/lib/packs-vue'
+import {
+  cartesDesPacks,
+  decompteDesPacks,
+  libelleVoirLesPacks,
+  phraseDesEmplacements,
+  titreDesTechnologies,
+  totalDesCartes,
+} from '@/lib/packs-vue'
 import { phaseUtile } from '@/lib/resultats-vue'
 import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
 import { BarreVehicule } from '@/components/vehicule/BarreVehicule'
@@ -82,12 +90,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const data = lecture.data
   const emplacements = [...new Set(data.groups.map((groupe) => groupe.label))]
+  // « Packs LED » seulement quand tout l'est : même règle que le bandeau.
+  const technologies = titreDesTechnologies(cartesDesPacks(data.groups))
+  const packsDe = technologies === 'Éclairage LED' ? 'Packs LED' : 'Packs LED et xénon'
   return {
     title: `Éclairage ${data.makeName} ${data.generationName} ${data.years}`,
     description: [
       emplacements.length > 0
-        ? `Packs LED pour ${data.makeName} ${data.generationName} (${data.years}) : ${emplacements.slice(0, 5).join(', ').toLowerCase()}${emplacements.length > 5 ? '…' : '.'}`
-        : `Éclairage LED pour ${data.makeName} ${data.generationName} (${data.years}).`,
+        ? `${technologies === 'Éclairage xénon' ? 'Packs xénon' : packsDe} pour ${data.makeName} ${data.generationName} (${data.years}) : ${emplacements.slice(0, 5).join(', ').toLowerCase()}${emplacements.length > 5 ? '…' : '.'}`
+        : `${technologies} pour ${data.makeName} ${data.generationName} (${data.years}).`,
       'Composés pour votre véhicule, à monter à la place des ampoules d’origine.',
       dureeGarantie() ? `Garantie ${dureeGarantie()}.` : '',
     ]
@@ -138,27 +149,35 @@ export default async function PacksGenerationPage({ params }: PageProps) {
     vehicle && data.equipments.some((e) => e.configurationId === vehicle.configurationId),
   )
 
+  // Le même fil pour l'affichage et pour Google (BreadcrumbList) : deux
+  // listes finiraient par diverger, et c'est le balisage qu'on ne relit pas.
+  const filDAriane = [
+    { label: 'Accueil', href: '/' },
+    { label: libelle.long, href: `/packs/${type}` },
+    { label: data.makeName, href: `/packs/${type}/${marque}` },
+    {
+      label: data.modelName,
+      // Modèle à une seule génération : sa page renvoie ici même. Le nom
+      // reste affiché, sans lien qui tournerait en rond.
+      href: data.modelGenerationCount > 1 ? `/packs/${type}/${marque}/${modele}` : undefined,
+    },
+    { label: `${data.generationName} ${data.years}` },
+  ]
+
   return (
     <div className="container-page pb-10 fiche:pb-14">
-      <Breadcrumb
-        items={[
-          { label: 'Accueil', href: '/' },
-          { label: libelle.long, href: `/packs/${type}` },
-          { label: data.makeName, href: `/packs/${type}/${marque}` },
-          { label: data.modelName, href: `/packs/${type}/${marque}/${modele}` },
-          { label: `${data.generationName} ${data.years}` },
-        ]}
+      <Breadcrumb items={filDAriane} />
+      {/* Google veut une adresse à chaque étape sauf la dernière : une étape
+          sans page (modèle à une seule génération) n'y figure pas. */}
+      <BreadcrumbStructuredData
+        items={filDAriane.filter((etape, index) => etape.href || index === filDAriane.length - 1)}
       />
 
       <BandeauVehicule
         surtitre={`${data.makeName} ${data.generationName} · ${data.years}`}
-        titre="Éclairage LED"
+        titre={titreDesTechnologies(cartes)}
         sousTitre={`pour ${data.makeName} ${data.generationName}`}
-        description={
-          totalProduits > 0
-            ? 'Trouvez le bon pack, des phares au plafonnier.'
-            : 'Aucun éclairage n’est encore documenté pour cette génération.'
-        }
+        description={phraseDesEmplacements(data.groups)}
         marque={data.makeName}
         logo={data.makeLogo}
         action={
@@ -168,7 +187,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
               className="min-h-[43px] gap-2.5 rounded-lg px-[15px] text-[12px]"
               iconRight={<IconArrowRight className="size-4 rotate-90" />}
             >
-              Voir les {totalProduits} pack{totalProduits > 1 ? 's' : ''}
+              {libelleVoirLesPacks(totalProduits)}
             </ButtonLink>
           ) : null
         }
@@ -249,7 +268,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                 Choisissez votre éclairage
               </h2>
               <p className="text-[13px] whitespace-nowrap text-muted-strong">
-                {totalProduits} pack{totalProduits > 1 ? 's' : ''}
+                {decompteDesPacks(cartes)}
               </p>
             </div>
 
@@ -262,6 +281,7 @@ export default async function PacksGenerationPage({ params }: PageProps) {
                 emplacements={total.emplacements}
                 totalCents={total.totalCents}
                 variantIds={total.variantIds}
+                lignes={total.lignes}
               />
             ) : null}
 

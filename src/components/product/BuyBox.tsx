@@ -4,7 +4,7 @@ import { leVehicule, typeHorsAmpoules } from '@/lib/types-produit'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from '@/components/ui/Image'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import type { VariantView } from '@/lib/queries/product'
 import { buildDeliveryTeaser, type ShippingOffer } from '@/lib/delivery-teaser'
 import { addToCart } from '@/lib/actions/cart'
@@ -80,6 +80,8 @@ export function BuyBox({
   moto = false,
   contentAnchor = '#dans-votre-kit',
   vehiculeDesComplements = null,
+  autreVehicule = false,
+  venteParReference = false,
 }: {
   productName: string
   /** Premier visuel du produit : la barre fixe rappelle ce qu'on achète. */
@@ -103,8 +105,23 @@ export function BuyBox({
    * (section `#completer`). Null : pas de lien vers ces packs.
    */
   vehiculeDesComplements?: string | null
+  /**
+   * Vrai quand la fiche est composée pour un véhicule (`concuPour`) et que le
+   * client en a choisi un autre. Voir `pourUnAutre` plus bas.
+   */
+  autreVehicule?: boolean
+  /**
+   * Ampoule vendue à sa référence (un culot est renseigné, aucun véhicule
+   * n'est attaché à la fiche) : le client vient avec sa référence en tête.
+   */
+  venteParReference?: boolean
 }) {
   const router = useRouter()
+  /*
+    Les liens « Changer » mènent à la page /vehicule : elle doit savoir d'où
+    l'on vient pour y renvoyer le client une fois son véhicule choisi.
+  */
+  const lienChoixVehicule = `/vehicule?retour=${encodeURIComponent(usePathname())}`
   const [pending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null)
 
@@ -233,6 +250,37 @@ export function BuyBox({
     en avant : vérifier passe devant, acheter reste possible et le dit.
   */
   const inconnu = Boolean(vehicleLabel) && selected.fitment.status === 'UNKNOWN'
+  /*
+    Pack composé pour un autre véhicule que celui du client.
+
+    Le cas était rendu comme une compatibilité inconnue : « Compatibilité à
+    vérifier pour votre Clio 4 » et « Faire vérifier mon véhicule » en bouton
+    principal, sur le pack d'une Corsa E. Il n'y a rien à vérifier : la fiche
+    dit elle-même pour quel véhicule elle est composée. La bonne suite est le
+    pack du même emplacement pour SON véhicule — la liste des résultats les
+    range par emplacement. L'achat reste possible juste dessous, pour le
+    client qui a bien ce véhicule-là et n'a pas mis à jour son choix.
+  */
+  const pourUnAutre = autreVehicule && Boolean(concuPour) && Boolean(vehicleLabel) && !incompatible
+  /*
+    Vérifier d'abord, ou acheter d'abord ?
+
+    Sur un pack composé pour un véhicule, la compatibilité EST le produit :
+    quand elle n'est pas établie, la vérification reste l'action principale.
+    Sur une ampoule vendue à la référence (T4W, H7…), le client vient le plus
+    souvent avec sa référence en tête : lui faire passer « Faire vérifier »
+    devant « Ajouter au panier » freinait l'achat sans le protéger de rien
+    (audit du 16 novembre 2026). L'achat repasse devant, la vérification
+    reste proposée juste dessous, et l'avertissement au-dessus du prix ne
+    change pas.
+  */
+  /*
+    La relecture du 17 novembre 2026 a resserré la règle : l'achat ne passe
+    devant que sur une ampoule vendue à sa référence. Un kit ou un accessoire
+    technique dont la compatibilité est inconnue garde la vérification en
+    premier.
+  */
+  const verifierDAbord = inconnu && !venteParReference
   const purchasable = isPurchasable(selected.availability) && !incompatible
   /*
     Rupture au sens strict : ni stock, ni vente à découvert. Une pièce
@@ -287,7 +335,7 @@ export function BuyBox({
             Compatible avec votre {vehicleLabel}
           </strong>
           <Link
-            href="/vehicule"
+            href={lienChoixVehicule}
             className="shrink-0 font-semibold underline underline-offset-2 hover:text-ink"
           >
             Changer
@@ -304,7 +352,22 @@ export function BuyBox({
         une ligne, le détail est accessible juste dessous, et c'est la
         vérification qui devient l'action principale (plus bas).
       */}
-      {vehicleLabel && inconnu ? (
+      {pourUnAutre && concuPour ? (
+        <div className="mb-4 rounded-xl bg-warn-soft p-3.5 text-[#7a4a1c]">
+          <p className="flex items-center gap-2.5 text-[14px] font-bold">
+            <IconInfo className="size-4 shrink-0" />
+            {typeHorsAmpoules(productName) ? 'Prévu pour' : 'Pack composé pour'}{' '}
+            {leVehicule(concuPour, moto)}.
+          </p>
+          <p className="mt-1 text-[13px] leading-[1.6]">
+            Votre véhicule : <strong>{vehicleLabel}</strong>. Découvrez les packs disponibles
+            pour lui.{' '}
+            <Link href={lienChoixVehicule} className="font-semibold underline underline-offset-2">
+              Changer de véhicule
+            </Link>
+          </p>
+        </div>
+      ) : vehicleLabel && inconnu ? (
         <div className="mb-4 rounded-xl bg-warn-soft p-3.5 text-[#7a4a1c]">
           <p className="flex items-center gap-2.5 text-[14px] font-bold">
             <IconInfo className="size-4 shrink-0" />
@@ -329,7 +392,11 @@ export function BuyBox({
       {incompatible ? (
         <Alert
           tone="danger"
-          title="Cette référence ne convient pas à votre véhicule."
+          title={
+            concuPour
+              ? 'Ce pack ne convient pas au véhicule sélectionné.'
+              : 'Cette référence ne convient pas à votre véhicule.'
+          }
           className="mb-5"
         >
           {selected.fitment.restrictions ??
@@ -341,9 +408,15 @@ export function BuyBox({
         </Alert>
       ) : null}
 
+      {/*
+        Ton neutre, pas vert : le vert dit « compatible », et rien n'est
+        encore confirmé tant que le client n'a pas indiqué sa version et son
+        équipement d'origine (relecture du 17 novembre 2026). Il reste réservé
+        à « Compatible avec votre … », plus haut.
+      */}
       {!vehicleLabel && concuPour ? (
         <Alert
-          tone="ok"
+          tone="info"
           title={
             typeHorsAmpoules(productName)
               ? `Prévu pour ${leVehicule(concuPour, moto)}.`
@@ -351,18 +424,23 @@ export function BuyBox({
           }
           className="mb-5"
         >
-          <Link href="/vehicule" className="font-semibold underline underline-offset-4">
+          <Link href={lienChoixVehicule} className="font-semibold underline underline-offset-4">
             Vérifier avec mon véhicule
           </Link>{' '}
           (version et équipement d&apos;origine).
         </Alert>
       ) : null}
 
+      {/*
+        Sur ordinateur, la barre « Votre véhicule » au-dessus de la galerie dit
+        déjà qu'aucun véhicule n'est choisi : l'encadré ne s'affiche que sur
+        téléphone, où cette barre est masquée. Un seul message par écran.
+      */}
       {!vehicleLabel && !concuPour ? (
-        <Alert tone="info" title="Indiquez votre véhicule." className="mb-5">
+        <Alert tone="info" title="Indiquez votre véhicule." className="mb-5 fiche:hidden">
           Le bon éclairage dépend du bloc optique et de l&apos;équipement d&apos;origine, pas
           seulement du culot.{' '}
-          <Link href="/vehicule" className="font-semibold underline underline-offset-4">
+          <Link href={lienChoixVehicule} className="font-semibold underline underline-offset-4">
             Choisir mon véhicule
           </Link>{' '}
           pour savoir si cette référence vous convient.
@@ -386,7 +464,7 @@ export function BuyBox({
       {variants.length > 1 && !optionsDesVariantes(variants) ? (
         <fieldset>
           <div className="mb-2.5 flex items-center justify-between gap-4 text-[15px] font-bold">
-            <legend>Choisissez votre kit</legend>
+            <legend>{titreDuChoix(variants)}</legend>
             <a
               href={contentAnchor}
               className="shrink-0 text-[13px] font-normal text-[#55585b] underline underline-offset-2 hover:text-ink"
@@ -643,7 +721,36 @@ export function BuyBox({
       */}
       {rupture ? (
         <StockAlertForm variantId={selected.id} />
-      ) : inconnu ? (
+      ) : pourUnAutre ? (
+        <div className="flex flex-col gap-2">
+          <Link
+            href="/vehicule/resultats"
+            className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-brand px-5 py-3 text-[16px] font-bold text-white transition-colors hover:bg-brand-dark"
+          >
+            <span className="flex-1">Voir les packs de mon véhicule</span>
+            <IconChevronRight className="ml-auto size-[18px] shrink-0" />
+          </Link>
+
+          <div className="flex gap-2.5">
+            <SelecteurQuantite
+              valeur={quantite}
+              onChange={setQuantite}
+              maximum={selected.availability.sellable}
+              disabled={!purchasable || pending}
+            />
+            <button
+              ref={boutonRef}
+              type="button"
+              disabled={!purchasable || pending}
+              onClick={submit}
+              className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl border border-[#c4c4c4] bg-white px-4 py-2.5 text-[14px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <IconCart className="size-[18px] shrink-0" />
+              {pending ? 'Ajout en cours…' : 'Ajouter ce pack au panier'}
+            </button>
+          </div>
+        </div>
+      ) : verifierDAbord ? (
         <div className="flex flex-col gap-2">
           <Link
             href={lienVerification}
@@ -694,6 +801,16 @@ export function BuyBox({
           </button>
         </div>
       )}
+
+      {inconnu && !verifierDAbord && !pourUnAutre && !rupture ? (
+        <Link
+          href={lienVerification}
+          className="mt-2.5 flex min-h-11 items-center gap-2 text-[14px] font-semibold text-ink underline underline-offset-2 hover:text-brand-dark"
+        >
+          <IconShield className="size-[18px] shrink-0" />
+          Vérifier si cette référence convient à mon véhicule
+        </Link>
+      ) : null}
 
       {feedback ? (
         <Alert
@@ -811,25 +928,49 @@ export function BuyBox({
                 {formatPrice(total)}
               </strong>
               <span className="mt-0.5 block text-[11px] leading-[1.4] whitespace-nowrap text-[#6b6d70] fiche:text-[12px]">
-                TTC{delivery?.priceLabel ? ` · ${delivery.priceLabel.toLowerCase()}` : null}
+                TTC
+                {/*
+                  La livraison ne tient pas sur téléphone : « TTC · livraison à
+                  partir de 5,90 € », insécable, prenait 170 px à 390 px de
+                  large et tronquait le bouton voisin en « Faire vérifier mon
+                  vé… » (audit du 16 novembre 2026). Le bloc d'achat la dit
+                  déjà, juste au-dessus.
+                */}
+                {delivery?.priceLabel ? (
+                  <span className="max-fiche:hidden"> · {delivery.priceLabel.toLowerCase()}</span>
+                ) : null}
               </span>
             </div>
 
             {/* La barre fixe ne propose rien d'autre que le bloc d'achat. */}
-            {inconnu ? (
+            {pourUnAutre ? (
+              /*
+                Libellés courts dans la barre : à 320 px, « Voir les packs de
+                mon véhicule » débordait de l'écran (contrôlé à 320, 360 et
+                390 px). Le bouton du bloc d'achat garde la phrase entière, et
+                `min-w-0` laisse l'ellipse jouer plutôt que de déborder.
+              */
+              <Link
+                href="/vehicule/resultats"
+                className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
+              >
+                <span className="truncate">Packs de mon véhicule</span>
+                <IconChevronRight className="size-[18px] shrink-0" />
+              </Link>
+            ) : verifierDAbord ? (
               <Link
                 href={lienVerification}
-                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
+                className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
               >
                 <IconShield className="size-[18px] shrink-0" />
-                <span className="truncate">Faire vérifier mon véhicule</span>
+                <span className="truncate">Vérifier mon véhicule</span>
               </Link>
             ) : (
               <button
                 type="button"
                 disabled={!purchasable || pending}
                 onClick={submit}
-                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none"
+                className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none"
               >
                 <IconCart className="size-[18px] shrink-0" />
                 <span className="truncate">{libelleBouton}</span>
@@ -985,4 +1126,21 @@ function ChoixDOptions({
       </div>
     </fieldset>
   )
+}
+
+/**
+ * Le titre de la liste des conditionnements, d'après ce qui les distingue.
+ *
+ * Il disait « Choisissez votre kit » partout, y compris sur une ampoule W5W
+ * vendue à l'unité en trois teintes, où l'on choisit une couleur de lumière
+ * (relecture du 17 novembre 2026).
+ */
+export function titreDuChoix(variants: Array<{ name: string; packaging: VariantView['packaging'] }>): string {
+  const teinte = /\d[\d\s\u202f]*\s?K\b/
+  const memeConditionnement = new Set(variants.map((variant) => variant.packaging)).size === 1
+  if (memeConditionnement && variants.every((variant) => teinte.test(variant.name))) {
+    return 'Choisissez votre couleur de lumière'
+  }
+  if (!memeConditionnement) return 'Choisissez votre conditionnement'
+  return variants[0]?.packaging === 'KIT' ? 'Choisissez votre kit' : 'Choisissez votre version'
 }

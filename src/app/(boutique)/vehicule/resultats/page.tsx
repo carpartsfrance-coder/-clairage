@@ -19,7 +19,12 @@ import {
 import { ARGS_COUVERTURE, couverture } from '@/lib/media-couverture'
 import { couvertureType } from '@/lib/images-types'
 import { cartesDesResultats, phaseUtile, type GroupeResultat } from '@/lib/resultats-vue'
-import { totalDesCartes } from '@/lib/packs-vue'
+import {
+  decompteDesPacks,
+  libelleVoirLesPacks,
+  titreDesTechnologies,
+  totalDesCartes,
+} from '@/lib/packs-vue'
 import { BandeauVehicule } from '@/components/vehicule/BandeauVehicule'
 import { BarreVehicule } from '@/components/vehicule/BarreVehicule'
 import { PromessesAchat } from '@/components/confiance/PromessesAchat'
@@ -313,7 +318,7 @@ export default async function Page() {
       */}
       <BandeauVehicule
         surtitre={affiche ? `${titre} · ${affiche.years}` : titre}
-        titre="Éclairage LED"
+        titre={titreDesTechnologies(cartes)}
         sousTitre={`pour ${titre}`}
         description={
           cartes.length > 0
@@ -329,7 +334,7 @@ export default async function Page() {
               className="min-h-[43px] gap-2.5 rounded-lg px-[15px] text-[12px]"
               iconRight={<IconArrowRight className="size-4 rotate-90" />}
             >
-              Voir les {cartes.length} pack{cartes.length > 1 ? 's' : ''}
+              {libelleVoirLesPacks(cartes.length)}
             </ButtonLink>
           ) : null
         }
@@ -422,7 +427,7 @@ export default async function Page() {
                 Choisissez votre éclairage
               </h2>
               <p className="text-[13px] whitespace-nowrap text-muted-strong">
-                {cartes.length} pack{cartes.length > 1 ? 's' : ''}
+                {decompteDesPacks(cartes)}
               </p>
             </div>
 
@@ -435,6 +440,7 @@ export default async function Page() {
                 emplacements={total.emplacements}
                 totalCents={total.totalCents}
                 variantIds={total.variantIds}
+                lignes={total.lignes}
               />
             ) : null}
 

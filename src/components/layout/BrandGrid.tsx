@@ -62,13 +62,6 @@ export function BrandGrid({
           <Link
             href={entry.href}
             onClick={onNavigate}
-            /*
-              L'infobulle remplace le nom écrit pour les logos que personne ne
-              reconnaît du premier coup. Elle ne remplace rien pour les
-              lecteurs d'écran : c'est le libellé masqué ci-dessous qui donne
-              son nom au lien.
-            */
-            title={entry.logo ? entry.label : undefined}
             className={cn(
               'flex h-full flex-col items-center justify-center gap-2 rounded-lg border px-1.5 py-3 text-center transition-colors',
               tone === 'page'
@@ -79,25 +72,27 @@ export function BrandGrid({
             <BrandMark name={entry.label} logo={entry.logo ?? null} size="lg" />
 
             {/*
-              Le nom n'est écrit que s'il n'est pas déjà dessiné.
+              Le nom est toujours écrit.
 
-              La plupart des logos constructeurs SONT le nom — Citroën, Fiat,
-              Jeep, Land Rover, Iveco. Le réécrire sous la pastille le faisait
-              lire deux fois, en deux graisses différentes, et donnait à la
-              grille un air de formulaire. Sans logo, en revanche, la pastille
-              ne porte que deux lettres : le nom devient alors la seule chose
-              qui identifie la marque, et il s'affiche.
+              Il était masqué sous les logos, au motif que la plupart SONT le
+              nom (Citroën, Fiat, Jeep…). Mais sur téléphone, à cette taille,
+              une partie des logos ne se reconnaît plus — et un logo ne doit
+              pas être le seul moyen d'identifier une marque (audit du
+              16 novembre 2026). Sous un logo, le nom passe en gris et en
+              graisse normale : il confirme sans répéter avec la même voix.
+              Sans logo, il garde sa graisse : c'est lui qui identifie.
 
               `min-w-0` sur l'élément lui-même : sans lui, un nom long
               (« Harley-Davidson », « Indian Motorcycle ») élargit la cellule
               au lieu d'être tronqué, et toute la grille se décale.
             */}
             <span
-              className={
-                entry.logo
-                  ? 'sr-only'
-                  : 'w-full min-w-0 truncate text-[11px] leading-tight font-semibold'
-              }
+              className={cn(
+                // Deux lignes plutôt qu'une coupure : « Harley-Davidson » se
+                // lisait « Harley-Davi… » sur petit écran.
+                'line-clamp-2 w-full min-w-0 text-[11px] leading-tight break-words',
+                entry.logo ? 'text-muted-strong' : 'font-semibold',
+              )}
             >
               {entry.label}
             </span>

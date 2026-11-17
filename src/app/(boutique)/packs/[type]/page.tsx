@@ -6,6 +6,7 @@ import {
   listPackMakes,
 } from '@/lib/queries/packs'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
+import { BreadcrumbStructuredData } from '@/components/seo/StructuredData'
 import { EmptyState } from '@/components/ui/Surface'
 import { MakeSearch } from '@/components/packs/MakeSearch'
 import { BrandGrid } from '@/components/layout/BrandGrid'
@@ -43,14 +44,17 @@ export default async function PacksTypePage({ params }: PageProps) {
 
   const makes = await listPackMakes(vehicleType)
 
+  // Le même fil pour l'affichage et pour Google (BreadcrumbList) : deux
+  // listes finiraient par diverger, et c'est le balisage qu'on ne relit pas.
+  const filDAriane = [
+    { label: 'Accueil', href: '/' },
+    { label: libelle.long },
+  ]
+
   return (
     <div className="container-page pb-10 fiche:pb-14">
-      <Breadcrumb
-        items={[
-          { label: 'Accueil', href: '/' },
-          { label: libelle.long },
-        ]}
-      />
+      <Breadcrumb items={filDAriane} />
+      <BreadcrumbStructuredData items={filDAriane} />
 
       <h1 className="text-[25px] leading-[1.2] font-bold tracking-[-0.9px] fiche:text-[29px] fiche:tracking-[-1px]">
         {libelle.long}

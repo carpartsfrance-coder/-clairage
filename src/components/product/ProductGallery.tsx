@@ -42,11 +42,6 @@ function estPackshot(role: GalleryItem['role']) {
 }
 
 /** Autant de colonnes que de vignettes, jusqu'à quatre. */
-const COLONNES: Record<number, string> = {
-  2: 'grid-cols-2',
-  3: 'grid-cols-3',
-  4: 'grid-cols-4',
-}
 
 /** Vue « Dans le pack » : la composition, à la place du visuel. */
 const VUE_PACK: 'pack' = 'pack'
@@ -158,13 +153,29 @@ export function ProductGallery({
   const comparatifAffiche = !(vue === VUE_PACK && composition.length > 0) && estComparatifAvantApres(current)
   const packAffiche = vue === VUE_PACK && avecPack
 
-  /** Onglets : les visuels, puis la composition quand il y en a une. */
+  /*
+    Onglets : les visuels, puis la composition quand il y en a une.
+
+    Trois rendus s'annonçaient tous « Le rendu » à un lecteur d'écran, qui ne
+    pouvait pas les distinguer (audit d'accessibilité du 16 novembre 2026).
+    Un libellé qui revient est numéroté : « Le rendu, vue 2 sur 3 ».
+  */
+  const totalParLibelle = new Map<string, number>()
+  for (const item of items) {
+    totalParLibelle.set(item.thumbLabel, (totalParLibelle.get(item.thumbLabel) ?? 0) + 1)
+  }
+  const rangParLibelle = new Map<string, number>()
   const onglets: Array<{ cle: string; libelle: string; vue: Vue }> = [
-    ...items.map((item, itemIndex) => ({
-      cle: `${item.url}-${itemIndex}`,
-      libelle: item.thumbLabel,
-      vue: itemIndex,
-    })),
+    ...items.map((item, itemIndex) => {
+      const total = totalParLibelle.get(item.thumbLabel) ?? 1
+      const rang = (rangParLibelle.get(item.thumbLabel) ?? 0) + 1
+      rangParLibelle.set(item.thumbLabel, rang)
+      return {
+        cle: `${item.url}-${itemIndex}`,
+        libelle: total > 1 ? `${item.thumbLabel}, vue ${rang} sur ${total}` : item.thumbLabel,
+        vue: itemIndex,
+      }
+    }),
     ...(avecPack ? [{ cle: VUE_PACK, libelle: 'Dans le pack', vue: VUE_PACK }] : []),
   ]
 
@@ -199,9 +210,18 @@ export function ProductGallery({
     <div>
       <div className="flex flex-col gap-2.5 fiche:flex-row-reverse fiche:items-start fiche:gap-3">
         {/* .main-visual */}
+        {/*
+          Sur téléphone, le cadre passe en 4:3 : carré, il occupait toute la
+          largeur ET autant en hauteur (près de 360 px à 390 px de large), et
+          repoussait le prix sous la ligne de flottaison (relecture du
+          17 novembre 2026). Un packshot reste contenu en entier, un rendu est
+          recadré au centre. La composition (« Dans le pack ») garde le carré :
+          sa liste ne doit pas être coupée. Carré au-delà de 800 px.
+        */}
         <div
           className={cn(
-            'relative aspect-square w-full overflow-hidden rounded-xl fiche:min-w-0 fiche:flex-1 fiche:rounded-2xl',
+            'relative w-full overflow-hidden rounded-xl fiche:aspect-square fiche:min-w-0 fiche:flex-1 fiche:rounded-2xl',
+            packAffiche ? 'aspect-square' : 'aspect-[4/3]',
             comparatifAffiche ? 'bg-[#18191b]' : 'bg-[#f2f2f2]',
           )}
         >
@@ -297,11 +317,15 @@ export function ProductGallery({
           <div
             role="tablist"
             aria-label="Vues du produit"
-            className={cn(
-              'grid gap-2',
-              COLONNES[Math.min(onglets.length, 4)] ?? 'grid-cols-3',
-              'fiche:flex fiche:w-[84px] fiche:shrink-0 fiche:flex-col fiche:gap-2.5',
-            )}
+            /*
+              Cinq colonnes fixes sur téléphone, quel que soit le nombre de
+              vignettes. Elles se partageaient toute la largeur : deux
+              vignettes y faisaient 175 px de côté chacune, et repoussaient le
+              prix et le bouton d'achat d'autant sous la ligne de flottaison
+              (audit mobile du 17 novembre 2026). À 64 px, elles restent
+              faciles à toucher.
+            */
+            className="grid grid-cols-5 gap-2 fiche:flex fiche:w-[84px] fiche:shrink-0 fiche:flex-col fiche:gap-2.5"
           >
             {onglets.map((onglet, position) => {
               const actif = onglet.vue === vue
