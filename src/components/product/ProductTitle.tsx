@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/cn'
+import { NoteGoogle } from '@/components/confiance/NoteGoogle'
 import { useProductConfiguration } from './ProductConfiguration'
 
 /**
@@ -96,6 +97,18 @@ export function ProductTitle({
           ) : null}
         </p>
       ) : null}
+
+      {/*
+        La note Google ouvre la fiche, au-dessus du titre (exploitant,
+        19 novembre 2026). C'est le premier regard de la page, et sur
+        téléphone le titre est le tout premier bloc : la note y est lue avant
+        le prix, avant la photo, avant tout le reste.
+
+        Elle nomme la boutique — « Boutique notée 4,4/5 sur Google » — parce
+        qu'à cet endroit des étoiles seules seraient prises pour la note de ce
+        produit. Voir `confiance/NoteGoogle.tsx`.
+      */}
+      <NoteGoogle variante="ligne" className="mb-2.5 fiche:mb-3" />
 
       {/*
         Le titre se coupe en deux lignes de graisses différentes : le produit,
