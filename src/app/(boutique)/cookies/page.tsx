@@ -47,7 +47,8 @@ const MISE_A_JOUR = '19 novembre 2026'
  * Un seul stockage local depuis le 19 novembre 2026 : le jeton de la
  * discussion en direct (`lv-discussion`), écrit à la première question
  * envoyée — nécessaire au service demandé, donc dispensé de consentement lui
- * aussi. Ce sont des cookies « strictement nécessaires » au sens
+ * aussi. Et, dans l'onglet seulement (sessionStorage), `lv-invitation` : la
+ * bulle a déjà proposé son aide, elle ne recommence pas de page en page. Ce sont des cookies « strictement nécessaires » au sens
  * de l'article 82 de la loi Informatique et Libertés : ils sont dispensés de
  * consentement, d'où l'absence de bandeau. Les durées sont celles du code
  * (`maxAge` du panier et du véhicule, `expires` de la session).
@@ -145,7 +146,9 @@ export default function Page() {
           votre navigateur et non dans un cookie, un numéro tiré au hasard qui permet de retrouver
           votre conversation d’une page à l’autre. Il n’est écrit qu’au moment où vous envoyez une
           première question, ne contient rien d’autre, et reste sur votre appareil jusqu’à ce que
-          vous effaciez les données du site.
+          vous effaciez les données du site. Sur les fiches produit, la bulle note aussi, pour la
+          durée de l’onglet seulement, qu’elle vous a déjà proposé son aide, pour ne pas le refaire
+          à chaque page.
         </p>
       </Article>
 

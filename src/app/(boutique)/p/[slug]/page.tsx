@@ -1017,7 +1017,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           La question en direct : posée au-dessus de la barre d'achat fixe
           (76 px sur téléphone, 78 px sur grand écran), jamais dessus.
         */}
-        <BulleDiscussion produit={product.slug} decalage={80} />
+        <BulleDiscussion
+          produit={product.slug}
+          decalage={80}
+          inviter
+          vehicule={vehicle ? vehicle.label.split(' · ')[0] : null}
+        />
       </div>
     </ProductConfigurationProvider>
   )
