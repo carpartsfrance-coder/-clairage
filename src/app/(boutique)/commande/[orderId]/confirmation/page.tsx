@@ -12,6 +12,7 @@ import { IconTruck } from '@/components/ui/icons'
 import { emailIsSimulated } from '@/lib/email'
 import { formatPrice, identity } from '@/lib/identity'
 import { ConversionAchat } from '@/components/consentement/ConversionAchat'
+import { empreinteEmail } from '@/lib/google-ads-serveur'
 import {
   baliseGoogleAdsConfiguree,
   paiementReportable,
@@ -370,6 +371,7 @@ export default async function Page({
               reference={order.reference}
               valeurCents={valeurConversionCents(order)}
               devise={identity.locale.currency}
+              empreinteEmail={empreinteEmail(order.email)}
             />
           ) : null}
         </>
