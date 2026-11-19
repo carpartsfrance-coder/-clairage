@@ -53,15 +53,22 @@ const EST_ENVOI = Prisma.sql`(kind = 'event' AND name = 'commande-envoyee')`
 const EST_PAYEE = Prisma.sql`(kind = 'page' AND path LIKE '/commande/%/confirmation' AND label = 'commande-payee')`
 const EST_GENE = Prisma.sql`(kind = 'event' AND name IN ('clic-rage', 'clic-mort', 'erreur-formulaire', 'commande-refusee', 'ajout-panier-refuse', 'code-promo-refuse'))`
 
-/** Les étapes de l'achat, dans l'ordre où l'entonnoir les affiche. */
+/**
+ * Les étapes de l'achat, dans l'ordre où l'entonnoir les affiche.
+ *
+ * `geste` : l'étape est reconnue à un geste (un ajout au panier réussi, une
+ * commande validée), mesuré seulement depuis la mesure approfondie — et non à
+ * une page vue, mesurée depuis le lancement. Sur une période qui commence
+ * avant, ces étapes ne comptent qu'une partie des visites.
+ */
 export const ETAPES = [
-  { cle: 'visites', label: 'Visite du site', court: 'Visites' },
-  { cle: 'fiche', label: 'A ouvert une fiche produit', court: 'Fiche' },
-  { cle: 'ajout', label: 'A ajouté au panier', court: 'Ajout panier' },
-  { cle: 'panier', label: 'A ouvert son panier', court: 'Panier' },
-  { cle: 'commande', label: 'A commencé la commande', court: 'Commande' },
-  { cle: 'envoyee', label: 'A validé la commande (vers le paiement)', court: 'Validée' },
-  { cle: 'payee', label: 'Commande payée', court: 'Payée' },
+  { cle: 'visites', label: 'Visite du site', court: 'Visites', geste: false },
+  { cle: 'fiche', label: 'A ouvert une fiche produit', court: 'Fiche', geste: false },
+  { cle: 'ajout', label: 'A ajouté au panier', court: 'Ajout panier', geste: true },
+  { cle: 'panier', label: 'A ouvert son panier', court: 'Panier', geste: false },
+  { cle: 'commande', label: 'A commencé la commande', court: 'Commande', geste: false },
+  { cle: 'envoyee', label: 'A validé la commande (vers le paiement)', court: 'Validée', geste: true },
+  { cle: 'payee', label: 'Commande payée', court: 'Payée', geste: false },
 ] as const
 
 export type CleEtape = (typeof ETAPES)[number]['cle']
