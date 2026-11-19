@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { identity } from '@/lib/identity'
+import { baliseGoogleAdsConfiguree } from '@/lib/google-ads'
 import { Article, PageLegale } from '@/components/legal/PageLegale'
 
 export const metadata: Metadata = {
@@ -10,7 +11,10 @@ export const metadata: Metadata = {
   alternates: { canonical: '/confidentialite' },
 }
 
-const MISE_A_JOUR = '7 novembre 2026'
+const MISE_A_JOUR = '19 novembre 2026'
+
+/** La mesure des publicités Google n'existe que si la balise est configurée (voir /cookies). */
+const PUBLICITE = baliseGoogleAdsConfiguree()
 
 /**
  * Politique de confidentialité.
@@ -117,6 +121,14 @@ export default function Page() {
             ['Gérer votre compte client', 'Le contrat (conditions d’utilisation du compte)'],
             ['Répondre à vos questions et à vos demandes', 'Votre demande'],
             ['Vous prévenir du retour en stock d’un produit', 'Votre demande'],
+            ...(PUBLICITE
+              ? ([
+                  [
+                    'Mesurer l’efficacité de nos publicités Google',
+                    'Votre accord, que vous pouvez retirer à tout moment',
+                  ],
+                ] as Array<[string, string]>)
+              : []),
             [
               'Vous envoyer nos nouveautés et conseils',
               'Votre accord, que vous pouvez retirer à tout moment',
@@ -159,6 +171,18 @@ export default function Page() {
           <li>
             <strong>Notre cabinet comptable</strong>, pour les factures.
           </li>
+          {PUBLICITE ? (
+            <li>
+              <strong>Google Ireland Limited</strong> (Dublin, Irlande), avec votre accord
+              seulement : quand vous passez commande, son montant, sa référence et une empreinte
+              chiffrée de votre e-mail (jamais l’adresse elle-même), pour mesurer l’efficacité de
+              nos annonces. Le détail est sur la{' '}
+              <Link href="/cookies#publicite" className="underline underline-offset-2">
+                page des cookies
+              </Link>
+              .
+            </li>
+          ) : null}
         </ul>
         <p>
           Ces prestataires n’utilisent vos données que pour le service qu’ils nous rendent. Nous ne
@@ -263,10 +287,11 @@ export default function Page() {
 
       <Article numero={9} id="cookies" titre="Cookies">
         <p>
-          Le site n’utilise que les cookies nécessaires à son fonctionnement : votre panier, le
-          véhicule choisi et la connexion à votre compte. Aucun cookie de publicité. La
-          fréquentation du site est mesurée de façon anonyme, sans cookie ni adresse IP, et vous
-          pouvez la refuser. Le détail est sur la{' '}
+          {PUBLICITE
+            ? 'Sans votre accord, le site n’utilise que les cookies nécessaires à son fonctionnement : votre panier, le véhicule choisi et la connexion à votre compte. Avec votre accord seulement, des cookies de Google mesurent l’efficacité de nos publicités. '
+            : 'Le site n’utilise que les cookies nécessaires à son fonctionnement : votre panier, le véhicule choisi et la connexion à votre compte. Aucun cookie de publicité. '}
+          La fréquentation du site est mesurée de façon anonyme, sans cookie ni adresse IP, et
+          vous pouvez la refuser. Le détail est sur la{' '}
           <Link href="/cookies" className="underline underline-offset-2">
             page des cookies
           </Link>

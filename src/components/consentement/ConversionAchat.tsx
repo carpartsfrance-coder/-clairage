@@ -22,9 +22,16 @@ import {
  * ci-dessous évite les envois inutiles dans une même navigation ; c'est
  * `transaction_id` qui protège des rechargements.
  *
- * La référence de commande est le seul élément de la commande qui part : ni
- * e-mail, ni adresse, ni articles. C'est ce que Google attend pour
- * dédoublonner, et c'est tout ce dont il a besoin.
+ * Ce qui part : la référence de commande, le montant, la devise, et
+ * l'**empreinte** de l'e-mail du client (conversions améliorées). Jamais
+ * l'adresse e-mail elle-même, ni le nom, ni l'adresse postale, ni les
+ * articles. L'empreinte est calculée côté serveur (`lib/google-ads-serveur.ts`)
+ * : l'adresse en clair ne passe même pas par ce composant. Elle permet à
+ * Google de rattacher la vente au clic quand les cookies n'y suffisent pas
+ * (autre appareil, cookies effacés, Safari).
+ *
+ * L'empreinte est posée par `set` **avant** l'événement : gtag joint les
+ * `user_data` en place au moment où la conversion part, pas après.
  *
  * Rien n'est envoyé sans accord explicite — voir `accord.ts`. Si le
  * visiteur accepte alors que cette page est déjà affichée, l'envoi part à ce
@@ -38,16 +45,22 @@ export function ConversionAchat({
   reference,
   valeurCents,
   devise,
+  empreinteEmail,
 }: {
   reference: string
   valeurCents: number
   devise: string
+  /** SHA-256 de l'e-mail normalisé, ou `null` si l'adresse est inutilisable. */
+  empreinteEmail: string | null
 }) {
   useEffect(() => {
     function tenter() {
       if (envoyees.has(reference)) return
       if (refusDuNavigateur() || choixEnregistre() !== 'accepte') return
       envoyees.add(reference)
+      if (empreinteEmail) {
+        envoyer('set', 'user_data', { sha256_email_address: empreinteEmail })
+      }
       envoyer('event', 'conversion', {
         send_to: envoiConversionAchat(),
         // Google attend des unités, pas des centimes.
@@ -59,7 +72,7 @@ export function ConversionAchat({
     tenter()
     window.addEventListener(EVENEMENT_CONSENTEMENT, tenter)
     return () => window.removeEventListener(EVENEMENT_CONSENTEMENT, tenter)
-  }, [reference, valeurCents, devise])
+  }, [reference, valeurCents, devise, empreinteEmail])
 
   return null
 }
