@@ -85,6 +85,15 @@ export const EVENEMENTS = {
   },
   'chat-invitation-fermee': { libelle: 'A fermé l’invitation à poser une question' },
   'chat-ouvert': { libelle: 'A ouvert la discussion', precision: 'depuis la bulle ou l’invitation' },
+  /*
+    Pas d'« intention » ici : le même ajout émet aussi `ajout-panier`, qui
+    compte déjà dans l'entonnoir. Celui-ci sert à dire d'où il vient.
+  */
+  'chat-conseil-ajoute': {
+    libelle: 'A ajouté au panier un article conseillé en direct',
+    precision: 'l’article',
+    chiffre: 'centimes',
+  },
   'chat-message': {
     libelle: 'A posé une question en direct',
     precision: 'premier message ou suite',

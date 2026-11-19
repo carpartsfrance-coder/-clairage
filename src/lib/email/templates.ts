@@ -494,7 +494,15 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
           ? `Vous nous avez posé une question sur ${str(vars, 'produit')}. Voici notre réponse :`
           : 'Vous nous avez posé une question sur notre site. Voici notre réponse :',
       },
-      { type: 'paragraph', text: str(vars, 'message') },
+      ...(str(vars, 'message') ? [{ type: 'paragraph' as const, text: str(vars, 'message') }] : []),
+      // L'article conseillé dans la réponse, quand il y en a un : c'est lui
+      // que le client doit pouvoir ouvrir d'un geste depuis sa messagerie.
+      ...(str(vars, 'conseilNom')
+        ? [
+            { type: 'facts' as const, rows: [['Notre conseil', str(vars, 'conseilNom')]] as Array<[string, string]> },
+            { type: 'button' as const, label: 'Voir l’article conseillé', href: str(vars, 'conseilLien', siteConfig.url) },
+          ]
+        : []),
       {
         type: 'button',
         label: 'Reprendre la discussion',
@@ -507,9 +515,11 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
     ],
     sample: {
       message:
-        "Oui, il va sur votre Clio IV. Sur ce modèle, un décodeur n'est pas nécessaire : le kit se branche à la place des ampoules d'origine.",
+        "Pour votre Clio IV, je vous conseille plutôt le kit ventilé : il tient mieux dans le phare, et aucun décodeur n'est nécessaire.",
       produit: 'Kit LED H7 blanc pur 6000K',
       lien: `${siteConfig.url}/p/kit-led-h7-blanc-pur-6000k`,
+      conseilNom: 'Kit ampoules H7 LED ventilées taille mini — La paire',
+      conseilLien: `${siteConfig.url}/p/kit-ampoules-h7-led-ventilees-taille-mini`,
     },
   },
 }

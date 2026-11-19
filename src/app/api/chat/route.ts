@@ -18,6 +18,7 @@ import {
   alerterEquipe,
   contexteDuVisiteur,
   disponibiliteChat,
+  INCLURE_CONSEIL,
   nouveauJeton,
   versLeNavigateur,
 } from '@/lib/chat-serveur'
@@ -56,6 +57,8 @@ async function etat(discussion: Conversation, disponible: boolean): Promise<Etat
     where: { conversationId: discussion.id },
     orderBy: { createdAt: 'desc' },
     take: MESSAGES_RENVOYES,
+    // L'article conseillé, relu à chaque fois : prix et stock du moment.
+    include: INCLURE_CONSEIL,
   })
   return {
     disponible,
