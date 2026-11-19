@@ -131,8 +131,15 @@ export function amorcerFile(): void {
   amorce = true
   const w = window as Window & FileGoogle
   const file = (w.dataLayer ??= [])
-  w.gtag ??= (...args: unknown[]) => {
-    file.push(args)
+  // **`arguments`, pas un tableau.** gtag.js ne traite que les entrées de la
+  // file qui sont l'objet `arguments` d'un appel — c'est la forme exacte du
+  // code fourni par Google. Une fonction fléchée avec `...args` empile de
+  // vrais tableaux : le script se charge, puis ignore en silence la config,
+  // le consentement et la conversion. Rien ne part, et Google Ads affiche
+  // « balise non détectée ». Ne pas « moderniser » cette fonction.
+  w.gtag ??= function gtag() {
+    // eslint-disable-next-line prefer-rest-params
+    file.push(arguments)
   }
   // `wait_for_update` : le temps laissé au bandeau pour répondre avant que
   // Google considère la file comme définitive.
