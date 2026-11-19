@@ -158,6 +158,32 @@ export const commercialTerms = {
   dispatchEstimate: null as string | null,
 } as const
 
+/**
+ * Note de la fiche Google de l'entreprise.
+ *
+ * Relevée à la main et datée : rien ici n'interroge Google en direct. Une note
+ * affichée au client est une affirmation commerciale — elle doit rester vraie
+ * le jour où il la lit. Elle se corrige donc ici, à un seul endroit, et
+ * `null` la retire partout plutôt que de laisser vieillir un chiffre.
+ *
+ * Elle n'est **jamais** reprise en données structurées. Google refuse les
+ * avis qu'une entreprise publie sur elle-même sur son propre site, et le
+ * balisage correspondant expose à une action manuelle. L'`AggregateRating`
+ * des fiches produit (`seo/StructuredData.tsx`) est tout autre chose : il
+ * vient des avis réellement déposés sur l'article, et il reste.
+ */
+export const avisGoogle = {
+  /** Note moyenne sur 5, telle qu'affichée sur la fiche Google. */
+  note: 4.4 as number | null,
+  /**
+   * Nombre d'avis qui composent la note. `null` tant qu'il n'a pas été relevé :
+   * mieux vaut n'annoncer que la note que d'annoncer un compte approximatif.
+   */
+  nombre: null as number | null,
+  /** Date du relevé, pour savoir de quand date le chiffre affiché. */
+  releveLe: '2026-11-19',
+} as const
+
 export const siteConfig = {
   /** Utilisé pour les URL canoniques, les sitemaps et les e-mails. */
   url: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3400',
@@ -204,6 +230,15 @@ export function dureeGarantie(): string | null {
   if (!mois) return null
   if (mois % 12 === 0) return mois === 12 ? '1 an' : `${mois / 12} ans`
   return `${mois} mois`
+}
+
+/** « 4,4 » — la note Google à la française, ou null si elle n'est pas renseignée. */
+export function noteGoogle(): string | null {
+  if (avisGoogle.note === null) return null
+  return avisGoogle.note.toLocaleString('fr-FR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })
 }
 
 /** « Satisfait ou remboursé 45 jours », sinon « Retours sous 14 jours », sinon null. */

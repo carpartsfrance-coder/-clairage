@@ -365,3 +365,17 @@ export function IconPin(p: IconProps) {
     </Svg>
   )
 }
+
+/**
+ * Étoile pleine — la seule icône remplie de ce jeu.
+ *
+ * Une étoile en trait fin de 1,6 px ne se lit pas à 16 px : elle devient un
+ * petit polygone vide. Or une note se lit d'un coup d'œil ou ne sert à rien.
+ */
+export function IconStar(p: IconProps) {
+  return (
+    <Svg fill="currentColor" stroke="none" {...p}>
+      <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+    </Svg>
+  )
+}
