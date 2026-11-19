@@ -20,13 +20,16 @@ import { cn } from '@/lib/cn'
  *   2026, sur l'exemple d'un concurrent). Là, la note est la première chose
  *   lue de la page, pas un encart de plus dans la colonne d'achat.
  *
- * **Le libellé de la forme `ligne` nomme la boutique, et ce n'est pas un
+ * **Le libellé de la forme `ligne` nomme l'entreprise, et ce n'est pas un
  * détail.** Au-dessus d'un titre de produit, des étoiles sont lues partout
  * comme la note DE CE PRODUIT — c'est la convention de tout le commerce en
  * ligne, et c'est ce que fait le concurrent qui a servi d'exemple, avec ses
  * vrais avis produit. Afficher ici la note de l'entreprise sans le dire
- * laisserait croire que cette ampoule-ci a été notée 4,4 par 4,4 clients.
- * « Boutique notée 4,4/5 sur Google » coûte quatre mots et dit la vérité.
+ * laisserait croire que cette ampoule-ci a été notée par ses acheteurs.
+ * « Société notée 4,4/5 sur Google » coûte trois mots et dit la vérité.
+ *
+ * Le mot est « Société », pas « Boutique » (exploitant, 19 novembre 2026) :
+ * c'est l'entreprise qui est notée sur Google, pas le site.
  *
  * **Sans cadre** (relecture de l'exploitant, 19 novembre 2026). La première
  * version encadrait la note : bordure, fond gris, coins arrondis. Tout le
@@ -74,7 +77,7 @@ export function NoteGoogle({
     d'écran, ils donneraient « étoile étoile étoile étoile étoile 4,4 5 avis
     Google » — du bruit à la place d'une note.
   */
-  const libelle = `Boutique notée ${note} sur 5 sur Google${
+  const libelle = `Société notée ${note} sur 5 sur Google${
     avisGoogle.nombre ? `, ${avisGoogle.nombre.toLocaleString('fr-FR')} avis` : ''
   }`
 
@@ -90,7 +93,7 @@ export function NoteGoogle({
       >
         <Rangee proportion={proportion} taille="petite" />
         <span>
-          Boutique notée <strong className="font-semibold text-ink">{note}/5</strong> sur Google
+          Société notée <strong className="font-semibold text-ink">{note}/5</strong> sur Google
         </span>
       </p>
     )
