@@ -1,5 +1,6 @@
 import 'server-only'
 import { randomBytes } from 'node:crypto'
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import type { Conversation, ConversationMessage } from '@prisma/client'
 import { prisma } from './db'
@@ -195,3 +196,24 @@ function resumePanier(valeur: unknown): string {
     .map((l) => `${l.quantite} × ${l.produit}${l.option ? ` (${l.option})` : ''}`)
     .join(', ')
 }
+
+/**
+ * Nombre de discussions ouvertes dont le dernier mot est au visiteur.
+ *
+ * Lu à chaque page du back-office pour la pastille du menu : borné aux 200
+ * discussions les plus récentes, ce qui reste une lecture légère. `cache`
+ * évite de le relire deux fois dans la même requête (menu et titre).
+ */
+export const questionsEnAttente = cache(async (): Promise<number> => {
+  try {
+    const ouvertes = await prisma.conversation.findMany({
+      where: { status: 'OPEN' },
+      orderBy: { lastMessageAt: 'desc' },
+      take: 200,
+      select: { messages: { orderBy: { createdAt: 'desc' }, take: 1, select: { authorKind: true } } },
+    })
+    return ouvertes.filter((d) => d.messages[0]?.authorKind === 'customer').length
+  } catch {
+    return 0
+  }
+})

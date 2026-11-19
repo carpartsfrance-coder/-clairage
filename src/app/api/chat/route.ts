@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import type { Conversation } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { throttle, throttleMessage } from '@/lib/auth/throttle'
+import { notifierEquipe } from '@/lib/alertes-equipe'
 import {
   cheminPropre,
   doitAlerterEquipe,
+  doitNotifierEquipe,
   emailValide,
   jetonPropre,
   nettoyerMessage,
@@ -184,9 +186,24 @@ export async function POST(request: Request) {
     return reponse({ erreur: 'Le message n’a pas pu partir. Réessayez dans un instant.' }, 500)
   }
 
-  if (doitAlerterEquipe(discussion, maintenant)) {
-    await alerterEquipe(discussion, texte)
+  /*
+    Deux alertes, en parallèle : la notification sonne tout de suite sur les
+    appareils de l'équipe ; l'e-mail garde la trace et sert de filet. Aucune
+    des deux ne part si l'équipe a déjà la discussion sous les yeux.
+  */
+  const alertes: Promise<unknown>[] = []
+  if (doitNotifierEquipe(discussion, maintenant)) {
+    alertes.push(
+      notifierEquipe({
+        titre: `Question en direct${discussion.productName ? ` — ${discussion.productName}` : ''}`,
+        texte: discussion.vehicleLabel ? `${texte}\n${discussion.vehicleLabel}` : texte,
+        url: `/admin/discussions/${discussion.id}`,
+        etiquette: `discussion-${discussion.id}`,
+      }),
+    )
   }
+  if (doitAlerterEquipe(discussion, maintenant)) alertes.push(alerterEquipe(discussion, texte))
+  await Promise.all(alertes)
 
   return reponse(await etat(discussion, disponible))
 }

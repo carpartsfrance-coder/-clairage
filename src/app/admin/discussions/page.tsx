@@ -4,15 +4,24 @@ import { requireStaff } from '@/lib/admin/guard'
 import { can } from '@/lib/admin/permissions'
 import { prisma } from '@/lib/db'
 import { visiteurPresent } from '@/lib/chat'
-import { disponibiliteChat } from '@/lib/chat-serveur'
+import { disponibiliteChat, questionsEnAttente } from '@/lib/chat-serveur'
+import { clePubliqueAlertes } from '@/lib/alertes-equipe'
+import { AlertesAppareil } from '@/components/admin/AlertesAppareil'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge } from '@/components/ui/Badge'
 import { Card, EmptyState } from '@/components/ui/Surface'
 import { Disponibilite, RelectureAuto } from '@/components/admin/DiscussionActions'
 
-export const metadata: Metadata = {
-  title: 'Discussions',
-  robots: { index: false, follow: false },
+/*
+  « (2) Discussions » dans l'onglet : sur ordinateur, c'est ce qui se voit
+  depuis un autre onglet. La page se relit toutes les 10 s, le titre avec.
+*/
+export async function generateMetadata(): Promise<Metadata> {
+  const enAttente = await questionsEnAttente()
+  return {
+    title: enAttente > 0 ? `(${enAttente}) Discussions` : 'Discussions',
+    robots: { index: false, follow: false },
+  }
 }
 
 /**
@@ -36,8 +45,9 @@ export default async function DiscussionsPage() {
   const staff = await requireStaff('sav.view')
   const peutTraiter = can(staff.role, 'sav.handle')
 
-  const [disponible, discussions] = await Promise.all([
+  const [disponible, clePublique, discussions] = await Promise.all([
     disponibiliteChat(),
+    clePubliqueAlertes(),
     prisma.conversation.findMany({
       orderBy: { lastMessageAt: 'desc' },
       take: 100,
@@ -71,9 +81,14 @@ export default async function DiscussionsPage() {
       </div>
 
       {peutTraiter ? (
-        <Card className="p-4">
-          <Disponibilite disponible={disponible} />
-        </Card>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Card className="p-4">
+            <Disponibilite disponible={disponible} />
+          </Card>
+          <Card className="p-4">
+            <AlertesAppareil clePublique={clePublique} />
+          </Card>
+        </div>
       ) : null}
 
       {lignes.length === 0 ? (

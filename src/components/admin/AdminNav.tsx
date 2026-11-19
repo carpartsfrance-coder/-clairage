@@ -82,11 +82,14 @@ export function AdminNav({
   role,
   name,
   current,
+  compteurs = {},
 }: {
   role: StaffRole
   name: string
   /** Permet de forcer le chemin courant ; sinon il est lu de l'URL. */
   current?: string
+  /** Pastille à côté d'une entrée, par adresse : les questions qui attendent. */
+  compteurs?: Record<string, number>
 }) {
   const pathname = usePathname()
   const here = current || pathname || ''
@@ -111,6 +114,12 @@ export function AdminNav({
               >
                 <Icon className="size-4 shrink-0" />
                 {label}
+                {compteurs[href] ? (
+                  <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1.5 text-[11px] font-bold text-white">
+                    {compteurs[href]}
+                    <span className="sr-only"> en attente</span>
+                  </span>
+                ) : null}
               </Link>
             </li>
           )

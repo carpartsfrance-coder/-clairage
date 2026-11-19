@@ -23,12 +23,18 @@ import { IconChat, IconClose, IconSend } from '@/components/ui/icons'
  * l'écran : la bulle se pose au-dessus (`decalage`), et au-dessus du bandeau
  * de consentement tant qu'il est affiché (`--hauteur-bandeau`). Une bulle qui
  * recouvrirait « Ajouter au panier » coûterait plus de ventes qu'elle n'en
- * apporterait. Pour la même raison, elle passe **à gauche sur grand écran** :
- * la colonne d'achat y occupe la droite, et posée à droite la bulle mordait
- * sur le bouton dès le premier écran d'un portable (vérifié à 1280 × 820).
- * À gauche, elle ne couvre au pire qu'un coin de la galerie. Elle est
- * sombre, pas rouge : le rouge appartient au bouton d'achat, et la bulle ne
- * doit pas lui disputer le regard.
+ * apporterait. Elle est sombre, pas rouge : le rouge appartient au bouton
+ * d'achat, et la bulle ne doit pas lui disputer le regard.
+ *
+ * **En bas à droite, partout** (exploitant, 19 novembre 2026), là où tout
+ * le monde cherche un chat. Sur grand écran, la colonne d'achat occupe la
+ * droite, et à cet endroit la bulle mordait sur « Ajouter au panier » dès le
+ * premier écran d'un portable (vérifié à 1280 × 820). Elle s'écarte donc
+ * d'elle-même des boutons marqués `data-cta-achat` : au-dessus de la barre
+ * d'achat quand elle est affichée, sinon dans le coin, puis au ras du bas de
+ * l'écran si un bouton passe juste au-dessus, et en dernier recours elle
+ * s'efface le temps que le bouton passe. Sur téléphone, rien de tel : le
+ * bouton de la barre fixe reste toujours visible sous la bulle.
  *
  * **Rien n'est stocké avant la première question.** Le jeton de la
  * discussion n'est écrit dans le navigateur qu'au premier message envoyé :
@@ -89,6 +95,69 @@ export function BulleDiscussion({
   const champ = useRef<HTMLTextAreaElement>(null)
   const bouton = useRef<HTMLButtonElement>(null)
   const fil = useRef<HTMLDivElement>(null)
+
+  /*
+    Grand écran : la bulle ne couvre jamais un bouton d'achat.
+
+    Barre d'achat affichée, elle se pose au-dessus. Sinon, elle prend le coin
+    habituel (24 px du bas), puis le ras de l'écran (8 px) si un bouton passe
+    juste au-dessus ; si les deux tombent sur un bouton, elle s'efface le temps
+    qu'il passe. Recalculé au défilement et au redimensionnement, une fois par
+    image au plus. Sur téléphone, `null` : la place prévue par les classes.
+  */
+  const [ecart, setEcart] = useState<number | 'cachee' | null>(null)
+  useEffect(() => {
+    const grandEcran = window.matchMedia('(min-width: 801px)')
+    let image = 0
+    const calculer = () => {
+      image = 0
+      const b = bouton.current
+      if (!b || !grandEcran.matches) {
+        setEcart(null)
+        return
+      }
+      const hauteur = b.offsetHeight || 48
+      const droite = window.innerWidth - 24
+      const gauche = droite - (b.offsetWidth || 150)
+      const bandeau =
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hauteur-bandeau')) || 0
+      const aLEcran = (r: DOMRect) => r.width > 0 && r.bottom > 0 && r.top < window.innerHeight
+      const boutons = Array.from(document.querySelectorAll('[data-cta-achat]'))
+        .map((el) => el.getBoundingClientRect())
+        .filter(aLEcran)
+      const barre = Array.from(document.querySelectorAll('[data-cta-achat="barre"]')).some((el) =>
+        aLEcran(el.getBoundingClientRect()),
+      )
+      const libre = (depuisLeBas: number) => {
+        const basBulle = window.innerHeight - depuisLeBas
+        const hautBulle = basBulle - hauteur
+        return boutons.every(
+          (r) =>
+            r.right < gauche - 4 || r.left > droite + 4 || r.bottom < hautBulle - 4 || r.top > basBulle + 4,
+        )
+      }
+      const candidats = barre ? [bandeau + decalage + 14] : [bandeau + 24, bandeau + 8]
+      setEcart(candidats.find(libre) ?? 'cachee')
+    }
+    const demander = () => {
+      if (!image) image = requestAnimationFrame(calculer)
+    }
+    demander()
+    window.addEventListener('scroll', demander, { passive: true })
+    window.addEventListener('resize', demander)
+    grandEcran.addEventListener('change', demander)
+    // La barre d'achat entre et sort en glissant : la place calculée pendant
+    // le défilement est celle d'avant son arrivée. On recompte à la fin de
+    // chaque animation de la page.
+    document.addEventListener('transitionend', demander)
+    return () => {
+      cancelAnimationFrame(image)
+      window.removeEventListener('scroll', demander)
+      window.removeEventListener('resize', demander)
+      grandEcran.removeEventListener('change', demander)
+      document.removeEventListener('transitionend', demander)
+    }
+  }, [decalage])
 
   /* Une discussion déjà commencée reprend où elle en était, de page en page. */
   useEffect(() => {
@@ -250,7 +319,10 @@ export function BulleDiscussion({
   const enAttente =
     dernier?.de === 'client' && maintenant - Date.parse(dernier.le) > ATTENTE_AVANT_EMAIL_MS
 
-  const bas = `calc(var(--hauteur-bandeau, 0px) + ${decalage + 14}px + env(safe-area-inset-bottom, 0px))`
+  const bas =
+    typeof ecart === 'number'
+      ? `${ecart}px`
+      : `calc(var(--hauteur-bandeau, 0px) + ${decalage + 14}px + env(safe-area-inset-bottom, 0px))`
 
   return (
     <>
@@ -267,7 +339,8 @@ export function BulleDiscussion({
         aria-controls="discussion"
         style={{ bottom: bas }}
         className={cn(
-          'fixed right-4 z-30 flex h-12 items-center gap-2 rounded-full bg-ink pr-[18px] pl-3.5 text-[14px] font-semibold text-white shadow-[0_10px_28px_rgb(17_18_20/0.28)] transition-colors hover:bg-black fiche:right-auto fiche:left-6',
+          'fixed right-4 z-30 flex h-12 items-center gap-2 rounded-full bg-ink pr-[18px] pl-3.5 text-[14px] font-semibold text-white shadow-[0_10px_28px_rgb(17_18_20/0.28)] transition-[background-color,bottom,opacity,visibility] duration-200 hover:bg-black fiche:right-6',
+          ecart === 'cachee' && 'invisible opacity-0',
           ouvert && 'hidden',
         )}
       >
@@ -291,7 +364,7 @@ export function BulleDiscussion({
         className={cn(
           'fixed z-50 flex flex-col overflow-hidden bg-white shadow-[0_18px_60px_rgb(17_18_20/0.3)]',
           'inset-x-0 bottom-0 h-[min(85dvh,640px)] rounded-t-[20px]',
-          'sm:inset-x-auto sm:right-6 sm:bottom-6 sm:h-[min(600px,calc(100dvh-48px))] sm:w-[372px] sm:rounded-[20px] sm:border sm:border-line fiche:right-auto fiche:left-6',
+          'sm:inset-x-auto sm:right-6 sm:bottom-6 sm:h-[min(600px,calc(100dvh-48px))] sm:w-[372px] sm:rounded-[20px] sm:border sm:border-line',
           !ouvert && 'hidden',
         )}
       >

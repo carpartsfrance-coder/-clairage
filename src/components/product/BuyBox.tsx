@@ -715,6 +715,7 @@ export function BuyBox({
           <button
             ref={boutonRef}
             type="button"
+            data-cta-achat
             disabled={!purchasable || pending}
             onClick={submit}
             className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl bg-brand px-5 py-3 text-[16px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:text-[17px]"
@@ -864,6 +865,7 @@ export function BuyBox({
             {/* La barre fixe ne propose rien d'autre que le bloc d'achat. */}
             <button
               type="button"
+              data-cta-achat="barre"
               disabled={!purchasable || pending}
               onClick={submit}
               className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none"

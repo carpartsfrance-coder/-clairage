@@ -5,6 +5,8 @@ import { AdminSansMesure } from '@/components/mesure/Mesure'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { requireStaff, staffName } from '@/lib/admin/guard'
+import { can } from '@/lib/admin/permissions'
+import { questionsEnAttente } from '@/lib/chat-serveur'
 import { ROLE_LABELS } from '@/lib/admin/permissions'
 import { logout } from '@/lib/actions/auth'
 import { identity } from '@/lib/identity'
@@ -27,10 +29,20 @@ export const metadata: Metadata = {
     template: '%s · Administration',
   },
   robots: { index: false, follow: false },
+  /*
+    Le back-office peut s'installer sur l'écran d'accueil d'un téléphone,
+    et s'ouvre alors sur les discussions. Sur iPhone, c'est même la seule
+    façon d'y recevoir les alertes instantanées : Apple ne les autorise
+    qu'aux sites ajoutés à l'écran d'accueil.
+  */
+  manifest: '/equipe.webmanifest',
+  appleWebApp: { capable: true, title: 'LEDVROOM', statusBarStyle: 'black' },
 }
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const staff = await requireStaff('dashboard.view')
+  // Les questions qui attendent une réponse, en pastille sur « Discussions ».
+  const enAttente = can(staff.role, 'sav.view') ? await questionsEnAttente() : 0
 
   return (
     <div className="bg-white">
@@ -70,7 +82,11 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       {/* ---------------- Navigation + contenu ---------------- */}
       <div className="px-4 py-5 sm:px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-          <AdminNav role={staff.role} name={staffName(staff)} />
+          <AdminNav
+            role={staff.role}
+            name={staffName(staff)}
+            compteurs={{ '/admin/discussions': enAttente }}
+          />
           <main id="contenu-admin" className="min-w-0 flex-1">
             {children}
           </main>

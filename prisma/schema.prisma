@@ -731,15 +731,16 @@ model User {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  addresses      Address[]
-  savedVehicles  SavedVehicle[]
-  orders         Order[]
-  carts          Cart[]
-  sessions       Session[]
-  tickets        SupportTicket[]
-  notes          CustomerNote[]
-  auditLogs      AuditLog[]
-  passwordResets PasswordReset[]
+  addresses       Address[]
+  savedVehicles   SavedVehicle[]
+  orders          Order[]
+  carts           Cart[]
+  sessions        Session[]
+  tickets         SupportTicket[]
+  notes           CustomerNote[]
+  auditLogs       AuditLog[]
+  passwordResets  PasswordReset[]
+  appareilsAlerte StaffPushSubscription[]
 
   @@index([staffRole])
 }
@@ -1256,6 +1257,28 @@ model ConversationMessage {
 enum ConversationStatus {
   OPEN
   CLOSED
+}
+
+/// Appareil d'un membre de l'équipe abonné aux alertes instantanées des
+/// discussions : la notification du navigateur, sur téléphone ou ordinateur.
+///
+/// Aucun service extérieur à la boutique : le navigateur fournit lui-même
+/// l'adresse où le joindre (`endpoint`, chez Apple, Google ou Mozilla) et deux
+/// clés qui chiffrent le message de bout en bout. Le service qui transporte
+/// la notification ne peut pas la lire.
+model StaffPushSubscription {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  /// « iPhone », « Mac · Chrome »… pour que l'équipe reconnaisse ses appareils.
+  label      String?
+  lastSentAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
 }
 
 /// Note interne sur un client, séparée des messages visibles.
