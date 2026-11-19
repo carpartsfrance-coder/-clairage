@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  adresseDeNotificationAcceptee,
   attendReponse,
+  doitNotifierEquipe,
+  libelleAppareil,
   cheminPropre,
   doitAlerterEquipe,
   doitRelayerParEmail,
@@ -122,5 +125,48 @@ describe('discussion — qui prévenir, et comment', () => {
       ]),
     ).toEqual([{ produit: 'Kit LED H7', option: 'La paire', quantite: 1, prixCents: 4990 }])
     expect(lirePanier(null)).toEqual([])
+  })
+})
+
+describe('alertes instantanées de l’équipe', () => {
+  it('sonne à chaque message, sauf discussion déjà sous les yeux de l’équipe', () => {
+    expect(doitNotifierEquipe({ staffReadAt: null }, t0)).toBe(true)
+    expect(doitNotifierEquipe({ staffReadAt: t0 }, plus(EQUIPE_PRESENTE_MS - 1))).toBe(false)
+    expect(doitNotifierEquipe({ staffReadAt: t0 }, plus(EQUIPE_PRESENTE_MS))).toBe(true)
+  })
+
+  it('n’accepte que les services de notification des navigateurs', () => {
+    expect(adresseDeNotificationAcceptee('https://fcm.googleapis.com/fcm/send/abc')).toBe(true)
+    expect(adresseDeNotificationAcceptee('https://web.push.apple.com/QGx')).toBe(true)
+    expect(adresseDeNotificationAcceptee('https://updates.push.services.mozilla.com/wpush/v2/x')).toBe(true)
+    expect(adresseDeNotificationAcceptee('https://db5p.notify.windows.com/w/?token=x')).toBe(true)
+  })
+
+  it('refuse toute autre adresse, pour que la boutique n’aille pas interroger n’importe qui', () => {
+    expect(adresseDeNotificationAcceptee('http://fcm.googleapis.com/fcm/send/abc')).toBe(false)
+    expect(adresseDeNotificationAcceptee('https://localhost/push')).toBe(false)
+    expect(adresseDeNotificationAcceptee('https://10.0.0.5/push')).toBe(false)
+    expect(adresseDeNotificationAcceptee('https://fcm.googleapis.com.pirate.fr/x')).toBe(false)
+    expect(adresseDeNotificationAcceptee('https://pirate-push.apple.com.evil.fr/x')).toBe(false)
+    expect(adresseDeNotificationAcceptee(42)).toBe(false)
+  })
+
+  it('nomme un appareil comme on le reconnaît', () => {
+    expect(
+      libelleAppareil(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1',
+      ),
+    ).toBe('iPhone · Safari')
+    expect(
+      libelleAppareil(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36',
+      ),
+    ).toBe('Mac · Chrome')
+    expect(
+      libelleAppareil(
+        'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36',
+      ),
+    ).toBe('Android · Chrome')
+    expect(libelleAppareil('')).toBe('Appareil')
   })
 })

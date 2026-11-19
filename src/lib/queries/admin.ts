@@ -913,7 +913,12 @@ export async function listPromotions() {
 
 export async function listSettings() {
   try {
-    return await prisma.setting.findMany({ orderBy: [{ group: 'asc' }, { key: 'asc' }] })
+    // Le groupe `secret` (clés de signature des alertes) ne s'affiche jamais :
+    // une clé privée n'a rien à faire à l'écran, même du back-office.
+    return await prisma.setting.findMany({
+      where: { group: { not: 'secret' } },
+      orderBy: [{ group: 'asc' }, { key: 'asc' }],
+    })
   } catch (error) {
     console.error('[admin] paramètres indisponibles', error)
     return []

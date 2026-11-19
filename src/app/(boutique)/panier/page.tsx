@@ -518,6 +518,7 @@ export default async function PanierPage() {
                 <ButtonLink
                   href="/commande"
                   block
+                  data-cta-achat
                   className="mt-3 min-h-[51px] gap-3 rounded-[7px] text-[13px]"
                 >
                   Continuer ma commande

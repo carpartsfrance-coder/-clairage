@@ -206,3 +206,74 @@ export function lirePanier(valeur: unknown): LignePanier[] {
     ]
   })
 }
+
+/* -------------------------------------------------------------------------- */
+/* Alertes instantanées de l'équipe                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Faut-il sonner sur les appareils de l'équipe ?
+ *
+ * À chaque message du visiteur, sauf si l'équipe a déjà la discussion sous
+ * les yeux. Pas de règle de salve comme pour l'e-mail : une notification se
+ * remplace par la suivante (même étiquette), elle ne s'empile pas.
+ */
+export function doitNotifierEquipe(
+  discussion: { staffReadAt: Date | null },
+  maintenant: Date,
+): boolean {
+  const { staffReadAt } = discussion
+  return !(staffReadAt && maintenant.getTime() - staffReadAt.getTime() < EQUIPE_PRESENTE_MS)
+}
+
+/**
+ * Les services de notification des navigateurs, et eux seuls.
+ *
+ * Le serveur envoie une requête à l'adresse que le navigateur lui a donnée.
+ * Sans cette liste, une adresse fabriquée ferait interroger par la boutique
+ * n'importe quelle machine — y compris celles de son propre réseau interne.
+ */
+const SERVICES_DE_NOTIFICATION = [
+  /^fcm\.googleapis\.com$/, // Chrome, Edge récent, Android
+  /^android\.googleapis\.com$/,
+  /(^|\.)push\.apple\.com$/, // Safari, iPhone
+  /(^|\.)push\.services\.mozilla\.com$/, // Firefox
+  /\.notify\.windows\.com$/, // Edge ancien
+]
+
+export function adresseDeNotificationAcceptee(endpoint: unknown): boolean {
+  if (typeof endpoint !== 'string' || endpoint.length > 1000) return false
+  try {
+    const url = new URL(endpoint)
+    return url.protocol === 'https:' && SERVICES_DE_NOTIFICATION.some((motif) => motif.test(url.hostname))
+  } catch {
+    return false
+  }
+}
+
+/** « iPhone · Safari », « Mac · Chrome »… pour reconnaître un appareil dans la liste. */
+export function libelleAppareil(agent: string): string {
+  const appareil = /iPhone/.test(agent)
+    ? 'iPhone'
+    : /iPad/.test(agent)
+      ? 'iPad'
+      : /Android/.test(agent)
+        ? 'Android'
+        : /Macintosh|Mac OS X/.test(agent)
+          ? 'Mac'
+          : /Windows/.test(agent)
+            ? 'Windows'
+            : /Linux/.test(agent)
+              ? 'Linux'
+              : 'Appareil'
+  const navigateur = /Edg\//.test(agent)
+    ? 'Edge'
+    : /Firefox\//.test(agent)
+      ? 'Firefox'
+      : /Chrome\//.test(agent)
+        ? 'Chrome'
+        : /Safari\//.test(agent)
+          ? 'Safari'
+          : null
+  return navigateur ? `${appareil} · ${navigateur}` : appareil
+}
