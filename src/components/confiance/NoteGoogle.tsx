@@ -15,10 +15,13 @@ import { cn } from '@/lib/cn'
  * - `bloc` : étoiles de 23 px centrées, pour le panier et la commande, où
  *   rien d'autre ne tient cette place et où la note est le dernier appui
  *   avant de payer.
- * - `ligne` : étoiles de 15 px sur une seule ligne, pour le haut de la fiche
- *   produit, juste au-dessus du titre (demande de l'exploitant, 19 novembre
- *   2026, sur l'exemple d'un concurrent). Là, la note est la première chose
- *   lue de la page, pas un encart de plus dans la colonne d'achat.
+ * - `ligne` : une seule ligne pour le haut de la fiche produit, juste
+ *   au-dessus du titre (demande de l'exploitant, 19 novembre 2026, sur
+ *   l'exemple d'un concurrent). Là, la note est la première chose lue de la
+ *   page, pas un encart de plus dans la colonne d'achat. Dessin retenu le
+ *   même jour parmi cinq propositions : étoiles de 14 px à pointes
+ *   arrondies, chiffre en gras devant, « /5 » en gris clair, filet d'un
+ *   pixel, puis la source.
  *
  * **Le libellé de la forme `ligne` nomme l'entreprise, et ce n'est pas un
  * détail.** Au-dessus d'un titre de produit, des étoiles sont lues partout
@@ -82,19 +85,26 @@ export function NoteGoogle({
   }`
 
   if (variante === 'ligne') {
+    /*
+      La hiérarchie, et c'est tout l'objet du dessin : le chiffre d'abord, en
+      gras et en noir ; le « /5 » en gris clair, parce qu'il ne fait que donner
+      l'échelle ; la source en gris, derrière un filet d'un pixel. Dans la
+      version précédente, « 4,4 » et « sur Google » pesaient le même gris — on
+      lisait une phrase au lieu de voir une note.
+    */
     return (
       <p
         role="img"
         aria-label={libelle}
-        className={cn(
-          'flex items-center gap-[7px] text-[12px] leading-[1.2] text-muted-strong fiche:text-[12.5px]',
-          className,
-        )}
+        className={cn('flex items-center gap-2 leading-[1.2] text-[#6b7075]', className)}
       >
         <Rangee proportion={proportion} taille="petite" />
-        <span>
-          Société notée <strong className="font-semibold text-ink">{note}/5</strong> sur Google
+        <span className="flex items-baseline gap-px">
+          <strong className="text-[13.5px] font-bold tracking-[-0.3px] text-ink">{note}</strong>
+          <span className="text-[11.5px] text-[#a3a8ad]">/5</span>
         </span>
+        <span aria-hidden="true" className="h-[11px] w-px shrink-0 bg-[#dcdee0]" />
+        <span className="text-[11.5px] tracking-[0.1px]">Société notée sur Google</span>
       </p>
     )
   }
@@ -138,13 +148,13 @@ type Taille = 'grande' | 'petite'
 function Etoiles({ className, taille }: { className?: string; taille: Taille }) {
   return (
     <span
-      className={cn('flex w-max', taille === 'grande' ? 'gap-0.5' : 'gap-px', className)}
+      className={cn('flex w-max', taille === 'grande' ? 'gap-0.5' : 'gap-[1.5px]', className)}
       aria-hidden="true"
     >
       {[0, 1, 2, 3, 4].map((rang) => (
         <IconStar
           key={rang}
-          className={cn('shrink-0', taille === 'grande' ? 'size-[23px]' : 'size-[15px]')}
+          className={cn('shrink-0', taille === 'grande' ? 'size-[23px]' : 'size-[14px]')}
         />
       ))}
     </span>
