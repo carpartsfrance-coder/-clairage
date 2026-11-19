@@ -7,6 +7,7 @@ import { EVENEMENTS, libelleEvenement, type NomEvenement } from '@/lib/mesure-ev
 import { Card, EmptyState } from '@/components/ui/Surface'
 import { ModeDetaille } from '@/components/mesure/ModeDetaille'
 import { Onglets } from '@/components/admin/statistiques/Onglets'
+import { pertesEntonnoir } from '@/components/admin/statistiques/entonnoir'
 import {
   duree,
   euros,
@@ -76,6 +77,8 @@ export default async function StatistiquesPage({
   const depuis = s.mesureApprofondieDepuis
   /** La période commence-t-elle avant que les nouveautés soient mesurées ? */
   const periodeIncomplete = !depuis || depuis > p.depuis
+  /** Ce qu'on dit d'un chiffre qui ne couvre pas toute la période. */
+  const mesureDepuis = depuis ? `mesuré depuis le ${dateCourte.format(depuis)}` : 'mesuré à partir de la prochaine visite'
   const evenementsParNom = new Map(s.evenements.map((x) => [x.name, x]))
 
   return (
@@ -107,7 +110,7 @@ export default async function StatistiquesPage({
               ['Pages par visite', (s.resume.pages / Math.max(1, s.resume.visites)).toFixed(1).replace('.', ','), null],
               ['Durée médiane d’une visite', duree(s.duree.msMedian), s.duree.mesurees ? `sur ${nb(s.duree.mesurees)} visites mesurées` : null],
               ['Rebond', pct(s.duree.rebonds, s.duree.mesurees), 'une page, moins de 10 s'],
-              ['Visites avec ajout au panier', e ? nb(e.ajout) : '—', e ? pct1(e.ajout, e.visites) : null],
+              ['Visites avec ajout au panier', e ? nb(e.ajout) : '—', e ? (periodeIncomplete ? mesureDepuis : pct1(e.ajout, e.visites)) : null],
               ['Commandes payées', e ? nb(e.payee) : '—', e ? pct1(e.payee, e.visites) : null],
             ].map(([l, v, d]) => (
               <Card key={l} className="p-4">
@@ -136,12 +139,13 @@ export default async function StatistiquesPage({
             <section aria-labelledby="t-entonnoir">
               <h2 id="t-entonnoir" className="mb-2 text-base font-bold">Le parcours d’achat : où ça bloque</h2>
               <Card className="p-4">
-                <Entonnoir ligne={e} />
+                <Entonnoir ligne={e} partiel={periodeIncomplete} mesureDepuis={mesureDepuis} />
                 <p className="mt-4 text-sm">
                   <strong>{nb(e.vehicule)}</strong> visite{e.vehicule > 1 ? 's' : ''} ({pct(e.vehicule, e.visites)}) ont choisi un véhicule ou ouvert la page d’un véhicule.
                 </p>
                 <p className="mt-2 text-xs text-muted-strong">
-                  Chaque ligne compte les visites qui sont arrivées au moins une fois à cette étape. « A ajouté au panier » compte les ajouts réussis, d’où qu’ils viennent (fiche, packs complémentaires) — un ajout refusé n’y est pas.
+                  Chaque ligne compte les visites qui sont arrivées au moins une fois à cette étape. « A ajouté au panier » compte les ajouts réussis, d’où qu’ils viennent (fiche, packs complémentaires) — un ajout refusé n’y est pas. La plus forte perte est celle qui perd le plus de visites.
+                  {periodeIncomplete ? ' Les étapes en clair ne sont mesurées que sur une partie de la période : elles sont laissées hors du calcul des pertes.' : ''}
                 </p>
               </Card>
 
@@ -429,32 +433,44 @@ export default async function StatistiquesPage({
 
 /* -------------------------------------------------------------------------- */
 
-function Entonnoir({ ligne }: { ligne: LigneEntonnoir }) {
+function Entonnoir({
+  ligne,
+  partiel,
+  mesureDepuis,
+}: {
+  ligne: LigneEntonnoir
+  /** La période commence avant que les gestes soient mesurés. */
+  partiel: boolean
+  mesureDepuis: string
+}) {
   const base = ligne.visites
-  // La plus forte perte d'une étape à la suivante est mise en avant : c'est
-  // là qu'il faut regarder en premier.
-  const pertes = ETAPES.map((et, i) => {
-    if (i === 0) return null
-    const avant = ligne[ETAPES[i - 1].cle]
-    return avant > 0 ? Math.round(((avant - ligne[et.cle]) / avant) * 100) : null
-  })
-  const pire = Math.max(...pertes.map((x) => x ?? -1))
+  // La plus forte perte est mise en avant : c'est là qu'il faut regarder en
+  // premier. Voir `pertesEntonnoir` pour ce qui la désigne, et pourquoi.
+  const { pertes, pire } = pertesEntonnoir(
+    ETAPES.map((et) => ({ n: ligne[et.cle], partielle: partiel && et.geste })),
+  )
   return (
     <ol className="flex flex-col gap-3">
       {ETAPES.map((et, i) => {
         const n = ligne[et.cle as CleEtape]
         const perte = pertes[i]
+        const partielle = partiel && et.geste
         return (
-          <li key={et.cle} className="grid gap-1 sm:grid-cols-[18rem_minmax(0,1fr)_10rem] sm:items-center sm:gap-4">
-            <span className="text-sm font-semibold">{et.label}</span>
+          <li key={et.cle} className="grid gap-1 sm:grid-cols-[18rem_minmax(0,1fr)_12rem] sm:items-center sm:gap-4">
+            <span className={`text-sm font-semibold ${partielle ? 'text-muted-strong' : ''}`}>{et.label}</span>
             <div className="h-6 rounded bg-surface-muted">
-              <div className="h-6 rounded bg-brand" style={{ width: `${base ? Math.max(n > 0 ? 1 : 0, (n / base) * 100) : 0}%` }} />
+              <div
+                className={`h-6 rounded ${partielle ? 'bg-brand/35' : 'bg-brand'}`}
+                style={{ width: `${base ? Math.max(n > 0 ? 1 : 0, (n / base) * 100) : 0}%` }}
+              />
             </div>
             <span className="text-sm tabular-nums">
               <strong>{nb(n)}</strong> <span className="text-muted-strong">({pct1(n, base)})</span>
-              {perte !== null && perte > 0 ? (
-                <span className={`block text-xs ${perte === pire ? 'font-bold text-danger' : 'text-muted-strong'}`}>
-                  −{perte} % à cette étape{perte === pire ? ' — la plus forte perte' : ''}
+              {partielle ? (
+                <span className="block text-xs text-muted-strong">{mesureDepuis}</span>
+              ) : perte ? (
+                <span className={`block text-xs ${i === pire ? 'font-bold text-danger' : 'text-muted-strong'}`}>
+                  −{perte.pct} % ({nb(perte.perdues)} visite{perte.perdues > 1 ? 's' : ''}){i === pire ? ' — la plus forte perte' : ''}
                 </span>
               ) : null}
             </span>
