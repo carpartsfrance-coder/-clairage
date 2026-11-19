@@ -223,24 +223,24 @@ export default async function PacksGenerationPage({ params }: PageProps) {
       {totalProduits > 0 ? <PromessesAchat className="mt-3" /> : null}
 
       {/*
-        L'avertissement qui empêche cette page de mentir.
+        Les équipements d'origine de la génération.
 
-        Elle montre ce qui est documenté pour la génération. Si celle-ci a été
-        vendue avec plusieurs équipements d'origine, aucun des statuts affichés
-        ne vaut pour un véhicule donné tant que l'équipement n'est pas choisi.
+        L'information est utile — un phare halogène et un xénon n'acceptent pas
+        les mêmes pièces — mais elle n'a rien d'un avertissement : elle est
+        rendue en gris, comme un repère de choix, et non plus en orange comme
+        une alerte (19 novembre 2026).
       */}
       {totalProduits > 0 && plusieursEquipements ? (
-        <div className="mt-4 flex items-start gap-2.5 rounded-[7px] bg-warn-soft p-3 text-[#8d5420]">
+        <div className="mt-4 flex items-start gap-2.5 rounded-[7px] bg-[#f5f6f7] p-3 text-muted-strong">
           <IconInfo className="mt-px size-4 shrink-0" />
           <div className="min-w-0 text-[11px] leading-[1.7]">
-            <p className="font-bold">
+            <p className="font-bold text-slate-ink">
               Cette génération a été vendue avec {data.equipments.length} équipements
               d&apos;origine.
             </p>
             <p>
-              Un phare halogène et un xénon n&apos;acceptent pas les mêmes pièces. Les éclairages
-              ci-dessous sont ceux documentés pour la génération ; indiquez votre équipement pour
-              savoir lesquels conviennent à votre véhicule.
+              Un phare halogène et un xénon n&apos;acceptent pas les mêmes pièces. Indiquez le
+              vôtre pour que la liste ci-dessous colle à votre véhicule.
             </p>
             <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
               {data.equipments.map((equipment) => (

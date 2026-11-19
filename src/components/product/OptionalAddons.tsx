@@ -148,9 +148,9 @@ export function OptionalAddons({
       {/* .extra-grid : deux colonnes au-delà du basculement. */}
       <ul className="grid grid-cols-1 gap-3 fiche:grid-cols-2 fiche:gap-5">
         {proposables.map((addon) => {
-          const incompatible = addon.fitment === 'INCOMPATIBLE'
-          const disponible = isPurchasable(addon.availability)
-          const selectionnable = disponible && !incompatible
+          /* La compatibilité ne décide plus de ce qui est cochable : seul le
+             stock le fait (19 novembre 2026). */
+          const selectionnable = isPurchasable(addon.availability)
           const coche = selection.includes(addon.slug)
 
           return (
@@ -200,8 +200,9 @@ export function OptionalAddons({
                     </span>
                   ) : null}
 
-                  {/* Statut seulement s'il a été établi pour CE complément. */}
-                  {addon.fitment ? (
+                  {/* Seule la compatibilité CONFIRMÉE se dit : elle rassure.
+                      Les deux autres pastilles ne s'affichent plus. */}
+                  {addon.fitment === 'CONFIRMED' ? (
                     <FitmentBadge status={addon.fitment} short className="w-fit" />
                   ) : null}
 
@@ -215,24 +216,7 @@ export function OptionalAddons({
 
                   {!selectionnable ? (
                     <span className="text-[9px] text-muted-strong">
-                      {incompatible ? (
-                        <>
-                          Ne convient pas au véhicule retenu.
-                          {sansLiens ? null : (
-                            <>
-                              {' '}
-                              <Link
-                                href={`/p/${addon.slug}`}
-                                className="font-semibold underline underline-offset-2"
-                              >
-                                Voir la fiche
-                              </Link>
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        availabilityLabel(addon.availability)
-                      )}
+                      {availabilityLabel(addon.availability)}
                     </span>
                   ) : null}
                 </span>

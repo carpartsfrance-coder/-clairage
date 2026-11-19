@@ -27,8 +27,6 @@ export type ReassuranceItem = {
   icon: ReassuranceIconKey | (string & Record<never, never>)
   title: string
   text: string
-  /** Mention appelée par l'astérisque posé après le titre. */
-  footnote?: string
 }
 
 export type ReassuranceBandProps = {
@@ -62,9 +60,10 @@ const headingId = 'reassurance-band-title'
  * grille à filets verticaux : deux fois la hauteur de la référence pour la
  * même information.
  *
- * La mention appelée par l'astérisque est conservée. C'est elle qui empêche
- * « Branchement sans modifier le câblage » d'être lu comme une garantie
- * universelle, et la référence la porte aussi.
+ * L'astérisque posé après le titre et sa mention en pied de page ont été
+ * retirés le 19 novembre 2026 : un repère de confiance qui renvoie aussitôt à
+ * une réserve ne rassure plus. Le `footnote` éventuellement présent dans
+ * `HomeBlock.payload` est simplement ignoré.
  */
 export function ReassuranceBand({ items }: ReassuranceBandProps) {
   if (items.length === 0) return null
@@ -113,7 +112,6 @@ export function ReassuranceBand({ items }: ReassuranceBandProps) {
                 <div className="min-w-0">
                   <p className="m-0 text-[16px] leading-[1.25] font-bold tracking-[-0.3px] text-ink lg:text-[18px]">
                     {item.title}
-                    {item.footnote ? <span aria-hidden="true">*</span> : null}
                   </p>
                   {/*
                     Le sous-titre s'affiche enfin. Il était écrit dans les
@@ -131,11 +129,6 @@ export function ReassuranceBand({ items }: ReassuranceBandProps) {
           })}
         </ul>
 
-        {/*
-          La mention appelée par l'astérisque n'est pas ici : elle est résolue
-          en pied de page, ce qui garde cette carte sur une seule ligne. Elle
-          reste donc lisible, au même endroit qu'avant.
-        */}
       </div>
     </section>
   )

@@ -14,7 +14,6 @@ import { formatPrice } from '@/lib/identity'
 import { availabilityLabel, isPurchasable } from '@/lib/stock'
 import { Alert, EmptyState } from '@/components/ui/Surface'
 import { ButtonLink } from '@/components/ui/Button'
-import { FitmentBadge } from '@/components/ui/Badge'
 import { IconCart } from '@/components/ui/icons'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
@@ -137,31 +136,18 @@ export default async function PanierPage() {
                 className="mb-[18px]"
               />
 
-              {cart.conflicts.length > 0 ? (
-                <Alert
-                  tone="warn"
-                  title="Des articles ne sont pas confirmés pour le véhicule sélectionné."
-                  className="mb-[18px] text-[11px]"
-                >
-                  <ul className="flex flex-col gap-2">
-                    {cart.conflicts.map((conflict) => (
-                      <li key={conflict.variantId} className="flex flex-col gap-1">
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-slate-ink">{conflict.productName}</span>
-                          <span className="text-muted">{conflict.variantName}</span>
-                          <FitmentBadge status={conflict.status} short />
-                        </span>
-                        <span>{conflict.reason}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-2">
-                    Rien n&apos;a été retiré de votre panier : la décision vous revient. Vous pouvez
-                    conserver ces articles, les retirer ci-dessous, ou revenir sur le véhicule
-                    sélectionné.
-                  </p>
-                </Alert>
-              ) : null}
+              {/*
+                Rien ne s'affiche ici sur la compatibilité.
+
+                Le bandeau orange « Des articles ne sont pas confirmés pour le
+                véhicule sélectionné » sortait dès qu'une ligne du catalogue
+                manquait — c'est-à-dire presque toujours — et jetait un doute
+                sur la commande à l'écran même où on la valide. L'alerte rouge
+                de l'incompatibilité relevée l'a suivi le 19 novembre 2026, sur
+                décision de l'exploitant : le nom du pack porte son véhicule, et
+                le client tranche. Reste ce qui empêche vraiment la commande
+                d'aboutir : le stock, juste dessous.
+              */}
 
               {cart.stockIssues.length > 0 ? (
                 <Alert

@@ -186,50 +186,14 @@ export const fitmentSortWeight: Record<FitmentStatus, number> = {
   INCOMPATIBLE: 2,
 }
 
-/**
- * Conséquences d'un changement de véhicule sur ce qui est déjà au panier.
- *
- * On ne retire rien : on signale. Supprimer un article sans le dire serait pire
- * que d'afficher un conflit — le client doit pouvoir trancher lui-même.
+/*
+ * Les conflits de compatibilité au panier ont été retirés le 19 novembre 2026,
+ * sur décision de l'exploitant : ni l'absence de donnée ni une incompatibilité
+ * relevée ne s'affichent plus devant le client, et plus rien n'empêche de
+ * commander. `resolveFitments` reste la source de vérité pour l'encadré vert
+ * de la fiche, pour les accessoires de montage ci-dessous et pour le
+ * back-office, où les trois statuts gardent tout leur sens.
  */
-export type CartConflict = {
-  variantId: string
-  productName: string
-  variantName: string
-  /** Un conflit n'est jamais « confirmé » : les deux seuls cas sont ceux-ci. */
-  status: Exclude<FitmentStatus, 'CONFIRMED'>
-  reason: string
-}
-
-export async function findCartConflicts(
-  configurationId: string | null,
-  lines: Array<{ variantId: string; productName: string; variantName: string }>,
-): Promise<CartConflict[]> {
-  if (!configurationId || lines.length === 0) return []
-
-  const fitments = await resolveFitments(
-    configurationId,
-    lines.map((line) => line.variantId),
-  )
-
-  return lines
-    .map((line) => {
-      const fitment = fitments.get(line.variantId)
-      if (!fitment || fitment.status === 'CONFIRMED') return null
-      return {
-        variantId: line.variantId,
-        productName: line.productName,
-        variantName: line.variantName,
-        status: fitment.status,
-        reason:
-          fitment.status === 'INCOMPATIBLE'
-            ? (fitment.restrictions ??
-              "Cet article ne convient pas à l'équipement d'origine du véhicule sélectionné.")
-            : "La compatibilité de cet article avec le véhicule sélectionné n'est pas établie.",
-      }
-    })
-    .filter((conflict): conflict is CartConflict => conflict !== null)
-}
 
 /**
  * Accessoire exigé par un montage du panier, et absent du panier.
