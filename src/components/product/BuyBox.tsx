@@ -22,7 +22,6 @@ import {
   IconMinus,
   IconPlus,
   IconCheck,
-  IconInfo,
   IconShield,
   IconLock,
   IconCheckCircle,
@@ -60,8 +59,9 @@ const ECART_MAX_JAUGE_CENTS = 2500
  *    aucune compatibilité n'est affirmée. On demande le véhicule, c'est tout.
  * 2. Un accessoire rendu nécessaire par le montage est PROPOSÉ, coché par
  *    personne. Rien ne part au panier que le client n'ait vu et accepté.
- * 3. Quand la pièce est incompatible avec le véhicule retenu, l'achat est
- *    bloqué et on dit pourquoi, avec une porte de sortie.
+ * 3. La compatibilité ne commande plus la vente. Elle se dit quand elle est
+ *    confirmée (l'encadré vert) et se tait partout ailleurs : ni blocage, ni
+ *    avertissement. Décision de l'exploitant, 19 novembre 2026.
  *
  * La barre fixe appelle exactement la même fonction que le bouton principal :
  * même variante, mêmes accessoires cochés, même total. Une barre qui
@@ -82,7 +82,6 @@ export function BuyBox({
   contentAnchor = '#dans-votre-kit',
   vehiculeDesComplements = null,
   autreVehicule = false,
-  venteParReference = false,
 }: {
   productName: string
   /** Premier visuel du produit : la barre fixe rappelle ce qu'on achète. */
@@ -111,11 +110,6 @@ export function BuyBox({
    * client en a choisi un autre. Voir `pourUnAutre` plus bas.
    */
   autreVehicule?: boolean
-  /**
-   * Ampoule vendue à sa référence (un culot est renseigné, aucun véhicule
-   * n'est attaché à la fiche) : le client vient avec sa référence en tête.
-   */
-  venteParReference?: boolean
 }) {
   const router = useRouter()
   /*
@@ -232,13 +226,17 @@ export function BuyBox({
   }, [selected, productName])
 
   /*
-    Le verdict de compatibilité, tel que le visiteur le lit.
+    Le verdict de compatibilité de la base, pour le pilotage du catalogue.
 
     C'est le cœur de la promesse du site : « vérifié pour votre véhicule ».
-    Savoir combien de fiches affichent « compatible », combien affichent
+    Savoir combien de fiches peuvent afficher « compatible », combien sont
     « incompatible » et combien n'ont rien à dire vaut plus que n'importe quel
-    taux de clic — un « incompatible » est une visite payée qui ne pouvait pas
-    acheter, et un « inconnue » est une promesse non tenue.
+    taux de clic : « inconnue » est un trou du catalogue à combler, et
+    « incompatible » annonce un retour probable.
+
+    Depuis le 19 novembre 2026, ni l'un ni l'autre ne se voit en fiche — la
+    mesure est le seul endroit où l'état réel du catalogue reste lisible. Elle
+    ne mesure donc plus ce que le visiteur lit, mais ce que la base sait.
   */
   const verdictVu = useRef<string | null>(null)
   useEffect(() => {
@@ -283,59 +281,34 @@ export function BuyBox({
     : delivery.missingForFreeCents
       ? Math.min(100, Math.round((sousTotal / (sousTotal + delivery.missingForFreeCents)) * 100))
       : 100
-  const incompatible = selected.fitment.status === 'INCOMPATIBLE'
   /*
-    Compatibilité non établie : l'achat reste autorisé — c'est la règle métier
-    existante, et refuser la vente d'une pièce dont on ignore seulement si elle
-    convient serait aussi faux que l'affirmer. Mais ce n'est plus l'action mise
-    en avant : vérifier passe devant, acheter reste possible et le dit.
+    La compatibilité ne commande plus rien ici.
+
+    Trois choses sont parties le 19 novembre 2026, sur décision de
+    l'exploitant : « Compatibilité à vérifier pour votre … » et la
+    vérification mise devant l'achat ; l'encadré rouge « ne convient pas à
+    votre véhicule » ; et le blocage du bouton qu'il entraînait. Comme
+    l'absence de ligne vaut UNKNOWN, le premier sortait sur la quasi-totalité
+    du catalogue ; le second s'appuyait sur une donnée que le client, lui,
+    connaît mieux que le catalogue. Reste l'encadré vert quand la
+    compatibilité EST confirmée : il rassure, il n'alerte pas.
+
+    La seule chose qui empêche encore d'acheter est le stock.
   */
-  const inconnu = Boolean(vehicleLabel) && selected.fitment.status === 'UNKNOWN'
   /*
     Pack composé pour un autre véhicule que celui du client.
 
-    Le cas était rendu comme une compatibilité inconnue : « Compatibilité à
-    vérifier pour votre Clio 4 » et « Faire vérifier mon véhicule » en bouton
-    principal, sur le pack d'une Corsa E. Il n'y a rien à vérifier : la fiche
-    dit elle-même pour quel véhicule elle est composée. La bonne suite est le
-    pack du même emplacement pour SON véhicule — la liste des résultats les
-    range par emplacement. L'achat reste possible juste dessous, pour le
-    client qui a bien ce véhicule-là et n'a pas mis à jour son choix.
+    La fiche dit elle-même pour quel véhicule elle est composée, et son titre
+    le répète : il n'y a rien à avertir. Reste utile le chemin vers les packs
+    de SON véhicule — une ligne discrète sous le prix, plus un encadré orange
+    qui mettait l'achat en seconde position.
   */
-  const pourUnAutre = autreVehicule && Boolean(concuPour) && Boolean(vehicleLabel) && !incompatible
-  /*
-    Vérifier d'abord, ou acheter d'abord ?
+  const pourUnAutre = autreVehicule && Boolean(concuPour) && Boolean(vehicleLabel)
+  const purchasable = isPurchasable(selected.availability)
+  /* Rupture au sens strict : ni stock, ni vente à découvert. */
+  const rupture = selected.availability.state === 'OUT_OF_STOCK'
 
-    Sur un pack composé pour un véhicule, la compatibilité EST le produit :
-    quand elle n'est pas établie, la vérification reste l'action principale.
-    Sur une ampoule vendue à la référence (T4W, H7…), le client vient le plus
-    souvent avec sa référence en tête : lui faire passer « Faire vérifier »
-    devant « Ajouter au panier » freinait l'achat sans le protéger de rien
-    (audit du 16 novembre 2026). L'achat repasse devant, la vérification
-    reste proposée juste dessous, et l'avertissement au-dessus du prix ne
-    change pas.
-  */
-  /*
-    La relecture du 17 novembre 2026 a resserré la règle : l'achat ne passe
-    devant que sur une ampoule vendue à sa référence. Un kit ou un accessoire
-    technique dont la compatibilité est inconnue garde la vérification en
-    premier.
-  */
-  const verifierDAbord = inconnu && !venteParReference
-  const purchasable = isPurchasable(selected.availability) && !incompatible
-  /*
-    Rupture au sens strict : ni stock, ni vente à découvert. Une pièce
-    incompatible n'est pas une rupture — proposer d'être prévenu du retour
-    d'une pièce qui ne se monte pas serait absurde.
-  */
-  const rupture = selected.availability.state === 'OUT_OF_STOCK' && !incompatible
-  const lienVerification = `/verification?variante=${encodeURIComponent(selected.id)}`
-
-  const libelleBouton = pending
-    ? 'Ajout en cours…'
-    : incompatible
-      ? 'Incompatible avec votre véhicule'
-      : 'Ajouter au panier'
+  const libelleBouton = pending ? 'Ajout en cours…' : 'Ajouter au panier'
 
   function submit() {
     setFeedback(null)
@@ -394,68 +367,28 @@ export function BuyBox({
       ) : null}
 
       {/*
-        Compatibilité non établie.
+        Pack composé pour un autre véhicule : une ligne, pas un avertissement.
 
-        Le bandeau faisait un paragraphe au-dessus du prix et renvoyait vers
-        une page de contact non construite ; pendant ce temps le bouton
-        principal restait « Ajouter au panier ». La phrase tient maintenant en
-        une ligne, le détail est accessible juste dessous, et c'est la
-        vérification qui devient l'action principale (plus bas).
+        L'encadré orange disait au client ce que le titre de la fiche dit déjà,
+        et reléguait l'achat derrière « Voir les packs de mon véhicule ». Seul
+        le raccourci avait de la valeur : il reste, en texte.
       */}
       {pourUnAutre && concuPour ? (
-        <div className="mb-4 rounded-xl bg-warn-soft p-3.5 text-[#7a4a1c]">
-          <p className="flex items-center gap-2.5 text-[14px] font-bold">
-            <IconInfo className="size-4 shrink-0" />
+        <p className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-strong">
+          <span>
             {typeHorsAmpoules(productName) ? 'Prévu pour' : 'Pack composé pour'}{' '}
             {leVehicule(concuPour, moto)}.
-          </p>
-          <p className="mt-1 text-[13px] leading-[1.6]">
-            Votre véhicule : <strong>{vehicleLabel}</strong>. Découvrez les packs disponibles
-            pour lui.{' '}
-            <Link href={lienChoixVehicule} className="font-semibold underline underline-offset-2">
-              Changer de véhicule
-            </Link>
-          </p>
-        </div>
-      ) : vehicleLabel && inconnu ? (
-        <div className="mb-4 rounded-xl bg-warn-soft p-3.5 text-[#7a4a1c]">
-          <p className="flex items-center gap-2.5 text-[14px] font-bold">
-            <IconInfo className="size-4 shrink-0" />
-            Compatibilité à vérifier pour votre {vehicleLabel}.
-          </p>
-          <details className="group mt-1.5">
-            <summary className="inline-flex min-h-9 cursor-pointer list-none items-center text-[13px] underline underline-offset-2 [&::-webkit-details-marker]:hidden">
-              Pourquoi
-              <span aria-hidden="true" className="ml-1.5 transition-transform group-open:rotate-45">
-                +
-              </span>
-            </summary>
-            <p className="mt-1 text-[13px] leading-[1.6]">
-              Nous n&apos;avons pas l&apos;information nécessaire pour confirmer que cette
-              référence convient à ce véhicule et à son équipement d&apos;origine. Une donnée
-              manquante ne vaut pas compatibilité : nous préférons le dire et vérifier.
-            </p>
-          </details>
-        </div>
-      ) : null}
-
-      {incompatible ? (
-        <Alert
-          tone="danger"
-          title={
-            concuPour
-              ? 'Ce pack ne convient pas au véhicule sélectionné.'
-              : 'Cette référence ne convient pas à votre véhicule.'
-          }
-          className="mb-5"
-        >
-          {selected.fitment.restrictions ??
-            "L'équipement d'origine du véhicule sélectionné n'accepte pas cette référence."}{' '}
-          <Link href="/vehicule/resultats" className="font-semibold underline underline-offset-4">
-            Voir ce qui convient à votre véhicule
+          </span>
+          {/* Libellé volontairement différent de « Voir les packs pour votre
+              … » de la ligne de livraison, qui mène aux compléments du
+              véhicule DE LA FICHE : deux liens voisins, deux destinations. */}
+          <Link
+            href="/vehicule/resultats"
+            className="font-semibold text-ink underline underline-offset-2 hover:text-brand-dark"
+          >
+            Voir les packs de mon véhicule
           </Link>
-          .
-        </Alert>
+        </p>
       ) : null}
 
       {/*
@@ -763,73 +696,13 @@ export function BuyBox({
       {/*
         .primary.add-main — 56 px, pleine largeur.
 
-        L'ordre des trois cas est une décision : la rupture passe avant la
-        compatibilité non établie (rien à vendre, l'alerte de retour est la
-        seule action utile), et une compatibilité non établie met la
-        vérification en avant — l'achat reste possible juste dessous, nommé
-        pour ce qu'il est.
+        Deux cas seulement : en rupture, l'alerte de retour est la seule action
+        utile ; partout ailleurs, l'achat est l'action principale. La
+        vérification ne passe plus devant — elle reléguait « Ajouter au panier »
+        en bouton blanc sur la quasi-totalité du catalogue.
       */}
       {rupture ? (
         <StockAlertForm variantId={selected.id} />
-      ) : pourUnAutre ? (
-        <div className="flex flex-col gap-2">
-          <Link
-            href="/vehicule/resultats"
-            className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-brand px-5 py-3 text-[16px] font-bold text-white transition-colors hover:bg-brand-dark"
-          >
-            <span className="flex-1">Voir les packs de mon véhicule</span>
-            <IconChevronRight className="ml-auto size-[18px] shrink-0" />
-          </Link>
-
-          <div className="flex gap-2.5">
-            <SelecteurQuantite
-              valeur={quantite}
-              onChange={setQuantite}
-              maximum={selected.availability.sellable}
-              disabled={!purchasable || pending}
-            />
-            <button
-              ref={boutonRef}
-              type="button"
-              disabled={!purchasable || pending}
-              onClick={submit}
-              className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl border border-[#c4c4c4] bg-white px-4 py-2.5 text-[14px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <IconCart className="size-[18px] shrink-0" />
-              {pending ? 'Ajout en cours…' : 'Ajouter ce pack au panier'}
-            </button>
-          </div>
-        </div>
-      ) : verifierDAbord ? (
-        <div className="flex flex-col gap-2">
-          <Link
-            href={lienVerification}
-            className="flex min-h-14 w-full items-center justify-center gap-3 rounded-xl bg-brand px-5 py-3 text-[16px] font-bold text-white transition-colors hover:bg-brand-dark"
-          >
-            <IconShield className="size-5 shrink-0" />
-            <span className="flex-1">Faire vérifier mon véhicule</span>
-            <IconChevronRight className="ml-auto size-[18px] shrink-0" />
-          </Link>
-
-          <div className="flex gap-2.5">
-            <SelecteurQuantite
-              valeur={quantite}
-              onChange={setQuantite}
-              maximum={selected.availability.sellable}
-              disabled={!purchasable || pending}
-            />
-            <button
-              ref={boutonRef}
-              type="button"
-              disabled={!purchasable || pending}
-              onClick={submit}
-              className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl border border-[#c4c4c4] bg-white px-4 py-2.5 text-[14px] font-semibold transition-colors hover:border-slate-ink disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <IconCart className="size-[18px] shrink-0" />
-              {pending ? 'Ajout en cours…' : 'Commander sans attendre la vérification'}
-            </button>
-          </div>
-        </div>
       ) : (
         /* .buy-actions : la quantité à gauche, le bouton occupe le reste. */
         <div className="flex gap-2.5">
@@ -851,16 +724,6 @@ export function BuyBox({
           </button>
         </div>
       )}
-
-      {inconnu && !verifierDAbord && !pourUnAutre && !rupture ? (
-        <Link
-          href={lienVerification}
-          className="mt-2.5 flex min-h-11 items-center gap-2 text-[14px] font-semibold text-ink underline underline-offset-2 hover:text-brand-dark"
-        >
-          <IconShield className="size-[18px] shrink-0" />
-          Vérifier si cette référence convient à mon véhicule
-        </Link>
-      ) : null}
 
       {feedback ? (
         <Alert
@@ -999,39 +862,15 @@ export function BuyBox({
             </div>
 
             {/* La barre fixe ne propose rien d'autre que le bloc d'achat. */}
-            {pourUnAutre ? (
-              /*
-                Libellés courts dans la barre : à 320 px, « Voir les packs de
-                mon véhicule » débordait de l'écran (contrôlé à 320, 360 et
-                390 px). Le bouton du bloc d'achat garde la phrase entière, et
-                `min-w-0` laisse l'ellipse jouer plutôt que de déborder.
-              */
-              <Link
-                href="/vehicule/resultats"
-                className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
-              >
-                <span className="truncate">Packs de mon véhicule</span>
-                <IconChevronRight className="size-[18px] shrink-0" />
-              </Link>
-            ) : verifierDAbord ? (
-              <Link
-                href={lienVerification}
-                className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark fiche:min-w-[240px] fiche:flex-none"
-              >
-                <IconShield className="size-[18px] shrink-0" />
-                <span className="truncate">Vérifier mon véhicule</span>
-              </Link>
-            ) : (
-              <button
-                type="button"
-                disabled={!purchasable || pending}
-                onClick={submit}
-                className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none"
-              >
-                <IconCart className="size-[18px] shrink-0" />
-                <span className="truncate">{libelleBouton}</span>
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={!purchasable || pending}
+              onClick={submit}
+              className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none"
+            >
+              <IconCart className="size-[18px] shrink-0" />
+              <span className="truncate">{libelleBouton}</span>
+            </button>
           </div>
         </div>
       </div>

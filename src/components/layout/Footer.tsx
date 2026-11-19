@@ -154,14 +154,14 @@ export async function Footer() {
         </div>
 
         {/*
-          .footer-asterisk — appelée par l'astérisque du bandeau de repères.
-          Elle empêche « Branchement sans modifier le câblage » d'être lu comme
-          une promesse valable pour tous les véhicules.
+          La mention « * Selon le kit et le véhicule. Accessoires et contraintes
+          de montage à vérifier sur la fiche produit. » est retirée (décision de
+          l'exploitant, 19 novembre 2026), avec l'astérisque qui l'appelait dans
+          le bandeau de repères. Elle suivait le visiteur sur toutes les pages
+          et reprenait, en pied de page, la réserve que la boutique a cessé
+          d'afficher ailleurs. Ce que couvrent la garantie et le retour reste
+          écrit en entier sur /garanties et /livraison-retours.
         */}
-        <p className="mt-3 text-[12px] leading-[1.7] text-[#647c86] lg:text-[11px]">
-          * Selon le kit et le véhicule. Accessoires et contraintes de montage à vérifier sur la
-          fiche produit.
-        </p>
 
         {/*
           Mention destinée au visiteur, pas à l'exploitant : elle dit ce qui

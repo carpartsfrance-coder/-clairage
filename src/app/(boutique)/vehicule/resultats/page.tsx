@@ -40,8 +40,10 @@ export const metadata: Metadata = {
  * Résultats pour le véhicule sélectionné.
  *
  * La page n'est pas une liste de produits : c'est une lecture de
- * compatibilités. Les lignes incompatibles y restent visibles, parce que
- * savoir ce qui ne convient pas fait partie de la réponse.
+ * compatibilités. Les lignes incompatibles y restent visibles, mais depuis le
+ * 19 novembre 2026 elles ne portent plus ni pastille ni grisé : la
+ * compatibilité relevée ne sert plus qu'à ranger les cartes, de la plus sûre
+ * à la moins sûre. Seule la pastille verte subsiste.
  *
  * **Elle se dessine comme la page d'une génération**, dont elle montre les
  * mêmes pièces au même client — bandeau véhicule, total, une seule grille de
@@ -476,29 +478,23 @@ export default async function Page() {
                 </details>
 
                 {/*
-                  L'explication des statuts, repliée.
-
-                  Dépliée en tête de page, elle repoussait les produits sous la
-                  ligne de flottaison : on lisait un mode d'emploi avant de voir
-                  une seule ampoule. Les statuts qui alertent sont de toute
-                  façon nommés en toutes lettres sur la vignette concernée.
+                  Une seule pastille subsiste côté boutique, la verte : « à
+                  confirmer » et « incompatible » ont été retirées le
+                  19 novembre 2026. La légende ne décrit donc plus qu'elle, et
+                  reste repliée — dépliée, elle repoussait les produits sous la
+                  ligne de flottaison.
                 */}
                 <details className="border-b border-line">
                   <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-bold marker:content-none">
-                    Comment lire les statuts de compatibilité ?
+                    Que veut dire « Compatibilité confirmée » ?
                     <IconChevronDown className="size-4 shrink-0" />
                   </summary>
                   <div className="pr-2.5 pb-3 text-[13px] leading-[1.6] text-muted-strong">
                     <p>
-                      <strong className="text-slate-ink">Compatibilité confirmée</strong> : le
-                      montage a été vérifié pour cette configuration précise — c&apos;est le cas
-                      de la quasi-totalité des éclairages ci-dessus, et la pastille
-                      n&apos;apparaît donc que lorsqu&apos;elle alerte.{' '}
-                      <strong className="text-slate-ink">Informations insuffisantes</strong> :
-                      nous n&apos;avons pas de quoi trancher — ce n&apos;est pas une
-                      confirmation, et ce n&apos;est pas un refus.{' '}
-                      <strong className="text-slate-ink">Incompatible</strong> : le produit ne
-                      convient pas à cette configuration.
+                      Que le montage a été vérifié pour cette configuration précise, équipement
+                      d&apos;origine compris. Les éclairages sans pastille sont ceux pour
+                      lesquels ce relevé n&apos;a pas encore été fait : ils restent commandables,
+                      et notre service vous répond avant l&apos;envoi si vous avez un doute.
                     </p>
                   </div>
                 </details>

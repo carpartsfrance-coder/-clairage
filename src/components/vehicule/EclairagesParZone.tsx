@@ -4,7 +4,6 @@ import { presentationDeCarte } from '@/lib/carte-titre'
 import { useMemo, useState } from 'react'
 import Image from '@/components/ui/Image'
 import Link from 'next/link'
-import { FitmentBadge } from '@/components/ui/Badge'
 import { IconArrowRight, IconChevronDown } from '@/components/ui/icons'
 import { formatPrice } from '@/lib/identity'
 import { cn } from '@/lib/cn'
@@ -216,14 +215,11 @@ function CarteDEclairage({
   const Titre = dansUnGroupe ? 'h4' : 'h3'
   const zonePrincipale = zoneDeLEmplacement(carte.emplacements[0].code)
   const presentation = presentationDeCarte(carte.nom, carte.conditionnement)
-  const incompatible = carte.status === 'INCOMPATIBLE'
+  /* La vignette n'est plus grisée quand la compatibilité est incompatible :
+     la pastille qui l'expliquait a été retirée le 19 novembre 2026, et un
+     grisé sans explication ne dit rien au client. */
   return (
-    <article
-      className={cn(
-        'group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-white shadow-soft transition-shadow hover:border-line-strong hover:shadow-pop',
-        incompatible && 'opacity-75',
-      )}
-    >
+    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-white shadow-soft transition-shadow hover:border-line-strong hover:shadow-pop">
       {/*
         La photo occupe toute la largeur, sans marge, sur un fond
         sombre : c'est ce qui donne à la grille son unité, le
@@ -247,13 +243,9 @@ function CarteDEclairage({
         <span className="absolute top-2.5 left-2.5 rounded-[4px] bg-[#18191b] px-[7px] py-1 text-[11px] leading-[1.05] font-bold tracking-[0.09em] text-white uppercase max-[470px]:top-[7px] max-[470px]:left-[7px]">
           {nomDeLaZone(zonePrincipale)}
         </span>
-        {carte.status !== 'CONFIRMED' ? (
-          <FitmentBadge
-            status={carte.status}
-            short
-            className="absolute right-2.5 bottom-2.5 bg-white/95"
-          />
-        ) : null}
+        {/* Plus de pastille de compatibilité sur la vignette : le « à
+            confirmer » couvrait la grille entière sans rien trier, et
+            l'« incompatible » tranchait à la place du client. */}
       </div>
 
       <div className="flex flex-1 flex-col p-2.5 min-[651px]:p-[13px]">
@@ -314,7 +306,7 @@ function CarteDEclairage({
             href={`/p/${carte.slug}`}
             className="inline-flex min-h-[38px] items-center justify-center gap-[5px] rounded-lg border border-line bg-white px-[9px] text-[11px] font-bold whitespace-nowrap text-slate-ink transition-colors after:absolute after:inset-0 after:content-[''] hover:border-brand hover:bg-surface-paper hover:text-brand"
           >
-            {incompatible ? 'Voir pourquoi' : 'Voir le pack'}
+            Voir le pack
             <IconArrowRight className="size-3.5 shrink-0" />
           </Link>
         </div>

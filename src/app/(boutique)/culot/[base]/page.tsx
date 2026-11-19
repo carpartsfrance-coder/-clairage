@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 import { adresseDuCulot } from '@/lib/culot'
@@ -11,7 +10,6 @@ import { Pagination } from '@/components/catalogue/Pagination'
 import { ProductCard } from '@/components/catalogue/ProductCard'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { EmptyState } from '@/components/ui/Surface'
-import { IconInfo } from '@/components/ui/icons'
 
 type PageProps = {
   params: Promise<{ base: string }>
@@ -95,25 +93,11 @@ export default async function CulotPage({ params, searchParams }: PageProps) {
       </p>
 
       {/*
-        La réserve qui doit accompagner ce parcours.
-
-        Entrer par le culot est légitime et rapide, mais un culot n'est pas une
-        compatibilité : laisser croire le contraire ferait vendre une ampoule
-        qui ne rentre pas dans le bloc optique.
+        L'encadré orange « un culot n'est pas une compatibilité » occupait le
+        haut de la page et ouvrait sur un doute, alors que la barre « Votre
+        véhicule » juste dessous propose déjà de le préciser. Décision de
+        l'exploitant (19 novembre 2026) : la réserve part, l'invitation reste.
       */}
-      <div className="mt-4 flex items-start gap-2.5 rounded-[7px] bg-warn-soft p-3 text-[#8d5420]">
-        <IconInfo className="mt-px size-4 shrink-0" />
-        <p className="text-[11px] leading-[1.7]">
-          Le culot {culot.base} dit quelle forme a l&apos;ampoule, pas qu&apos;elle convient à
-          votre véhicule : le bloc optique, l&apos;équipement d&apos;origine et la place derrière
-          le phare comptent aussi.{' '}
-          <Link href="/vehicule" className="font-semibold underline underline-offset-2">
-            Indiquez votre véhicule
-          </Link>{' '}
-          pour obtenir un statut de compatibilité.
-        </p>
-      </div>
-
       <VehicleBar vehicle={vehicle} variant="compact" className="mt-4" />
 
       {result.items.length === 0 ? (

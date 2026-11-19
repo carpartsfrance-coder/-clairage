@@ -8,12 +8,7 @@ import {
   availabilityForVariant,
   type Availability,
 } from './stock'
-import {
-  findCartConflicts,
-  findMissingCartAccessories,
-  type CartConflict,
-  type MissingCartAccessory,
-} from './fitment'
+import { findMissingCartAccessories, type MissingCartAccessory } from './fitment'
 import { ARGS_COUVERTURE, couverture } from './media-couverture'
 import { couvertureType } from './images-types'
 import { evaluerPromotion, type ResultatPromo } from './promotions'
@@ -70,8 +65,6 @@ export type CartView = {
   vatCents: number
   /** Articles dont la disponibilité ne couvre plus la quantité demandée. */
   stockIssues: Array<{ lineId: string; productName: string; sellable: number }>
-  /** Conflits avec le véhicule sélectionné. On signale, on ne retire rien. */
-  conflicts: CartConflict[]
   /**
    * Accessoires indispensables au montage qu'aucune ligne n'apporte.
    *
@@ -96,7 +89,6 @@ export const EMPTY_CART: CartView = {
   subtotalCents: 0,
   vatCents: 0,
   stockIssues: [],
-  conflicts: [],
   missingAccessories: [],
 }
 
@@ -201,29 +193,19 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
         sellable: line.availability.sellable ?? 0,
       }))
 
-    const [conflicts, missingAccessories] = await Promise.all([
-      findCartConflicts(
-        configurationId,
-        lines.map((line) => ({
-          variantId: line.variantId,
-          productName: line.productName,
-          variantName: line.variantName,
+    const missingAccessories = await findMissingCartAccessories(
+      configurationId,
+      lines.map((line) => ({
+        variantId: line.variantId,
+        productName: line.productName,
+        variantName: line.variantName,
+        quantity: line.quantity,
+        componentSkus: line.components.map((component) => ({
+          sku: component.sku,
+          quantity: component.quantity,
         })),
-      ),
-      findMissingCartAccessories(
-        configurationId,
-        lines.map((line) => ({
-          variantId: line.variantId,
-          productName: line.productName,
-          variantName: line.variantName,
-          quantity: line.quantity,
-          componentSkus: line.components.map((component) => ({
-            sku: component.sku,
-            quantity: component.quantity,
-          })),
-        })),
-      ),
-    ])
+      })),
+    )
 
     const promotion = await evaluerPromotion(cart.promotionCode, {
       lignes: lines.map((line) => ({ productId: line.productId, totalCents: line.lineTotalCents })),
@@ -241,7 +223,6 @@ export async function getCart(configurationId: string | null = null): Promise<Ca
           ? Math.round((vatCents * (subtotalCents - Math.min(promotion.remiseCents, subtotalCents))) / subtotalCents)
           : vatCents,
       stockIssues,
-      conflicts,
       missingAccessories,
       promotion,
       discountCents: promotion?.ok ? promotion.remiseCents : 0,

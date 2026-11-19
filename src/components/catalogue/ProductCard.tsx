@@ -32,7 +32,6 @@ export function ProductCard({
 }) {
   const multiplePackagings = product.variantCount > 1
   const unavailable = product.availability.state === 'OUT_OF_STOCK'
-  const incompatible = product.fitment === 'INCOMPATIBLE'
 
   return (
     <li className="h-full">
@@ -40,7 +39,6 @@ export function ProductCard({
         href={`/p/${product.slug}`}
         className={cn(
           'group flex h-full flex-col rounded-md border border-line bg-white transition-colors hover:border-line-strong',
-          incompatible && 'opacity-75',
         )}
       >
         {/*
@@ -82,11 +80,15 @@ export function ProductCard({
           {/* Un pack fait pour une autre voiture le dit en clair, sans
               l'alerte orange : il n'y a rien à « vérifier », il n'est pas
               prévu pour le véhicule retenu. */}
-          {product.pourUnAutreVehicule && product.fitment !== 'INCOMPATIBLE' ? (
+          {/* Seule la compatibilité CONFIRMÉE se dit ici. « Compatibilité à
+              confirmer » sortait sur presque toutes les cartes, faute de ligne
+              en base, et « Incompatible » tranchait à la place du client :
+              les deux sont partis le 19 novembre 2026. */}
+          {product.pourUnAutreVehicule ? (
             <Badge tone="neutral" className="w-fit">
               Pour un autre véhicule
             </Badge>
-          ) : product.fitment ? (
+          ) : product.fitment === 'CONFIRMED' ? (
             <FitmentBadge status={product.fitment} short className="w-fit" />
           ) : null}
 
