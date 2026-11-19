@@ -372,10 +372,17 @@ export function IconPin(p: IconProps) {
  * Une étoile en trait fin de 1,6 px ne se lit pas à 16 px : elle devient un
  * petit polygone vide. Or une note se lit d'un coup d'œil ou ne sert à rien.
  */
+/**
+ * L'étoile, seule icône pleine du jeu — les autres sont des traits.
+ *
+ * Pointes arrondies (19 novembre 2026) : l'étoile à angles vifs, reprise des
+ * jeux d'icônes classiques, tranchait avec le reste de la boutique, dont tous
+ * les traits sont arrondis. À 14 px, la différence se voit.
+ */
 export function IconStar(p: IconProps) {
   return (
     <Svg fill="currentColor" stroke="none" {...p}>
-      <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+      <path d="M12 17.27l4.15 2.51c.76.46 1.69-.22 1.49-1.08l-1.1-4.72 3.67-3.18c.67-.58.31-1.68-.57-1.75l-4.83-.41-1.89-4.46c-.34-.81-1.5-.81-1.84 0L9.19 8.63l-4.83.41c-.88.07-1.24 1.17-.57 1.75l3.67 3.18-1.1 4.72c-.2.86.73 1.54 1.49 1.08l4.15-2.51z" />
     </Svg>
   )
 }
