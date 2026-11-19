@@ -15,7 +15,6 @@ import { StockAlertForm } from './StockAlertForm'
 import { cn } from '@/lib/cn'
 import { Alert } from '@/components/ui/Surface'
 import { RoadApprovalNote } from '@/components/ui/Badge'
-import { NoteGoogle } from '@/components/confiance/NoteGoogle'
 import { nomUtileDuConditionnement } from '@/lib/nom-conditionnement'
 import { mesurer } from '@/components/mesure/file'
 import {
@@ -743,16 +742,6 @@ export function BuyBox({
           ) : null}
         </Alert>
       ) : null}
-
-      {/*
-        ---- La note Google, juste sous le bouton ----
-
-        Elle vient après le retour d'ajout au panier, pas avant : une
-        confirmation doit toucher le bouton qui l'a provoquée. Et elle passe
-        devant la livraison et les réassurances, parce qu'elle est le seul
-        argument de ce bloc qui ne vienne pas de la boutique.
-      */}
-      <NoteGoogle className="mt-3.5" />
 
       {/* ---- .shipping : le délai, et le lien vers les conditions ---- */}
       {delivery ? (
