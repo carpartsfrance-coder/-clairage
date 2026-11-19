@@ -104,7 +104,7 @@ export function ProductTitle({
         téléphone le titre est le tout premier bloc : la note y est lue avant
         le prix, avant la photo, avant tout le reste.
 
-        Elle nomme la boutique — « Boutique notée 4,4/5 sur Google » — parce
+        Elle nomme l'entreprise — « Société notée 4,4/5 sur Google » — parce
         qu'à cet endroit des étoiles seules seraient prises pour la note de ce
         produit. Voir `confiance/NoteGoogle.tsx`.
       */}
