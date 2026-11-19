@@ -108,8 +108,9 @@ function Bandeau({ onRepondre }: { onRepondre: (choix: Choix) => void }) {
             <strong className="font-semibold text-slate-ink">
               Mesurer l’efficacité de nos publicités ?
             </strong>{' '}
-            Avec votre accord, nous indiquons à Google les commandes venues de ses annonces, pour
-            savoir lesquelles valent leur coût. Cela dépose des cookies publicitaires.
+            Avec votre accord, nous indiquons à Google les commandes venues de ses annonces, avec
+            une empreinte chiffrée de votre e-mail, pour savoir lesquelles valent leur coût. Cela
+            dépose des cookies publicitaires.
           </p>
           <p className="mt-1">
             Sans votre accord, le site fonctionne à l’identique et sa fréquentation reste mesurée
