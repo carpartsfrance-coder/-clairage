@@ -542,7 +542,7 @@ export function CheckoutForm({
           <MoyensDePaiement className="justify-center" />
 
           {/* Dernière marche avant le paiement : la note y reste, en grand. */}
-          <NoteGoogle className="mt-3 mx-auto" />
+          <NoteGoogle className="mt-3" />
           <p className="text-center text-[11px] leading-[1.7] text-[#6b6f73]">
             Paiement sur la page sécurisée de Mollie : votre numéro de carte ne nous est jamais
             transmis. Produits garantis 5 ans, satisfait ou remboursé 45 jours.

@@ -528,7 +528,7 @@ export default async function PanierPage() {
                   La note sous le bouton de commande : c'est ici que le client
                   compare une dernière fois avec l'autre onglet resté ouvert.
                 */}
-                <NoteGoogle className="mt-3 mx-auto" />
+                <NoteGoogle className="mt-3" />
 
                 {/* .cart-fineprint : centré, 9 px, interligne 1.8. */}
                 <p className="mt-3 text-center text-[9px] leading-[1.8] text-[#8c8c8c]">

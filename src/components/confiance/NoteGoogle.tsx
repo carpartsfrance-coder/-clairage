@@ -5,12 +5,19 @@ import { cn } from '@/lib/cn'
 /**
  * La note Google de l'entreprise, posée là où l'achat se décide.
  *
- * **Pourquoi en gros, et pourquoi là.** Les promesses d'achat (garantie,
+ * **Pourquoi en évidence, et pourquoi là.** Les promesses d'achat (garantie,
  * retours, paiement sécurisé) sont ce que la boutique dit d'elle-même ; la
  * note est ce que d'autres clients en ont dit. C'est le seul argument de la
  * fiche qui ne vienne pas du vendeur, et il ne vaut que s'il se voit : d'où
- * le chiffre en grand, à côté du bouton, et non une mention de plus dans la
+ * les étoiles en grand, à côté du bouton, et non une mention de plus dans la
  * ligne des réassurances.
+ *
+ * **Sans cadre** (relecture de l'exploitant, 19 novembre 2026). La première
+ * version encadrait la note : bordure, fond gris, coins arrondis. Tout le
+ * bloc d'achat est fait de lignes posées les unes sous les autres, sans
+ * aucune boîte — la note y devenait un badge rapporté, collé par-dessus la
+ * fiche. Ce qui lui donne son poids, c'est l'air autour d'elle et la taille
+ * des étoiles, pas une bordure.
  *
  * **Sans lien, volontairement** (consigne de l'exploitant, 19 novembre 2026).
  * Un lien vers la fiche Google sortirait le client du tunnel à la seconde
@@ -41,7 +48,7 @@ export function NoteGoogle({ className }: { className?: string }) {
 
   return (
     /*
-      `role="img"` plus un libellé complet : les étoiles, le « /5 » et la
+      `role="img"` plus un libellé complet : les étoiles, le chiffre et la
       mention forment une seule information. Énumérés un à un par un lecteur
       d'écran, ils donneraient « étoile étoile étoile étoile étoile 4,4 5 avis
       Google » — du bruit à la place d'une note.
@@ -51,25 +58,15 @@ export function NoteGoogle({ className }: { className?: string }) {
       aria-label={`Note de ${note} sur 5 sur Google${
         avisGoogle.nombre ? `, ${avisGoogle.nombre.toLocaleString('fr-FR')} avis` : ''
       }`}
-      className={cn(
-        /* `w-fit` : le cadre épouse la note. Étiré sur toute la largeur sous le
-           bouton, il laissait un grand vide à droite et se lisait comme un
-           encadré inachevé plutôt que comme une distinction. */
-        'flex w-fit items-center gap-3 rounded-[9px] border border-line bg-[#f7f8f8] px-3.5 py-2.5',
-        className,
-      )}
+      className={cn('text-center', className)}
     >
-      <span className="shrink-0 text-[26px] leading-none font-bold tracking-[-0.8px] text-ink">
-        {note}
-        <span className="text-[13px] font-semibold tracking-normal text-muted-strong">/5</span>
-      </span>
-      <span className="min-w-0">
-        {/*
-          Les étoiles exactes : une rangée grise, et la même rangée dorée
-          par-dessus, coupée à la proportion de la note. Arrondir à l'étoile
-          pleine la plus proche afficherait quatre étoiles et demie pour 4,4
-          comme pour 4,6 — autant écrire le chiffre seul.
-        */}
+      {/*
+        Les étoiles exactes : une rangée grise, et la même rangée dorée
+        par-dessus, coupée à la proportion de la note. Arrondir à l'étoile
+        pleine la plus proche afficherait quatre étoiles et demie pour 4,4
+        comme pour 4,6 — autant écrire le chiffre seul.
+      */}
+      <span className="flex justify-center">
         <span className="relative block w-max">
           <Etoiles className="text-[#d9dadb]" />
           <span
@@ -79,7 +76,13 @@ export function NoteGoogle({ className }: { className?: string }) {
             <Etoiles className="text-[#f0a202]" />
           </span>
         </span>
-        <span className="mt-1 block text-[11px] leading-none text-muted-strong">{mention}</span>
+      </span>
+      <span className="mt-1.5 block text-[13px] leading-[1.2] text-muted-strong">
+        <strong className="text-[15px] text-ink">{note} sur 5</strong>
+        <span aria-hidden="true" className="mx-1.5">
+          ·
+        </span>
+        {mention}
       </span>
     </div>
   )
@@ -90,7 +93,7 @@ function Etoiles({ className }: { className?: string }) {
   return (
     <span className={cn('flex w-max gap-0.5', className)} aria-hidden="true">
       {[0, 1, 2, 3, 4].map((rang) => (
-        <IconStar key={rang} className="size-[17px] shrink-0" />
+        <IconStar key={rang} className="size-[23px] shrink-0" />
       ))}
     </span>
   )
