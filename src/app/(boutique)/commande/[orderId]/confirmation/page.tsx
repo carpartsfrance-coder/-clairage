@@ -13,6 +13,7 @@ import { emailIsSimulated } from '@/lib/email'
 import { formatPrice, identity } from '@/lib/identity'
 import { ConversionAchat } from '@/components/consentement/ConversionAchat'
 import { empreinteEmail } from '@/lib/google-ads-serveur'
+import { MesureEtat } from '@/components/mesure/MesureEtat'
 import {
   baliseGoogleAdsConfiguree,
   paiementReportable,
@@ -355,6 +356,13 @@ export default async function Page({
             arrive, le rechargement automatique ci-dessus le fait apparaître.
           */}
           <div hidden data-mesure-etape="commande-payee" />
+          {/*
+            La même vente, en événement chiffré : la page vue ci-dessus sert à
+            l'entonnoir, celui-ci au montant. Même valeur que la conversion
+            Google (TTC, remise déduite, port exclu), pour que les deux
+            chiffres se comparent.
+          */}
+          <MesureEtat nom="commande-payee" value={valeurConversionCents(order)} />
           {/*
             Et la même vente remontée à Google Ads, si et seulement si trois
             conditions tiennent : l'action de conversion existe dans le compte

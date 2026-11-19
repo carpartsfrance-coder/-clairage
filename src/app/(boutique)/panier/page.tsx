@@ -20,6 +20,7 @@ import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { cn } from '@/lib/cn'
 import { appliquerCodePromo, retirerCodePromo } from '@/lib/actions/cart'
+import { MesureEtat } from '@/components/mesure/MesureEtat'
 
 export const metadata: Metadata = {
   title: 'Panier',
@@ -298,6 +299,8 @@ export default async function PanierPage() {
                               name="quantity"
                               value={line.quantity - 1}
                               className={stepButton}
+                              data-mesure={premierRetrait ? 'retrait-panier' : 'quantite-modifiee'}
+                              data-mesure-label={line.productName}
                               aria-label={
                                 premierRetrait
                                   ? `Retirer ${line.productName} du panier`
@@ -318,6 +321,8 @@ export default async function PanierPage() {
                               value={line.quantity + 1}
                               disabled={atLimit || !purchasable}
                               className={stepButton}
+                              data-mesure="quantite-modifiee"
+                              data-mesure-label={line.productName}
                               aria-label={`Augmenter la quantité de ${line.productName}`}
                             >
                               +
@@ -329,6 +334,8 @@ export default async function PanierPage() {
                             name="quantity"
                             value={0}
                             className="inline-flex min-h-11 items-center text-[9px] text-[#949494] underline underline-offset-2 hover:text-brand sm:min-h-0"
+                            data-mesure="retrait-panier"
+                            data-mesure-label={line.productName}
                             aria-label={`Retirer ${line.productName} du panier`}
                           >
                             Supprimer
@@ -480,6 +487,11 @@ export default async function PanierPage() {
                 {/* Code promo : vérifié ici, puis de nouveau à la commande. */}
                 {cart.promotion ? (
                   <div className="mt-3 flex items-center justify-between gap-3 text-[11px]">
+                    {/* Un code refusé est une vente qui hésite : il se mesure. */}
+                    <MesureEtat
+                      nom={cart.promotion.ok ? 'code-promo-accepte' : 'code-promo-refuse'}
+                      label={cart.promotion.ok ? null : cart.promotion.erreur}
+                    />
                     <span className={cart.promotion.ok ? 'text-ok' : 'text-danger'}>
                       {cart.promotion.ok ? `Code ${cart.promotion.code} appliqué.` : cart.promotion.erreur}
                     </span>

@@ -252,7 +252,7 @@ export function HeroFinder({ hero, finder, vehicle = null }: HeroFinderProps) {
                 dont la compatibilité n'est plus vérifiable.
               */}
               <form action="/api/vehicule/retirer" method="post" className="mt-3">
-                <button
+                <button data-mesure="vehicule-retire"
                   type="submit"
                   className="touch-cible inline-flex items-center text-[13px] text-muted-strong underline underline-offset-[3px] transition-colors hover:text-ink"
                 >

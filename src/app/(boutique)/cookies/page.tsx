@@ -141,17 +141,23 @@ export default function Page() {
 
       <Article numero={3} id="mesure" titre="Mesure de fréquentation">
         <p>
-          Pour améliorer le site, nous comptons les pages vues et les liens cliqués : par exemple,
-          combien de visiteurs ouvrent une fiche produit, ou à quelle étape ils quittent la
-          commande. Cette mesure est faite par nous seuls, sans aucun service extérieur.
+          Pour améliorer le site, nous comptons les pages vues, le temps passé sur chacune et
+          jusqu’où elle est lue, les liens et boutons cliqués et l’endroit de la page où le clic
+          a eu lieu, ainsi que quelques gestes : un ajout au panier, un code promo refusé, une
+          recherche sans résultat, un formulaire quitté en cours de route. Par exemple : combien
+          de visiteurs ouvrent une fiche produit, ou à quelle étape ils quittent la commande.
+          Cette mesure est faite par nous seuls, sans aucun service extérieur.
         </p>
         <p>
-          Elle est anonyme : pas de cookie, pas d’adresse IP, aucun lien avec votre compte ou
-          votre commande. Un numéro tiré au hasard est gardé dans l’onglet de votre navigateur
-          pendant la visite, et oublié à sa fermeture ou après 30 minutes sans activité. Nous
-          gardons seulement la taille de l’écran (mobile, tablette ou ordinateur) et le site
-          d’où vous arrivez (un moteur de recherche, une publicité…). Les données sont
-          effacées au bout de 13 mois.
+          Elle est anonyme : pas de cookie, pas d’adresse IP, aucun lien avec votre compte. Un
+          numéro tiré au hasard est gardé dans l’onglet de votre navigateur pendant la visite, et
+          oublié à sa fermeture ou après 30 minutes sans activité. Nous gardons la taille de la
+          fenêtre (pour replacer un clic sur la page) et le site d’où vous arrivez (un moteur de
+          recherche, une publicité…). Ce que vous tapez dans un formulaire n’est jamais
+          enregistré : seulement le nom du dernier champ touché, si vous le quittez avant
+          d’envoyer. Quand vous passez commande, le nom de cette provenance — et lui seul, pas
+          votre parcours — est noté sur la commande, pour savoir quel canal nous amène des
+          clients. Les données de fréquentation sont effacées au bout de 13 mois.
         </p>
         <p>
           Cette mesure respecte les conditions de la CNIL pour être dispensée de consentement.

@@ -31,7 +31,11 @@ export function ResumeFiche({ reference, resume }: { reference: string | null; r
       {resume ? (
         <p className="mt-3 text-[15px] leading-[1.65] text-muted-strong">
           {resume}{' '}
-          <Link href="#en-bref" className="font-semibold text-brand underline underline-offset-2">
+          <Link
+            href="#en-bref"
+            data-mesure="description-depliee"
+            className="font-semibold text-brand underline underline-offset-2"
+          >
             Voir la description complète
           </Link>
         </p>

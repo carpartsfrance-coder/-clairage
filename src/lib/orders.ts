@@ -54,6 +54,11 @@ export type PlaceOrderInput = {
   consents: Record<string, boolean>
   userId?: string | null
   configurationId?: string | null
+  /**
+   * Provenance de la visite qui passe la commande, relevée par la mesure
+   * d'audience. Un nom de canal, jamais un numéro de visite.
+   */
+  source?: string | null
   /** Base des URL de retour, fournie par la requête. */
   origin: string
 }
@@ -240,6 +245,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
             ? { configuration: { connect: { id: input.configurationId } } }
             : {}),
           guestToken: accessToken,
+          source: input.source?.trim() || null,
           cartToken: cart.token,
           email: input.email,
           phone: input.phone ?? null,

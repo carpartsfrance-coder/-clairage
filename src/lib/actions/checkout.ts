@@ -37,6 +37,20 @@ const orderSchema = z.object({
   shippingMethodCode: z.string().trim().min(1, 'Choisissez un mode de livraison'),
   acceptTerms: z.literal(true, { message: 'Les conditions de vente doivent être acceptées' }),
   acceptNewsletter: z.boolean().default(false),
+  /*
+    Provenance relevée par la mesure d'audience et recopiée par le navigateur
+    (components/mesure/ProvenanceDeLaVisite). Elle ne sert qu'à savoir quel
+    canal rapporte, et ne vaut rien pour la commande elle-même : un champ
+    absent, vide ou fantaisiste ne doit donc jamais faire échouer une vente —
+    d'où le `catch` plutôt qu'une erreur de validation.
+  */
+  source: z
+    .string()
+    .trim()
+    .max(80)
+    .optional()
+    .nullable()
+    .catch(null),
 })
 
 export type CheckoutState = {
@@ -83,6 +97,7 @@ export async function submitOrder(
     shippingMethodCode: formData.get('shippingMethodCode'),
     acceptTerms: formData.get('acceptTerms') === 'on',
     acceptNewsletter: formData.get('acceptNewsletter') === 'on',
+    source: formData.get('source') || null,
   })
 
   if (!parsed.success) {
@@ -120,6 +135,7 @@ export async function submitOrder(
       newsletter: data.acceptNewsletter,
     },
     configurationId: store.get(VEHICLE_COOKIE)?.value ?? null,
+    source: data.source ?? null,
     origin,
   })
 

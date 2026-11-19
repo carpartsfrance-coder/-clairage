@@ -13,6 +13,8 @@ import type { PrismaClient } from '@prisma/client'
  * | Adresse IP du journal d'administration   | après 30 jours (l'entrée reste)      |
  * | Liens de mot de passe oublié             | 1 jour après leur expiration         |
  * | Paniers abandonnés                       | à leur expiration (cookie de 30 j)   |
+ * | Mesure d'audience                        | après 13 mois                        |
+ * | Trace du pointeur (mode détaillé)        | après 7 jours                        |
  * | Alertes de retour en stock               | 30 jours après l'envoi ou le retrait |
  * | Compteurs anti-abus                      | 1 jour après leur fenêtre            |
  *
@@ -47,6 +49,16 @@ export async function purgerDonnees(
   bilan.mesure = (
     await prisma.visitEvent.deleteMany({
       where: { at: { lt: new Date(s.maintenant.getTime() - 395 * 24 * 3600 * 1000) } },
+    })
+  ).count
+
+  // Trace fine du pointeur (mode détaillé, navigateur de l'exploitant
+  // seulement) : sept jours. Elle sert à rejouer une visite récente pour
+  // mettre une page au point ; au-delà elle ne dit plus rien, et c'est la
+  // table qui grossit le plus vite.
+  bilan.traces = (
+    await prisma.visitTrace.deleteMany({
+      where: { at: { lt: new Date(s.maintenant.getTime() - 7 * 24 * 3600 * 1000) } },
     })
   ).count
 

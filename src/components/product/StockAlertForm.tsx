@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { MesureEtat } from '@/components/mesure/MesureEtat'
 import { requestStockAlert, type StockAlertState } from '@/lib/actions/stock-alert'
 import { IconCheckCircle, IconMail } from '@/components/ui/icons'
 import { MentionDonnees } from '@/components/legal/MentionDonnees'
@@ -35,10 +36,13 @@ export function StockAlertForm({
 
   if (state.ok) {
     return (
-      <div className="flex items-start gap-2.5 rounded-md border border-ok-border bg-ok-soft p-3 text-[11px] text-[#2a6441]">
-        <IconCheckCircle className="mt-px size-4 shrink-0" />
-        <p>{state.message}</p>
-      </div>
+      <>
+        <MesureEtat nom="alerte-stock-posee" />
+        <div className="flex items-start gap-2.5 rounded-md border border-ok-border bg-ok-soft p-3 text-[11px] text-[#2a6441]">
+          <IconCheckCircle className="mt-px size-4 shrink-0" />
+          <p>{state.message}</p>
+        </div>
+      </>
     )
   }
 

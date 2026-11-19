@@ -1,5 +1,6 @@
 'use client'
 
+import { mesurer } from '@/components/mesure/file'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/cn'
@@ -183,6 +184,16 @@ export function VehicleSelector({
       })
       const data = (await response.json()) as { redirect?: string; error?: string }
       if (!response.ok) throw new Error(data.error ?? 'Sélection impossible')
+      mesurer('vehicule-choisi', {
+        label: [
+          makes.find((m) => m.id === makeId)?.name,
+          models.find((m) => m.id === modelId)?.name,
+          year,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        urgent: true,
+      })
       onDone?.()
       router.push(data.redirect ?? '/vehicule/resultats')
       router.refresh()

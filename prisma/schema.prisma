@@ -404,23 +404,23 @@ enum ReviewStatus {
 /// Fichier stocké durablement (stockage objet S3-compatible), jamais sur le
 /// disque éphémère du serveur Render.
 model Media {
-  id         String      @id @default(cuid())
-  storageKey String      @unique
-  url        String
-  mimeType   String
-  width      Int?
-  height     Int?
-  sizeBytes  Int?
+  id          String      @id @default(cuid())
+  storageKey  String      @unique
+  url         String
+  mimeType    String
+  width       Int?
+  height      Int?
+  sizeBytes   Int?
   /// Texte alternatif, obligatoire côté admin pour les visuels de contenu.
-  alt        String?
+  alt         String?
   /// Distingue une photo réelle d'une illustration ou d'un rendu simulé.
-  nature     MediaNature @default(UNSPECIFIED)
-  caption    String?
-  isDemo     Boolean     @default(false)
+  nature      MediaNature @default(UNSPECIFIED)
+  caption     String?
+  isDemo      Boolean     @default(false)
   /// Date de pose du filigrane LEDVROOM (rendus seulement) ; nul = pas encore posé.
   filigraneAt DateTime?
-  createdAt  DateTime    @default(now())
-  createdBy  String?
+  createdAt   DateTime    @default(now())
+  createdBy   String?
 
   products                ProductMedia[]
   categoryHeroes          Category[]          @relation("CategoryHero")
@@ -888,6 +888,19 @@ model Order {
   consents     Json?
   customerNote String?
 
+  /// D'où venait la visite qui a passé la commande (« google (publicité) »,
+  /// « direct », un nom de domaine…), relevé par la mesure d'audience et
+  /// recopié par le formulaire de commande.
+  ///
+  /// C'est le seul pont entre la mesure et les ventes, et il est volontairement
+  /// à sens unique : on garde le NOM d'une provenance, jamais le numéro de la
+  /// visite. La commande ne permet donc pas de retrouver le parcours anonyme,
+  /// et le parcours anonyme ne permet pas de retrouver la commande — l'un et
+  /// l'autre restent ce qu'ils sont. Ce qu'on y gagne : le chiffre d'affaires
+  /// par provenance, mesuré chez nous, sans dépendre de ce que Google veut
+  /// bien nous dire.
+  source String?
+
   placedAt    DateTime?
   cancelledAt DateTime?
   createdAt   DateTime  @default(now())
@@ -1333,21 +1346,22 @@ model EmailLog {
   @@index([template, createdAt])
 }
 
-/// Mesure d'audience du site, anonyme et sans cookie (lib/mesure.ts).
-/// Une ligne par page vue ou par clic. Aucune adresse IP, aucun identifiant
-/// de compte : `visit` est un numéro tiré au hasard pour un onglet, oublié à
-/// sa fermeture ou après 30 minutes sans activité.
+/// Mesure d'audience du site, anonyme et sans cookie (components/mesure/).
+/// Une ligne par page vue, par sortie de page, par clic ou par événement
+/// métier. Aucune adresse IP, aucun identifiant de compte : `visit` est un
+/// numéro tiré au hasard pour un onglet, oublié à sa fermeture ou après
+/// 30 minutes sans activité.
 model VisitEvent {
   id     String   @id @default(cuid())
   at     DateTime @default(now())
   visit  String
-  /// page | click
+  /// page | sortie | click | event
   kind   String
   /// Chemin de la page, sans paramètres.
   path   String
   /// Lien cliqué : chemin sur le site, ou domaine d'un site extérieur.
   target String?
-  /// Texte du lien ou du bouton cliqué.
+  /// Texte du lien ou du bouton cliqué, ou précision d'un événement métier.
   label  String?
   /// Partie de la page où se trouvait le clic (en-tête, menu, titre de section…).
   zone   String?
@@ -1358,7 +1372,67 @@ model VisitEvent {
   /// mobile | tablette | ordinateur
   device String?
 
+  /// Nom stable d'un événement métier (`kind = 'event'`), pris dans la liste
+  /// close de lib/mesure-evenements.ts. Un nom permet de suivre un geste à
+  /// travers les refontes, là où le texte d'un bouton change tout le temps.
+  name   String?
+  /// Le chiffre qui accompagne l'événement : un prix en centimes pour un
+  /// ajout au panier, une quantité, un nombre de résultats.
+  value  Int?
+  /// Temps réellement passé sur la page, en millisecondes, onglet au premier
+  /// plan seulement (`kind = 'sortie'`).
+  ms     Int?
+  /// Part de la hauteur de page atteinte au défilement, en pourcentage
+  /// (`kind = 'sortie'`).
+  scroll Int?
+  /// Position du clic dans la page entière, en pixels (coin haut-gauche du
+  /// document, défilement compris) : c'est ce qui permet de reposer les clics
+  /// sur la page dans la carte des clics.
+  x      Int?
+  y      Int?
+  /// Largeur et hauteur de la fenêtre au moment du geste. La mise en page
+  /// change avec la largeur : sans elle, un point de clic ne veut rien dire.
+  w      Int?
+  h      Int?
+
   @@index([at])
   @@index([visit, at])
   @@index([kind, at])
+  @@index([name, at])
+  @@index([path, kind, at])
+}
+
+/// Trace fine du pointeur : une ligne tous les 150 ms de mouvement.
+///
+/// **Enregistrée uniquement sur les navigateurs où l'exploitant a allumé le
+/// mode détaillé** depuis /admin/statistiques (une clé dans le stockage local
+/// de CE navigateur, rien d'autre). Aucun visiteur n'est tracé de cette façon
+/// sans que quelqu'un ait appuyé sur le bouton depuis le back-office.
+///
+/// C'est volontairement une table à part : elle grossit vite, elle se purge à
+/// sept jours, et elle ne doit jamais alourdir les requêtes de statistiques.
+model VisitTrace {
+  id    String   @id @default(cuid())
+  at    DateTime @default(now())
+  visit String
+  /// Chemin de la page parcourue.
+  path  String
+  /// move : le pointeur bouge · down : un appui (clic, toucher) ·
+  /// scroll : la fenêtre défile (`y` est alors le haut de la fenêtre dans la
+  /// page, `x` vaut 0). Le défilement est ce qui permet de rejouer un
+  /// parcours sur téléphone, où le pointeur n'existe qu'au moment du toucher.
+  kind  String   @default("move")
+  /// Millisecondes écoulées depuis l'arrivée sur la page.
+  t     Int
+  /// Position du pointeur dans la page entière, en pixels.
+  x     Int
+  y     Int
+  /// Taille de la fenêtre, pour replacer les points à l'échelle.
+  w     Int
+  h     Int
+  /// Hauteur totale du document : sert à savoir ce qui était atteignable.
+  doc   Int
+
+  @@index([visit, at])
+  @@index([at])
 }

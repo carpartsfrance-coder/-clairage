@@ -16,6 +16,7 @@ import { cn } from '@/lib/cn'
 import { Alert } from '@/components/ui/Surface'
 import { RoadApprovalNote } from '@/components/ui/Badge'
 import { nomUtileDuConditionnement } from '@/lib/nom-conditionnement'
+import { mesurer } from '@/components/mesure/file'
 import {
   IconCart,
   IconMinus,
@@ -214,6 +215,46 @@ export function BuyBox({
     [accessories, acceptedAccessories],
   )
 
+  /*
+    Une rupture vue est un fait, pas un clic : personne ne clique pour
+    signaler qu'un produit manque, il repart. Sans cette ligne, les ruptures
+    n'apparaissent nulle part dans la mesure — alors que ce sont des visites
+    payées qui arrivent sur une impasse. Émise une fois par variante vue, et
+    non à chaque rendu.
+  */
+  const ruptureVue = useRef<string | null>(null)
+  useEffect(() => {
+    if (!selected) return
+    if (selected.availability.state !== 'OUT_OF_STOCK') return
+    if (ruptureVue.current === selected.id) return
+    ruptureVue.current = selected.id
+    mesurer('rupture-vue', { label: `${productName} — ${selected.name}` })
+  }, [selected, productName])
+
+  /*
+    Le verdict de compatibilité, tel que le visiteur le lit.
+
+    C'est le cœur de la promesse du site : « vérifié pour votre véhicule ».
+    Savoir combien de fiches affichent « compatible », combien affichent
+    « incompatible » et combien n'ont rien à dire vaut plus que n'importe quel
+    taux de clic — un « incompatible » est une visite payée qui ne pouvait pas
+    acheter, et un « inconnue » est une promesse non tenue.
+  */
+  const verdictVu = useRef<string | null>(null)
+  useEffect(() => {
+    if (!selected || !vehicleLabel) return
+    const verdict =
+      selected.fitment.status === 'CONFIRMED'
+        ? 'compatible'
+        : selected.fitment.status === 'INCOMPATIBLE'
+          ? 'incompatible'
+          : 'inconnue'
+    const repere = `${selected.id}:${verdict}`
+    if (verdictVu.current === repere) return
+    verdictVu.current = repere
+    mesurer('verif-compatibilite', { label: verdict })
+  }, [selected, vehicleLabel])
+
   if (!selected) return null
 
   const total = selected.priceCents + accessoriesTotal
@@ -309,10 +350,19 @@ export function BuyBox({
           tone: 'ok',
           text: [result.message ?? 'Ajouté au panier.', result.livraison].filter(Boolean).join(' '),
         })
+        /*
+          La mesure est posée ICI, sur le résultat, et non sur le clic du
+          bouton. Un clic sur « Ajouter au panier » se produit aussi quand
+          l'ajout échoue — rupture, quantité au-dessus du stock — et les deux
+          comptés ensemble font croire à un panier qui se remplit alors qu'il
+          se vide.
+        */
+        mesurer('ajout-panier', { label: productName, value: total * quantite })
         // Rafraîchit le compteur du header, qui est rendu côté serveur.
         router.refresh()
       } else {
         setFeedback({ tone: 'danger', text: result.error })
+        mesurer('ajout-panier-refuse', { label: result.error })
       }
     })
   }
@@ -896,14 +946,20 @@ export function BuyBox({
       {/*
         .sticky-buy — posée en bas en mobile, révélée au défilement au-delà du
         basculement. Même fonction d'ajout que le bouton principal.
+
+        Elle se pose AU-DESSUS du bandeau de consentement tant qu'il est
+        affiché (`--hauteur-bandeau`, publiée par Consentement.tsx) : le
+        bandeau la recouvrait entièrement sur téléphone.
+        La marge du bas d'iPhone (safe-area) n'est due que si la barre touche
+        le bas de l'écran : posée sur le bandeau, c'est lui qui la porte.
       */}
       <div
         className={cn(
-          'fixed inset-x-0 bottom-0 z-20 border-t border-[#e1e1e1] bg-white/95 shadow-[0_-6px_20px_rgb(17_18_20/0.08)] backdrop-blur-xl transition-[translate] duration-200',
+          'fixed inset-x-0 bottom-[var(--hauteur-bandeau,0px)] z-20 border-t border-[#e1e1e1] bg-white/95 shadow-[0_-6px_20px_rgb(17_18_20/0.08)] backdrop-blur-xl transition-[translate] duration-200',
           barreVisible ? 'translate-y-0' : 'max-fiche:translate-y-0 fiche:translate-y-[110%]',
         )}
       >
-        <div className="container-page flex min-h-[76px] items-center justify-between gap-3.5 pb-[env(safe-area-inset-bottom)] fiche:min-h-[78px] fiche:gap-6">
+        <div className="container-page flex min-h-[76px] items-center justify-between gap-3.5 pb-[max(0px,calc(env(safe-area-inset-bottom)-var(--hauteur-bandeau,0px)))] fiche:min-h-[78px] fiche:gap-6">
           {/* .sticky-product : masqué en mobile, où la place manque. */}
           <div className="hidden items-center gap-3 fiche:flex">
             {thumbnail ? (

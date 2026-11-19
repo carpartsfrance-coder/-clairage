@@ -8,6 +8,7 @@ import { CART_COOKIE, VEHICLE_COOKIE } from '../session'
 import { newCartToken, sellableQuantity } from '../cart'
 import { getDeliveryTeaser } from '../shipping'
 import { formatPrice } from '../identity'
+import { getCurrentUser } from '../auth/session'
 
 /**
  * Actions du panier.
@@ -45,10 +46,23 @@ const addSchema = z.object({
 async function getOrCreateCart() {
   const store = await cookies()
   const existing = store.get(CART_COOKIE)?.value
+  /*
+    Un panier rempli par un client connecté lui est rattaché. La colonne
+    existait sans jamais être remplie : l'écran des paniers
+    (/admin/statistiques/paniers) ne pouvait donc nommer personne, même un
+    client identifié. Un visiteur anonyme, lui, reste anonyme — rien ne
+    change pour lui. Un panier déjà rattaché ne change pas de compte.
+  */
+  const user = await getCurrentUser()
 
   if (existing) {
     const cart = await prisma.cart.findUnique({ where: { token: existing } })
-    if (cart) return cart
+    if (cart) {
+      if (user && !cart.userId) {
+        return prisma.cart.update({ where: { id: cart.id }, data: { userId: user.id } })
+      }
+      return cart
+    }
   }
 
   const token = newCartToken()
@@ -59,6 +73,7 @@ async function getOrCreateCart() {
       // Le véhicule est mémorisé sur le panier : il sert à signaler les
       // conflits si le client en change ensuite.
       configurationId: configurationId || null,
+      userId: user?.id ?? null,
       expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
     },
   })

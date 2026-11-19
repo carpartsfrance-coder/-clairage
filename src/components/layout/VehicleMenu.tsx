@@ -170,7 +170,7 @@ export function VehicleMenu({
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 text-[14px] text-muted-strong">
                     <span className="truncate">Actuel : {vehicle.label}</span>
                     <form action="/api/vehicule/retirer" method="post" className="inline">
-                      <button type="submit" className="font-semibold text-muted-strong underline underline-offset-2 hover:text-danger">
+                      <button data-mesure="vehicule-retire" type="submit" className="font-semibold text-muted-strong underline underline-offset-2 hover:text-danger">
                         Retirer
                       </button>
                     </form>
