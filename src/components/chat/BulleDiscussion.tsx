@@ -10,7 +10,7 @@ import {
   type MessageVu,
 } from '@/lib/chat'
 import { mesurer, visiteEnCours } from '@/components/mesure/file'
-import { IconChat, IconClose, IconSend } from '@/components/ui/icons'
+import { IconClose, IconSend } from '@/components/ui/icons'
 import { CarteConseil } from './CarteConseil'
 
 /**
@@ -66,6 +66,38 @@ const RELECTURE_OUVERTE_MS = 4_000
 const RELECTURE_FERMEE_MS = 12_000
 
 const heure = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' })
+
+/**
+ * Le visage de la discussion.
+ *
+ * **C'est une illustration, pas un membre de l'équipe.** La photo a été
+ * générée avec Nano Banana (Gemini) le 20 novembre 2026, à la demande de
+ * l'exploitant : un visage donne à la bulle l'air d'une conversation et non
+ * d'un formulaire. Comme elle ne représente personne de réel, elle ne porte
+ * jamais de prénom ni de légende qui la présenterait comme « la personne qui
+ * vous répond » — la fenêtre promet un humain, elle ne doit pas lui inventer
+ * une identité. Le jour où une vraie photo de l'équipe existe, il suffit de
+ * remplacer le fichier (160 × 160, WebP), sans toucher au code.
+ *
+ * Décorative pour les lecteurs d'écran (`alt=""`) : le texte à côté dit déjà
+ * tout ce qu'elle dit.
+ */
+const PORTRAIT = '/equipe/conseiller.webp'
+
+function Portrait({ taille, className }: { taille: number; className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- 5 Ko, déjà à la bonne taille
+    <img
+      src={PORTRAIT}
+      alt=""
+      width={taille}
+      height={taille}
+      decoding="async"
+      style={{ width: taille, height: taille }}
+      className={cn('block shrink-0 rounded-full object-cover', className)}
+    />
+  )
+}
 
 function lire(cle: string): string | null {
   try {
@@ -456,17 +488,24 @@ export function BulleDiscussion({
           role="status"
           style={{ bottom: `calc(${bas} + 60px)` }}
           className={cn(
-            'fixed right-4 z-30 w-[min(280px,calc(100vw-32px))] fiche:right-6',
+            'fixed right-4 z-30 w-[min(308px,calc(100vw-32px))] fiche:right-6',
             invitationVisible ? 'motion-safe:animate-[invitation-chat_240ms_ease-out]' : 'invisible',
           )}
         >
           <div className="relative rounded-2xl border border-line bg-white py-3 pr-9 pl-3.5 shadow-[0_12px_32px_rgb(17_18_20/0.18)]">
-            <button type="button" onClick={() => ouvrir('invitation')} className="block text-left">
-              <span className="block text-[14px] leading-snug font-semibold text-ink">
-                Un doute sur la compatibilité avec votre {vehicule ?? 'véhicule'} ?
-              </span>
-              <span className="mt-1 block text-[12.5px] leading-snug text-muted-strong">
-                Posez-nous la question : une personne vous répond ici, en direct.
+            <button
+              type="button"
+              onClick={() => ouvrir('invitation')}
+              className="flex items-start gap-3 text-left"
+            >
+              <Portrait taille={40} className="mt-0.5" />
+              <span className="min-w-0">
+                <span className="block text-[14px] leading-snug font-semibold text-ink">
+                  Un doute sur la compatibilité avec votre {vehicule ?? 'véhicule'} ?
+                </span>
+                <span className="mt-1 block text-[12.5px] leading-snug text-muted-strong">
+                  Posez-nous la question : une personne vous répond ici, en direct.
+                </span>
               </span>
             </button>
             <button
@@ -499,12 +538,12 @@ export function BulleDiscussion({
         aria-controls="discussion"
         style={{ bottom: bas }}
         className={cn(
-          'fixed right-4 z-30 flex h-12 items-center gap-2 rounded-full bg-ink pr-[18px] pl-3.5 text-[14px] font-semibold text-white shadow-[0_10px_28px_rgb(17_18_20/0.28)] transition-[background-color,bottom,opacity,visibility] duration-200 hover:bg-black fiche:right-6',
+          'fixed right-4 z-30 flex h-12 items-center gap-2.5 rounded-full bg-ink pr-[18px] pl-[7px] text-[14px] font-semibold text-white shadow-[0_10px_28px_rgb(17_18_20/0.28)] transition-[background-color,bottom,opacity,visibility] duration-200 hover:bg-black fiche:right-6',
           ecart === 'cachee' && 'invisible opacity-0',
           ouvert && 'hidden',
         )}
       >
-        <IconChat className="size-[22px] shrink-0" />
+        <Portrait taille={34} className="ring-2 ring-white/25" />
         Une question ?
         {nonLus > 0 ? (
           <span
@@ -530,8 +569,8 @@ export function BulleDiscussion({
       >
         {/* ---- En-tête : qui répond, et s'il est là ---- */}
         <div className="flex items-start gap-3 border-b border-line px-4 py-3.5">
-          <span className="relative grid size-10 shrink-0 place-items-center rounded-full bg-surface-paper text-ink">
-            <IconChat className="size-5" />
+          <span className="relative shrink-0">
+            <Portrait taille={40} />
             <i
               aria-hidden="true"
               className={cn(
@@ -580,25 +619,34 @@ export function BulleDiscussion({
               {messages.map((m) => (
                 <li
                   key={m.id}
-                  className={cn('flex flex-col', m.de === 'client' ? 'items-end' : 'items-start')}
+                  className={cn('flex gap-2', m.de === 'client' ? 'justify-end' : 'justify-start')}
                 >
-                  {m.texte ? (
-                    <p
-                      className={cn(
-                        'max-w-[85%] rounded-2xl px-3.5 py-2 text-[14px] leading-snug break-words whitespace-pre-line',
-                        m.de === 'client'
-                          ? 'rounded-br-md bg-ink text-white'
-                          : 'rounded-bl-md bg-surface-paper text-ink',
-                      )}
-                    >
-                      {m.texte}
-                    </p>
-                  ) : null}
-                  {m.produit ? <CarteConseil carte={m.produit} /> : null}
-                  <span className="mt-1 px-1 text-[11px] text-muted">
-                    {m.de === 'equipe' ? `${identity.name} · ` : ''}
-                    {heure.format(new Date(m.le))}
-                  </span>
+                  {/* Les réponses de l'équipe portent le visage, comme dans une messagerie. */}
+                  {m.de === 'equipe' ? <Portrait taille={26} className="mt-1" /> : null}
+                  <div
+                    className={cn(
+                      'flex min-w-0 flex-1 flex-col',
+                      m.de === 'client' ? 'items-end' : 'items-start',
+                    )}
+                  >
+                    {m.texte ? (
+                      <p
+                        className={cn(
+                          'max-w-[85%] rounded-2xl px-3.5 py-2 text-[14px] leading-snug break-words whitespace-pre-line',
+                          m.de === 'client'
+                            ? 'rounded-br-md bg-ink text-white'
+                            : 'rounded-bl-md bg-surface-paper text-ink',
+                        )}
+                      >
+                        {m.texte}
+                      </p>
+                    ) : null}
+                    {m.produit ? <CarteConseil carte={m.produit} /> : null}
+                    <span className="mt-1 px-1 text-[11px] text-muted">
+                      {m.de === 'equipe' ? `${identity.name} · ` : ''}
+                      {heure.format(new Date(m.le))}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ol>
