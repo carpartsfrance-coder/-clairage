@@ -290,16 +290,46 @@ export function ProductGallery({
                   en petit gris sous la photo (.visual-note ci-dessous). */}
               {(current.caption ?? current.thumbLabel) &&
               !/^Visuel d.illustration/i.test(current.caption ?? current.thumbLabel ?? '') ? (
-                <span className="absolute top-3 left-3 z-[2] hidden max-w-[75%] rounded-full fiche:block bg-white px-3 py-1.5 text-[12px] font-bold text-ink shadow-soft fiche:top-4 fiche:left-4">
+                <span className="pointer-events-none absolute top-3 left-3 z-[2] hidden max-w-[75%] rounded-full fiche:block bg-white px-3 py-1.5 text-[12px] font-bold text-ink shadow-soft fiche:top-4 fiche:left-4">
                   {current.caption ?? current.thumbLabel}
                 </span>
               ) : null}
+
+              {/*
+                Toucher le visuel l'agrandit.
+
+                Le fil d'une visite venue d'une publicité (19 novembre 2026) a
+                montré le geste : le client touche la photo, rien ne réagit, il
+                attend une demi-minute, puis finit par zoomer la page avec ses
+                doigts faute de mieux, et repart. Sur un téléphone, on touche
+                l'image — pas une pastille de 44 px dans un coin.
+
+                Cette surface double le bouton loupe, elle ne le remplace pas :
+                la loupe reste le repère qui annonce l'agrandissement, et reste
+                seule dans l'arbre d'accessibilité, où deux commandes pour un
+                même geste ne seraient qu'un doublon à parcourir. D'où le
+                `aria-hidden` et le `tabIndex` à -1 : le clavier et les lecteurs
+                d'écran passent par le bouton, le doigt par la photo.
+
+                Les deux portent le même événement de mesure, distingués par
+                leur libellé : le back-office dira lequel sert vraiment.
+              */}
+              <button
+                type="button"
+                onClick={() => setZoomed(true)}
+                data-mesure="photo-zoomee"
+                data-mesure-label="Visuel"
+                aria-hidden="true"
+                tabIndex={-1}
+                className="absolute inset-0 z-[1] cursor-zoom-in"
+              />
 
               {/* .zoom-button — 44 px, la taille d'un doigt. */}
               <button
                 type="button"
                 onClick={() => setZoomed(true)}
                 data-mesure="photo-zoomee"
+                data-mesure-label="Bouton loupe"
                 aria-label="Agrandir le visuel"
                 className="absolute top-2 right-2 z-[2] grid size-11 place-items-center rounded-full bg-white text-ink shadow-soft fiche:top-3 fiche:right-3"
               >
