@@ -59,6 +59,17 @@ export const RULES = {
   */
   stockAlert: { max: 20, windowSeconds: 60 * 60, blockSeconds: 30 * 60 },
   /*
+    Discussion en direct : ouverture d'une discussion, puis chaque message.
+
+    Comme le contact, un visiteur anonyme écrit en base — mais ici il converse.
+    Une vraie discussion tient en une vingtaine de messages ; soixante par
+    heure laisse toute la marge à un client bavard et arrête un script. Les
+    ouvertures restent rares : un visiteur n'a qu'une discussion par
+    navigateur, en ouvrir cinq en une heure n'est pas un usage normal.
+  */
+  chatOuverture: { max: 5, windowSeconds: 60 * 60, blockSeconds: 60 * 60 },
+  chatMessage: { max: 60, windowSeconds: 60 * 60, blockSeconds: 30 * 60 },
+  /*
     Webhook de paiement.
 
     L'URL est publique et devinable, et le webhook de Mollie n'est pas signé :

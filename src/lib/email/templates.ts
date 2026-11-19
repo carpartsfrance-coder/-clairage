@@ -30,6 +30,8 @@ export type TemplateKey =
   | 'sav.retour'
   | 'stock.retour'
   | 'equipe.demande'
+  | 'chat.message'
+  | 'chat.reponse'
 
 export type RenderedEmail = { subject: string; html: string; text: string }
 
@@ -425,6 +427,89 @@ export const TEMPLATES: Record<TemplateKey, TemplateDefinition> = {
       subject: 'Question sur un produit',
       email: 'client@exemple.fr',
       message: 'Bonjour, le pack veilleuses convient-il à ma Clio 4 phase 2 ?',
+    },
+  },
+
+  /*
+    Discussion en direct (bulle des fiches produit et du panier).
+
+    L'alerte à l'équipe est écrite pour un téléphone : le produit dans le
+    sujet, la question en premier, le contexte ensuite. Elle rappelle que le
+    visiteur attend probablement sur la page — c'est ce qui distingue une
+    discussion d'une demande SAV, et ce qui justifie d'ouvrir tout de suite.
+  */
+  'chat.message': {
+    key: 'chat.message',
+    label: 'Nouvelle question en direct (équipe)',
+    trigger:
+      "Au premier message d'une discussion, puis à chaque relance du visiteur une fois la discussion lue, et au plus tous les quarts d'heure sinon. Envoyé à l'adresse de contact de la boutique.",
+    subject: (vars) =>
+      `Question en direct${str(vars, 'produit') ? ` — ${str(vars, 'produit')}` : ''}`,
+    preheader: (vars) => str(vars, 'message').slice(0, 90),
+    blocks: (vars) => [
+      { type: 'paragraph', text: str(vars, 'message') },
+      {
+        type: 'facts',
+        rows: [
+          ...(str(vars, 'produit') ? ([['Produit regardé', str(vars, 'produit')]] as Array<[string, string]>) : []),
+          ...(str(vars, 'vehicule') ? ([['Véhicule choisi', str(vars, 'vehicule')]] as Array<[string, string]>) : []),
+          ...(str(vars, 'panier') ? ([['Panier', str(vars, 'panier')]] as Array<[string, string]>) : []),
+          ...(str(vars, 'page') ? ([['Page', str(vars, 'page')]] as Array<[string, string]>) : []),
+          ['E-mail laissé', str(vars, 'email') || 'aucun pour l’instant'],
+        ],
+      },
+      {
+        type: 'button',
+        label: 'Répondre',
+        href: `${siteConfig.url}/admin/discussions/${str(vars, 'id')}`,
+      },
+      {
+        type: 'note',
+        text: "Le visiteur est sans doute encore sur la page : une réponse dans les minutes qui viennent s'affiche directement chez lui. S'il est parti et a laissé son adresse, elle lui sera envoyée par e-mail.",
+      },
+    ],
+    sample: {
+      id: 'exemple',
+      message: 'Bonjour, est-ce que ce kit va sur ma Clio 4 de 2015 ? Il faut un décodeur ?',
+      produit: 'Kit LED H7 blanc pur 6000K',
+      vehicule: 'Renault Clio IV · 2012–2019',
+      panier: '1 × Kit LED H7 blanc pur 6000K (La paire)',
+      page: '/p/kit-led-h7-blanc-pur-6000k',
+      email: '',
+    },
+  },
+
+  'chat.reponse': {
+    key: 'chat.reponse',
+    label: 'Réponse à une question en direct',
+    trigger:
+      "Quand l'équipe répond à une discussion alors que le visiteur a quitté la page, s'il a laissé son adresse.",
+    subject: () => `${identity.name} — réponse à votre question`,
+    preheader: (vars) => str(vars, 'message').slice(0, 90),
+    blocks: (vars) => [
+      { type: 'paragraph', text: 'Bonjour,' },
+      {
+        type: 'paragraph',
+        text: str(vars, 'produit')
+          ? `Vous nous avez posé une question sur ${str(vars, 'produit')}. Voici notre réponse :`
+          : 'Vous nous avez posé une question sur notre site. Voici notre réponse :',
+      },
+      { type: 'paragraph', text: str(vars, 'message') },
+      {
+        type: 'button',
+        label: 'Reprendre la discussion',
+        href: str(vars, 'lien', siteConfig.url),
+      },
+      {
+        type: 'note',
+        text: 'La discussion vous attend sur la page, dans la bulle en bas de l’écran.',
+      },
+    ],
+    sample: {
+      message:
+        "Oui, il va sur votre Clio IV. Sur ce modèle, un décodeur n'est pas nécessaire : le kit se branche à la place des ampoules d'origine.",
+      produit: 'Kit LED H7 blanc pur 6000K',
+      lien: `${siteConfig.url}/p/kit-led-h7-blanc-pur-6000k`,
     },
   },
 }

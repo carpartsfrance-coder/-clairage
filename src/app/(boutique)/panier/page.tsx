@@ -19,6 +19,7 @@ import { IconCart } from '@/components/ui/icons'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { cn } from '@/lib/cn'
+import { BulleDiscussion } from '@/components/chat/BulleDiscussion'
 import { appliquerCodePromo, retirerCodePromo } from '@/lib/actions/cart'
 import { MesureEtat } from '@/components/mesure/MesureEtat'
 
@@ -551,6 +552,13 @@ export default async function PanierPage() {
           libelleFranchise="Avec ce pack : livraison offerte"
         />
       ) : null}
+
+      {/*
+        La question en direct : pas de barre fixe ici, la bulle se pose en bas.
+        Panier vide compris — une discussion commencée sur une fiche doit
+        rester joignable de page en page.
+      */}
+      <BulleDiscussion />
     </>
   )
 }

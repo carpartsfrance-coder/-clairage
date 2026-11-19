@@ -78,6 +78,14 @@ export const EVENEMENTS = {
   'description-depliee': { libelle: 'A déplié la description' },
   'option-changee': { libelle: 'A changé d’option', precision: 'l’option' },
 
+  /* ------------------------------ La discussion --------------------------- */
+  'chat-ouvert': { libelle: 'A ouvert la discussion' },
+  'chat-message': {
+    libelle: 'A posé une question en direct',
+    precision: 'premier message ou suite',
+    intention: true,
+  },
+
   /* ------------------------------ La commande ----------------------------- */
   'code-promo-accepte': { libelle: 'Code promo accepté' },
   'code-promo-refuse': { libelle: 'Code promo refusé' },

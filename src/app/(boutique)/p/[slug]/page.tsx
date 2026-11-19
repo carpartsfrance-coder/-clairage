@@ -55,6 +55,7 @@ import {
   IconWrench,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
+import { BulleDiscussion } from '@/components/chat/BulleDiscussion'
 import { estComparatifAvantApres } from '@/lib/media-comparatif'
 import { estEffetXenon } from '@/lib/effet-xenon'
 
@@ -1011,6 +1012,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             avant ouverture.
           </p>
         ) : null}
+
+        {/*
+          La question en direct : posée au-dessus de la barre d'achat fixe
+          (76 px sur téléphone, 78 px sur grand écran), jamais dessus.
+        */}
+        <BulleDiscussion produit={product.slug} decalage={80} />
       </div>
     </ProductConfigurationProvider>
   )
