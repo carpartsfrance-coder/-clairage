@@ -95,6 +95,12 @@ export default function Page() {
             e-mail, message, et le numéro de commande ou le véhicule si vous les indiquez.
           </li>
           <li>
+            <strong>Quand vous posez une question en direct</strong> (la bulle « Une question ? ») :
+            vos messages, votre e-mail si vous le laissez, et ce qui nous aide à vous répondre —
+            la page et le produit que vous regardiez, le véhicule choisi et le contenu de votre
+            panier à ce moment-là.
+          </li>
+          <li>
             <strong>Si vous demandez une alerte de retour en stock</strong> : e-mail et produit
             concerné.
           </li>
@@ -217,7 +223,7 @@ export default function Page() {
               'Compte client',
               'Tant que vous l’utilisez ; supprimé après 3 ans sans connexion ni commande, ou plus tôt à votre demande',
             ],
-            ['Demandes de contact et de compatibilité', '3 ans après notre dernière réponse'],
+            ['Demandes de contact et de compatibilité, discussions en direct', '3 ans après notre dernière réponse'],
             ['Alerte de retour en stock', 'Jusqu’à l’envoi de l’alerte, ou votre désinscription'],
             [
               'Nouveautés et conseils par e-mail',

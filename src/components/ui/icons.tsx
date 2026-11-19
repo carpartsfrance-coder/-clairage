@@ -386,3 +386,23 @@ export function IconStar(p: IconProps) {
     </Svg>
   )
 }
+
+/** Bulle de discussion : la question en direct. */
+export function IconChat(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M20 12a7.5 7.5 0 0 1-10.9 6.7L4.5 20l1.3-4.2A7.5 7.5 0 1 1 20 12z" />
+      <path d="M9 11h.01M12.5 11h.01M16 11h.01" strokeWidth={2.2} />
+    </Svg>
+  )
+}
+
+/** Envoyer : une flèche qui monte, lisible à 18 px. */
+export function IconSend(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M12 19V5" />
+      <path d="m5.5 11.5 6.5-6.5 6.5 6.5" />
+    </Svg>
+  )
+}

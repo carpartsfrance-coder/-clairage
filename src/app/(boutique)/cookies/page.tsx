@@ -34,7 +34,7 @@ export const metadata: Metadata = {
  */
 const DECALAGE = PUBLICITE ? 1 : 0
 
-const MISE_A_JOUR = '16 novembre 2026'
+const MISE_A_JOUR = '19 novembre 2026'
 
 /**
  * Cookies.
@@ -43,8 +43,11 @@ const MISE_A_JOUR = '16 novembre 2026'
  *
  * **La liste est complète, et elle doit le rester.** Inventaire du code au
  * 7 novembre 2026 : trois cookies, tous posés par le serveur, `httpOnly`,
- * `secure` et `sameSite=lax` ; aucun `document.cookie`, aucun stockage local,
- * aucun script tiers. Ce sont des cookies « strictement nécessaires » au sens
+ * `secure` et `sameSite=lax` ; aucun `document.cookie`, aucun script tiers.
+ * Un seul stockage local depuis le 19 novembre 2026 : le jeton de la
+ * discussion en direct (`lv-discussion`), écrit à la première question
+ * envoyée — nécessaire au service demandé, donc dispensé de consentement lui
+ * aussi. Ce sont des cookies « strictement nécessaires » au sens
  * de l'article 82 de la loi Informatique et Libertés : ils sont dispensés de
  * consentement, d'où l'absence de bandeau. Les durées sont celles du code
  * (`maxAge` du panier et du véhicule, `expires` de la session).
@@ -136,6 +139,13 @@ export default function Page() {
           Ces cookies ne servent qu’à ce site. Ils ne contiennent ni votre nom ni votre adresse :
           seulement un identifiant technique. Ils ne sont transmis que de façon chiffrée et ne
           peuvent pas être lus par un script de la page.
+        </p>
+        <p>
+          La discussion en direct (la bulle « Une question ? ») garde aussi, dans le stockage de
+          votre navigateur et non dans un cookie, un numéro tiré au hasard qui permet de retrouver
+          votre conversation d’une page à l’autre. Il n’est écrit qu’au moment où vous envoyez une
+          première question, ne contient rien d’autre, et reste sur votre appareil jusqu’à ce que
+          vous effaciez les données du site.
         </p>
       </Article>
 

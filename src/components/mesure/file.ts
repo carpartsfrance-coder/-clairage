@@ -148,6 +148,24 @@ export function refuse(): boolean {
 
 type Memoire = { id: string; t: number; s?: string }
 
+/**
+ * Le numéro de la visite en cours, sans en créer ni prolonger aucune.
+ *
+ * Pour la discussion en direct : l'équipe peut rouvrir le parcours du
+ * visiteur qui lui écrit. Rien si le visiteur refuse la mesure — sa question
+ * n'a pas à rattacher un parcours qu'il a demandé de ne pas enregistrer.
+ */
+export function visiteEnCours(): string | null {
+  try {
+    if (refuse()) return null
+    const brut = sessionStorage.getItem(CLE_VISITE)
+    const v = brut ? (JSON.parse(brut) as Memoire) : null
+    return v && Date.now() - v.t < INACTIVITE_MS ? v.id : null
+  } catch {
+    return null
+  }
+}
+
 /** Le numéro de visite, et s'il vient d'être créé (première page de la visite). */
 export function visite(): { id: string; nouvelle: boolean } {
   const maintenant = Date.now()

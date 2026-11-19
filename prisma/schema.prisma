@@ -1197,6 +1197,67 @@ model TicketMessage {
   @@index([ticketId, createdAt])
 }
 
+/// Discussion en direct entre un visiteur et l'équipe : la bulle « Une
+/// question ? » des fiches produit et du panier.
+///
+/// Une table à part du SAV, et c'est voulu. Une demande SAV exige une adresse
+/// e-mail et porte sur une commande ou un retour ; une discussion commence
+/// sans rien, par une question posée en passant, souvent avant tout achat.
+/// Les mêler aurait obligé à rendre l'e-mail facultatif sur toutes les
+/// demandes, et chaque écran du SAV aurait dû apprendre à s'en passer.
+model Conversation {
+  id             String             @id @default(cuid())
+  /// Jeton secret gardé par le navigateur du visiteur : la seule clé qui
+  /// permet de relire la discussion. Jamais dans une adresse, jamais affiché.
+  token          String             @unique
+  /// Adresse laissée par le visiteur pour recevoir la réponse s'il part.
+  email          String?
+  status         ConversationStatus @default(OPEN)
+  /// Le contexte, relu côté serveur à chaque message du visiteur : jamais
+  /// repris tel que le navigateur l'annonce.
+  pagePath       String?
+  productSlug    String?
+  productName    String?
+  vehicleLabel   String?
+  /// Lignes du panier au moment du dernier message du visiteur.
+  cart           Json?
+  /// Numéro de visite de la mesure d'audience, pour rouvrir le parcours.
+  visit          String?
+  /// Dernière fois que la page du visiteur a relu la discussion. Sert à
+  /// savoir s'il est encore là quand l'équipe répond.
+  customerSeenAt DateTime?
+  /// Dernière lecture par l'équipe.
+  staffReadAt    DateTime?
+  /// Dernière alerte envoyée à l'équipe : une par salve, pas une par message.
+  alertedAt      DateTime?
+  lastMessageAt  DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  messages ConversationMessage[]
+
+  @@index([status, lastMessageAt])
+}
+
+model ConversationMessage {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  authorKind     String // customer | staff
+  authorId       String?
+  body           String
+  /// Réponse relayée par e-mail parce que le visiteur n'était plus sur la page.
+  emailedAt      DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+
 /// Note interne sur un client, séparée des messages visibles.
 model CustomerNote {
   id        String   @id @default(cuid())
