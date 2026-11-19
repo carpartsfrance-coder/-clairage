@@ -165,11 +165,13 @@ export default function Page() {
         <Article numero={4} id="publicite" titre="Mesure de nos publicités (avec votre accord)">
           <p>
             Nous diffusons des annonces sur Google. Pour savoir lesquelles valent leur coût,
-            nous indiquons à Google qu’une commande a eu lieu, avec son montant, sa devise et sa
-            référence — rien d’autre : ni votre nom, ni votre adresse, ni les articles achetés.
-            Google rapproche cette commande du clic publicitaire qui vous a amené, et s’en sert
-            aussi pour ses propres usages publicitaires. Cela suppose des cookies déposés par
-            Google.
+            nous indiquons à Google qu’une commande a eu lieu, avec son montant, sa devise, sa
+            référence et une <strong>empreinte chiffrée de votre adresse e-mail</strong> — jamais
+            l’adresse elle-même, ni votre nom, ni votre adresse postale, ni les articles achetés.
+            Cette empreinte ne permet pas de retrouver votre adresse : elle sert seulement à
+            Google à reconnaître un compte qu’il connaît déjà, pour rattacher la commande au clic
+            publicitaire qui vous a amené, même depuis un autre appareil. Google s’en sert aussi
+            pour ses propres usages publicitaires. Cela suppose des cookies déposés par Google.
           </p>
           <p>
             <strong>Rien de tout cela n’a lieu sans votre accord.</strong> Tant que vous n’avez
