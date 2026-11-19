@@ -19,10 +19,15 @@ describe('purge des données périmées', () => {
       stockAlert: { deleteMany: appel(0) },
       rateLimit: { deleteMany: appel(4) },
       visitEvent: { deleteMany: appel(6) },
+      visitTrace: { deleteMany: appel(7) },
     }
     const maintenant = new Date('2026-11-30T12:00:00Z')
     const bilan = await purgerDonnees(prisma as never, maintenant)
-    expect(bilan).toEqual({ mesure: 6, sessions: 2, ipSessions: 1, ipJournal: 3, motsDePasse: 0, paniers: 5, alertesStock: 0, compteurs: 4 })
+    expect(bilan).toEqual({ mesure: 6, traces: 7, sessions: 2, ipSessions: 1, ipJournal: 3, motsDePasse: 0, paniers: 5, alertesStock: 0, compteurs: 4 })
+    // La trace du pointeur ne vit que sept jours.
+    expect(prisma.visitTrace.deleteMany).toHaveBeenCalledWith({
+      where: { at: { lt: new Date('2026-11-23T12:00:00Z') } },
+    })
     // Le journal d'administration garde ses lignes : seule l'adresse IP part.
     expect(prisma.auditLog.updateMany).toHaveBeenCalledWith({
       where: { createdAt: { lt: new Date('2026-10-31T12:00:00Z') }, ip: { not: null } },

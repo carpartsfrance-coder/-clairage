@@ -19,6 +19,7 @@ import {
 } from '@/lib/queries/catalogue'
 import { getSelectedVehicle } from '@/lib/session'
 import { cn } from '@/lib/cn'
+import { MesureEtat } from '@/components/mesure/MesureEtat'
 
 /**
  * Résultats de recherche.
@@ -419,6 +420,13 @@ export default async function RecherchePage({
                   action={{ label: 'Choisir mon véhicule', href: '/vehicule' }}
                 />
               ) : (
+                <>
+                {/*
+                  Ce que les visiteurs cherchent et que le site n'a pas : la
+                  liste de courses du catalogue. Mesuré ici, sur le verdict,
+                  plutôt que deviné à partir des pages vues.
+                */}
+                {state.q ? <MesureEtat nom="recherche-vide" label={state.q} /> : null}
                 <EmptyState
                   title={
                     state.q
@@ -428,6 +436,7 @@ export default async function RecherchePage({
                   description="Essayez avec moins de mots (« clio 4 »), ou choisissez votre véhicule pour voir tous ses packs."
                   action={{ label: 'Parcourir toutes les catégories', href: '/c' }}
                 />
+                </>
               )
             )}
           </section>

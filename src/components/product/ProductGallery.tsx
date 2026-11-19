@@ -299,6 +299,7 @@ export function ProductGallery({
               <button
                 type="button"
                 onClick={() => setZoomed(true)}
+                data-mesure="photo-zoomee"
                 aria-label="Agrandir le visuel"
                 className="absolute top-2 right-2 z-[2] grid size-11 place-items-center rounded-full bg-white text-ink shadow-soft fiche:top-3 fiche:right-3"
               >

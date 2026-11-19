@@ -4,6 +4,9 @@ import { MoyensDePaiement } from '@/components/paiement/MoyensDePaiement'
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
 import { submitOrder, type CheckoutState } from '@/lib/actions/checkout'
+import { mesurer } from '@/components/mesure/file'
+import { MesureEtat } from '@/components/mesure/MesureEtat'
+import { ProvenanceDeLaVisite } from '@/components/mesure/ProvenanceDeLaVisite'
 import { formatPrice } from '@/lib/identity'
 import { MentionDonnees } from '@/components/legal/MentionDonnees'
 import { Button } from '@/components/ui/Button'
@@ -268,7 +271,18 @@ export function CheckoutForm({
           <strong className="text-[15px]">{formatPrice(totalCents)}</strong>
         </a>
 
-        <form action={formAction} className="flex flex-col gap-7">
+        <form
+          action={formAction}
+          onSubmit={() => mesurer('commande-envoyee', { urgent: true })}
+          className="flex flex-col gap-7"
+        >
+          {/*
+            La provenance de la visite, recopiée dans la commande. C'est le
+            seul endroit où la mesure et les ventes se touchent, et seul le NOM
+            de la provenance passe — jamais le numéro de visite. Voir le
+            commentaire de `Order.source` dans le schéma.
+          */}
+          <ProvenanceDeLaVisite />
           {/*
             Pas de titre en dur dans ce bandeau. Il a longtemps affirmé « Votre
             commande n'a pas été enregistrée », y compris quand le message juste
@@ -277,9 +291,17 @@ export function CheckoutForm({
             affiche son message, et lui seul.
           */}
           {state.error ? (
-            <Alert tone="danger" live="assertive">
-              {state.error}
-            </Alert>
+            <>
+              {/*
+                Une validation refusée est l'information la plus chère du
+                tunnel : le client voulait payer et n'a pas pu. Elle est
+                mesurée avec sa raison.
+              */}
+              <MesureEtat nom="commande-refusee" label={state.error} />
+              <Alert tone="danger" live="assertive">
+                {state.error}
+              </Alert>
+            </>
           ) : null}
 
           {/* 1. Coordonnées --------------------------------------------- */}
@@ -411,7 +433,10 @@ export function CheckoutForm({
                         name="shippingMethodCode"
                         value={option.code}
                         checked={active}
-                        onChange={() => setMethodCode(option.code)}
+                        onChange={() => {
+                          setMethodCode(option.code)
+                          mesurer('livraison-choisie', { label: option.label })
+                        }}
                         className="size-[15px] shrink-0 accent-brand"
                       />
                       <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-4 gap-y-1">

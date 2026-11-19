@@ -5,6 +5,7 @@ import Image from '@/components/ui/Image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { addPacksToCart, addToCart } from '@/lib/actions/cart'
+import { mesurer } from '@/components/mesure/file'
 import { formatPrice } from '@/lib/identity'
 import type { PackComplementaire } from '@/lib/queries/packs-complementaires'
 import { IconCheck, IconPlus } from '@/components/ui/icons'
@@ -75,6 +76,15 @@ export function PacksComplementaires({
           ? await addToCart({ variantId: variantIds[0], quantity: 1, extraVariantIds: [] })
           : await addPacksToCart({ variantIds })
       if (resultat.ok) {
+        // Mesuré au résultat, comme l'ajout depuis le bloc d'achat.
+        const prixCents = packs
+          .filter((pack) => variantIds.includes(pack.variantId))
+          .reduce((somme, pack) => somme + pack.prixCents, 0)
+        if (variantIds.length === 1) {
+          mesurer('ajout-panier', { label: `Pack pour ${vehicule}`, value: prixCents, zone: 'Packs complémentaires' })
+        } else {
+          mesurer('ajout-pack', { label: vehicule, value: prixCents, zone: 'Packs complémentaires' })
+        }
         setAjoutes((deja) => [...new Set([...deja, ...variantIds])])
         setRetour({
           ok: true,
@@ -90,6 +100,7 @@ export function PacksComplementaires({
         router.refresh()
       } else {
         setRetour({ ok: false, texte: resultat.error })
+        mesurer('ajout-panier-refuse', { label: resultat.error })
       }
       setEnCours(null)
     })

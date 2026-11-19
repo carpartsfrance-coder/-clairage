@@ -10,6 +10,7 @@ import { Alert, Card } from '@/components/ui/Surface'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
+import { MesureEtat } from '@/components/mesure/MesureEtat'
 
 /**
  * Étape de paiement.
@@ -218,6 +219,9 @@ export default async function Page({
                   </Alert>
                 ) : null}
 
+                {abandon && enAttente ? (
+                  <MesureEtat nom="paiement-abandonne" />
+                ) : null}
                 {abandon && enAttente ? (
                   <Alert tone="warn" title="Paiement non confirmé.">
                     {/*

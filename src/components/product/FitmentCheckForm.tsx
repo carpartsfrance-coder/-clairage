@@ -1,12 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import { requestFitmentCheck, type FitmentCheckState } from '@/lib/actions/support'
 import { MentionDonnees } from '@/components/legal/MentionDonnees'
 import { Alert } from '@/components/ui/Surface'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/Field'
+import { mesurer } from '@/components/mesure/file'
 
 /**
  * Formulaire de demande de vérification.
@@ -35,6 +36,20 @@ export function FitmentCheckForm({
     requestFitmentCheck,
     {},
   )
+
+  /*
+    Une demande de vérification déposée veut dire qu'un visiteur n'a pas
+    trouvé la réponse sur la fiche : soit son véhicule n'est pas au catalogue,
+    soit la compatibilité est annoncée « à vérifier ». Chacune est une vente
+    qui attend une réponse humaine, et leur nombre dit l'état réel de la
+    couverture véhicule.
+  */
+  const signale = useRef(false)
+  useEffect(() => {
+    if (!state.reference || signale.current) return
+    signale.current = true
+    mesurer('vehicule-absent', { label: variantId ? 'depuis une fiche' : 'depuis l’équipement' })
+  }, [state.reference, variantId])
 
   if (state.reference) {
     return (
