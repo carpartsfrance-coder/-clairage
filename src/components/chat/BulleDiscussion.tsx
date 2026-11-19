@@ -41,6 +41,15 @@ import { IconChat, IconClose, IconSend } from '@/components/ui/icons'
  * c'est un stockage nécessaire au service que le visiteur vient de demander,
  * et il n'existe pas tant qu'il ne l'a pas demandé.
  *
+ * **L'invitation** (exploitant, 19 novembre 2026). Sur une fiche produit,
+ * après 20 secondes passées à la regarder, une petite carte au-dessus de la
+ * bulle demande : « Un doute sur la compatibilité avec votre … ? ». Les
+ * visiteurs des annonces restent 38 s en médiane et repartent sans rien
+ * demander ; la question qu'ils n'osent pas poser est presque toujours
+ * celle-là. Elle ne se montre qu'une fois par onglet, seulement quand
+ * l'équipe est en ligne, jamais à qui a déjà écrit, jamais par-dessus le
+ * bandeau de consentement, et s'en va d'elle-même au bout de 25 secondes.
+ *
  * **Relecture.** Toutes les 4 s fenêtre ouverte, toutes les 12 s fermée, et
  * jamais onglet en arrière-plan. C'est aussi ce qui dit au serveur si le
  * visiteur est encore là quand l'équipe répond (voir `PRESENCE_MS`).
@@ -48,6 +57,10 @@ import { IconChat, IconClose, IconSend } from '@/components/ui/icons'
 
 const CLE_JETON = 'lv-discussion'
 const CLE_VU = 'lv-discussion-vu'
+/** Dans l'onglet seulement (sessionStorage) : oubliée à sa fermeture. */
+const CLE_INVITATION = 'lv-invitation'
+const DELAI_INVITATION_MS = 20_000
+const DUREE_INVITATION_MS = 25_000
 const RELECTURE_OUVERTE_MS = 4_000
 const RELECTURE_FERMEE_MS = 12_000
 
@@ -74,11 +87,17 @@ function ecrire(cle: string, valeur: string | null) {
 export function BulleDiscussion({
   produit = null,
   decalage = 0,
+  inviter = false,
+  vehicule = null,
 }: {
   /** Identifiant de la fiche regardée : l'équipe verra le produit à côté de la question. */
   produit?: string | null
   /** Hauteur à laisser libre en bas de l'écran (barre d'achat fixe), en pixels. */
   decalage?: number
+  /** Proposer son aide au bout de 20 s (fiches produit). */
+  inviter?: boolean
+  /** Le véhicule choisi, en court (« Audi A1 »), pour l'invitation. */
+  vehicule?: string | null
 }) {
   const [ouvert, setOuvert] = useState(false)
   const [jeton, setJeton] = useState<string | null>(null)
@@ -106,11 +125,32 @@ export function BulleDiscussion({
     image au plus. Sur téléphone, `null` : la place prévue par les classes.
   */
   const [ecart, setEcart] = useState<number | 'cachee' | null>(null)
+  /* Mesurée par le calcul de place ; masquée tant qu'on ne sait pas. */
+  const carte = useRef<HTMLDivElement>(null)
+  const [invitationGenee, setInvitationGenee] = useState(true)
+  const recalculer = useRef<() => void>(() => {})
   useEffect(() => {
     const grandEcran = window.matchMedia('(min-width: 801px)')
     let image = 0
     const calculer = () => {
       image = 0
+      const aLEcran = (r: DOMRect) => r.width > 0 && r.bottom > 0 && r.top < window.innerHeight
+      const boutons = Array.from(document.querySelectorAll('[data-cta-achat]'))
+        .map((el) => el.getBoundingClientRect())
+        .filter(aLEcran)
+
+      // La carte d'invitation obéit à la même règle que la bulle, sur tous
+      // les écrans : elle ne s'affiche que là où elle ne couvre rien d'achat.
+      const c = carte.current
+      if (c) {
+        const r = c.getBoundingClientRect()
+        setInvitationGenee(
+          boutons.some(
+            (x) => !(x.right < r.left - 4 || x.left > r.right + 4 || x.bottom < r.top - 4 || x.top > r.bottom + 4),
+          ),
+        )
+      }
+
       const b = bouton.current
       if (!b || !grandEcran.matches) {
         setEcart(null)
@@ -121,10 +161,6 @@ export function BulleDiscussion({
       const gauche = droite - (b.offsetWidth || 150)
       const bandeau =
         parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hauteur-bandeau')) || 0
-      const aLEcran = (r: DOMRect) => r.width > 0 && r.bottom > 0 && r.top < window.innerHeight
-      const boutons = Array.from(document.querySelectorAll('[data-cta-achat]'))
-        .map((el) => el.getBoundingClientRect())
-        .filter(aLEcran)
       const barre = Array.from(document.querySelectorAll('[data-cta-achat="barre"]')).some((el) =>
         aLEcran(el.getBoundingClientRect()),
       )
@@ -142,6 +178,7 @@ export function BulleDiscussion({
     const demander = () => {
       if (!image) image = requestAnimationFrame(calculer)
     }
+    recalculer.current = demander
     demander()
     window.addEventListener('scroll', demander, { passive: true })
     window.addEventListener('resize', demander)
@@ -158,6 +195,91 @@ export function BulleDiscussion({
       document.removeEventListener('transitionend', demander)
     }
   }, [decalage])
+
+  /*
+    L'invitation. Le temps compte seulement onglet au premier plan : un
+    onglet ouvert en arrière-plan depuis une annonce n'a été regardé par
+    personne. Les conditions sont relues au moment de se montrer, pas au
+    départ du compte : en vingt secondes, le visiteur a pu ouvrir la bulle.
+  */
+  const [invitation, setInvitation] = useState(false)
+  const ouvertRef = useRef(ouvert)
+  const ecartRef = useRef(ecart)
+  useEffect(() => {
+    ouvertRef.current = ouvert
+    ecartRef.current = ecart
+  }, [ouvert, ecart])
+
+  useEffect(() => {
+    if (!inviter) return
+    let dejaInvite = false
+    try {
+      dejaInvite = sessionStorage.getItem(CLE_INVITATION) === '1'
+    } catch {
+      dejaInvite = true
+    }
+    if (dejaInvite || lire(CLE_JETON)) return
+
+    let regarde = 0
+    let termine = false
+    const minuteur = window.setInterval(async () => {
+      if (termine || document.visibilityState !== 'visible') return
+      regarde += 1000
+      if (regarde < DELAI_INVITATION_MS) return
+      termine = true
+      window.clearInterval(minuteur)
+
+      const bandeau =
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hauteur-bandeau')) || 0
+      if (ouvertRef.current || ecartRef.current === 'cachee' || bandeau > 0 || lire(CLE_JETON)) return
+      try {
+        const r = await fetch('/api/chat', { cache: 'no-store' })
+        const etat = r.ok ? ((await r.json()) as EtatDiscussion) : null
+        if (!etat?.disponible || ouvertRef.current) return
+      } catch {
+        return
+      }
+      setInvitation(true)
+    }, 1000)
+    return () => window.clearInterval(minuteur)
+  }, [inviter])
+
+  /* Prête : on mesure tout de suite où elle tomberait. */
+  useEffect(() => {
+    recalculer.current()
+  }, [invitation, ecart])
+
+  /*
+    La première fois qu'elle se montre vraiment : on le note pour l'onglet,
+    on le mesure, et on lance ses 25 secondes. Masquée un instant parce qu'un
+    bouton d'achat passe dessous, elle ne recommence pas son compte.
+  */
+  const invitationVisible = invitation && !invitationGenee && !ouvert && ecart !== 'cachee'
+  const invitationMontree = useRef(false)
+  const finInvitation = useRef<number | null>(null)
+  useEffect(() => {
+    if (!invitationVisible || invitationMontree.current) return
+    invitationMontree.current = true
+    try {
+      sessionStorage.setItem(CLE_INVITATION, '1')
+    } catch {
+      // Sans stockage, rien ne retiendra qu'elle a été montrée : tant pis,
+      // elle reste bornée à une fois par page.
+    }
+    mesurer('chat-invitation', { label: vehicule ? 'avec véhicule' : 'sans véhicule' })
+    finInvitation.current = window.setTimeout(() => setInvitation(false), DUREE_INVITATION_MS)
+  }, [invitationVisible, vehicule])
+  useEffect(
+    () => () => {
+      if (finInvitation.current) window.clearTimeout(finInvitation.current)
+    },
+    [],
+  )
+
+  function fermerInvitation() {
+    setInvitation(false)
+    mesurer('chat-invitation-fermee')
+  }
 
   /* Une discussion déjà commencée reprend où elle en était, de page en page. */
   useEffect(() => {
@@ -246,9 +368,10 @@ export function BulleDiscussion({
     return () => document.removeEventListener('keydown', touche)
   }, [ouvert])
 
-  function ouvrir() {
+  function ouvrir(depuis: 'bulle' | 'invitation') {
     setOuvert(true)
-    mesurer('chat-ouvert')
+    setInvitation(false)
+    mesurer('chat-ouvert', { label: depuis })
     // Après l'affichage : un champ masqué ne prend pas le focus.
     window.setTimeout(() => champ.current?.focus(), 30)
   }
@@ -326,10 +449,46 @@ export function BulleDiscussion({
 
   return (
     <>
+      {invitation && !ouvert ? (
+        <div
+          ref={carte}
+          role="status"
+          style={{ bottom: `calc(${bas} + 60px)` }}
+          className={cn(
+            'fixed right-4 z-30 w-[min(280px,calc(100vw-32px))] fiche:right-6',
+            invitationVisible ? 'motion-safe:animate-[invitation-chat_240ms_ease-out]' : 'invisible',
+          )}
+        >
+          <div className="relative rounded-2xl border border-line bg-white py-3 pr-9 pl-3.5 shadow-[0_12px_32px_rgb(17_18_20/0.18)]">
+            <button type="button" onClick={() => ouvrir('invitation')} className="block text-left">
+              <span className="block text-[14px] leading-snug font-semibold text-ink">
+                Un doute sur la compatibilité avec votre {vehicule ?? 'véhicule'} ?
+              </span>
+              <span className="mt-1 block text-[12.5px] leading-snug text-muted-strong">
+                Posez-nous la question : une personne vous répond ici, en direct.
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={fermerInvitation}
+              aria-label="Fermer l’invitation"
+              className="absolute top-2 right-2 grid size-7 place-items-center rounded-full text-muted hover:bg-surface-paper"
+            >
+              <IconClose className="size-4" />
+            </button>
+            {/* La pointe, vers la bulle. */}
+            <span
+              aria-hidden="true"
+              className="absolute right-8 -bottom-[7px] size-3.5 rotate-45 border-r border-b border-line bg-white"
+            />
+          </div>
+        </div>
+      ) : null}
+
       <button
         ref={bouton}
         type="button"
-        onClick={ouvrir}
+        onClick={() => ouvrir('bulle')}
         aria-label={
           nonLus > 0
             ? `Discussion : ${nonLus} nouvelle${nonLus > 1 ? 's' : ''} réponse${nonLus > 1 ? 's' : ''}`

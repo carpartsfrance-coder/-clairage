@@ -79,7 +79,12 @@ export const EVENEMENTS = {
   'option-changee': { libelle: 'A changé d’option', precision: 'l’option' },
 
   /* ------------------------------ La discussion --------------------------- */
-  'chat-ouvert': { libelle: 'A ouvert la discussion' },
+  'chat-invitation': {
+    libelle: 'S’est vu proposer de l’aide (invitation)',
+    precision: 'véhicule choisi ou non',
+  },
+  'chat-invitation-fermee': { libelle: 'A fermé l’invitation à poser une question' },
+  'chat-ouvert': { libelle: 'A ouvert la discussion', precision: 'depuis la bulle ou l’invitation' },
   'chat-message': {
     libelle: 'A posé une question en direct',
     precision: 'premier message ou suite',

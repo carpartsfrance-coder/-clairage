@@ -419,6 +419,18 @@
   }
 }
 
+/* Invitation de la discussion (components/chat/BulleDiscussion.tsx). */
+@keyframes invitation-chat {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* --------------------------------------------------------------------------
    Plancher de contraste
    -------------------------------------------------------------------------- */
