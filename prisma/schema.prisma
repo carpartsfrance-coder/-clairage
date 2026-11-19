@@ -284,14 +284,15 @@ model ProductVariant {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  components   KitComponent[]     @relation("KitParent")
-  partOfKits   KitComponent[]     @relation("KitChild")
-  fitments     Fitment[]
-  cartLines    CartLine[]
-  orderLines   OrderLine[]
-  stockMoves   StockMovement[]
-  accessoryFor FitmentAccessory[]
-  stockAlerts  StockAlert[]
+  components           KitComponent[]        @relation("KitParent")
+  partOfKits           KitComponent[]        @relation("KitChild")
+  fitments             Fitment[]
+  cartLines            CartLine[]
+  orderLines           OrderLine[]
+  stockMoves           StockMovement[]
+  accessoryFor         FitmentAccessory[]
+  stockAlerts          StockAlert[]
+  conseilsEnDiscussion ConversationMessage[]
 
   @@index([productId, position])
   @@index([sku])
@@ -1241,15 +1242,20 @@ model Conversation {
 }
 
 model ConversationMessage {
-  id             String       @id @default(cuid())
+  id             String          @id @default(cuid())
   conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversation   Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   authorKind     String // customer | staff
   authorId       String?
   body           String
   /// Réponse relayée par e-mail parce que le visiteur n'était plus sur la page.
   emailedAt      DateTime?
-  createdAt      DateTime     @default(now())
+  /// Article conseillé par l'équipe : le visiteur le voit en carte, photo,
+  /// prix et bouton d'ajout au panier. Prix et stock sont relus à chaque
+  /// affichage — un conseil d'hier ne doit pas afficher le prix d'hier.
+  variantId      String?
+  variant        ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
 
   @@index([conversationId, createdAt])
 }

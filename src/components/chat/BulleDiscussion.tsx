@@ -11,6 +11,7 @@ import {
 } from '@/lib/chat'
 import { mesurer, visiteEnCours } from '@/components/mesure/file'
 import { IconChat, IconClose, IconSend } from '@/components/ui/icons'
+import { CarteConseil } from './CarteConseil'
 
 /**
  * La bulle « Une question ? » et sa fenêtre de discussion.
@@ -581,16 +582,19 @@ export function BulleDiscussion({
                   key={m.id}
                   className={cn('flex flex-col', m.de === 'client' ? 'items-end' : 'items-start')}
                 >
-                  <p
-                    className={cn(
-                      'max-w-[85%] rounded-2xl px-3.5 py-2 text-[14px] leading-snug break-words whitespace-pre-line',
-                      m.de === 'client'
-                        ? 'rounded-br-md bg-ink text-white'
-                        : 'rounded-bl-md bg-surface-paper text-ink',
-                    )}
-                  >
-                    {m.texte}
-                  </p>
+                  {m.texte ? (
+                    <p
+                      className={cn(
+                        'max-w-[85%] rounded-2xl px-3.5 py-2 text-[14px] leading-snug break-words whitespace-pre-line',
+                        m.de === 'client'
+                          ? 'rounded-br-md bg-ink text-white'
+                          : 'rounded-bl-md bg-surface-paper text-ink',
+                      )}
+                    >
+                      {m.texte}
+                    </p>
+                  ) : null}
+                  {m.produit ? <CarteConseil carte={m.produit} /> : null}
                   <span className="mt-1 px-1 text-[11px] text-muted">
                     {m.de === 'equipe' ? `${identity.name} · ` : ''}
                     {heure.format(new Date(m.le))}

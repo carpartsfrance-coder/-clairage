@@ -5,7 +5,13 @@ import { requireStaff } from '@/lib/admin/guard'
 import { can } from '@/lib/admin/permissions'
 import { prisma } from '@/lib/db'
 import { formatPrice } from '@/lib/identity'
-import { lirePanier, visiteurPresent } from '@/lib/chat'
+import { lirePanier, visiteurPresent, type CarteProduit } from '@/lib/chat'
+import {
+  carteDuConseil,
+  INCLURE_CONSEIL,
+  variantesDeLaFiche,
+  type MessageAvecConseil,
+} from '@/lib/chat-serveur'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Surface'
@@ -51,9 +57,13 @@ export default async function DiscussionPage({ params }: { params: Promise<{ id:
 
   const discussion = await prisma.conversation.findUnique({
     where: { id },
-    include: { messages: { orderBy: { createdAt: 'asc' }, take: 300 } },
+    include: { messages: { orderBy: { createdAt: 'asc' }, take: 300, include: INCLURE_CONSEIL } },
   })
   if (!discussion) notFound()
+
+  // De quoi conseiller sans chercher : les conditionnements de la fiche qu'il regardait.
+  const suggestions = peutTraiter ? await variantesDeLaFiche(discussion.productSlug) : []
+  const vehiculeCourt = discussion.vehicleLabel ? discussion.vehicleLabel.split(' · ')[0] : null
 
   // L'ouverture vaut lecture. Seule l'équipe qui peut répondre la marque :
   // un compte en lecture seule ne doit pas faire taire les alertes.
@@ -104,14 +114,17 @@ export default async function DiscussionPage({ params }: { params: Promise<{ id:
               const equipe = m.authorKind !== 'customer'
               return (
                 <li key={m.id} className={cn('flex flex-col', equipe ? 'items-end' : 'items-start')}>
-                  <p
-                    className={cn(
-                      'max-w-[88%] rounded-2xl px-3.5 py-2 text-sm leading-snug break-words whitespace-pre-line',
-                      equipe ? 'rounded-br-md bg-ink text-white' : 'rounded-bl-md border border-line bg-white',
-                    )}
-                  >
-                    {m.body}
-                  </p>
+                  {m.body ? (
+                    <p
+                      className={cn(
+                        'max-w-[88%] rounded-2xl px-3.5 py-2 text-sm leading-snug break-words whitespace-pre-line',
+                        equipe ? 'rounded-br-md bg-ink text-white' : 'rounded-bl-md border border-line bg-white',
+                      )}
+                    >
+                      {m.body}
+                    </p>
+                  ) : null}
+                  {carteDe(m) ? <CarteEnvoyee carte={carteDe(m)!} /> : null}
                   <span className="mt-1 px-1 text-[11px] text-muted">
                     {equipe ? 'Équipe' : 'Visiteur'} · {horodatage.format(m.createdAt)}
                     {m.emailedAt ? ' · envoyé par e-mail' : ''}
@@ -123,7 +136,11 @@ export default async function DiscussionPage({ params }: { params: Promise<{ id:
 
           {peutTraiter ? (
             <Card className="p-4">
-              <ReponseDiscussion id={discussion.id} />
+              <ReponseDiscussion
+                id={discussion.id}
+                vehicule={vehiculeCourt}
+                suggestions={suggestions}
+              />
             </Card>
           ) : null}
         </section>
@@ -208,5 +225,31 @@ export default async function DiscussionPage({ params }: { params: Promise<{ id:
         </aside>
       </div>
     </div>
+  )
+}
+
+function carteDe(message: MessageAvecConseil): CarteProduit | null {
+  return carteDuConseil(message.variant)
+}
+
+/** L'article conseillé, tel que le visiteur l'a reçu — prix et stock du moment. */
+function CarteEnvoyee({ carte }: { carte: CarteProduit }) {
+  return (
+    <a
+      href={carte.url}
+      target="_blank"
+      className="mt-1.5 flex max-w-[88%] items-center gap-3 rounded-xl border border-line bg-white px-3 py-2 hover:border-line-strong"
+    >
+      {carte.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={carte.image.url} alt="" className="size-11 shrink-0 rounded object-cover" />
+      ) : null}
+      <span className="min-w-0 text-sm">
+        <span className="block font-semibold break-words">{carte.nom}</span>
+        <span className="block text-xs text-muted-strong">
+          {[carte.option, formatPrice(carte.prixCents), carte.dispo].filter(Boolean).join(' · ')}
+        </span>
+      </span>
+    </a>
   )
 }

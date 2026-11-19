@@ -2,12 +2,15 @@ import 'server-only'
 import { randomBytes } from 'node:crypto'
 import { cache } from 'react'
 import { cookies } from 'next/headers'
-import type { Conversation, ConversationMessage } from '@prisma/client'
+import type { Conversation, ConversationMessage, Prisma } from '@prisma/client'
 import { prisma } from './db'
 import { CART_COOKIE, getSelectedVehicle } from './session'
 import { emailIsSimulated, sendEmail } from './email'
 import { identity, siteConfig } from './identity'
-import type { LignePanier, MessageVu } from './chat'
+import { ARGS_COUVERTURE, couverture } from './media-couverture'
+import { couvertureType } from './images-types'
+import { availabilityForKit, availabilityForVariant, availabilityLabel, isPurchasable } from './stock'
+import type { CarteProduit, LignePanier, MessageVu } from './chat'
 
 /**
  * Discussion en direct : lecture, écriture, alertes.
@@ -106,14 +109,153 @@ async function lirePanierDuVisiteur(): Promise<LignePanier[]> {
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/* L'article conseillé                                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Ce qu'il faut lire d'une variante pour en faire une carte : les mêmes
+ * lectures que le panier (`lib/cart.ts`) — photo de couverture, stock, kit —
+ * pour que la carte et le panier ne disent jamais deux choses différentes.
+ */
+export const INCLURE_VARIANTE_CONSEIL = {
+  product: {
+    select: {
+      slug: true,
+      name: true,
+      vehicleType: true,
+      status: true,
+      media: { ...ARGS_COUVERTURE, include: { media: true } },
+    },
+  },
+  components: { orderBy: { position: 'asc' as const }, include: { component: true } },
+} satisfies Prisma.ProductVariantInclude
+
+export const INCLURE_CONSEIL = {
+  variant: { include: INCLURE_VARIANTE_CONSEIL },
+} satisfies Prisma.ConversationMessageInclude
+
+type VarianteConseil = Prisma.ProductVariantGetPayload<{ include: typeof INCLURE_VARIANTE_CONSEIL }>
+export type MessageAvecConseil = Prisma.ConversationMessageGetPayload<{ include: typeof INCLURE_CONSEIL }>
+
+/**
+ * La carte d'un article, ou rien s'il n'est plus en vente. Un conseil vieux
+ * de trois jours sur un article retiré du catalogue garde son texte et perd
+ * sa carte : mieux vaut pas de bouton qu'un bouton qui échoue.
+ */
+export function carteDuConseil(variante: VarianteConseil | null): CarteProduit | null {
+  if (!variante || !variante.active || variante.product.status !== 'PUBLISHED') return null
+  const dispo =
+    variante.components.length > 0
+      ? availabilityForKit(
+          variante.components.map((entree) => ({
+            quantity: entree.quantity,
+            required: entree.required,
+            component: entree.component,
+          })),
+        )
+      : availabilityForVariant(variante)
+  const photo = couverture(variante.product.media)?.media ?? couvertureType(variante.product)
+  return {
+    variantId: variante.id,
+    nom: variante.product.name,
+    option: variante.name !== variante.product.name ? variante.name : null,
+    prixCents: variante.priceCents,
+    image: photo ? { url: photo.url, alt: photo.alt ?? variante.product.name } : null,
+    url: `/p/${variante.product.slug}`,
+    achetable: isPurchasable(dispo),
+    dispo: availabilityLabel(dispo),
+  }
+}
+
+/** Une variante que l'équipe peut conseiller : active, et sur une fiche en ligne. */
+export async function varianteConseillable(id: string): Promise<VarianteConseil | null> {
+  if (!id) return null
+  return prisma.productVariant
+    .findFirst({
+      where: { id, active: true, product: { status: 'PUBLISHED' } },
+      include: INCLURE_VARIANTE_CONSEIL,
+    })
+    .catch(() => null)
+}
+
+export type ProduitConseillable = { produit: string; slug: string; variantes: CarteProduit[] }
+
+function parProduit(variantes: VarianteConseil[]): ProduitConseillable[] {
+  const groupes = new Map<string, ProduitConseillable>()
+  for (const variante of variantes) {
+    const carte = carteDuConseil(variante)
+    if (!carte) continue
+    const groupe = groupes.get(variante.product.slug) ?? {
+      produit: variante.product.name,
+      slug: variante.product.slug,
+      variantes: [],
+    }
+    groupe.variantes.push(carte)
+    groupes.set(variante.product.slug, groupe)
+  }
+  return [...groupes.values()]
+}
+
+/** Les conditionnements de la fiche que regardait le visiteur. */
+export async function variantesDeLaFiche(slug: string | null): Promise<ProduitConseillable[]> {
+  if (!slug) return []
+  const variantes = await prisma.productVariant
+    .findMany({
+      where: { active: true, product: { slug, status: 'PUBLISHED' } },
+      orderBy: { position: 'asc' },
+      include: INCLURE_VARIANTE_CONSEIL,
+    })
+    .catch(() => [])
+  return parProduit(variantes)
+}
+
+/**
+ * Recherche d'un article à conseiller : chaque mot doit se retrouver dans le
+ * nom du produit, celui du conditionnement ou la référence. Seuls les
+ * articles en vente sont proposés — conseiller un brouillon enverrait le
+ * client sur une page introuvable.
+ */
+export async function chercherConseils(terme: string): Promise<ProduitConseillable[]> {
+  const mots = terme
+    .split(/\s+/)
+    .map((mot) => mot.trim())
+    .filter((mot) => mot.length >= 2)
+    .slice(0, 6)
+  if (mots.length === 0) return []
+  const variantes = await prisma.productVariant
+    .findMany({
+      where: {
+        active: true,
+        product: { status: 'PUBLISHED' },
+        AND: mots.map((mot) => ({
+          OR: [
+            { sku: { contains: mot, mode: 'insensitive' as const } },
+            { name: { contains: mot, mode: 'insensitive' as const } },
+            { product: { name: { contains: mot, mode: 'insensitive' as const } } },
+          ],
+        })),
+      },
+      orderBy: [{ product: { name: 'asc' } }, { position: 'asc' }],
+      take: 16,
+      include: INCLURE_VARIANTE_CONSEIL,
+    })
+    .catch(() => [])
+  return parProduit(variantes).slice(0, 6)
+}
+
 /** Les messages tels que le navigateur les reçoit. */
-export function versLeNavigateur(messages: ConversationMessage[]): MessageVu[] {
-  return messages.map((message) => ({
-    id: message.id,
-    de: message.authorKind === 'customer' ? 'client' : 'equipe',
-    texte: message.body,
-    le: message.createdAt.toISOString(),
-  }))
+export function versLeNavigateur(messages: MessageAvecConseil[]): MessageVu[] {
+  return messages.map((message) => {
+    const produit = carteDuConseil(message.variant)
+    return {
+      id: message.id,
+      de: message.authorKind === 'customer' ? 'client' : 'equipe',
+      texte: message.body,
+      le: message.createdAt.toISOString(),
+      ...(produit ? { produit } : {}),
+    }
+  })
 }
 
 /**
@@ -159,6 +301,7 @@ export async function alerterEquipe(discussion: Conversation, texte: string): Pr
 export async function relayerReponse(
   discussion: Conversation,
   message: ConversationMessage,
+  conseil: CarteProduit | null = null,
 ): Promise<'envoye' | 'simule' | 'echec'> {
   if (!discussion.email) return 'echec'
   try {
@@ -170,6 +313,8 @@ export async function relayerReponse(
         message: message.body,
         produit: discussion.productName ?? '',
         lien: `${siteConfig.url}${discussion.pagePath ?? '/'}`,
+        conseilNom: conseil ? [conseil.nom, conseil.option].filter(Boolean).join(' — ') : '',
+        conseilLien: conseil ? `${siteConfig.url}${conseil.url}` : '',
       },
     })
     if (!simulated) {

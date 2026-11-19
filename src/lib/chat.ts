@@ -43,6 +43,23 @@ export const RAPPEL_ALERTE_MS = 15 * 60_000
  */
 export const ATTENTE_AVANT_EMAIL_MS = 2 * 60_000
 
+/**
+ * Un article conseillé par l'équipe, tel que la bulle l'affiche : photo,
+ * prix et stock du jour, relus à chaque affichage.
+ */
+export type CarteProduit = {
+  variantId: string
+  nom: string
+  /** Conditionnement (« La paire », « Le kit »), s'il diffère du nom. */
+  option: string | null
+  prixCents: number
+  image: { url: string; alt: string } | null
+  url: string
+  achetable: boolean
+  /** « En stock », « Plus que 3 en stock »… */
+  dispo: string
+}
+
 /** Ce que le navigateur reçoit d'un message : jamais l'auteur côté équipe. */
 export type MessageVu = {
   id: string
@@ -50,6 +67,7 @@ export type MessageVu = {
   texte: string
   /** Date ISO. */
   le: string
+  produit?: CarteProduit
 }
 
 /** État de la discussion renvoyé à la bulle. */

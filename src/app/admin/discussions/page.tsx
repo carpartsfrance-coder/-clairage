@@ -121,7 +121,7 @@ export default async function DiscussionsPage() {
                 {dernier ? (
                   <span className="mt-1.5 line-clamp-2 block text-sm break-words text-muted-strong">
                     {dernier.authorKind === 'customer' ? '' : 'Vous : '}
-                    {dernier.body}
+                    {dernier.body || 'article conseillé'}
                   </span>
                 ) : null}
               </Link>

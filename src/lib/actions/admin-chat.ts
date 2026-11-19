@@ -4,7 +4,14 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '../db'
 import { audit, requireStaff } from '../admin/guard'
 import { doitRelayerParEmail, nettoyerMessage, REPONSE_MAX, visiteurPresent } from '../chat'
-import { CLE_DISPONIBILITE, relayerReponse } from '../chat-serveur'
+import {
+  carteDuConseil,
+  chercherConseils,
+  CLE_DISPONIBILITE,
+  relayerReponse,
+  varianteConseillable,
+  type ProduitConseillable,
+} from '../chat-serveur'
 
 /**
  * Discussions en direct, côté équipe : répondre, clore, dire si l'on est là.
@@ -21,15 +28,29 @@ export async function repondreDiscussion(
 ): Promise<DiscussionState> {
   const staff = await requireStaff('sav.handle')
   const id = String(formData.get('id') ?? '')
-  const texte = nettoyerMessage(formData.get('body'), REPONSE_MAX)
-  if (!texte) return { error: 'Le message est vide.' }
+  const texte = nettoyerMessage(formData.get('body'), REPONSE_MAX) ?? ''
+
+  // L'article joint est relu ici : un identifiant venu du formulaire ne
+  // prouve pas qu'il est encore en vente.
+  const varianteId = String(formData.get('variantId') ?? '')
+  const variante = varianteId ? await varianteConseillable(varianteId) : null
+  if (varianteId && !variante) {
+    return { error: 'Cet article n’est plus en vente : choisissez-en un autre.' }
+  }
+  if (!texte && !variante) return { error: 'Le message est vide.' }
 
   const discussion = await prisma.conversation.findUnique({ where: { id } })
   if (!discussion) return { error: 'Discussion introuvable.' }
 
   const maintenant = new Date()
   const message = await prisma.conversationMessage.create({
-    data: { conversationId: id, authorKind: 'staff', authorId: staff.id, body: texte },
+    data: {
+      conversationId: id,
+      authorKind: 'staff',
+      authorId: staff.id,
+      body: texte,
+      variantId: variante?.id ?? null,
+    },
   })
   await prisma.conversation.update({
     where: { id },
@@ -46,7 +67,7 @@ export async function repondreDiscussion(
   if (visiteurPresent(discussion.customerSeenAt, maintenant)) {
     notice = 'Réponse affichée chez le visiteur, qui est sur la page.'
   } else if (doitRelayerParEmail(discussion, maintenant)) {
-    const envoi = await relayerReponse(discussion, message)
+    const envoi = await relayerReponse(discussion, message, carteDuConseil(variante))
     notice =
       envoi === 'envoye'
         ? `Le visiteur a quitté la page : réponse envoyée aussi à ${discussion.email}.`
@@ -121,4 +142,15 @@ export async function changerDisponibilite(
       ? 'Vous apparaissez « en ligne » dans la bulle.'
       : 'Vous apparaissez « absents » : les visiteurs laissent leur e-mail avec leur question.',
   }
+}
+
+/**
+ * Recherche d'un article à joindre à une réponse. Réservée à l'équipe qui
+ * répond : une action de serveur est un point d'entrée public, et cette
+ * recherche lit le catalogue avec les stocks.
+ */
+export async function chercherConseil(terme: string): Promise<ProduitConseillable[]> {
+  await requireStaff('sav.handle')
+  if (typeof terme !== 'string') return []
+  return chercherConseils(terme.slice(0, 80))
 }
