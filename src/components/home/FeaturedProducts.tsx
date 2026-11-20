@@ -117,13 +117,9 @@ export function FeaturedProducts({ content, products, filters, shortcut }: Featu
                         />
                       ) : null}
 
-                      {/* .product-tag : annonce l'existence d'un kit. Les deux
-                          prix sont donnés plus bas, chacun avec son intitulé. */}
-                      {product.hasKit ? (
-                        <span className="absolute top-2.5 left-[9px] inline-flex rounded-[3px] border border-[#d4e3cd] bg-[#e4eee0] px-[5px] py-[3px] text-[5px] font-bold tracking-[0.3px] text-[#426039] uppercase lg:top-[13px] lg:left-[13px] lg:px-1.5 lg:py-1 lg:text-[6px] lg:tracking-[0.6px]">
-                          Existe en kit
-                        </span>
-                      ) : null}
+                      {/* Plus de pastille « Existe en kit » sur la photo
+                          (retirée le 20 novembre 2026, comme sur les cartes
+                          des listes) : les deux prix sont donnés plus bas. */}
                     </span>
 
                     {/* .home-product-info : 17/15/13 (12/10 en mobile). */}

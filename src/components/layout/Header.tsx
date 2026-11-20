@@ -1,23 +1,23 @@
 import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
-import { dureeGarantie, formatPrice, identity, siteConfig, promesseRetour } from '@/lib/identity'
+import { commercialTerms, dureeGarantie, formatPrice, identity, promesseRetour } from '@/lib/identity'
 import { getCartSummary, getSelectedVehicle } from '@/lib/session'
 import { getSeuilLivraisonOfferte } from '@/lib/shipping'
-import { topNav } from '@/lib/navigation'
 import { getNavigation } from '@/lib/queries/navigation'
 import { MainNav } from './MainNav'
-import { IconUser, IconHeadset, IconReturn, IconShield, IconTruck } from '@/components/ui/icons'
+import { IconUser, IconHeadset } from '@/components/ui/icons'
 import { HeaderSearch } from './HeaderSearch'
 import { VehicleMenu } from './VehicleMenu'
 import { CartLink } from './CartLink'
 import { MobileNav } from './MobileNav'
 import { HeaderShell } from './HeaderShell'
 import { BoutonRecherche } from './BoutonRecherche'
+import { BandeauEngagements, type Engagement } from './BandeauEngagements'
 
 /**
  * Header commun à toutes les pages — composition de 03-header-final.png.
  *
- * Trois étages sur ordinateur : bandeau de réassurance, ligne principale
+ * Trois étages sur ordinateur : bandeau des engagements, ligne principale
  * (logo, recherche, véhicule, panier) et navigation par catégories. Sur
  * mobile, la ligne principale se réduit à menu / logo / panier, la recherche
  * passe sur sa propre ligne et le véhicule occupe un bandeau dédié : ce n'est
@@ -25,7 +25,7 @@ import { BoutonRecherche } from './BoutonRecherche'
  *
  * **Hauteurs.** Le header est collant : tout ce qu'il occupe est retiré à la
  * page pendant toute la lecture. Il tient donc en ~160 px à l'arrivée, et se
- * replie à ~104 px dès qu'on défile — le bandeau de réassurance s'efface, la
+ * replie à ~104 px dès qu'on défile — le bandeau des engagements s'efface, la
  * ligne principale et la navigation se resserrent. Rien ne disparaît qui ne
  * soit retrouvable : sur mobile, le bandeau véhicule replié reste accessible
  * par le menu, et la recherche ne se replie jamais.
@@ -47,80 +47,49 @@ export async function Header() {
     getSeuilLivraisonOfferte(),
   ])
 
+  // Chaque engagement n'apparaît que s'il est réglé : une promesse retirée
+  // de `commercialTerms` (ou un seuil effacé du back-office) disparaît du
+  // bandeau au lieu d'y rester écrite.
+  const engagements: Engagement[] = [
+    commercialTerms.dispatchEstimate
+      ? {
+          libelle: `Expédition sous ${commercialTerms.dispatchEstimate}`,
+          href: '/livraison-retours',
+          icone: 'expedition',
+        }
+      : null,
+    { libelle: 'SAV en français et réactif', href: '/aide', icone: 'sav' },
+    dureeGarantie()
+      ? { libelle: `Garantie ${dureeGarantie()}`, href: '/garanties', icone: 'garantie' }
+      : null,
+    seuilLivraisonOfferte
+      ? {
+          libelle: `Livraison gratuite dès ${formatPrice(seuilLivraisonOfferte)}`,
+          href: '/livraison-retours',
+          icone: 'livraison',
+        }
+      : null,
+    promesseRetour()
+      ? { libelle: promesseRetour()!, href: '/livraison-retours#retours', icone: 'retour' }
+      : null,
+  ].filter((engagement): engagement is Engagement => engagement !== null)
+
   return (
     <HeaderShell>
-      {/* ---------------- Bandeau de réassurance ----------------
-          Il s'efface au défilement : c'est une information d'accueil, pas un
-          outil de navigation. Ce qu'il annonce se retrouve en pied de page et
-          dans le panier. */}
+      {/* ---------------- Bandeau des engagements ----------------
+          Les cinq promesses de la boutique, sur le modèle du bandeau de
+          LedPerf (demande de l'exploitant, 20 novembre 2026). Il s'efface au
+          défilement : c'est une information d'accueil, pas un outil de
+          navigation. Chaque engagement mène à la page qui le détaille, et ce
+          qu'il annonce se retrouve en pied de page et dans le panier. */}
       <div
         className={
-          /* .utility-bar : 29 px (26 sous 800 px), fond #202326, texte 10 px. */
-          'overflow-hidden bg-[#202326] text-[#d4d9db] transition-[height] duration-200 motion-reduce:transition-none ' +
-          'h-[26px] md:h-[29px] group-data-scrolled/header:h-0'
+          'on-dark overflow-hidden bg-brand text-white transition-[height] duration-200 motion-reduce:transition-none ' +
+          'h-[30px] lg:h-8 group-data-scrolled/header:h-0'
         }
       >
-        <div className="container-page flex h-[26px] items-center justify-between gap-5 text-[9px] md:h-[29px] md:text-[10px]">
-          <div className="flex min-w-0 items-center gap-4">
-            <p className="flex min-w-0 items-center gap-2">
-              <IconTruck className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
-              <span className="truncate">
-                {seuilLivraisonOfferte
-                  ? `Livraison offerte dès ${formatPrice(seuilLivraisonOfferte)}`
-                  : 'Livraison et retours'}
-              </span>
-            </p>
-            {/* La garantie, deuxième argument de confiance après la livraison. */}
-            {dureeGarantie() ? (
-              <Link
-                href="/garanties"
-                className="flex min-w-0 items-center gap-2 transition-colors hover:text-white"
-              >
-                <span aria-hidden className="text-white/25">|</span>
-                <IconShield className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
-                <span className="truncate">Garantie {dureeGarantie()}</span>
-              </Link>
-            ) : null}
-            {/* Satisfait ou remboursé : mis en avant (décision de l'exploitant, 9 novembre 2026). */}
-            {promesseRetour() ? (
-              <Link
-                href="/livraison-retours#retours"
-                className="hidden min-w-0 items-center gap-2 transition-colors hover:text-white sm:flex"
-              >
-                <span aria-hidden className="text-white/25">|</span>
-                <IconReturn className="size-[13px] shrink-0 md:size-[14px]" strokeWidth={1.4} />
-                <span className="truncate font-semibold text-white">{promesseRetour()}</span>
-              </Link>
-            ) : null}
-          </div>
-
-          {siteConfig.demoBanner ? (
-            <p className="hidden text-[8px] tracking-[0.5px] text-[#8e999f] uppercase lg:block">
-              {siteConfig.demoBannerLabel}
-            </p>
-          ) : null}
-
-          <nav
-            aria-label="Informations pratiques"
-            className="hidden items-center gap-4 text-[9px] text-[#c3c9cc] md:flex lg:gap-6"
-          >
-            {topNav.map((item, index) => (
-              <span key={item.href} className="flex items-center gap-4">
-                {index > 0 ? <span aria-hidden className="text-white/25">|</span> : null}
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-[7px] rounded-xs transition-colors hover:text-white"
-                >
-                  {item.icon === 'return' ? (
-                    <IconReturn className="size-[14px] shrink-0" strokeWidth={1.4} />
-                  ) : (
-                    <IconHeadset className="size-[14px] shrink-0" strokeWidth={1.4} />
-                  )}
-                  {item.label}
-                </Link>
-              </span>
-            ))}
-          </nav>
+        <div className="container-page h-[30px] text-[11.5px] font-medium lg:h-8 lg:text-[12px]">
+          <BandeauEngagements engagements={engagements} />
         </div>
       </div>
 

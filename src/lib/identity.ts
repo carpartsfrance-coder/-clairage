@@ -151,11 +151,13 @@ export const commercialTerms = {
    */
   warrantyMonths: 60 as number | null,
   /**
-   * Estimation d'expédition affichée en fiche produit.
-   * Null tant qu'aucune méthode de livraison réelle n'est configurée : les
-   * délais doivent provenir de ShippingMethod, pas d'une promesse générique.
+   * Délai d'expédition promis : « Expédition sous 24 h » dans le bandeau du
+   * haut, et « Les commandes sont expédiées sous 24 h » à l'article 6 des CGV
+   * (décision de l'exploitant, 20 novembre 2026). C'est le délai de
+   * préparation, pas de livraison : celui-ci reste propre à chaque méthode
+   * (ShippingMethod). `null` retire la promesse des deux endroits.
    */
-  dispatchEstimate: null as string | null,
+  dispatchEstimate: '24 h' as string | null,
 } as const
 
 /**

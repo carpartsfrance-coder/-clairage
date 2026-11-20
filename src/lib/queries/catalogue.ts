@@ -49,7 +49,6 @@ export type ProductListItem = {
   image: { url: string; alt: string } | null
   /** Prix du conditionnement le moins cher. */
   fromPriceCents: number
-  hasKit: boolean
   /**
    * Prix du kit complet, quand il en existe un ET qu'il coûte plus cher que
    * l'entrée de gamme.
@@ -522,8 +521,7 @@ async function lireListe(
         categorySlug: category?.slug ?? null,
         image: cover ? { url: cover.url, alt: cover.alt ?? product.name } : null,
         fromPriceCents: cheapest.priceCents,
-        hasKit: product.variants.some((variant) => variant.packaging === 'KIT'),
-        // Le moins cher des kits : c'est celui que la pastille désigne. On ne
+        // Le moins cher des kits. On ne
         // le renvoie que s'il est plus cher que l'entrée de gamme, sinon les
         // deux prix affichés seraient le même nombre.
         kitPriceCents: (() => {
