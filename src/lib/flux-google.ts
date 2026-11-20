@@ -28,7 +28,10 @@ export type ArticleFlux = {
   variants: Array<{
     sku: string
     name: string
+    /** Prix de vente, celui que le client paie. */
     priceCents: number
+    /** Prix barré, quand il y en a un : annoncé à Google en prix + prix soldé. */
+    compareAtCents?: number | null
     etat: 'IN_STOCK' | 'LOW_STOCK' | 'BACKORDER' | 'OUT_OF_STOCK'
   }>
 }
@@ -125,6 +128,20 @@ export function lignesDeLArticle(
   const lignes: string[] = []
 
   for (const variante of variantes) {
+    /*
+      Prix barré : `price` porte le prix d'avant et `sale_price` le prix payé.
+      C'est ce couple qui fait afficher par Google Shopping le prix barré et
+      l'étiquette « PROMOTION » / « x % DE REMISE », comme chez LedPerf. Les
+      frais de port et la tranche de prix suivent le prix réellement payé.
+    */
+    const enPromotion =
+      typeof variante.compareAtCents === 'number' && variante.compareAtCents > variante.priceCents
+    const lignesPrix = enPromotion
+      ? [
+          `<g:price>${prix(variante.compareAtCents as number)}</g:price>`,
+          `<g:sale_price>${prix(variante.priceCents)}</g:sale_price>`,
+        ]
+      : [`<g:price>${prix(variante.priceCents)}</g:price>`]
     const champs: string[] = [
       `<g:id>${echapperXml(variante.sku)}</g:id>`,
       `<g:title>${echapperXml(
@@ -137,7 +154,7 @@ export function lignesDeLArticle(
         .slice(1, 11)
         .map((image) => `<g:additional_image_link>${echapperXml(absolue(image))}</g:additional_image_link>`),
       `<g:availability>${DISPONIBILITE[variante.etat]}</g:availability>`,
-      `<g:price>${prix(variante.priceCents)}</g:price>`,
+      ...lignesPrix,
       `<g:condition>new</g:condition>`,
       `<g:brand>${echapperXml(article.brand ?? titre)}</g:brand>`,
       `<g:identifier_exists>no</g:identifier_exists>`,

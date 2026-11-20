@@ -54,6 +54,7 @@ const SELECTION = {
       sku: true,
       name: true,
       priceCents: true,
+      compareAtCents: true,
       stockOnHand: true,
       stockReserved: true,
       lowStockThreshold: true,
@@ -144,6 +145,7 @@ function versArticle(produit: ProduitLu, periode: Periode | undefined): ArticleF
       sku: variante.sku,
       name: variante.name,
       priceCents: variante.priceCents,
+      compareAtCents: variante.compareAtCents,
       etat: (variante.components.length > 0
         ? availabilityForKit(variante.components)
         : availabilityForVariant(variante)

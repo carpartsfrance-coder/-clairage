@@ -46,6 +46,22 @@ describe('flux Google Merchant Center', () => {
     expect(xml).toContain('<g:country>FR</g:country><g:price>0.00 EUR</g:price>')
   })
 
+  it('annonce un prix barré en prix + prix soldé, port calculé sur le prix payé', () => {
+    const promo = { ...article, variants: [{ ...article.variants[0], priceCents: 7600, compareAtCents: 9200 }] }
+    const { xml } = construireFlux({ siteUrl: 'https://ledvroom.com', titre: 'LEDVROOM', articles: [promo], tarifs })
+    expect(xml).toContain('<g:price>92.00 EUR</g:price><g:sale_price>76.00 EUR</g:sale_price>')
+    // 76 € est sous le seuil de 80 € : le port est dû, même si 92 € le dépasse.
+    expect(xml).toContain('<g:country>FR</g:country><g:price>5.90 EUR</g:price>')
+    expect(xml).toContain('<g:custom_label_0>50 à 100 €</g:custom_label_0>')
+  })
+
+  it('ignore un prix barré qui ne baisse rien', () => {
+    const sansBaisse = { ...article, variants: [{ ...article.variants[0], compareAtCents: 2590 }] }
+    const { xml } = construireFlux({ siteUrl: 'https://ledvroom.com', titre: 'LEDVROOM', articles: [sansBaisse], tarifs })
+    expect(xml).toContain('<g:price>25.90 EUR</g:price>')
+    expect(xml).not.toContain('sale_price')
+  })
+
   it('écarte un produit sans image', () => {
     const { lignes } = construireFlux({ siteUrl: 'https://ledvroom.com', titre: 'LEDVROOM', articles: [{ ...article, images: [] }], tarifs })
     expect(lignes).toBe(0)

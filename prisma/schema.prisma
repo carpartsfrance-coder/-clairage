@@ -1020,6 +1020,21 @@ model Refund {
   createdAt   DateTime @default(now())
 }
 
+/// Prix d'une variante juste avant une campagne de prix barrés.
+///
+/// Une campagne (Black Friday 2026 : 1 € sous le prix promo de LedPerf) baisse
+/// `priceCents` et pose l'ancien prix en `compareAtCents`. Cette table garde
+/// les deux valeurs d'avant, variante par variante, pour pouvoir tout remettre
+/// à l'identique à la fin de la campagne — sans deviner quel prix barré
+/// existait déjà avant elle.
+model PrixAvantPromotion {
+  variantId      String   @id
+  priceCents     Int
+  compareAtCents Int?
+  campagne       String
+  createdAt      DateTime @default(now())
+}
+
 model ShippingZone {
   id        String   @id @default(cuid())
   code      String   @unique
