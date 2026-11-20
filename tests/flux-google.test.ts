@@ -55,6 +55,13 @@ describe('flux Google Merchant Center', () => {
     expect(xml).toContain('<g:custom_label_0>50 à 100 €</g:custom_label_0>')
   })
 
+  it('garde la tranche de prix du prix de référence pendant une promotion', () => {
+    const promo = { ...article, variants: [{ ...article.variants[0], priceCents: 1871, compareAtCents: 2390 }] }
+    const { xml } = construireFlux({ siteUrl: 'https://ledvroom.com', titre: 'LEDVROOM', articles: [promo], tarifs })
+    expect(xml).toContain('<g:sale_price>18.71 EUR</g:sale_price>')
+    expect(xml).toContain('<g:custom_label_0>20 à 50 €</g:custom_label_0>')
+  })
+
   it('ignore un prix barré qui ne baisse rien', () => {
     const sansBaisse = { ...article, variants: [{ ...article.variants[0], compareAtCents: 2590 }] }
     const { xml } = construireFlux({ siteUrl: 'https://ledvroom.com', titre: 'LEDVROOM', articles: [sansBaisse], tarifs })

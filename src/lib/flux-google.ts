@@ -161,7 +161,13 @@ export function lignesDeLArticle(
       // « Véhicules et accessoires » : la catégorie où Google accepte les
       // visuels d'illustration (règles des images produit de Merchant Center).
       `<g:google_product_category>888</g:google_product_category>`,
-      `<g:custom_label_0>${echapperXml(tranchePrix(variante.priceCents))}</g:custom_label_0>`,
+      // Tranche de prix : celle du prix de référence. Les groupes de produits
+      // de la campagne Shopping en dépendent (« Moins de 20 € » exclu) ; la
+      // calculer sur le prix soldé sortait 3 063 produits de la campagne au
+      // premier jour du Black Friday.
+      `<g:custom_label_0>${echapperXml(
+        tranchePrix(enPromotion ? (variante.compareAtCents as number) : variante.priceCents),
+      )}</g:custom_label_0>`,
     ]
     if (plusieurs) champs.push(`<g:item_group_id>${echapperXml(article.slug)}</g:item_group_id>`)
     if (article.productType) {

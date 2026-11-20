@@ -889,6 +889,21 @@ export function BuyBox({
 
           <div className="flex w-full items-center justify-between gap-3.5 fiche:w-auto fiche:gap-6">
             <div className="shrink-0">
+              {/*
+                Le prix barré aussi dans la barre : sur téléphone, c'est elle
+                qui porte le prix au premier écran. Un visiteur venu d'une
+                annonce Google « PROMOTION » doit retrouver la remise sans
+                descendre jusqu'au bloc d'achat. Au-dessus du prix, pas à côté :
+                la largeur reste au bouton.
+              */}
+              {selected.compareAtCents && selected.compareAtCents > selected.priceCents ? (
+                <span className="mb-0.5 flex items-center gap-1.5 text-[12px] leading-none whitespace-nowrap">
+                  <s className="text-[#6b6d70]">{formatPrice(selected.compareAtCents + accessoriesTotal)}</s>
+                  <span className="rounded bg-brand px-1 py-0.5 text-[10px] font-bold text-white">
+                    −{Math.round((1 - selected.priceCents / selected.compareAtCents) * 100)} %
+                  </span>
+                </span>
+              ) : null}
               <strong className="block text-[21px] leading-[1.15] tracking-[-0.6px] fiche:text-[24px]">
                 {formatPrice(total)}
               </strong>
