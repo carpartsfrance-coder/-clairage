@@ -17,6 +17,7 @@ import { Alert } from '@/components/ui/Surface'
 import { RoadApprovalNote } from '@/components/ui/Badge'
 import { nomUtileDuConditionnement } from '@/lib/nom-conditionnement'
 import { mesurer } from '@/components/mesure/file'
+import { annoncerAjoutPanier, type AnnonceAjoutPanier } from '@/lib/annonce-ajout-panier'
 import {
   IconCart,
   IconMinus,
@@ -119,6 +120,21 @@ export function BuyBox({
   const lienChoixVehicule = `/vehicule?retour=${encodeURIComponent(usePathname())}`
   const [pending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<{ tone: 'ok' | 'danger'; text: string } | null>(null)
+  /*
+    Quelques secondes après un ajout réussi, les deux boutons disent « Ajouté
+    au panier » en vert, et un nouvel appui rouvre la confirmation au lieu
+    d'ajouter encore. Sans cela, un client qui ne voyait rien bouger appuyait
+    plusieurs fois (19 novembre 2026 : 4 × le même pack en une seconde).
+  */
+  const [vientDAjouter, setVientDAjouter] = useState(false)
+  const minuteurAjout = useRef<number | null>(null)
+  const derniereAnnonce = useRef<AnnonceAjoutPanier | null>(null)
+  useEffect(
+    () => () => {
+      if (minuteurAjout.current !== null) window.clearTimeout(minuteurAjout.current)
+    },
+    [],
+  )
 
   /*
     Le conditionnement choisi est partagé avec le reste de la fiche
@@ -137,6 +153,7 @@ export function BuyBox({
   const setSelectedId = (id: string) => {
     choisirConditionnement(id)
     setQuantite(1)
+    setVientDAjouter(false)
   }
 
   const [acceptedAccessories, setAcceptedAccessories] = useState<string[]>([])
@@ -308,9 +325,14 @@ export function BuyBox({
   /* Rupture au sens strict : ni stock, ni vente à découvert. */
   const rupture = selected.availability.state === 'OUT_OF_STOCK'
 
-  const libelleBouton = pending ? 'Ajout en cours…' : 'Ajouter au panier'
+  const libelleBouton = pending ? 'Ajout en cours…' : vientDAjouter ? 'Ajouté au panier' : 'Ajouter au panier'
+  const IconeBouton = vientDAjouter && !pending ? IconCheck : IconCart
 
   function submit() {
+    if (vientDAjouter && derniereAnnonce.current) {
+      annoncerAjoutPanier(derniereAnnonce.current)
+      return
+    }
     setFeedback(null)
     startTransition(async () => {
       const result = await addToCart({
@@ -331,6 +353,23 @@ export function BuyBox({
           se vide.
         */
         mesurer('ajout-panier', { label: productName, value: total * quantite })
+        /*
+          Le message ci-dessus est dans le bloc d'achat : depuis la barre du
+          bas, sur téléphone, il est hors de l'écran. La confirmation, elle,
+          s'affiche là où le client vient d'appuyer.
+        */
+        const annonce: AnnonceAjoutPanier = {
+          titre: productName,
+          image: thumbnail,
+          quantite,
+          livraison: result.livraison,
+          note: result.message,
+        }
+        derniereAnnonce.current = annonce
+        annoncerAjoutPanier(annonce)
+        setVientDAjouter(true)
+        if (minuteurAjout.current !== null) window.clearTimeout(minuteurAjout.current)
+        minuteurAjout.current = window.setTimeout(() => setVientDAjouter(false), 4000)
         // Rafraîchit le compteur du header, qui est rendu côté serveur.
         router.refresh()
       } else {
@@ -708,7 +747,10 @@ export function BuyBox({
         <div className="flex gap-2.5">
           <SelecteurQuantite
             valeur={quantite}
-            onChange={setQuantite}
+            onChange={(valeur) => {
+              setQuantite(valeur)
+              setVientDAjouter(false)
+            }}
             maximum={selected.availability.sellable}
             disabled={!purchasable || pending}
           />
@@ -718,9 +760,12 @@ export function BuyBox({
             data-cta-achat
             disabled={!purchasable || pending}
             onClick={submit}
-            className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl bg-brand px-5 py-3 text-[16px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:text-[17px]"
+            className={cn(
+              'flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl px-5 py-3 text-[16px] font-bold text-white transition-colors disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:text-[17px]',
+              vientDAjouter ? 'bg-ok' : 'bg-brand hover:bg-brand-dark',
+            )}
           >
-            <IconCart className="size-5 shrink-0" />
+            <IconeBouton className="size-5 shrink-0" />
             <span>{libelleBouton}</span>
           </button>
         </div>
@@ -868,9 +913,12 @@ export function BuyBox({
               data-cta-achat="barre"
               disabled={!purchasable || pending}
               onClick={submit}
-              className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none"
+              className={cn(
+                'flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] max-[359px]:gap-1.5 max-[359px]:px-3 max-[359px]:text-[14px] font-bold text-white transition-colors disabled:cursor-not-allowed disabled:bg-[#bbb] fiche:min-w-[240px] fiche:flex-none',
+                vientDAjouter ? 'bg-ok' : 'bg-brand hover:bg-brand-dark',
+              )}
             >
-              <IconCart className="size-[18px] shrink-0" />
+              <IconeBouton className="size-[18px] shrink-0" />
               <span className="truncate">{libelleBouton}</span>
             </button>
           </div>

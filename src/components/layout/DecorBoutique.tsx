@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { Header } from './Header'
 import { Footer } from './Footer'
 import { BarreDeNavigation } from './BarreDeNavigation'
+import { ConfirmationAjout } from './ConfirmationAjout'
 import { Mesure } from '@/components/mesure/Mesure'
 import { Consentement } from '@/components/consentement/Consentement'
 import { baliseGoogleAdsConfiguree } from '@/lib/google-ads'
@@ -62,6 +63,8 @@ export function DecorBoutique({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Footer />
+      {/* « Ajouté au panier », là où le client regarde (voir le composant). */}
+      <ConfirmationAjout />
       <Suspense fallback={null}>
         <Mesure />
       </Suspense>

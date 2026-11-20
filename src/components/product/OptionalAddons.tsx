@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ProductView } from '@/lib/queries/product'
 import { addToCart } from '@/lib/actions/cart'
+import { annoncerAjoutPanier } from '@/lib/annonce-ajout-panier'
 import { formatPrice } from '@/lib/identity'
 import { availabilityLabel, isPurchasable } from '@/lib/stock'
 import { Alert } from '@/components/ui/Surface'
@@ -117,7 +118,14 @@ export function OptionalAddons({
       // Ce qui est parti sort de la sélection ; ce qui a échoué reste coché,
       // pour que le client voie exactement ce qu'il reste à régler.
       setSelection(echecs.map((echec) => echec.slug))
-      if (ajoutes > 0) router.refresh()
+      if (ajoutes > 0) {
+        const partis = retenus.filter((addon) => !echecs.some((echec) => echec.slug === addon.slug))
+        annoncerAjoutPanier({
+          titre: partis.length === 1 ? partis[0].name : `${partis.length} compléments`,
+          note: remarques.join(' ') || undefined,
+        })
+        router.refresh()
+      }
 
       if (echecs.length > 0) {
         setFeedback({

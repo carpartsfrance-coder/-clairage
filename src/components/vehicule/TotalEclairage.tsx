@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addPacksToCart } from '@/lib/actions/cart'
+import { annoncerAjoutPanier } from '@/lib/annonce-ajout-panier'
 import { formatPrice } from '@/lib/identity'
 import { IconCheck, IconPack, IconPlus } from '@/components/ui/icons'
 
@@ -55,6 +56,12 @@ export function TotalEclairage({
     startTransition(async () => {
       const resultat = await addPacksToCart({ variantIds })
       if (resultat.ok) {
+        // La confirmation à l'écran, avec le chemin vers le panier (voir lib/annonce-ajout-panier).
+        annoncerAjoutPanier({
+          titre: `${variantIds.length} packs pour votre ${titre}`,
+          livraison: resultat.livraison,
+          note: resultat.message,
+        })
         setRetour({
           ok: true,
           texte: [resultat.message ?? `${variantIds.length} packs ajoutés au panier.`, resultat.livraison]

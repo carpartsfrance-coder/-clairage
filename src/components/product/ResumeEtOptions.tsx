@@ -11,6 +11,8 @@ import { IconCheck, IconPlus } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 import { presentationDeCarte } from '@/lib/carte-titre'
 import { cleDEmplacement, unParEmplacement } from '@/lib/un-par-emplacement'
+import { mesurer } from '@/components/mesure/file'
+import { annoncerAjoutPanier } from '@/lib/annonce-ajout-panier'
 
 /**
  * Colonne d'achat plus fournie, comme chez le concurrent (demande de
@@ -58,12 +60,35 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
   function ajouter(variantId: string) {
     setErreur(null)
     setEnCours(variantId)
+    const pack = packs.find((p) => p.variantId === variantId)
+    const titre = pack ? (presentationDeCarte(pack.nom, pack.sousTitre).titre ?? pack.titre) : null
     startTransition(async () => {
       const r = await addToCart({ variantId, quantity: 1, extraVariantIds: [] })
       if (r.ok) {
         setAjoutes((d) => [...d, variantId])
+        /*
+          Le bouton ne disait que « Ajouté » : ni message, ni chemin vers le
+          panier, et l'ajout n'était pas compté dans les statistiques
+          (19 novembre 2026, visite Mercedes Classe A de 9 min 40).
+        */
+        mesurer('ajout-panier', {
+          label: titre ?? `Pack pour ${vehicule}`,
+          value: pack?.prixCents,
+          zone: 'Complétez l’éclairage',
+        })
+        if (titre) {
+          annoncerAjoutPanier({
+            titre: `${titre} pour votre ${vehicule}`,
+            image: pack?.image,
+            livraison: r.livraison,
+            note: r.message,
+          })
+        }
         router.refresh()
-      } else setErreur(r.error)
+      } else {
+        setErreur(r.error)
+        mesurer('ajout-panier-refuse', { label: r.error })
+      }
       setEnCours(null)
     })
   }
@@ -167,8 +192,21 @@ export function OptionsDuVehicule({ vehicule, packs }: { vehicule: string; packs
                 const r = await addPacksToCart({ variantIds: ids })
                 if (r.ok) {
                   setAjoutes((d) => [...new Set([...d, ...ids])])
+                  mesurer('ajout-pack', {
+                    label: vehicule,
+                    value: packs.filter((p) => ids.includes(p.variantId)).reduce((t, p) => t + p.prixCents, 0),
+                    zone: 'Complétez l’éclairage',
+                  })
+                  annoncerAjoutPanier({
+                    titre: `${ids.length} packs pour votre ${vehicule}`,
+                    livraison: r.livraison,
+                    note: r.message,
+                  })
                   router.refresh()
-                } else setErreur(r.error)
+                } else {
+                  setErreur(r.error)
+                  mesurer('ajout-panier-refuse', { label: r.error })
+                }
                 setEnCours(null)
               })
             }}
