@@ -67,13 +67,9 @@ export function ProductCard({
             </div>
           )}
 
-          {/* La pastille annonce l'existence d'un kit, pas le prix affiché
-              dessous : les deux prix sont donnés côte à côte dans la carte. */}
-          {product.hasKit ? (
-            <Badge tone="dark" className="absolute left-3 top-3">
-              Existe en kit complet
-            </Badge>
-          ) : null}
+          {/* Plus de pastille « Existe en kit complet » sur la photo (retirée
+              à la demande de l'exploitant, 20 novembre 2026) : le kit reste
+              annoncé par son prix, donné plus bas à côté de l'autre. */}
         </div>
 
         <div className="flex flex-1 flex-col gap-2 border-t border-line p-4">
