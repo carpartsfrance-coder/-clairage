@@ -5,7 +5,7 @@ import { formatPrice } from '@/lib/identity'
 import { availabilityLabel } from '@/lib/stock'
 import { cn } from '@/lib/cn'
 import { Badge, FitmentBadge } from '@/components/ui/Badge'
-import { IconArrowRight, IconCheck } from '@/components/ui/icons'
+import { IconArrowRight, IconCheck, IconShield } from '@/components/ui/icons'
 
 /**
  * Carte produit partagée par les listes, la recherche et les résultats
@@ -110,7 +110,11 @@ export function ProductCard({
                   key={atout}
                   className="inline-flex items-center gap-1 text-xs font-semibold text-[#1f5a39]"
                 >
-                  <IconCheck className="size-3.5 shrink-0 text-ok" />
+                  {atout === 'Homologué route' ? (
+                    <IconShield className="size-3.5 shrink-0 text-ok" />
+                  ) : (
+                    <IconCheck className="size-3.5 shrink-0 text-ok" />
+                  )}
                   {atout}
                 </li>
               ))}

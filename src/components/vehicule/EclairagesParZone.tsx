@@ -4,7 +4,7 @@ import { presentationDeCarte } from '@/lib/carte-titre'
 import { useMemo, useState } from 'react'
 import Image from '@/components/ui/Image'
 import Link from 'next/link'
-import { IconArrowRight, IconCheck, IconChevronDown } from '@/components/ui/icons'
+import { IconArrowRight, IconCheck, IconChevronDown, IconShield } from '@/components/ui/icons'
 import { formatPrice } from '@/lib/identity'
 import { cn } from '@/lib/cn'
 import {
@@ -277,7 +277,11 @@ function CarteDEclairage({
                 key={atout}
                 className="inline-flex items-center gap-1 text-[11px] leading-tight font-semibold text-[#1f5a39]"
               >
-                <IconCheck className="size-3 shrink-0 text-ok" />
+                {atout === 'Homologué route' ? (
+                  <IconShield className="size-3 shrink-0 text-ok" />
+                ) : (
+                  <IconCheck className="size-3 shrink-0 text-ok" />
+                )}
                 {atout}
               </li>
             ))}

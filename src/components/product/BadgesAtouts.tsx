@@ -1,5 +1,5 @@
 import type { Atout } from '@/lib/caracteristiques'
-import { IconCheck, IconInfo } from '@/components/ui/icons'
+import { IconCheck, IconInfo, IconShield } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 
 /**
@@ -36,15 +36,26 @@ export function BadgesAtouts({
   if (visibles.length === 0 && !usage) return null
   return (
     <ul aria-label="Les atouts du produit" className={cn('flex flex-wrap gap-1.5 fiche:gap-2', className)}>
-      {visibles.map((atout) => (
-        <li
-          key={atout.code}
-          className="inline-flex items-center gap-1.5 rounded-full border border-ok-border bg-ok-soft px-2.5 py-1 text-[12px] leading-none font-semibold text-[#1f5a39] fiche:px-3 fiche:py-1.5 fiche:text-[13px]"
-        >
-          <IconCheck className="size-[13px] shrink-0 text-ok fiche:size-[15px]" />
-          {atout.badge}
-        </li>
-      ))}
+      {visibles.map((atout) =>
+        // « Homologué route » se voit avant les autres (exploitant, 21 novembre 2026) : badge plein, bouclier.
+        atout.code === 'HOMOLOGUE' ? (
+          <li
+            key={atout.code}
+            className="inline-flex items-center gap-1.5 rounded-full border border-ok bg-ok px-2.5 py-1 text-[12px] leading-none font-bold text-white fiche:px-3 fiche:py-1.5 fiche:text-[13px]"
+          >
+            <IconShield className="size-[13px] shrink-0 fiche:size-[15px]" />
+            {atout.badge}
+          </li>
+        ) : (
+          <li
+            key={atout.code}
+            className="inline-flex items-center gap-1.5 rounded-full border border-ok-border bg-ok-soft px-2.5 py-1 text-[12px] leading-none font-semibold text-[#1f5a39] fiche:px-3 fiche:py-1.5 fiche:text-[13px]"
+          >
+            <IconCheck className="size-[13px] shrink-0 text-ok fiche:size-[15px]" />
+            {atout.badge}
+          </li>
+        ),
+      )}
       {usage ? (
         <li className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-surface-muted px-2.5 py-1 text-[12px] leading-none font-semibold text-muted-strong fiche:px-3 fiche:py-1.5 fiche:text-[13px]">
           <IconInfo className="size-[13px] shrink-0 fiche:size-[15px]" />
