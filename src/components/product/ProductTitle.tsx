@@ -104,9 +104,8 @@ export function ProductTitle({
         téléphone le titre est le tout premier bloc : la note y est lue avant
         le prix, avant la photo, avant tout le reste.
 
-        Elle nomme l'entreprise — « Société notée 4,4/5 sur Google » — parce
-        qu'à cet endroit des étoiles seules seraient prises pour la note de ce
-        produit. Voir `confiance/NoteGoogle.tsx`.
+        Étoiles et « 4,4/5 » seulement, sans « Société notée sur Google »
+        (exploitant, 22 novembre 2026). Voir `confiance/NoteGoogle.tsx`.
       */}
       <NoteGoogle variante="ligne" className="mb-2.5 fiche:mb-3" />
 
