@@ -16,3 +16,10 @@ next-env.d.ts
 # Scripts jetables de mise au point : jamais versionnés.
 scripts/_*
 public/uploads/
+
+# Relevé LedPerf : fichiers de travail (voir scripts/ledperf/README.md).
+scripts/ledperf/cache/
+scripts/ledperf/*.jsonl
+scripts/ledperf/*.json
+scripts/ledperf/*.xml
+scripts/ledperf/*.txt
