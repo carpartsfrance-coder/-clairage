@@ -23,16 +23,13 @@ import { cn } from '@/lib/cn'
  *   arrondies, chiffre en gras devant, « /5 » en gris clair, filet d'un
  *   pixel, puis la source.
  *
- * **Le libellé de la forme `ligne` nomme l'entreprise, et ce n'est pas un
- * détail.** Au-dessus d'un titre de produit, des étoiles sont lues partout
- * comme la note DE CE PRODUIT — c'est la convention de tout le commerce en
- * ligne, et c'est ce que fait le concurrent qui a servi d'exemple, avec ses
- * vrais avis produit. Afficher ici la note de l'entreprise sans le dire
- * laisserait croire que cette ampoule-ci a été notée par ses acheteurs.
- * « Société notée 4,4/5 sur Google » coûte trois mots et dit la vérité.
- *
- * Le mot est « Société », pas « Boutique » (exploitant, 19 novembre 2026) :
- * c'est l'entreprise qui est notée sur Google, pas le site.
+ * **La forme `ligne` n'affiche plus que les étoiles et « 4,4/5 »**
+ * (exploitant, 22 novembre 2026). Elle disait « Société notée sur Google »
+ * derrière un filet, parce qu'au-dessus d'un titre de produit des étoiles
+ * seules sont lues comme la note DE CE PRODUIT ; l'exploitant a retiré la
+ * mention. La source reste dite au lecteur d'écran (`aria-label`) et au
+ * survol (`title`), et la forme `bloc` du panier et de la commande garde
+ * « Avis Google » en toutes lettres.
  *
  * **Sans cadre** (relecture de l'exploitant, 19 novembre 2026). La première
  * version encadrait la note : bordure, fond gris, coins arrondis. Tout le
@@ -86,16 +83,14 @@ export function NoteGoogle({
 
   if (variante === 'ligne') {
     /*
-      La hiérarchie, et c'est tout l'objet du dessin : le chiffre d'abord, en
-      gras et en noir ; le « /5 » en gris clair, parce qu'il ne fait que donner
-      l'échelle ; la source en gris, derrière un filet d'un pixel. Dans la
-      version précédente, « 4,4 » et « sur Google » pesaient le même gris — on
-      lisait une phrase au lieu de voir une note.
+      La hiérarchie : le chiffre en gras et en noir, le « /5 » en gris clair,
+      parce qu'il ne fait que donner l'échelle.
     */
     return (
       <p
         role="img"
         aria-label={libelle}
+        title={libelle}
         className={cn('flex items-center gap-2 leading-[1.2] text-[#6b7075]', className)}
       >
         <Rangee proportion={proportion} taille="petite" />
@@ -103,8 +98,6 @@ export function NoteGoogle({
           <strong className="text-[13.5px] font-bold tracking-[-0.3px] text-ink">{note}</strong>
           <span className="text-[11.5px] text-[#a3a8ad]">/5</span>
         </span>
-        <span aria-hidden="true" className="h-[11px] w-px shrink-0 bg-[#dcdee0]" />
-        <span className="text-[11.5px] tracking-[0.1px]">Société notée sur Google</span>
       </p>
     )
   }
