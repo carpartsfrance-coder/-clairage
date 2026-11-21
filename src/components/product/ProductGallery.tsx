@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Image from '@/components/ui/Image'
 import type { GalleryItem } from '@/lib/queries/product'
 import { cn } from '@/lib/cn'
+import { remiseAffichee } from '@/lib/remise'
 import { estComparatifAvantApres } from '@/lib/media-comparatif'
 import { IconCheck, IconClose, IconInfo, IconPack, IconZoom } from '@/components/ui/icons'
 import { useProductConfiguration } from './ProductConfiguration'
@@ -67,6 +68,14 @@ export function ProductGallery({
     l'option ».
   */
   const imageOption = configuration?.selected?.image ?? null
+  /*
+    Remise de l'option choisie, posée sur la photo — sur téléphone seulement
+    (proposition A, 22 novembre 2026). Sur grand écran, elle est nommée au-dessus
+    du prix, et la photo garde sa seule étiquette.
+  */
+  const remise = configuration?.selected
+    ? remiseAffichee(configuration.selected.priceCents, configuration.selected.compareAtCents)
+    : null
   const items: GalleryItem[] = (() => {
     if (!imageOption) return itemsDeBase
     const i = itemsDeBase.findIndex((item) => item.role === 'PRODUCT')
@@ -279,6 +288,12 @@ export function ProductGallery({
                       : 'object-cover',
                 )}
               />
+
+              {remise ? (
+                <span className="pointer-events-none absolute top-3 left-3 z-[2] rounded-full bg-brand px-2.5 py-1 text-[13px] font-bold text-white fiche:hidden">
+                  −{remise} %
+                </span>
+              ) : null}
 
               {/*
                 .visual-label : une seule étiquette par visuel. La légende

@@ -5,7 +5,14 @@ import { prisma } from '../db'
 import { getCurrentUser } from '../auth/session'
 import { throttle, throttleMessage } from '../auth/throttle'
 import { nextOrderReference } from '../stock-reservation'
-import { buildContactDescription, contactSchema, contactSubjectLabel } from '../support'
+import {
+  buildContactDescription,
+  buildPlateDescription,
+  contactSchema,
+  contactSubjectLabel,
+  plateCheckSchema,
+} from '../support'
+import { getSelectedVehicle } from '../session'
 import { emailIsSimulated, sendEmail } from '../email'
 import { identity } from '../identity'
 
@@ -161,6 +168,94 @@ export async function requestFitmentCheck(
     return { reference, withoutEmail: !envoye }
   } catch (error) {
     console.error('[sav] demande de vérification impossible', error)
+    return { error: "La demande n'a pas pu être enregistrée. Réessayez dans un instant." }
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vérification par la plaque                                                 */
+/* -------------------------------------------------------------------------- */
+
+export type PlateCheckState = {
+  error?: string
+  /** Référence de la demande ouverte, quand elle a abouti. */
+  reference?: string
+}
+
+/**
+ * « Faites vérifier par un expert » : le client laisse sa plaque et son
+ * adresse, l'équipe identifie le véhicule et répond.
+ *
+ * Même file que les autres demandes (un `SupportTicket`, une référence SAV),
+ * même plafond de tentatives que la vérification de compatibilité : c'est la
+ * même porte, un visiteur anonyme qui écrit en base. Le produit est relu en
+ * base à partir de son slug ; le véhicule déjà choisi sur le site est relu dans
+ * la session. Du formulaire, seules la plaque et l'adresse sont reprises.
+ */
+export async function requestPlateCheck(
+  _state: PlateCheckState,
+  formData: FormData,
+): Promise<PlateCheckState> {
+  const parsed = plateCheckSchema.safeParse({
+    productSlug: formData.get('productSlug'),
+    plate: formData.get('plate') ?? '',
+    email: formData.get('email'),
+  })
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Demande incomplète.' }
+  }
+
+  const { productSlug, plate, email } = parsed.data
+
+  const limite = await throttle('fitmentCheck', email)
+  if (!limite.allowed) return { error: throttleMessage(limite.retryAfterSeconds) }
+
+  try {
+    const product = await prisma.product.findUnique({
+      where: { slug: productSlug },
+      select: { id: true, name: true, slug: true, status: true },
+    })
+    if (!product || product.status !== 'PUBLISHED') {
+      return { error: "Ce produit n'est plus disponible." }
+    }
+
+    const [user, vehicle] = await Promise.all([getCurrentUser(), getSelectedVehicle()])
+
+    const description = buildPlateDescription({
+      productName: product.name,
+      plate,
+      selectedVehicle: vehicle?.label ?? null,
+      account: user ? { email: user.email } : null,
+    })
+
+    const reference = await prisma.$transaction(async (tx) => {
+      const numero = await nextOrderReference(tx, 'SAV')
+      await tx.supportTicket.create({
+        data: {
+          reference: numero,
+          email,
+          userId: user?.id ?? null,
+          type: 'QUESTION',
+          reason: 'Vérification de compatibilité par plaque',
+          description,
+          // Les identifiants restent à côté du texte : l'équipe retrouve la
+          // fiche et la plaque sans relire la description.
+          lines: { plate, productId: product.id, productSlug: product.slug },
+        },
+      })
+      return numero
+    })
+
+    await prevenir({
+      reference,
+      email,
+      subject: 'Vérification de compatibilité par plaque',
+      description,
+      orderReference: null,
+    })
+    return { reference }
+  } catch (error) {
+    console.error('[sav] vérification par plaque impossible', error)
     return { error: "La demande n'a pas pu être enregistrée. Réessayez dans un instant." }
   }
 }

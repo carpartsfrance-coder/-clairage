@@ -9,9 +9,20 @@ import Link from 'next/link'
  * suffit, à condition de dire l'usage réel du formulaire et de renvoyer au
  * détail.
  */
-export function MentionDonnees({ usage, className }: { usage: string; className?: string }) {
+export function MentionDonnees({
+  usage,
+  className,
+  sombre = false,
+}: {
+  usage: string
+  className?: string
+  /** Sur fond sombre : un gris clair, le gris habituel n'y est pas lisible. */
+  sombre?: boolean
+}) {
   return (
-    <p className={`text-[10px] leading-[1.6] text-muted ${className ?? ''}`}>
+    <p
+      className={`text-[10px] leading-[1.6] ${sombre ? 'text-[#a9adb3]' : 'text-muted'} ${className ?? ''}`}
+    >
       {usage}{' '}
       <Link href="/confidentialite" className="underline underline-offset-2">
         Vos données et vos droits

@@ -3,7 +3,12 @@
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
 
-export type SectionNavItem = { href: string; label: string }
+export type SectionNavItem = {
+  href: string
+  label: string
+  /** Section masquée sur téléphone : l'ancre l'est aussi, elle ne mènerait nulle part. */
+  grandEcranSeulement?: boolean
+}
 
 /**
  * Ancres des sections — `.section-nav` de la référence.
@@ -59,6 +64,7 @@ export function SectionNav({ items }: { items: SectionNavItem[] }) {
               aria-current={courant ? 'true' : undefined}
               className={cn(
                 'relative shrink-0 py-4 text-[14px] fiche:py-[18px] fiche:text-[15px]',
+                item.grandEcranSeulement && 'max-fiche:hidden',
                 courant
                   ? 'font-bold text-ink after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-brand'
                   : 'text-[#5f6266] hover:text-ink',

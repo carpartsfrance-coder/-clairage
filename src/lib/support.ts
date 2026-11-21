@@ -139,3 +139,83 @@ export function buildContactDescription(input: {
     .filter((line) => line !== null)
     .join('\n')
 }
+
+/* -------------------------------------------------------------------------- */
+/* Vérification par la plaque d'immatriculation                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Plaque remise en forme : lettres et chiffres seuls, en majuscules.
+ *
+ * Le client tape « ab 123 cd », « AB-123-CD » ou « ab123cd » : ce n'est pas à
+ * lui de choisir le séparateur. Une plaque au format SIV (AB-123-CD, depuis
+ * 2009) est réécrite avec ses tirets ; une plaque plus ancienne (1234 AB 56)
+ * garde ses lettres et chiffres bout à bout, parce que le découpage change
+ * d'un département à l'autre et qu'un tiret mal placé ferait croire à une
+ * erreur de saisie.
+ */
+export function formatPlate(raw: string): string {
+  const compact = raw.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  if (/^[A-Z]{2}\d{3}[A-Z]{2}$/.test(compact)) {
+    return `${compact.slice(0, 2)}-${compact.slice(2, 5)}-${compact.slice(5)}`
+  }
+  return compact
+}
+
+/**
+ * Une plaque plausible : entre 5 et 10 caractères, au moins une lettre et un
+ * chiffre. Volontairement large — elle écarte « abc » et « 12345 », pas les
+ * plaques anciennes, de collection ou étrangères. C'est l'expert qui juge
+ * ensuite ; refuser ici une vraie plaque ferait perdre une vente sans rien
+ * protéger.
+ */
+export function isPlausiblePlate(plate: string): boolean {
+  const compact = plate.replace(/[^A-Z0-9]/g, '')
+  return compact.length >= 5 && compact.length <= 10 && /[A-Z]/.test(compact) && /\d/.test(compact)
+}
+
+/**
+ * Saisie du bloc « Faites vérifier par un expert » de la fiche produit.
+ *
+ * Le produit voyage par son `slug` et l'action le relit en base : le client
+ * ne peut pas faire écrire une demande sur autre chose que la fiche qu'il
+ * regarde. La plaque est le seul champ repris tel quel, et elle est annoncée
+ * comme une déclaration du client.
+ */
+export const plateCheckSchema = z.object({
+  productSlug: z.string().trim().min(1).max(200),
+  plate: z
+    .string()
+    .trim()
+    .max(20)
+    .transform(formatPlate)
+    .refine(isPlausiblePlate, { message: 'Plaque non reconnue. Exemple : AB-123-CD.' }),
+  email: z.string().trim().email('Adresse e-mail invalide').max(160),
+})
+
+export type PlateCheckInput = z.infer<typeof plateCheckSchema>
+
+/** Texte de la demande, tel que l'équipe le lira dans le back-office. */
+export function buildPlateDescription(input: {
+  /** Nom du produit relu en base. */
+  productName: string
+  /** Plaque telle que le client l'a saisie, déjà remise en forme. */
+  plate: string
+  /** Véhicule déjà choisi sur le site, relu depuis la session. */
+  selectedVehicle?: string | null
+  /** Compte connecté au moment de l'envoi, ou null. */
+  account: { email: string } | null
+}): string {
+  return [
+    `Produit : ${input.productName}`,
+    `Plaque indiquée par le client : ${input.plate}`,
+    input.selectedVehicle
+      ? `Véhicule choisi sur le site : ${input.selectedVehicle}`
+      : 'Véhicule choisi sur le site : aucun',
+    input.account
+      ? `Compte : ${input.account.email}`
+      : 'Compte : aucun (demande envoyée sans être connecté)',
+    '',
+    "À faire : identifier le véhicule à partir de la plaque (SIV), puis confirmer au client si ce produit lui convient.",
+  ].join('\n')
+}
