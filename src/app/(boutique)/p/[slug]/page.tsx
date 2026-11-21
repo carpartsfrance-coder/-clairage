@@ -36,6 +36,7 @@ import { VehicleBar } from '@/components/vehicle/VehicleBar'
 import { ProductGallery } from '@/components/product/ProductGallery'
 import { ProductTitle } from '@/components/product/ProductTitle'
 import { BuyBox } from '@/components/product/BuyBox'
+import { VerificationPlaque } from '@/components/product/VerificationPlaque'
 import { OptionsDuVehicule, ResumeFiche } from '@/components/product/ResumeEtOptions'
 import { ConfigurationContents } from '@/components/product/ConfigurationContents'
 import { KitContents } from '@/components/product/KitContents'
@@ -366,7 +367,17 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
       ? [{ href: '#dans-votre-kit', label: kitVariant ? 'Dans la boîte' : 'Caractéristiques' }]
       : []),
     ...(product.optionalAddons.length > 0 ? [{ href: '#complements', label: 'Compléments' }] : []),
-    ...(aContenuQuestions ? [{ href: '#questions', label: 'Vos questions' }] : []),
+    ...(aContenuQuestions
+      ? [
+          {
+            href: '#questions',
+            label: 'Vos questions',
+            // Sans avis, la section est masquée sur téléphone : ses questions
+            // sont déjà sous la demande par plaque.
+            grandEcranSeulement: product.reviews.length === 0,
+          },
+        ]
+      : []),
   ]
 
   /*
@@ -595,17 +606,30 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   garantie={dureeGarantie()}
                   concuPour={concuPour}
                   moto={product.vehicleType === 'MOTORCYCLE'}
-                  vehiculeDesComplements={
-                    complementaires && complementaires.packs.length > 0
-                      ? complementaires.vehicule
-                      : null
-                  }
                   autreVehicule={Boolean(
                     vehicle &&
                       vehiculeDeLaFiche &&
                       vehiculeDeLaFiche.generation.id !== vehicle.selection.generationId,
                   )}
                 />
+
+                {/* Un doute : la plaque suffit, un expert vérifie et répond. */}
+                <VerificationPlaque productSlug={product.slug} className="mt-4" />
+
+                {/*
+                  Sur téléphone, les questions suivent la demande par plaque
+                  (proposition B, retenue le 22 novembre 2026) : le client qui
+                  hésite trouve la réponse ou l'expert au même endroit, sans
+                  descendre jusqu'au bas de la fiche. Sur grand écran, elles
+                  restent dans la section « Vos questions ».
+                */}
+                {questions.length > 0 ? (
+                  <ListeQuestions
+                    questions={questions}
+                    titre="Vos questions"
+                    className="mt-6 fiche:hidden"
+                  />
+                ) : null}
               </div>
 
               {complementaires && complementaires.packs.length > 0 ? (
@@ -992,7 +1016,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           <section
             id="questions"
             aria-labelledby="titre-questions"
-            className="scroll-mt-32 border-t border-line"
+            className={cn(
+              'scroll-mt-32 border-t border-line',
+              // Sur téléphone, les questions sont déjà sous la demande par
+              // plaque : sans avis, la section n'a plus rien à montrer.
+              product.reviews.length === 0 && 'max-fiche:hidden',
+            )}
           >
             <div className="container-page pt-12 pb-10 fiche:grid fiche:grid-cols-[0.75fr_1.25fr] fiche:gap-14 fiche:py-20">
               <div>
@@ -1013,26 +1042,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
               <div className="mt-6 fiche:mt-0">
                 {questions.length > 0 ? (
-                  <ul className="border-t border-line">
-                    {questions.map((item) => (
-                      <li key={item.question} className="border-b border-line">
-                        <details className="group">
-                          <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-[16px] font-bold [&::-webkit-details-marker]:hidden">
-                            {item.question}
-                            <span
-                              aria-hidden="true"
-                              className="grid size-8 shrink-0 place-items-center rounded-full bg-[#f5f6f7] text-[18px] font-normal transition-transform group-open:rotate-45"
-                            >
-                              +
-                            </span>
-                          </summary>
-                          <p className="max-w-[640px] pb-5 text-[15px] leading-[1.7] text-[#3c4047]">
-                            {item.answer}
-                          </p>
-                        </details>
-                      </li>
-                    ))}
-                  </ul>
+                  <ListeQuestions questions={questions} className="max-fiche:hidden" />
                 ) : null}
 
                 {/*
@@ -1095,6 +1105,48 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         />
       </div>
     </ProductConfigurationProvider>
+  )
+}
+
+/**
+ * Les questions de la fiche, en accordéon. Une seule liste, rendue à deux
+ * endroits : sous la demande par plaque sur téléphone, dans la section
+ * « Vos questions » sur grand écran.
+ */
+function ListeQuestions({
+  questions,
+  titre,
+  className,
+}: {
+  questions: Array<{ question: string; answer: string }>
+  /** Titre affiché au-dessus, quand la liste n'est pas dans une section titrée. */
+  titre?: string
+  className?: string
+}) {
+  return (
+    <div className={className}>
+      {titre ? <h2 className="mb-2 text-[18px] font-bold tracking-[-0.3px]">{titre}</h2> : null}
+      <ul className="border-t border-line">
+        {questions.map((item) => (
+          <li key={item.question} className="border-b border-line">
+            <details className="group">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 text-[16px] font-bold [&::-webkit-details-marker]:hidden">
+                {item.question}
+                <span
+                  aria-hidden="true"
+                  className="grid size-8 shrink-0 place-items-center rounded-full bg-[#f5f6f7] text-[18px] font-normal transition-transform group-open:rotate-45"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="max-w-[640px] pb-5 text-[15px] leading-[1.7] text-[#3c4047]">
+                {item.answer}
+              </p>
+            </details>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

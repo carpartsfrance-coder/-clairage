@@ -24,13 +24,8 @@ import {
   IconMinus,
   IconPlus,
   IconCheck,
-  IconShield,
-  IconLock,
   IconCheckCircle,
-  IconChevronRight,
-  IconReturn,
   IconTruck,
-  IconWrench,
 } from '@/components/ui/icons'
 
 const PACKAGING_LABELS: Record<VariantView['packaging'], string> = {
@@ -39,12 +34,6 @@ const PACKAGING_LABELS: Record<VariantView['packaging'], string> = {
   PACK: 'Vendu en pack',
   KIT: 'Kit complet',
 }
-
-/**
- * Écart au seuil de livraison offerte en dessous duquel la jauge s'affiche :
- * 25 €, le prix d'un petit pack. Au-delà, le seuil est annoncé sans barre.
- */
-const ECART_MAX_JAUGE_CENTS = 2500
 
 /**
  * Bloc d'achat — `.buybox` et `.sticky-buy` du code de référence.
@@ -82,7 +71,6 @@ export function BuyBox({
   concuPour = null,
   moto = false,
   contentAnchor = '#dans-votre-kit',
-  vehiculeDesComplements = null,
   autreVehicule = false,
 }: {
   productName: string
@@ -102,11 +90,6 @@ export function BuyBox({
   /** Fiche moto : « la Yamaha », pas « le Yamaha ». */
   moto?: boolean
   contentAnchor?: string
-  /**
-   * Nom du véhicule quand la fiche propose d'autres packs pour lui
-   * (section `#completer`). Null : pas de lien vers ces packs.
-   */
-  vehiculeDesComplements?: string | null
   /**
    * Vrai quand la fiche est composée pour un véhicule (`concuPour`) et que le
    * client en a choisi un autre. Voir `pourUnAutre` plus bas.
@@ -283,25 +266,17 @@ export function BuyBox({
     ? null
     : nomUtileDuConditionnement(selected.name, productName)
 
-  // L'accroche de livraison suit le total réel : passer du kit aux ampoules
-  // seules peut faire repasser sous le seuil de franchise, et cela doit se voir
-  // tout de suite plutôt qu'au paiement.
+  /*
+    La ligne de livraison sous le bouton suit le total réel : passer du kit aux
+    ampoules seules change le prix du port, et cela doit se voir tout de suite
+    plutôt qu'au paiement.
+
+    Plus de ligne « Livraison offerte dès … » ni de jauge au-dessus du bouton
+    (exploitant, 21 novembre 2026) : le seuil reste annoncé dans le pied de
+    page, la page Livraison & retours et au panier.
+  */
   const sousTotal = total * quantite
   const delivery = buildDeliveryTeaser(shippingOffers, sousTotal)
-  /*
-    La jauge ne sert que quand le seuil est à portée : « plus que 51 € »
-    décourage plus qu'il n'aide. Au-delà de cet écart, une ligne simple
-    annonce le seuil, sans barre.
-  */
-  const ecartManquant = delivery?.missingForFreeCents ?? null
-  const jaugeAPortee = ecartManquant !== null && ecartManquant <= ECART_MAX_JAUGE_CENTS
-  const seuilFranchiseCents = ecartManquant !== null ? sousTotal + ecartManquant : null
-  /* Remplissage de la jauge de livraison offerte, en pourcentage. */
-  const progressionFranchise = !delivery
-    ? 0
-    : delivery.missingForFreeCents
-      ? Math.min(100, Math.round((sousTotal / (sousTotal + delivery.missingForFreeCents)) * 100))
-      : 100
   /*
     La compatibilité ne commande plus rien ici.
 
@@ -422,9 +397,6 @@ export function BuyBox({
             {typeHorsAmpoules(productName) ? 'Prévu pour' : 'Pack composé pour'}{' '}
             {leVehicule(concuPour, moto)}.
           </span>
-          {/* Libellé volontairement différent de « Voir les packs pour votre
-              … » de la ligne de livraison, qui mène aux compléments du
-              véhicule DE LA FICHE : deux liens voisins, deux destinations. */}
           <Link
             href="/vehicule/resultats"
             className="font-semibold text-ink underline underline-offset-2 hover:text-brand-dark"
@@ -435,27 +407,11 @@ export function BuyBox({
       ) : null}
 
       {/*
-        Ton neutre, pas vert : le vert dit « compatible », et rien n'est
-        encore confirmé tant que le client n'a pas indiqué sa version et son
-        équipement d'origine (relecture du 17 novembre 2026). Il reste réservé
-        à « Compatible avec votre … », plus haut.
+        Plus d'encadré bleu « Pack composé pour … — Vérifier avec mon véhicule
+        (version et équipement d'origine) » quand aucun véhicule n'est choisi
+        (exploitant, 21 novembre 2026) : le titre et le surtitre de la fiche
+        nomment déjà le véhicule.
       */}
-      {!vehicleLabel && concuPour ? (
-        <Alert
-          tone="info"
-          title={
-            typeHorsAmpoules(productName)
-              ? `Prévu pour ${leVehicule(concuPour, moto)}.`
-              : `Pack composé pour ${leVehicule(concuPour, moto)}.`
-          }
-          className="mb-5"
-        >
-          <Link href={lienChoixVehicule} className="font-semibold underline underline-offset-4">
-            Vérifier avec mon véhicule
-          </Link>{' '}
-          (version et équipement d&apos;origine).
-        </Alert>
-      ) : null}
 
       {/*
         Sur ordinateur, la barre « Votre véhicule » au-dessus de la galerie dit
@@ -472,6 +428,60 @@ export function BuyBox({
           pour savoir si cette référence vous convient.
         </Alert>
       ) : null}
+
+      {/* ---- Prix : proposition A (« L'achat d'abord »), retenue le
+          22 novembre 2026 ----
+          Le prix passe AVANT le choix des options, et sort de l'encadré gris :
+          prix, prix barré et économie sur une seule ligne. Sur téléphone, la
+          remise se lit sur la photo (ProductGallery) ; sur grand écran, elle
+          reste nommée au-dessus du prix (« Offre Black Friday −20 % »). */}
+      <div className="mb-4">
+        {/*
+          Prix barré : seulement s'il est saisi et plus haut que le prix de
+          vente. C'est au gérant d'y mettre un vrai prix de référence (le
+          plus bas pratiqué les 30 derniers jours, règle française).
+        */}
+        {enPromo ? (
+          <p className="mb-1 hidden text-[12px] font-bold tracking-[0.6px] text-brand-dark uppercase fiche:block">
+            {commercialTerms.offreEnCours ? `Offre ${commercialTerms.offreEnCours}` : 'Offre'}
+            {remise ? ` −${remise} %` : null}
+          </p>
+        ) : null}
+        <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <strong
+            className={cn(
+              'text-[32px] leading-[1.1] font-bold tracking-[-1px] fiche:text-[34px]',
+              enPromo && 'text-brand-dark',
+            )}
+          >
+            {formatPrice(total)}
+          </strong>
+          {enPromo ? (
+            <span className="text-[16px] text-[#6b6d70]">
+              <span className="sr-only">au lieu de </span>
+              <s>{formatPrice(selected.compareAtCents! + accessoriesTotal)}</s>
+            </span>
+          ) : null}
+          {enPromo ? (
+            <span className="text-[13px] font-bold text-ok">
+              Vous économisez {formatPrice(selected.compareAtCents! - selected.priceCents)}
+            </span>
+          ) : null}
+        </p>
+        <p className="mt-0.5 text-[12px] text-[#6b6d70]">
+          TTC{conditionnementAffiche ? ` · ${conditionnementAffiche.toLowerCase()}` : null}
+          {accessoriesTotal > 0 ? ' et accessoires cochés' : null}
+        </p>
+        {/*
+          Le prix affiché reste celui d'UN conditionnement : le total part
+          sur sa propre ligne, nommé, quand la quantité dépasse un.
+        */}
+        {quantite > 1 ? (
+          <p className="mt-1 text-[13px] font-semibold text-ink">
+            {quantite} × {formatPrice(total)} = {formatPrice(total * quantite)}
+          </p>
+        ) : null}
+      </div>
 
       {/* ---- Options (type de ballast, couleur…) : une liste par option ---- */}
       {variants.length > 1 && optionsDesVariantes(variants) ? (
@@ -566,8 +576,11 @@ export function BuyBox({
                     ) : null}
                   </span>
 
-                  <span className="ml-auto shrink-0 text-[15px] font-bold whitespace-nowrap">
-                    {formatPrice(variant.priceCents)}
+                  <span className="ml-auto shrink-0 text-right whitespace-nowrap">
+                    <strong className="block text-[15px]">{formatPrice(variant.priceCents)}</strong>
+                    {variant.compareAtCents && variant.compareAtCents > variant.priceCents ? (
+                      <s className="text-[12px] text-[#6b6d70]">{formatPrice(variant.compareAtCents)}</s>
+                    ) : null}
                   </span>
                 </label>
               )
@@ -635,56 +648,6 @@ export function BuyBox({
         </fieldset>
       ) : null}
 
-      {/* ---- Bloc prix : « Encadré offre » ----
-          Proposition 2, retenue par l'exploitant le 21 novembre 2026 : le prix
-          rouge géant flanqué d'une pastille pleine « −23 % » faisait
-          dropshipping. Le prix est posé dans un encadré gris clair ; la
-          remise se lit comme une offre nommée, ronde (lib/remise.ts), avec
-          l'économie en euros ; la disponibilité passe sous l'encadré, près du
-          bouton, au lieu de flotter à droite. */}
-      <div className="mb-3 rounded-xl bg-[#f5f6f7] px-4 py-3.5 fiche:px-5 fiche:py-4">
-        {/*
-          Prix barré : seulement s'il est saisi et plus haut que le prix de
-          vente. C'est au gérant d'y mettre un vrai prix de référence (le
-          plus bas pratiqué les 30 derniers jours, règle française).
-        */}
-        {enPromo ? (
-          <p className="mb-1 text-[12px] font-bold tracking-[0.6px] text-brand-dark uppercase">
-            {commercialTerms.offreEnCours ? `Offre ${commercialTerms.offreEnCours}` : 'Offre'}
-            {remise ? ` −${remise} %` : null}
-          </p>
-        ) : null}
-        <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <strong className="text-[30px] leading-[1.1] font-bold tracking-[-0.8px] fiche:text-[34px] fiche:tracking-[-1px]">
-            {formatPrice(total)}
-          </strong>
-          {enPromo ? (
-            <span className="text-[15px] text-[#6b6d70]">
-              <span className="sr-only">au lieu de </span>
-              <s>{formatPrice(selected.compareAtCents! + accessoriesTotal)}</s>
-            </span>
-          ) : null}
-        </p>
-        {enPromo ? (
-          <p className="mt-1 text-[14px] font-semibold text-ok">
-            Vous économisez {formatPrice(selected.compareAtCents! - selected.priceCents)}
-          </p>
-        ) : null}
-        <p className="mt-1 text-[13px] text-[#6b6d70]">
-          TTC{conditionnementAffiche ? ` · ${conditionnementAffiche.toLowerCase()}` : null}
-          {accessoriesTotal > 0 ? ' et accessoires cochés' : null}
-        </p>
-        {/*
-          Le prix affiché reste celui d'UN conditionnement : le total part
-          sur sa propre ligne, nommé, quand la quantité dépasse un.
-        */}
-        {quantite > 1 ? (
-          <p className="mt-1 text-[13px] font-semibold text-ink">
-            {quantite} × {formatPrice(total)} = {formatPrice(total * quantite)}
-          </p>
-        ) : null}
-      </div>
-
       {/* Disponibilité, et le délai d'expédition quand l'article part du stock. */}
       <p className="mb-3.5 flex flex-wrap items-center gap-x-1.5 text-[14px] text-[#3c4047]">
         <span
@@ -699,60 +662,6 @@ export function BuyBox({
           <span>· expédié sous {commercialTerms.dispatchEstimate}</span>
         ) : null}
       </p>
-
-      {/*
-        Livraison offerte — refonte LEDVROOM.
-
-        Le seuil de franchise se lit AVANT le bouton : c'est là qu'il pèse sur
-        la décision. Il suit le total réel (conditionnement, accessoires
-        cochés, quantité) et disparaît quand aucune franchise n'est configurée.
-
-        Trois états : seuil atteint (une ligne verte), seuil à portée (la
-        jauge), seuil lointain (une ligne neutre). Tant qu'il n'est pas
-        atteint, un lien mène aux autres packs du même véhicule.
-      */}
-      {/* Seuil atteint : rien ici, la ligne sous le bouton dit déjà
-          « Livraison offerte · délai » (deux fois de suite sur téléphone). */}
-      {delivery && ecartManquant !== null && seuilFranchiseCents !== null ? (
-        jaugeAPortee ? (
-          <div className="mb-3.5 rounded-xl bg-[#f5f6f7] px-3.5 py-3 text-[14px]">
-            <p>
-              Plus que <strong>{formatPrice(ecartManquant)}</strong> pour la livraison offerte
-            </p>
-            <div aria-hidden="true" className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e1e3e6]">
-              <div
-                className="h-full rounded-full bg-ok"
-                style={{ width: `${progressionFranchise}%` }}
-              />
-            </div>
-            {vehiculeDesComplements ? (
-              <a
-                href="#completer"
-                className="mt-2 inline-flex min-h-6 items-center gap-1 text-[13px] font-bold text-ink underline underline-offset-2 hover:text-brand-dark"
-              >
-                Voir les packs pour votre {vehiculeDesComplements}
-                <IconChevronRight className="size-3.5" />
-              </a>
-            ) : null}
-          </div>
-        ) : (
-          <p className="mb-3.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-[#3c4047]">
-            <IconTruck className="size-[18px] shrink-0 text-[#6b6f75]" />
-            <span>
-              Livraison offerte dès <strong className="text-ink">{formatPrice(seuilFranchiseCents)}</strong>
-            </span>
-            {vehiculeDesComplements ? (
-              <a
-                href="#completer"
-                className="inline-flex min-h-6 items-center gap-1 text-[13px] font-bold text-ink underline underline-offset-2 hover:text-brand-dark"
-              >
-                Voir les packs pour votre {vehiculeDesComplements}
-                <IconChevronRight className="size-3.5" />
-              </a>
-            ) : null}
-          </p>
-        )
-      ) : null}
 
       {/*
         .primary.add-main — 56 px, pleine largeur.
@@ -828,31 +737,34 @@ export function BuyBox({
         </p>
       ) : null}
 
-      {/* ---- .purchase-reassurance ---- */}
-      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-b border-line pb-4 text-[13px] text-[#3c4047]">
+      {/* ---- .purchase-reassurance : trois engagements cochés, sur une ligne ----
+          Repris de la proposition B (22 novembre 2026) : trois coches
+          plutôt que quatre icônes sur deux lignes. « Paiement sécurisé »
+          reste annoncé au paiement. */}
+      <ul className="mt-3 flex flex-wrap justify-between gap-x-1 gap-y-1.5 border-b border-line pb-4 text-[12px] whitespace-nowrap text-[#3c4047] fiche:text-[13px]">
         {garantie ? (
-          <Link href="/garanties" className="flex items-center gap-1.5 font-semibold text-ink hover:underline">
-            <IconShield className="size-4 shrink-0 text-ok" />
-            Garantie {garantie}
-          </Link>
+          <li>
+            <Link href="/garanties" className="flex items-center gap-[3px] hover:underline">
+              <IconCheck className="size-3.5 shrink-0 text-ok" strokeWidth={2.5} />
+              Garantie {garantie}
+            </Link>
+          </li>
         ) : null}
         {returnWindowDays ? (
-          <span className="flex items-center gap-1.5">
-            <IconReturn className="size-4 shrink-0" />
+          <li className="flex items-center gap-[3px]">
+            <IconCheck className="size-3.5 shrink-0 text-ok" strokeWidth={2.5} />
             {commercialTerms.satisfaitDays
-              ? `Satisfait ou remboursé ${commercialTerms.satisfaitDays} jours`
+              ? `Remboursé ${commercialTerms.satisfaitDays} jours`
               : `Retours sous ${returnWindowDays} jours`}
-          </span>
+          </li>
         ) : null}
-        <span className="flex items-center gap-1.5">
-          <IconLock className="size-4 shrink-0" />
-          Paiement sécurisé
-        </span>
-        <Link href="/contact" className="flex items-center gap-1.5 hover:underline">
-          <IconWrench className="size-4 shrink-0" />
-          Assistance au montage
-        </Link>
-      </div>
+        <li>
+          <Link href="/contact" className="flex items-center gap-[3px] hover:underline">
+            <IconCheck className="size-3.5 shrink-0 text-ok" strokeWidth={2.5} />
+            Aide au montage
+          </Link>
+        </li>
+      </ul>
 
       {/*
         ---- .road-note : seulement quand l'article N'EST PAS homologué ----
@@ -1056,13 +968,82 @@ function ChoixDOptions({
   selectedId,
   onChange,
 }: {
-  variants: VarianteNommee[]
+  variants: VariantView[]
   selectedId: string
   onChange: (id: string) => void
 }) {
   const o = optionsDesVariantes(variants)!
   const index = Math.max(0, variants.findIndex((v) => v.id === selectedId))
   const courant = o.valeurs[index]
+
+  /*
+    Une seule option (« Marque ») : chaque valeur est une carte, avec son prix
+    et son prix barré — proposition A, retenue le 22 novembre 2026. Le client
+    compare d'un coup d'œil au lieu d'ouvrir une liste déroulante pour
+    découvrir que le prix change. Au-delà d'une option, les combinaisons
+    seraient trop nombreuses pour des cartes : les listes restent.
+  */
+  if (o.libelles.length === 1) {
+    return (
+      <fieldset className="mb-4">
+        <legend className="mb-2.5 text-[15px] font-bold">{o.libelles[0]}</legend>
+        <div className="grid gap-2">
+          {variants.map((variant, rang) => {
+            const actif = variant.id === selectedId
+            const disponible = isPurchasable(variant.availability)
+            return (
+              <label
+                key={variant.id}
+                className={cn(
+                  'choix-conditionnement flex min-h-14 cursor-pointer items-center gap-3 rounded-xl transition-colors',
+                  actif
+                    ? 'border-2 border-brand bg-[#fdf6f5] px-[13px] py-2'
+                    : 'border border-[#dcdcdc] px-[14px] py-2',
+                  !disponible && 'opacity-60',
+                )}
+              >
+                <input
+                  type="radio"
+                  name="option-unique"
+                  value={variant.id}
+                  checked={actif}
+                  disabled={!disponible}
+                  onChange={() => onChange(variant.id)}
+                  className="absolute size-px opacity-0"
+                />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'relative block size-[18px] shrink-0 rounded-full border',
+                    actif
+                      ? 'border-brand after:absolute after:inset-[4px] after:rounded-full after:bg-brand'
+                      : 'border-[#b3b3b3]',
+                  )}
+                />
+                <span className="flex min-w-0 flex-col">
+                  <span className={cn('text-[15px]', actif && 'font-bold')}>
+                    {o.valeurs[rang][0][1]}
+                  </span>
+                  {!disponible ? (
+                    <small className="text-[13px] font-semibold text-muted">
+                      {availabilityLabel(variant.availability)}
+                    </small>
+                  ) : null}
+                </span>
+                <span className="ml-auto shrink-0 text-right whitespace-nowrap">
+                  <strong className="block text-[15px]">{formatPrice(variant.priceCents)}</strong>
+                  {variant.compareAtCents && variant.compareAtCents > variant.priceCents ? (
+                    <s className="text-[12px] text-[#6b6d70]">{formatPrice(variant.compareAtCents)}</s>
+                  ) : null}
+                </span>
+              </label>
+            )
+          })}
+        </div>
+      </fieldset>
+    )
+  }
+
   const choisir = (rang: number, valeur: string) => {
     const voulu = courant.map(([, v], i) => (i === rang ? valeur : v))
     // La combinaison exacte, sinon la première qui garde les choix jusqu'à cette option.
