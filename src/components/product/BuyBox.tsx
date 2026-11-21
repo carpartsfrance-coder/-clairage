@@ -9,6 +9,7 @@ import type { VariantView } from '@/lib/queries/product'
 import { buildDeliveryTeaser, type ShippingOffer } from '@/lib/delivery-teaser'
 import { addToCart } from '@/lib/actions/cart'
 import { commercialTerms, formatPrice } from '@/lib/identity'
+import { remiseAffichee } from '@/lib/remise'
 import { availabilityLabel, isPurchasable } from '@/lib/stock'
 import { defaultVariantId, useProductConfiguration } from './ProductConfiguration'
 import { StockAlertForm } from './StockAlertForm'
@@ -273,6 +274,9 @@ export function BuyBox({
   if (!selected) return null
 
   const total = selected.priceCents + accessoriesTotal
+  // Remise ronde, arrondie vers le bas : jamais plus que la remise réelle.
+  const remise = remiseAffichee(selected.priceCents, selected.compareAtCents)
+  const enPromo = Boolean(selected.compareAtCents && selected.compareAtCents > selected.priceCents)
   /* Le nom du conditionnement ne s'affiche que s'il dit autre chose que le titre. */
   // Une combinaison d'options se lit déjà dans les listes : pas de répétition à côté du prix.
   const conditionnementAffiche = selected.name.includes(' : ')
@@ -631,52 +635,70 @@ export function BuyBox({
         </fieldset>
       ) : null}
 
-      {/* ---- .price-row ---- */}
-      <div className="mb-3 flex items-end justify-between gap-5">
-        <div>
-          {/*
-            Prix barré : seulement s'il est saisi et plus haut que le prix de
-            vente. C'est au gérant d'y mettre un vrai prix de référence (le
-            plus bas pratiqué les 30 derniers jours, règle française).
-          */}
-          {selected?.compareAtCents && selected.compareAtCents > selected.priceCents ? (
-            <span className="mb-1 flex items-center gap-2 text-[14px]">
-              <s className="text-[#6b6d70]">{formatPrice(selected.compareAtCents + accessoriesTotal)}</s>
-              <span className="rounded-md bg-brand px-1.5 py-0.5 text-[12px] font-bold text-white">
-                −{Math.round((1 - selected.priceCents / selected.compareAtCents) * 100)} %
-              </span>
-            </span>
-          ) : null}
-          <strong className="block text-[34px] leading-[1.05] font-bold tracking-[-1.2px] fiche:text-[40px] fiche:tracking-[-1.5px]">
+      {/* ---- Bloc prix : « Encadré offre » ----
+          Proposition 2, retenue par l'exploitant le 21 novembre 2026 : le prix
+          rouge géant flanqué d'une pastille pleine « −23 % » faisait
+          dropshipping. Le prix est posé dans un encadré gris clair ; la
+          remise se lit comme une offre nommée, ronde (lib/remise.ts), avec
+          l'économie en euros ; la disponibilité passe sous l'encadré, près du
+          bouton, au lieu de flotter à droite. */}
+      <div className="mb-3 rounded-xl bg-[#f5f6f7] px-4 py-3.5 fiche:px-5 fiche:py-4">
+        {/*
+          Prix barré : seulement s'il est saisi et plus haut que le prix de
+          vente. C'est au gérant d'y mettre un vrai prix de référence (le
+          plus bas pratiqué les 30 derniers jours, règle française).
+        */}
+        {enPromo ? (
+          <p className="mb-1 text-[12px] font-bold tracking-[0.6px] text-brand-dark uppercase">
+            {commercialTerms.offreEnCours ? `Offre ${commercialTerms.offreEnCours}` : 'Offre'}
+            {remise ? ` −${remise} %` : null}
+          </p>
+        ) : null}
+        <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <strong className="text-[30px] leading-[1.1] font-bold tracking-[-0.8px] fiche:text-[34px] fiche:tracking-[-1px]">
             {formatPrice(total)}
           </strong>
-          <span className="mt-1.5 block text-[13px] text-[#6b6d70]">
-            TTC{conditionnementAffiche ? ` · ${conditionnementAffiche.toLowerCase()}` : null}
-            {accessoriesTotal > 0 ? ' et accessoires cochés' : null}
-          </span>
-          {/*
-            Le prix affiché reste celui d'UN conditionnement : le total part
-            sur sa propre ligne, nommé, quand la quantité dépasse un.
-          */}
-          {quantite > 1 ? (
-            <span className="mt-1 block text-[13px] font-semibold text-ink">
-              {quantite} × {formatPrice(total)} = {formatPrice(total * quantite)}
+          {enPromo ? (
+            <span className="text-[15px] text-[#6b6d70]">
+              <span className="sr-only">au lieu de </span>
+              <s>{formatPrice(selected.compareAtCents! + accessoriesTotal)}</s>
             </span>
           ) : null}
-        </div>
+        </p>
+        {enPromo ? (
+          <p className="mt-1 text-[14px] font-semibold text-ok">
+            Vous économisez {formatPrice(selected.compareAtCents! - selected.priceCents)}
+          </p>
+        ) : null}
+        <p className="mt-1 text-[13px] text-[#6b6d70]">
+          TTC{conditionnementAffiche ? ` · ${conditionnementAffiche.toLowerCase()}` : null}
+          {accessoriesTotal > 0 ? ' et accessoires cochés' : null}
+        </p>
+        {/*
+          Le prix affiché reste celui d'UN conditionnement : le total part
+          sur sa propre ligne, nommé, quand la quantité dépasse un.
+        */}
+        {quantite > 1 ? (
+          <p className="mt-1 text-[13px] font-semibold text-ink">
+            {quantite} × {formatPrice(total)} = {formatPrice(total * quantite)}
+          </p>
+        ) : null}
+      </div>
+
+      {/* Disponibilité, et le délai d'expédition quand l'article part du stock. */}
+      <p className="mb-3.5 flex flex-wrap items-center gap-x-1.5 text-[14px] text-[#3c4047]">
         <span
-          className={cn(
-            'flex shrink-0 items-center gap-1.5 text-[14px] font-semibold',
-            purchasable ? 'text-ok' : 'text-muted',
-          )}
-        >
-          <span
-            aria-hidden="true"
-            className={cn('size-2 rounded-full', purchasable ? 'bg-ok' : 'bg-line-strong')}
-          />
+          aria-hidden="true"
+          className={cn('size-2 rounded-full', purchasable ? 'bg-ok' : 'bg-line-strong')}
+        />
+        <span className={cn('font-semibold', purchasable ? 'text-ok' : 'text-muted')}>
           {availabilityLabel(selected.availability)}
         </span>
-      </div>
+        {commercialTerms.dispatchEstimate &&
+        (selected.availability.state === 'IN_STOCK' || selected.availability.state === 'LOW_STOCK') ? (
+          <span>· expédié sous {commercialTerms.dispatchEstimate}</span>
+        ) : null}
+      </p>
 
       {/*
         Livraison offerte — refonte LEDVROOM.
@@ -899,9 +921,9 @@ export function BuyBox({
               {selected.compareAtCents && selected.compareAtCents > selected.priceCents ? (
                 <span className="mb-0.5 flex items-center gap-1.5 text-[12px] leading-none whitespace-nowrap">
                   <s className="text-[#6b6d70]">{formatPrice(selected.compareAtCents + accessoriesTotal)}</s>
-                  <span className="rounded bg-brand px-1 py-0.5 text-[10px] font-bold text-white">
-                    −{Math.round((1 - selected.priceCents / selected.compareAtCents) * 100)} %
-                  </span>
+                  {remise ? (
+                    <span className="text-[12px] font-bold text-brand-dark">−{remise} %</span>
+                  ) : null}
                 </span>
               ) : null}
               <strong className="block text-[21px] leading-[1.15] tracking-[-0.6px] fiche:text-[24px]">

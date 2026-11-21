@@ -158,6 +158,14 @@ export const commercialTerms = {
    * (ShippingMethod). `null` retire la promesse des deux endroits.
    */
   dispatchEstimate: '24 h' as string | null,
+  /**
+   * Nom de l'offre affiché au-dessus d'un prix barré, sur la fiche : « Offre
+   * Black Friday −20 % ». À remettre à `null` à la fin de la campagne (le
+   * retour aux prix d'avant est décrit dans la migration
+   * 20261120160000_black_friday_prix) ; un prix barré posé ensuite à la main
+   * s'affichera « Offre −20 % », sans nom d'événement qui serait faux.
+   */
+  offreEnCours: 'Black Friday' as string | null,
 } as const
 
 /**
