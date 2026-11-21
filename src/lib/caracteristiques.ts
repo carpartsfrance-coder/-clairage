@@ -147,6 +147,32 @@ const LIBELLES: Record<string, string> = {
   'format d ampoule': 'Format',
   culot: 'Culot',
   'culot technique iec': 'Culot',
+  'leds a utiliser': 'LED à utiliser',
+  'longueur d onde': 'Longueur d’onde',
+  hauteur: 'Hauteur',
+  taille: 'Taille',
+  aspect: 'Aspect',
+  revetement: 'Revêtement',
+  specificite: 'Particularités',
+  'type de boitier': 'Boîtier',
+  'diametre led': 'Diamètre des LED',
+  'distance entre chaque led': 'Écart entre les LED',
+  'diametre exterieur du phare': 'Diamètre du phare',
+  'made in germany': 'Fabriqué en Allemagne',
+  resistance: 'Résistance',
+  'flux lumineux double intensite': 'Flux lumineux',
+  // Câbles, films, soudure : les fiches techniques des articles au détail.
+  section: 'Section',
+  'nombre de brins': 'Nombre de brins',
+  'materiau du conducteur': 'Conducteur',
+  'materiau de l isolant': 'Isolant',
+  'couleur de gaine': 'Couleur de la gaine',
+  'diametre exterieur': 'Diamètre extérieur',
+  'temperature minimum d utilisation': 'Température minimale',
+  'temperature maximum d utilisation': 'Température maximale',
+  'temperature de fusion': 'Température de fusion',
+  'protection uv': 'Protection UV',
+  'anti reflet': 'Anti-reflet',
 }
 
 /** Ce qui ne s'affiche jamais, où que ce soit écrit. */
@@ -261,7 +287,14 @@ export function lireCaracteristiques(
 
   const composition = (Array.isArray(d.composition) ? d.composition : [])
     .filter((ligne): ligne is string => typeof ligne === 'string')
-    .map((ligne) => ligne.replace(/\s+/g, ' ').replace(/^[-–•\s]+/, '').replace(/[.;]\s*$/, '').trim())
+    .map((ligne) =>
+      ligne
+        .replace(/\s+/g, ' ')
+        .replace(/^[-–•\s]+/, '')
+        .replace(/[.;]\s*$/, '')
+        .replace(/\bInterrupeur\b/g, 'Interrupteur')
+        .trim(),
+    )
     .filter((ligne) => ligne.length > 1 && ligne.length <= 120 && !INTERDIT.test(ligne))
     .filter((ligne) => !(options.sansReference && contientUneReference(ligne)))
     .map((ligne) => ligne.charAt(0).toUpperCase() + ligne.slice(1))
