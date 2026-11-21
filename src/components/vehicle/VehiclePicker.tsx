@@ -85,6 +85,7 @@ export function VehiclePicker({
   const [motoDisponible, setMotoDisponible] = useState(true)
   const champ = useRef<HTMLInputElement>(null)
   const corps = useRef<HTMLDivElement>(null)
+  const racine = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch('/api/vehicules/marques?type=MOTORCYCLE')
@@ -147,6 +148,22 @@ export function VehiclePicker({
   useEffect(() => {
     setRecherche('')
     corps.current?.scrollTo({ top: 0 })
+    /*
+      Sur la page /vehicule, ce n'est pas le corps du sélecteur qui défile
+      mais la page. Le client descend la longue liste des modèles, touche le
+      sien plus bas : la liste se replie en quelques pastilles d'années, la
+      page raccourcit, et le téléphone reste en bas — sur « Et si mon véhicule
+      n'est pas listé ? Décrire mon véhicule ». Un client a touché ce bouton
+      cinq secondes après avoir choisi son Opel Zafira B, et il est reparti du
+      formulaire de contact (visite du 18 novembre 2026).
+      Si le haut du sélecteur est sorti de l'écran, on y remonte. Dans la
+      fenêtre de choix, il est toujours visible : rien ne bouge.
+    */
+    const haut = racine.current?.getBoundingClientRect().top
+    if (typeof haut === 'number' && haut < 0) {
+      const enTete = 96
+      window.scrollTo({ top: Math.max(0, window.scrollY + haut - enTete), behavior: 'smooth' })
+    }
     if (etape !== 'annee' && window.matchMedia('(pointer: fine)').matches) champ.current?.focus()
   }, [etape, type])
 
@@ -212,7 +229,7 @@ export function VehiclePicker({
   const nomModele = modele ? decouper(modele.name).nom : null
 
   return (
-    <div className={cn('flex min-h-0 flex-col', className)}>
+    <div ref={racine} className={cn('flex min-h-0 flex-col', className)}>
       {/* ---- Fil de l'étape : type, marque, modèle, année ---- */}
       <div className="flex flex-wrap items-center gap-x-1 gap-y-2 border-b border-line px-5 pb-4 sm:px-6">
         {motoDisponible || Moto ? (

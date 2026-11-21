@@ -22,7 +22,10 @@ export type ShippingOffer = {
 }
 
 export type DeliveryTeaser = {
-  /** « Livraison offerte » ou « Livraison à partir de 3,90 € ». */
+  /**
+   * « Livraison offerte », « Livraison 2,90 € » (une seule méthode) ou
+   * « Livraison à partir de 3,90 € » (plusieurs méthodes au choix).
+   */
   priceLabel: string
   /** « estimation 2 à 3 jours ouvrés », ou null si les délais ne sont pas saisis. */
   delayLabel: string | null
@@ -32,10 +35,10 @@ export type DeliveryTeaser = {
    * Prix retenu pour l'accroche, en centimes. Zéro quand la franchise de port
    * est atteinte.
    *
-   * Il est exposé parce que l'affichage d'un panier en dépend : quand la
-   * livraison est offerte, le total est complet et le dire « hors frais de
-   * port » est faux ; quand elle a un prix, ce prix n'est qu'un minimum, et le
-   * total affiché ne couvre que les articles. Sans cette valeur, le panier
+   * Il est exposé parce que l'affichage d'un panier en dépend : quand le
+   * montant est réglé (`isSettled`), le panier l'ajoute à son total, qui est
+   * alors celui du paiement ; sinon ce prix n'est qu'un minimum, et le total
+   * affiché ne couvre que les articles. Sans cette valeur, le panier
    * annonçait « Livraison offerte » ET « frais non compris dans ce total ».
    */
   priceCents: number
@@ -76,18 +79,32 @@ export function buildDeliveryTeaser(
     .map((offer) => offer.freeFromCents! - subtotalCents)
     .filter((missing) => missing > 0)
 
+  /*
+    Une seule méthode pour la zone : son prix est celui que le client paiera,
+    il n'y a rien d'autre à choisir. Annoncer « à partir de » et « le montant
+    exact dépend du mode de livraison choisi » serait faux, et ce doute coûte
+    des ventes : LedPerf, lui, affiche dès le panier le total port compris
+    (comparaison du 21 novembre 2026).
+  */
+  const unique = offers.length === 1
+
   return {
-    priceLabel: price === 0 ? 'Livraison offerte' : `Livraison à partir de ${formatPrice(price)}`,
+    priceLabel:
+      price === 0
+        ? 'Livraison offerte'
+        : unique
+          ? `Livraison ${formatPrice(price)}`
+          : `Livraison à partir de ${formatPrice(price)}`,
     delayLabel,
     missingForFreeCents: price > 0 && franchises.length > 0 ? Math.min(...franchises) : null,
     priceCents: price,
     /*
       « Réglé » veut dire : ce montant ne bougera plus pour la zone configurée.
       C'est le cas quand la franchise de port est atteinte — la livraison est
-      offerte quelle que soit la méthode retenue ensuite. Sinon, `price` n'est
-      que le tarif de la méthode la moins chère : le client peut en choisir une
-      autre, et l'adresse reste à saisir.
+      offerte quelle que soit la méthode retenue ensuite —, ou quand la zone
+      n'a qu'une méthode. Sinon, `price` n'est que le tarif de la méthode la
+      moins chère : le client peut en choisir une autre.
     */
-    isSettled: price === 0,
+    isSettled: price === 0 || unique,
   }
 }

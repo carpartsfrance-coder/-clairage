@@ -162,4 +162,17 @@ describe('buildDeliveryTeaser', () => {
     const teaser = buildDeliveryTeaser([{ ...colissimo, maxDays: null }], 9990)
     expect(teaser?.delayLabel).toBeNull()
   })
+
+  it('donne le prix exact et le tient pour réglé quand une seule méthode existe', () => {
+    const teaser = buildDeliveryTeaser([colissimo], 2870)
+    expect(teaser?.priceLabel).toMatch(/^Livraison 5,90\s€$/)
+    expect(teaser?.priceCents).toBe(590)
+    expect(teaser?.isSettled).toBe(true)
+  })
+
+  it('reste un minimum, non réglé, quand plusieurs méthodes sont au choix', () => {
+    const teaser = buildDeliveryTeaser([colissimo, relais], 2870)
+    expect(teaser?.priceLabel).toMatch(/^Livraison à partir de 3,90\s€$/)
+    expect(teaser?.isSettled).toBe(false)
+  })
 })

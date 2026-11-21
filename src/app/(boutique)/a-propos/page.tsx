@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/a-propos' },
 }
 
-const MISE_A_JOUR = '8 novembre 2026'
+const MISE_A_JOUR = '21 novembre 2026'
 
 /**
  * Qui sommes-nous.
@@ -26,6 +26,7 @@ export default async function Page() {
   const seuil = await getSeuilLivraisonOfferte()
   const garantie = dureeGarantie()
   const retour = commercialTerms.returnWindowDays
+  const satisfait = commercialTerms.satisfaitDays
   const { legal, contact } = identity
 
   return (
@@ -65,7 +66,23 @@ export default async function Page() {
               </Link>
             </li>
           ) : null}
-          {retour ? (
+          {/*
+            Même promesse que les fiches et la page Livraison et retours. Cette
+            page annonçait « 14 jours » quand les fiches disent « satisfait ou
+            remboursé 45 jours » : un client qui vérifie avant d'acheter (c'est
+            ce que fait celui qui lit « Qui sommes-nous ») voit deux promesses
+            différentes, et doute des deux.
+          */}
+          {satisfait && retour ? (
+            <li>
+              <strong>Satisfait ou remboursé {satisfait} jours</strong> : les {retour} premiers jours
+              sans avoir à vous justifier, puis jusqu’au {satisfait}
+              <sup>e</sup> jour pour un article neuf et complet.{' '}
+              <Link href="/livraison-retours" className="underline underline-offset-2">
+                Comment renvoyer
+              </Link>
+            </li>
+          ) : retour ? (
             <li>
               <strong>{retour} jours pour changer d’avis</strong>, sans avoir à vous justifier.
             </li>

@@ -67,6 +67,19 @@ export default async function PanierPage() {
   const teaser = cart.lines.length > 0 ? await getDeliveryTeaser(cart.subtotalCents) : null
 
   /*
+    Le port, quand il est connu dès le panier : offert par un code, ou réglé
+    (franchise atteinte, ou une seule méthode pour la France). Le total
+    l'inclut alors et devient la somme du paiement — même calcul que
+    lib/orders.ts (port sur le sous-total avant remise, annulé par un code
+    « livraison offerte »). Sinon le total ne couvre que les articles et le
+    dit.
+  */
+  const livraisonOffertePromo = Boolean(cart.promotion?.ok && cart.promotion.livraisonOfferte)
+  const portRegle = livraisonOffertePromo || Boolean(teaser?.isSettled)
+  const portCents = livraisonOffertePromo ? 0 : teaser?.isSettled ? teaser.priceCents : 0
+  const totalCents = cart.subtotalCents - cart.discountCents + portCents
+
+  /*
     « Complétez l'éclairage » : les autres packs du véhicule du dernier pack
     ajouté, sans ceux déjà dans le panier. C'est là que le client voit ce qui
     lui manque pour la livraison offerte, et le pack qui la déclenche est
@@ -433,10 +446,12 @@ export default async function PanierPage() {
                           teaser?.priceLabel === 'Livraison offerte' && 'text-[11px] text-ok',
                         )}
                       >
-                        {cart.promotion?.ok && cart.promotion.livraisonOfferte
+                        {livraisonOffertePromo
                           ? 'Offerte (code promo)'
                           : teaser
-                            ? teaser.priceLabel
+                            ? teaser.isSettled && teaser.priceCents > 0
+                              ? formatPrice(teaser.priceCents)
+                              : teaser.priceLabel
                             : 'calculée à l’étape suivante'}
                       </dd>
                     </div>
@@ -461,14 +476,15 @@ export default async function PanierPage() {
                     la ligne au-dessus pouvait dire « Livraison offerte ». Les
                     deux ne peuvent pas être vrais ensemble.
 
-                    Quand la franchise de port est atteinte, la livraison est
-                    offerte et le total est complet : il s'appelle « Total ».
+                    Quand le port est connu (franchise atteinte, une seule
+                    méthode, ou code « livraison offerte »), le total l'inclut :
+                    il s'appelle « Total » et c'est la somme du paiement.
                     Sinon, il ne couvre que les articles, il le dit, et la note
                     explique ce qui reste à déterminer.
                   */}
                   <div className="mt-[18px] flex items-baseline justify-between gap-4 border-t border-line pt-[17px] text-[18px] font-bold">
-                    <dt>{teaser?.isSettled ? 'Total' : 'Total des articles'}</dt>
-                    <dd>{formatPrice(cart.subtotalCents - cart.discountCents)}</dd>
+                    <dt>{portRegle ? 'Total' : 'Total des articles'}</dt>
+                    <dd>{formatPrice(totalCents)}</dd>
                   </div>
                 </dl>
 
@@ -508,7 +524,7 @@ export default async function PanierPage() {
                 )}
 
                 <p className="mt-2 text-[9px] leading-[1.8] text-[#8c8c8c]">
-                  {teaser?.isSettled || (cart.promotion?.ok && cart.promotion.livraisonOfferte)
+                  {portRegle
                     ? 'Livraison comprise pour la France. Ce total est celui que vous réglerez.'
                     : teaser
                       ? 'Les frais de livraison s’ajoutent à l’étape suivante : le montant exact dépend du mode de livraison choisi et de votre adresse.'
