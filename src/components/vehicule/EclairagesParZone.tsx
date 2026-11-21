@@ -4,7 +4,7 @@ import { presentationDeCarte } from '@/lib/carte-titre'
 import { useMemo, useState } from 'react'
 import Image from '@/components/ui/Image'
 import Link from 'next/link'
-import { IconArrowRight, IconChevronDown } from '@/components/ui/icons'
+import { IconArrowRight, IconCheck, IconChevronDown } from '@/components/ui/icons'
 import { formatPrice } from '@/lib/identity'
 import { cn } from '@/lib/cn'
 import {
@@ -266,6 +266,22 @@ function CarteDEclairage({
           <p className="mt-1 text-[11px] text-muted-strong">
             {carte.quantite} nécessaires pour cet emplacement
           </p>
+        ) : null}
+
+        {/* Les premiers atouts de la fiche (« Sans erreur OBD », « Plug &
+            play ») : ce qui fait hésiter se lève dès la grille. */}
+        {carte.atouts && carte.atouts.length > 0 ? (
+          <ul aria-label="Atouts" className="mt-2 flex flex-wrap gap-x-2.5 gap-y-1">
+            {carte.atouts.map((atout) => (
+              <li
+                key={atout}
+                className="inline-flex items-center gap-1 text-[11px] leading-tight font-semibold text-[#1f5a39]"
+              >
+                <IconCheck className="size-3 shrink-0 text-ok" />
+                {atout}
+              </li>
+            ))}
+          </ul>
         ) : null}
 
         {/* La réserve appartient à SON conditionnement : « adaptateurs

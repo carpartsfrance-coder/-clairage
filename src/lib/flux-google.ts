@@ -25,6 +25,13 @@ export type ArticleFlux = {
   brand: string | null
   productType: string | null
   images: string[]
+  /**
+   * Atouts du produit (« Sans erreur au tableau de bord (OBD) »…), envoyés en
+   * `product_highlight` : Google Shopping les affiche sous l'annonce.
+   */
+  atouts?: string[]
+  /** Caractéristiques techniques, envoyées en `product_detail`. */
+  details?: Array<{ label: string; value: string }>
   variants: Array<{
     sku: string
     name: string
@@ -169,6 +176,18 @@ export function lignesDeLArticle(
         tranchePrix(enPromotion ? (variante.compareAtCents as number) : variante.priceCents),
       )}</g:custom_label_0>`,
     ]
+    // Atouts et caractéristiques relevés (lib/caracteristiques.ts) : dix
+    // atouts au plus, de 150 caractères au plus, comme le demande Google.
+    for (const atout of (article.atouts ?? []).slice(0, 10)) {
+      champs.push(`<g:product_highlight>${echapperXml(atout.slice(0, 150))}</g:product_highlight>`)
+    }
+    for (const detail of (article.details ?? []).slice(0, 30)) {
+      champs.push(
+        `<g:product_detail><g:section_name>Caractéristiques</g:section_name><g:attribute_name>${echapperXml(
+          detail.label.slice(0, 140),
+        )}</g:attribute_name><g:attribute_value>${echapperXml(detail.value.slice(0, 1000))}</g:attribute_value></g:product_detail>`,
+      )
+    }
     if (plusieurs) champs.push(`<g:item_group_id>${echapperXml(article.slug)}</g:item_group_id>`)
     if (article.productType) {
       champs.push(`<g:product_type>${echapperXml(article.productType)}</g:product_type>`)

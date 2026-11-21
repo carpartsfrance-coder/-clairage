@@ -13,6 +13,7 @@ import {
 } from '@/lib/flux-google'
 import { imagesTypesPourLeFlux } from '@/lib/images-types'
 import { nomAvecPeriode } from '@/lib/seo-fiche'
+import { lireCaracteristiques } from '@/lib/caracteristiques'
 
 /**
  * Flux produits pour Google Merchant Center (fiches gratuites et Shopping).
@@ -35,6 +36,8 @@ const SELECTION = {
   description: true,
   brand: true,
   vehicleType: true,
+  // Atouts et caractéristiques relevés sur la même fiche chez LedPerf.
+  releve: { select: { donnees: true } },
   categories: {
     orderBy: { position: 'asc' as const },
     take: 1,
@@ -141,6 +144,12 @@ function versArticle(produit: ProduitLu, periode: Periode | undefined): ArticleF
     // (photo du produit, gros plan « après ») : Google accepte les
     // illustrations pour les pièces de véhicules, pas le texte incrusté.
     images: images.length > 0 ? [...new Set(images)] : imagesTypesPourLeFlux(produit),
+    // Le flux ne sait pas quelle fiche est un pack véhicule : il applique à
+    // toutes la règle du pack (aucune référence d'ampoule), la plus sûre.
+    ...(() => {
+      const c = lireCaracteristiques(produit.releve?.donnees, { sansReference: true })
+      return c ? { atouts: c.atouts.map((atout) => atout.texte), details: c.specs } : {}
+    })(),
     variants: produit.variants.map((variante) => ({
       sku: variante.sku,
       name: variante.name,

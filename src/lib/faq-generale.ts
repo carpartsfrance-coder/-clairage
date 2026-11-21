@@ -2,6 +2,7 @@ import 'server-only'
 import { commercialTerms, dureeGarantie, formatPrice } from './identity'
 import { getZonesDeLivraison } from './shipping'
 import { leVehicule, typeHorsAmpoules } from './types-produit'
+import type { Caracteristiques } from './caracteristiques'
 
 /**
  * Questions fréquentes par défaut, tant que le back-office n'en publie pas.
@@ -92,6 +93,13 @@ export async function faqFicheParDefaut(
   concuPour: string | null,
   nomDuProduit = '',
   moto = false,
+  /**
+   * Atouts relevés sur la même fiche chez LedPerf (lib/caracteristiques.ts).
+   * Quand ils sont connus, les réponses les disent au lieu de rester
+   * générales : « sans erreur OBD » répond à la question du tableau de bord,
+   * « plug & play » à celle du câblage, le temps de montage a sa question.
+   */
+  atouts: Pick<Caracteristiques, 'sansErreur' | 'plugAndPlay' | 'montageMinutes' | 'notice'> | null = null,
 ): Promise<QuestionReponse[]> {
   const generales = await faqGeneraleParDefaut()
   // Feux additionnels, centrale… : la réponse sur le câblage est la leur.
@@ -100,14 +108,23 @@ export async function faqFicheParDefaut(
     .filter(
       (question) => !question.question.startsWith('Le paiement') && !question.question.startsWith('Comment être sûr'),
     )
-    .filter((question) => !(type && question.question.startsWith('Un message d’erreur')))
+    // Sans erreur OBD relevé : la question est reposée plus haut, avec sa vraie réponse.
+    .filter((question) => !((type || atouts?.sansErreur) && question.question.startsWith('Un message d’erreur')))
     // Un accessoire sans branchement (outils, gants) n'a pas de question de câblage.
     .filter((question) => !(type && !type.cablage && question.question === 'Faut-il modifier le câblage ?'))
-    .map((question) =>
-      type && question.question === 'Faut-il modifier le câblage ?'
-        ? { question: 'Comment se branche ce produit ?', answer: type.cablage }
-        : question,
-    )
+    .map((question) => {
+      if (question.question !== 'Faut-il modifier le câblage ?') return question
+      // Feux additionnels, centrale… : la réponse sur le branchement est la leur.
+      if (type) return { question: 'Comment se branche ce produit ?', answer: type.cablage }
+      // Plug & play relevé : on l'affirme, sans le « sur les véhicules compatibles ».
+      if (atouts?.plugAndPlay) {
+        return {
+          question: question.question,
+          answer: 'Non. Ce produit est plug & play : il se monte à la place de l’origine, sans modification ni soudure.',
+        }
+      }
+      return question
+    })
   const compatibilite: QuestionReponse = concuPour
     ? {
         question: type ? 'Ce produit convient-il à mon véhicule ?' : `Ce pack convient-il à mon véhicule ?`,
@@ -130,5 +147,38 @@ export async function faqFicheParDefaut(
           answer:
             'La référence de l’ampoule ne suffit pas toujours : le bloc optique et l’équipement d’origine comptent aussi. Choisissez votre véhicule (marque, modèle, année) : la fiche vous dit alors si cette référence lui convient. En cas de doute, écrivez-nous avec le modèle exact : nous vérifions avant l’envoi.',
         }
-  return [compatibilite, ...sansPaiement]
+  /*
+    Ce que le relevé permet d'affirmer, juste après le câblage : le temps de
+    montage, la notice, et l'absence d'erreur au tableau de bord — la
+    question que les visiteurs hésitants ouvraient le plus (relevé des
+    paniers abandonnés, 21 novembre 2026).
+  */
+  const affirmees: QuestionReponse[] = []
+  if (atouts?.montageMinutes) {
+    const n = atouts.montageMinutes
+    const duree = n < 60 ? `${n} minutes` : `${Math.floor(n / 60)} h${n % 60 ? ` ${String(n % 60).padStart(2, '0')}` : ''}`
+    affirmees.push({
+      question: 'Combien de temps faut-il pour le monter ?',
+      answer: `Environ ${duree}${atouts.notice ? ', avec la notice de montage PDF personnalisée' : ''}.`,
+    })
+  } else if (atouts?.notice) {
+    affirmees.push({
+      question: 'Une notice de montage est-elle fournie ?',
+      answer: 'Oui : une notice de montage PDF personnalisée accompagne le produit.',
+    })
+  }
+  if (atouts?.sansErreur) {
+    affirmees.push({
+      question: 'Y aura-t-il un message d’erreur au tableau de bord ?',
+      answer: 'Non. Ce produit est sans erreur OBD : il ne déclenche pas de message d’erreur au tableau de bord.',
+    })
+  }
+  const cablage = sansPaiement.findIndex(
+    (question) => question.question === 'Faut-il modifier le câblage ?' || question.question === 'Comment se branche ce produit ?',
+  )
+  const suite =
+    cablage >= 0
+      ? [...sansPaiement.slice(0, cablage + 1), ...affirmees, ...sansPaiement.slice(cablage + 1)]
+      : [...affirmees, ...sansPaiement]
+  return [compatibilite, ...suite]
 }

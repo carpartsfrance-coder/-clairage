@@ -8,6 +8,7 @@ import type { FitmentStatus } from '../fitment'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
 import { couvertureType } from '../images-types'
 import { altSansReference } from '../sans-reference'
+import { badgesDeCarte } from '../caracteristiques'
 import {
   COMPATIBILITE_EN_LIGNE,
   GENERATION_VISIBLE,
@@ -291,6 +292,8 @@ export type PackProduct = {
   fromPriceCents: number
   /** Composition du conditionnement conseillé, pour dire ce que le pack contient. */
   contents: string[]
+  /** Badges d'atouts de la carte (« Sans erreur OBD »…), tirés du relevé de la fiche. */
+  atouts?: string[]
 }
 
 export type PackPositionGroup = {
@@ -383,6 +386,7 @@ async function lireGenerationDesPacks(
                           ...ARGS_COUVERTURE,
                           include: { media: true },
                         },
+                        releve: { select: { donnees: true } },
                       },
                     },
                   },
@@ -488,6 +492,7 @@ async function lireGenerationDesPacks(
                   ),
                 }
               : null,
+            atouts: badgesDeCarte(fitment.variant.product.releve?.donnees),
             candidats: [candidat],
           })
         }
@@ -529,6 +534,7 @@ async function lireGenerationDesPacks(
                 : null,
               fromPriceCents: Math.min(...candidats.map((candidat) => candidat.priceCents)),
               contents: candidats.find((candidat) => candidat.id === retenu?.id)?.contents ?? [],
+              atouts: produit.atouts,
             }
           })
           .sort((a, b) => poids[a.status] - poids[b.status] || a.fromPriceCents - b.fromPriceCents),

@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/icons'
 import { ARGS_COUVERTURE, couverture } from '@/lib/media-couverture'
 import { couvertureType } from '@/lib/images-types'
+import { badgesDeCarte } from '@/lib/caracteristiques'
 import { cartesDesResultats, phaseUtile, type GroupeResultat } from '@/lib/resultats-vue'
 import {
   decompteDesPacks,
@@ -162,6 +163,7 @@ async function getByPosition(configurationId: string): Promise<GroupeResultat[] 
                   ...ARGS_COUVERTURE,
                   include: { media: true },
                 },
+                releve: { select: { donnees: true } },
               },
             },
           },
@@ -193,6 +195,7 @@ async function getByPosition(configurationId: string): Promise<GroupeResultat[] 
             : couvertureType(row.variant.product),
           status: row.status,
           lines: [],
+          atouts: badgesDeCarte(row.variant.product.releve?.donnees),
         }
         group.products.push(product)
       }

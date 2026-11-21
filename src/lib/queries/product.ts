@@ -101,6 +101,11 @@ export type ProductView = {
   category: { slug: string; name: string } | null
   gallery: GalleryItem[]
   specs: Array<{ label: string; value: string; group: string | null }>
+  /**
+   * Relevé de la même fiche chez LedPerf, brut : la fiche le passe à
+   * `lireCaracteristiques` avec ses propres règles (pack véhicule ou non).
+   */
+  releve: { donnees: unknown } | null
   variants: VariantView[]
   /** Conditionnement conseillé, seulement si un véhicule est sélectionné. */
   recommendedVariantId: string | null
@@ -176,6 +181,9 @@ const lireFiche = cache((slug: string, brouillon: boolean) =>
       categories: { include: { category: true }, orderBy: { position: 'asc' }, take: 1 },
       media: { include: { media: true }, orderBy: { position: 'asc' } },
       specs: { orderBy: { position: 'asc' } },
+      // Atouts et caractéristiques relevés sur la même fiche chez LedPerf
+      // (lib/caracteristiques.ts décide de ce qui s'en affiche).
+      releve: { select: { donnees: true } },
       faqItems: { orderBy: { position: 'asc' } },
       guides: { include: { guide: true } },
       reviews: {
@@ -402,6 +410,7 @@ export async function getProduct(
         value: spec.value,
         group: spec.group,
       })),
+      releve: product.releve ? { donnees: product.releve.donnees } : null,
       variants,
       recommendedVariantId: recommended?.id ?? null,
       guides: product.guides

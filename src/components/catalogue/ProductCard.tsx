@@ -5,7 +5,7 @@ import { formatPrice } from '@/lib/identity'
 import { availabilityLabel } from '@/lib/stock'
 import { cn } from '@/lib/cn'
 import { Badge, FitmentBadge } from '@/components/ui/Badge'
-import { IconArrowRight } from '@/components/ui/icons'
+import { IconArrowRight, IconCheck } from '@/components/ui/icons'
 
 /**
  * Carte produit partagée par les listes, la recherche et les résultats
@@ -100,6 +100,21 @@ export function ProductCard({
                 .filter(Boolean)
                 .join(' · ')}
             </p>
+          ) : null}
+
+          {/* Les premiers atouts relevés sur la fiche (« Sans erreur OBD »…). */}
+          {product.atouts && product.atouts.length > 0 ? (
+            <ul aria-label="Atouts" className="flex flex-wrap gap-x-3 gap-y-1">
+              {product.atouts.map((atout) => (
+                <li
+                  key={atout}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#1f5a39]"
+                >
+                  <IconCheck className="size-3.5 shrink-0 text-ok" />
+                  {atout}
+                </li>
+              ))}
+            </ul>
           ) : null}
 
           <div className="mt-auto flex items-end justify-between gap-3 pt-2">

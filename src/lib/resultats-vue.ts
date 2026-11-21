@@ -63,6 +63,8 @@ export type ProduitResultat = {
   /** Le meilleur statut parmi les conditionnements : il mène la carte. */
   status: FitmentStatus
   lines: LigneResultat[]
+  /** Badges d'atouts de la carte, tirés du relevé de la fiche. */
+  atouts?: string[]
 }
 
 export type GroupeResultat = {
@@ -154,6 +156,7 @@ export function cartesDesResultats(groupes: GroupeResultat[]): CarteEclairage[] 
         reserve: conseille.restrictions,
         verifie: provenance(produit.status, conseille.verifiedAt, conseille.source),
         quantite: conseille.quantity > 1 ? conseille.quantity : null,
+        atouts: produit.atouts ?? [],
       })
     }
   }

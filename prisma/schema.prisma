@@ -194,6 +194,7 @@ model Product {
   reviews     Review[]
   relatedFrom ProductRelation[] @relation("RelationSource")
   relatedTo   ProductRelation[] @relation("RelationTarget")
+  releve      ReleveFiche?
 
   @@index([status, publishedAt])
   @@index([featured, status])
@@ -352,6 +353,33 @@ model ProductSpec {
   position  Int     @default(0)
 
   @@index([productId, position])
+}
+
+/// Ce que dit, du même produit, sa fiche chez LedPerf (partenaire).
+///
+/// Décision de l'exploitant (21 novembre 2026) : tous les produits du site
+/// sont exactement ceux de LedPerf, et leurs atouts doivent être dits de la
+/// même façon — « sans erreur OBD, plug & play… : c'est pareil ». Le relevé
+/// se fait hors ligne (scripts/ledperf/), il arrive par migration, et il
+/// n'est jamais affiché tel quel : lib/caracteristiques.ts en tire les
+/// badges, le tableau et les réponses, avec nos mots et nos règles (pas de
+/// référence d'ampoule sur un pack véhicule, pas d'homologation, pas de
+/// marque, pas de promesse de service qui serait la leur).
+///
+/// Séparé de `ProductSpec` exprès : ce qui est saisi au back-office n'est
+/// jamais écrasé par un relevé, et l'emporte à l'affichage.
+model ReleveFiche {
+  productId String   @id
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Adresse de la fiche relevée.
+  source    String
+  /// Codes et valeurs relevés — voir `DonneesReleve` dans lib/caracteristiques.ts.
+  donnees   Json
+  releveLe  DateTime
+  /// Sûreté du rapprochement : `exacte` (même nom, même prix) ou `forte`.
+  confiance String
+
+  @@index([source])
 }
 
 model ProductGuide {

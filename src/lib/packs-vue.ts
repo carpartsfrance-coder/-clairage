@@ -110,6 +110,11 @@ export type CarteEclairage = {
    * d'un. `null` le reste du temps : « 1 nécessaire » n'apprend rien.
    */
   quantite: number | null
+  /**
+   * Les premiers atouts relevés sur la fiche (« Sans erreur OBD », « Plug &
+   * play »), deux au plus. Vide quand la fiche n'a pas de relevé.
+   */
+  atouts?: string[]
 }
 
 /** Les cartes d'une génération, dans l'ordre des emplacements. */
@@ -133,6 +138,7 @@ export function cartesDesPacks(groupes: PackPositionGroup[]): CarteEclairage[] {
     reserve: null,
     verifie: null,
     quantite: null,
+    atouts: produit.atouts ?? [],
   }))
 }
 

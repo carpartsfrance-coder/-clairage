@@ -86,3 +86,28 @@ describe('flux Google Merchant Center', () => {
     expect(tranchePrix(10000)).toBe('100 € et plus')
   })
 })
+
+describe('atouts et caractéristiques dans le flux', () => {
+  it('envoie les atouts en product_highlight et les caractéristiques en product_detail', async () => {
+    const { lignesDeLArticle } = await import('../src/lib/flux-google')
+    const [ligne] = lignesDeLArticle(
+      {
+        slug: 'pack-led-antibrouillards-audi-a3-8v',
+        name: 'Pack LED antibrouillards pour Audi A3 8V',
+        description: null,
+        brand: 'LEDVROOM',
+        productType: null,
+        images: ['/a.jpg'],
+        atouts: ['Aucune erreur au tableau de bord (OBD)', 'Plug & play'],
+        details: [{ label: 'Tension', value: '12 V' }],
+        variants: [{ sku: 'X', name: 'Unique', priceCents: 2870, compareAtCents: 3590, etat: 'IN_STOCK' }],
+      },
+      { siteUrl: 'https://ledvroom.com', titre: 'LEDVROOM', tarifs: [] },
+    )
+    expect(ligne).toContain('<g:product_highlight>Aucune erreur au tableau de bord (OBD)</g:product_highlight>')
+    expect(ligne).toContain('<g:product_highlight>Plug &amp; play</g:product_highlight>')
+    expect(ligne).toContain(
+      '<g:product_detail><g:section_name>Caractéristiques</g:section_name><g:attribute_name>Tension</g:attribute_name><g:attribute_value>12 V</g:attribute_value></g:product_detail>',
+    )
+  })
+})

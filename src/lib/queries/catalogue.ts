@@ -18,6 +18,7 @@ import {
 import { recommendPackaging, recommendationReason } from '../recommendation'
 import { ARGS_COUVERTURE, couverture } from '../media-couverture'
 import { couvertureType } from '../images-types'
+import { badgesDeCarte } from '../caracteristiques'
 
 /**
  * Lectures du catalogue : index des catégories, listes filtrées, recherche.
@@ -80,6 +81,8 @@ export type ProductListItem = {
    * ces deux écrans.
    */
   recommended: { priceCents: number; name: string; reason: string | null } | null
+  /** Badges d'atouts de la carte (« Sans erreur OBD »…), tirés du relevé de la fiche. */
+  atouts?: string[]
 }
 
 export type SortKey = 'pertinence' | 'prix-croissant' | 'prix-decroissant' | 'nouveautes'
@@ -392,6 +395,7 @@ async function lireListe(
               include: { media: true },
             },
             categories: { include: { category: true }, take: 1 },
+            releve: { select: { donnees: true } },
           },
         })
 
@@ -534,6 +538,7 @@ async function lireListe(
         })(),
         variantCount: product.variants.length,
         availability,
+        atouts: badgesDeCarte(product.releve?.donnees),
         fitment: configurationId ? bestStatus(statuses) : null,
         pourUnAutreVehicule:
           autresVehicules.has(product.id) && bestStatus(statuses) !== 'CONFIRMED',

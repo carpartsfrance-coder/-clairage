@@ -23,6 +23,8 @@ import {
 import { commercialTerms, dureeGarantie, formatPrice, identity, promesseRetour, siteConfig } from '@/lib/identity'
 import { getModelesReferences, plusDe } from '@/lib/queries/chiffres-catalogue'
 import { faqFicheParDefaut } from '@/lib/faq-generale'
+import { lireCaracteristiques } from '@/lib/caracteristiques'
+import { BadgesAtouts } from '@/components/product/BadgesAtouts'
 import { typeHorsAmpoules } from '@/lib/types-produit'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
 import {
@@ -191,6 +193,18 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   */
   const product = vehiculeDeLaFiche ? ficheSansReferences(produitLu) : produitLu
 
+  /*
+    Atouts et caractéristiques relevés sur la même fiche chez LedPerf
+    (exploitant, 21 novembre 2026 : « les produits sont exactement les mêmes,
+    mets les mêmes caractéristiques, et fais-en des badges »). Les règles de
+    la fiche s'appliquent au relevé comme au reste : sur un pack véhicule,
+    aucune référence d'ampoule. Ce qui est saisi au back-office l'emporte.
+  */
+  const caracteristiques = lireCaracteristiques(produitLu.releve?.donnees, {
+    sansReference: Boolean(vehiculeDeLaFiche),
+    libellesExistants: product.specs.map((spec) => spec.label),
+  })
+
   /* Pour le coup de pouce « livraison offerte » de la section Complétez. */
   const prixDuPackCents =
     (product.variants.find((variant) => variant.id === product.recommendedVariantId) ??
@@ -288,13 +302,21 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     pour les remplir — elles s'effacent, et l'assistance reste joignable en bas
     de page comme dans le bloc d'achat.
   */
-  const aContenuKit = Boolean(kitVariant) || product.specs.length > 0
+  /* Saisies au back-office d'abord, puis celles du relevé qui n'y sont pas. */
+  const specsAffichees = [...product.specs, ...(caracteristiques?.specs ?? [])]
+  const aContenuKit =
+    Boolean(kitVariant) ||
+    product.specs.length > 0 ||
+    Boolean(caracteristiques && (caracteristiques.specs.length > 0 || caracteristiques.atouts.length > 0 || caracteristiques.composition.length > 0))
   /*
     Sans questions publiées en back-office, la fiche reçoit les questions
     par défaut (compatibilité, câblage, garantie, livraison, retours) : un
     client qui hésite trouve la réponse ici plutôt qu'ailleurs.
   */
-  const questions = product.faq.length > 0 ? product.faq : await faqFicheParDefaut(concuPour, product.name, product.vehicleType === 'MOTORCYCLE')
+  const questions =
+    product.faq.length > 0
+      ? product.faq
+      : await faqFicheParDefaut(concuPour, product.name, product.vehicleType === 'MOTORCYCLE', caracteristiques)
   const aContenuQuestions = questions.length > 0 || product.reviews.length > 0
 
   /*
@@ -433,6 +455,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               description={descriptionDeLaFiche}
               shippingOffers={shippingOffers}
               returnWindowDays={commercialTerms.returnWindowDays}
+              caracteristiques={specsAffichees}
             />
             <BreadcrumbStructuredData items={breadcrumbItems} />
             <FaqStructuredData items={product.faq} />
@@ -533,6 +556,14 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                     : null
                 }
               />
+
+              {/* Les atouts en badges, dès le premier écran (exploitant,
+                  21 novembre 2026) : « plug & play, aucune erreur OBD, la
+                  notice… il faut les mettre en avant ». Sur téléphone, juste
+                  sous le titre et avant la photo (même rang que le titre). */}
+              {caracteristiques && caracteristiques.atouts.length > 0 ? (
+                <BadgesAtouts atouts={caracteristiques.atouts} className="order-1 mt-3 fiche:mt-4" />
+              ) : null}
 
               {/* Plus de « Réf. LV-… » sous le titre (exploitant, 9 novembre 2026) :
                   la référence interne ne dit rien au client. Elle reste dans les
@@ -833,16 +864,48 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             {/* Ce que le conditionnement choisi ne fournit pas, et ses restrictions. */}
             <ConfigurationContents />
 
-            {product.specs.length > 0 ? (
+            {/* Les atouts au complet (les premiers sont en badges sous le titre). */}
+            {caracteristiques && caracteristiques.atouts.length > 0 ? (
               <div className={cn(kitVariant && 'mt-12')}>
-                {kitVariant ? <h3 className="text-[18px] font-bold">Caractéristiques</h3> : null}
+                <h3 className="text-[18px] font-bold">Les atouts</h3>
+                <ul className="mt-4 grid gap-x-12 gap-y-2.5 fiche:grid-cols-2">
+                  {caracteristiques.atouts.map((atout) => (
+                    <li key={atout.code} className="flex items-start gap-2.5 text-[15px]">
+                      <IconCheck className="mt-0.5 size-[18px] shrink-0 text-ok" />
+                      <span>{atout.texte}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {/* Ce que réunit le pack ou le kit, quand la fiche relevée le détaille. */}
+            {caracteristiques && caracteristiques.composition.length > 0 ? (
+              <div className="mt-10">
+                <h3 className="text-[18px] font-bold">{typeSpecial ? 'Dans le kit' : 'Dans le pack'}</h3>
+                <ul className="mt-4 grid gap-x-12 gap-y-2 fiche:grid-cols-2">
+                  {caracteristiques.composition.map((ligne) => (
+                    <li key={ligne} className="flex items-start gap-2.5 text-[15px]">
+                      <IconPack className="mt-0.5 size-[18px] shrink-0 text-muted-strong" />
+                      <span>{ligne}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {specsAffichees.length > 0 ? (
+              <div className={cn((kitVariant || caracteristiques) && 'mt-12')}>
+                {kitVariant || caracteristiques ? (
+                  <h3 className="text-[18px] font-bold">Caractéristiques</h3>
+                ) : null}
                 <dl
                   className={cn(
                     'grid gap-x-12 border-t border-line fiche:grid-cols-2',
-                    kitVariant && 'mt-4',
+                    (kitVariant || caracteristiques) && 'mt-4',
                   )}
                 >
-                  {product.specs.map((spec) => (
+                  {specsAffichees.map((spec) => (
                     <div
                       key={spec.label}
                       className="flex justify-between gap-6 border-b border-line py-3.5 text-[15px]"

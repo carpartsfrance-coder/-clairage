@@ -104,12 +104,15 @@ export function ProductStructuredData({
   description,
   shippingOffers = [],
   returnWindowDays = null,
+  caracteristiques = [],
 }: {
   product: ProductView
   /** La description de la fiche, la même que la balise meta (`lib/seo-fiche`). */
   description?: string
   shippingOffers?: ShippingOffer[]
   returnWindowDays?: number | null
+  /** Les caractéristiques affichées sur la fiche (back-office, puis relevé), déjà filtrées. */
+  caracteristiques?: Array<{ label: string; value: string }>
 }) {
   if (siteConfig.demoBanner) return null
   // Deuxième barrière, la même que celle du plan de site : une fiche de
@@ -163,7 +166,7 @@ export function ProductStructuredData({
 
   // Caractéristiques techniques réelles, pas de valeur de remplissage. Une
   // liste vide n'est pas émise.
-  const additionalProperty = [
+  const proprietes = [
     product.bulbBase ? { '@type': 'PropertyValue', name: 'Culot', value: product.bulbBase } : null,
     product.colorTemperature
       ? {
@@ -172,7 +175,14 @@ export function ProductStructuredData({
           value: `${product.colorTemperature} K`,
         }
       : null,
-  ].filter(Boolean)
+  ].filter((propriete): propriete is { '@type': string; name: string; value: string } => Boolean(propriete))
+  // Puis celles du tableau de la fiche, sans doubler un nom déjà déclaré.
+  const additionalProperty = [
+    ...proprietes,
+    ...caracteristiques
+      .filter((spec) => !proprietes.some((propriete) => propriete.name === spec.label))
+      .map((spec) => ({ '@type': 'PropertyValue', name: spec.label, value: spec.value })),
+  ]
 
   const data = {
     '@context': 'https://schema.org',
