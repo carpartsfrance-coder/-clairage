@@ -23,7 +23,7 @@ import {
 import { commercialTerms, dureeGarantie, formatPrice, identity, promesseRetour, siteConfig } from '@/lib/identity'
 import { getModelesReferences, plusDe } from '@/lib/queries/chiffres-catalogue'
 import { faqFicheParDefaut } from '@/lib/faq-generale'
-import { lireCaracteristiques } from '@/lib/caracteristiques'
+import { lireCaracteristiques, phraseDesAtouts } from '@/lib/caracteristiques'
 import { BadgesAtouts } from '@/components/product/BadgesAtouts'
 import { typeHorsAmpoules } from '@/lib/types-produit'
 import { Breadcrumb } from '@/components/catalogue/Breadcrumb'
@@ -91,6 +91,16 @@ type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
+/**
+ * Les atouts de la description Google, calculés de la même façon pour la
+ * balise meta et pour les données structurées : sans véhicule retenu, sans
+ * référence d'ampoule.
+ */
+function atoutsDeLaDescription(donnees: unknown): string | null {
+  const releve = lireCaracteristiques(donnees, { sansReference: true })
+  return releve ? phraseDesAtouts(releve.atouts) : null
+}
+
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const apercu = (await searchParams).apercu !== undefined && (await getStaffUser()) !== null
@@ -119,6 +129,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     garantie: dureeGarantie(),
     seuilFranchiseCents: seuilDeFranchise(shippingOffers),
     retourJours: commercialTerms.satisfaitDays ?? commercialTerms.returnWindowDays,
+    atouts: atoutsDeLaDescription(product.releve?.donnees),
   })
 
   return {
@@ -226,6 +237,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     garantie: dureeGarantie(),
     seuilFranchiseCents,
     retourJours: commercialTerms.satisfaitDays ?? commercialTerms.returnWindowDays,
+    atouts: atoutsDeLaDescription(produitLu.releve?.donnees),
   })
 
   const kitVariant = product.variants.find((variant) => variant.components.length > 0)

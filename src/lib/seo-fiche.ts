@@ -264,6 +264,12 @@ export function descriptionSeo(
     retourJours: number | null
     /** « 5 ans » : la garantie, l'argument le plus fort dans un résultat Google. */
     garantie?: string | null
+    /**
+     * Les premiers atouts relevés, en phrase (`phraseDesAtouts`) : « sans
+     * erreur OBD, plug & play et montage 10 min ». Ils remplacent « prêt à
+     * monter sans modifier le câblage », qu'ils disent mieux.
+     */
+    atouts?: string | null
   },
 ): string | undefined {
   const saisie = produit.metaDescription?.trim()
@@ -281,7 +287,9 @@ export function descriptionSeo(
   const phrases = [
     type
       ? `${intituleSeo(produit, vehicule)}. ${type.contenu}`
-      : `${intituleSeo(produit, vehicule)}, en pack prêt à monter sans modifier le câblage.`,
+      : conditions.atouts
+        ? `${intituleSeo(produit, vehicule)} : ${conditions.atouts}.`
+        : `${intituleSeo(produit, vehicule)}, en pack prêt à monter sans modifier le câblage.`,
   ]
   const { seuilFranchiseCents, retourJours, garantie } = conditions
   if (garantie && seuilFranchiseCents !== null) {

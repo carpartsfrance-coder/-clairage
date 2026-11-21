@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lireCaracteristiques } from '../src/lib/caracteristiques'
+import { lireCaracteristiques, phraseDesAtouts } from '../src/lib/caracteristiques'
 
 /**
  * Ce que ces tests protègent : la fiche dit les atouts relevés chez LedPerf
@@ -164,5 +164,10 @@ describe('lireCaracteristiques', () => {
     expect(c.atouts.map((a) => a.code)).not.toContain('HOMOLOGUE')
     expect(c.homologue).toBe(false)
     expect(c.specs).toContainEqual({ label: 'Homologation route', value: 'Non' })
+  })
+  it('écrit les premiers atouts en une phrase pour Google', () => {
+    const c = lireCaracteristiques(antibrouillardsA38V, { sansReference: true })!
+    expect(phraseDesAtouts(c.atouts)).toBe('sans erreur OBD, plug & play et montage 10 min')
+    expect(phraseDesAtouts([])).toBeNull()
   })
 })

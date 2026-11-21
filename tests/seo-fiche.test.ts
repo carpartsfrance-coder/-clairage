@@ -73,6 +73,16 @@ describe('titre de référencement', () => {
     ).not.toMatch(/LED/)
   })
 
+  it('met les atouts relevés dans la description Google, à la place de « sans modifier le câblage »', () => {
+    const description = descriptionSeo(
+      { ...IMPORT_HISTORIQUE, name: 'Pack LED feux de recul pour Audi A1', metaDescription: null },
+      A1,
+      { ...CONDITIONS, atouts: 'sans erreur OBD, plug & play et montage 10 min' },
+    )!
+    expect(description).toContain(': sans erreur OBD, plug & play et montage 10 min.')
+    expect(description).not.toContain('sans modifier le câblage')
+  })
+
   it('dit « phares LED » pour les phares LED additionnels qui restent', () => {
     expect(
       titreSeo({ ...IMPORT_HISTORIQUE, name: 'Pack LED phares pour Harley-Davidson Fat Bob 1690', metaTitle: null }, null),

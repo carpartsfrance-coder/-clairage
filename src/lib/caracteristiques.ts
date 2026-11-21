@@ -354,6 +354,16 @@ export function lireCaracteristiques(
 }
 
 /**
+ * Les premiers atouts en une phrase, pour la description Google de la fiche :
+ * « sans erreur OBD, plug & play et montage 10 min ». `null` sans atout.
+ */
+export function phraseDesAtouts(atouts: Atout[], max = 3): string | null {
+  const mots = atouts.slice(0, max).map((atout) => atout.badge.charAt(0).toLowerCase() + atout.badge.slice(1))
+  if (mots.length === 0) return null
+  return mots.length === 1 ? mots[0] : `${mots.slice(0, -1).join(', ')} et ${mots[mots.length - 1]}`
+}
+
+/**
  * Les badges d'une carte de liste (page véhicule, catégorie, recherche) : les
  * premiers atouts, deux au plus. Une vignette n'a pas la place d'une liste, et
  * ce sont ceux qui lèvent le doute — erreur au tableau de bord, montage.
