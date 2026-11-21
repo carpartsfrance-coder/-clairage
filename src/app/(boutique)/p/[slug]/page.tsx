@@ -896,8 +896,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
             {specsAffichees.length > 0 ? (
               <div className={cn((kitVariant || caracteristiques) && 'mt-12')}>
+                {/* « Fiche technique » : la section s'appelle déjà « Caractéristiques ». */}
                 {kitVariant || caracteristiques ? (
-                  <h3 className="text-[18px] font-bold">Caractéristiques</h3>
+                  <h3 className="text-[18px] font-bold">Fiche technique</h3>
                 ) : null}
                 <dl
                   className={cn(

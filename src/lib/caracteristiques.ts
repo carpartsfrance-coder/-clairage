@@ -202,6 +202,8 @@ function mettreEnForme(valeur: string): string {
   // « - 40°C à 300°C » : un signe moins, pas un tiret de liste.
   v = v.replace(/^-\s*(?=\d)/, '−')
   v = v.replace(/\bOUI\b/g, 'Oui').replace(/\bNON\b/g, 'Non')
+  // « Blanc Xenon » : avec l'accent, en minuscule au milieu d'une phrase.
+  v = v.replace(/(\S\s+)x[ée]non\b/gi, '$1xénon').replace(/^x[ée]non\b/i, 'Xénon')
   return v.charAt(0).toUpperCase() + v.slice(1)
 }
 

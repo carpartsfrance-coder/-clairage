@@ -122,4 +122,14 @@ describe('lireCaracteristiques', () => {
     ])
     expect(c.atouts.map((a) => a.code)).toContain('ETANCHE')
   })
+  it('écrit « xénon » avec son accent', () => {
+    const c = lireCaracteristiques(
+      { v: 1, specs: [['Couleur', 'Blanc Xenon'], ['Technologie', 'Xenon HID']] },
+      { sansReference: false },
+    )!
+    expect(c.specs).toEqual([
+      { label: 'Couleur', value: 'Blanc xénon' },
+      { label: 'Technologie', value: 'Xénon HID' },
+    ])
+  })
 })
