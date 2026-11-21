@@ -363,8 +363,9 @@ model ProductSpec {
 /// se fait hors ligne (scripts/ledperf/), il arrive par migration, et il
 /// n'est jamais affiché tel quel : lib/caracteristiques.ts en tire les
 /// badges, le tableau et les réponses, avec nos mots et nos règles (pas de
-/// référence d'ampoule sur un pack véhicule, pas d'homologation, pas de
-/// marque, pas de promesse de service qui serait la leur).
+/// référence d'ampoule sur un pack véhicule, pas de marque, pas de promesse
+/// de service qui serait la leur ; l'homologation route est dite comme chez
+/// eux, et mise en avant quand le produit est homologué).
 ///
 /// Séparé de `ProductSpec` exprès : ce qui est saisi au back-office n'est
 /// jamais écrasé par un relevé, et l'emporte à l'affichage.

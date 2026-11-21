@@ -99,7 +99,7 @@ export async function faqFicheParDefaut(
    * générales : « sans erreur OBD » répond à la question du tableau de bord,
    * « plug & play » à celle du câblage, le temps de montage a sa question.
    */
-  atouts: Pick<Caracteristiques, 'sansErreur' | 'plugAndPlay' | 'montageMinutes' | 'notice'> | null = null,
+  atouts: Pick<Caracteristiques, 'sansErreur' | 'plugAndPlay' | 'montageMinutes' | 'notice' | 'homologue'> | null = null,
 ): Promise<QuestionReponse[]> {
   const generales = await faqGeneraleParDefaut()
   // Feux additionnels, centrale… : la réponse sur le câblage est la leur.
@@ -154,6 +154,13 @@ export async function faqFicheParDefaut(
     paniers abandonnés, 21 novembre 2026).
   */
   const affirmees: QuestionReponse[] = []
+  // Homologué route : la réponse la plus attendue, en premier (exploitant, 21 novembre 2026).
+  if (atouts?.homologue === true) {
+    affirmees.push({
+      question: 'Ce produit est-il homologué pour la route ?',
+      answer: 'Oui : ce produit est homologué pour la route.',
+    })
+  }
   if (atouts?.montageMinutes) {
     const n = atouts.montageMinutes
     const duree = n < 60 ? `${n} minutes` : `${Math.floor(n / 60)} h${n % 60 ? ` ${String(n % 60).padStart(2, '0')}` : ''}`

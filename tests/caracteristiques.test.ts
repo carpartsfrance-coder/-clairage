@@ -38,7 +38,7 @@ describe('lireCaracteristiques', () => {
     expect(c.notice).toBe(true)
   })
 
-  it("n'affiche ni la marque, ni l'homologation, ni un libellé inconnu", () => {
+  it("n'affiche ni la marque, ni leurs lignes d'homologation brutes, ni un libellé inconnu", () => {
     const c = lireCaracteristiques(antibrouillardsA38V, { sansReference: true })!
     const libelles = c.specs.map((s) => s.label)
     expect(libelles).not.toContain('Marque')
@@ -131,5 +131,38 @@ describe('lireCaracteristiques', () => {
       { label: 'Couleur', value: 'Blanc xénon' },
       { label: 'Technologie', value: 'Xénon HID' },
     ])
+  })
+  it('met « Homologué route » en premier badge quand le relevé le dit', () => {
+    const c = lireCaracteristiques({ ...antibrouillardsA38V, homologue: true }, { sansReference: true })!
+    expect(c.atouts[0]).toMatchObject({ code: 'HOMOLOGUE', badge: 'Homologué route' })
+    expect(c.homologue).toBe(true)
+    expect(c.specs).toContainEqual({ label: 'Homologation route', value: 'Oui' })
+  })
+
+  it('dit « non homologué » et l’usage limité, sans en faire des atouts', () => {
+    const non = lireCaracteristiques({ ...antibrouillardsA38V, homologue: false }, { sansReference: true })!
+    expect(non.atouts.map((a) => a.code)).not.toContain('HOMOLOGUE')
+    expect(non.specs).toContainEqual({ label: 'Homologation route', value: 'Non' })
+    expect(non.usage).toBeNull()
+
+    const circuit = lireCaracteristiques(
+      { v: 1, homologue: false, usage: 'circuit', specs: [['Tension', '12V']] },
+      { sansReference: false },
+    )!
+    expect(circuit.usage).toBe('circuit')
+    expect(circuit.specs).toContainEqual({
+      label: 'Usage autorisé',
+      value: 'Circuit uniquement, pas sur la voie publique',
+    })
+  })
+
+  it('ne dit jamais « homologué » d’un article déclaré non homologué au back-office', () => {
+    const c = lireCaracteristiques(
+      { ...antibrouillardsA38V, homologue: true },
+      { sansReference: true, nonHomologueDeclare: true },
+    )!
+    expect(c.atouts.map((a) => a.code)).not.toContain('HOMOLOGUE')
+    expect(c.homologue).toBe(false)
+    expect(c.specs).toContainEqual({ label: 'Homologation route', value: 'Non' })
   })
 })

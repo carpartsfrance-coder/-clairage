@@ -203,6 +203,8 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const caracteristiques = lireCaracteristiques(produitLu.releve?.donnees, {
     sansReference: Boolean(vehiculeDeLaFiche),
     libellesExistants: product.specs.map((spec) => spec.label),
+    // Déclaré non homologué au back-office pour le véhicule retenu : jamais « homologué route ».
+    nonHomologueDeclare: product.variants.some((variant) => variant.fitment.roadApproval === 'NOT_APPROVED'),
   })
 
   /* Pour le coup de pouce « livraison offerte » de la section Complétez. */
@@ -561,8 +563,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   21 novembre 2026) : « plug & play, aucune erreur OBD, la
                   notice… il faut les mettre en avant ». Sur téléphone, juste
                   sous le titre et avant la photo (même rang que le titre). */}
-              {caracteristiques && caracteristiques.atouts.length > 0 ? (
-                <BadgesAtouts atouts={caracteristiques.atouts} className="order-1 mt-3 fiche:mt-4" />
+              {caracteristiques && (caracteristiques.atouts.length > 0 || caracteristiques.usage) ? (
+                <BadgesAtouts
+                  atouts={caracteristiques.atouts}
+                  usage={caracteristiques.usage}
+                  className="order-1 mt-3 fiche:mt-4"
+                />
               ) : null}
 
               {/* Plus de « Réf. LV-… » sous le titre (exploitant, 9 novembre 2026) :

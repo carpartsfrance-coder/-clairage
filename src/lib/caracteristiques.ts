@@ -11,10 +11,15 @@
  *   (`SANS_ERREUR`, `PLUG_PLAY`…) que ce module traduit ; un libellé de
  *   caractéristique inconnu est écarté plutôt que recopié ;
  * - **les règles de l'exploitant passent avant le relevé** : pas de référence
- *   d'ampoule sur un pack véhicule, pas d'homologation, pas de marque (la
- *   leur, Osram, Philips), pas de promesse de service qui serait la leur
- *   (garantie, port offert, satisfait ou remboursé : les nôtres sont dites
- *   ailleurs, et différemment) ;
+ *   d'ampoule sur un pack véhicule, pas de marque (la leur, Osram, Philips),
+ *   pas de promesse de service qui serait la leur (garantie, port offert,
+ *   satisfait ou remboursé : les nôtres sont dites ailleurs, et
+ *   différemment) ;
+ * - **l'homologation route se dit comme chez eux** (exploitant, 21 novembre
+ *   2026, revenant sur la consigne du 7) : « homologué route » est mis en
+ *   avant, en premier badge ; « non homologué », « circuit uniquement »,
+ *   « intérieur uniquement » sont dits aussi, sans être des atouts. Seule la
+ *   valeur relevée compte, jamais un texte libre de leur fiche ;
  * - **ce qui est saisi au back-office l'emporte** : un libellé déjà présent
  *   dans les caractéristiques de la fiche n'est pas doublé.
  *
@@ -36,6 +41,10 @@ export type DonneesReleve = {
   montage?: number | null
   /** Une notice de montage personnalisée accompagne le produit. */
   notice?: boolean
+  /** Homologation route annoncée : `true` homologué, `false` non homologué, absent si rien de sûr. */
+  homologue?: boolean
+  /** Usage limité annoncé (« Non ECE — circuit uniquement », « intérieur uniquement »). */
+  usage?: 'circuit' | 'interieur'
 }
 
 export type Atout = {
@@ -55,6 +64,10 @@ export type Caracteristiques = {
   notice: boolean
   sansErreur: boolean
   plugAndPlay: boolean
+  /** `true` homologué route, `false` non homologué, `null` inconnu. */
+  homologue: boolean | null
+  /** Usage limité, à dire près des badges : `null` quand rien n'est limité. */
+  usage: 'circuit' | 'interieur' | null
 }
 
 /**
@@ -63,6 +76,8 @@ export type Caracteristiques = {
  * montage, notice), ensuite le rendu, enfin la fiche technique.
  */
 const ATOUTS: Array<{ code: string; badge: string; texte: string }> = [
+  // « Quand c'est homologué route, il faut bien le mettre en avant » (exploitant, 21 novembre 2026).
+  { code: 'HOMOLOGUE', badge: 'Homologué route', texte: 'Homologué pour la route' },
   { code: 'SANS_ERREUR', badge: 'Sans erreur OBD', texte: 'Aucune erreur au tableau de bord (OBD)' },
   { code: 'PLUG_PLAY', badge: 'Plug & play', texte: 'Plug & play : se monte à la place de l’origine, sans modification' },
   { code: 'MONTAGE', badge: '', texte: '' }, // rempli avec le temps relevé
@@ -94,8 +109,9 @@ const RANG = new Map(ATOUTS.map((atout, i) => [atout.code, i]))
 
 /**
  * Libellés de caractéristiques gardés, et comment on les nomme. Ce qui n'est
- * pas ici n'est pas affiché : la marque, la garantie, la gamme, toute forme
- * d'homologation, la référence du fabricant, la compatibilité (la nôtre est
+ * pas ici n'est pas affiché : la marque, la garantie, la gamme, leurs lignes
+ * d'homologation telles qu'écrites (l'homologation relevée est dite à part,
+ * avec nos mots), la référence du fabricant, la compatibilité (la nôtre est
  * gérée véhicule par véhicule), le conditionnement (le nôtre est celui de la
  * variante choisie, il ne doit pas être contredit).
  */
@@ -226,7 +242,12 @@ function montageLibelle(minutes: number): { badge: string; texte: string } {
  */
 export function lireCaracteristiques(
   donnees: unknown,
-  options: { sansReference: boolean; libellesExistants?: string[] } = { sansReference: false },
+  options: {
+    sansReference: boolean
+    libellesExistants?: string[]
+    /** Un article déclaré non homologué au back-office ne se dit jamais « homologué route ». */
+    nonHomologueDeclare?: boolean
+  } = { sansReference: false },
 ): Caracteristiques | null {
   if (!donnees || typeof donnees !== 'object') return null
   const d = donnees as Partial<DonneesReleve>
@@ -238,6 +259,9 @@ export function lireCaracteristiques(
       ? Math.round(d.montage)
       : null
   const notice = d.notice === true
+  const homologue =
+    options.nonHomologueDeclare || d.homologue === false ? false : d.homologue === true ? true : null
+  const usage = d.usage === 'circuit' || d.usage === 'interieur' ? d.usage : null
 
   // Les caractéristiques d'abord : certaines confirment un atout.
   const existants = new Set((options.libellesExistants ?? []).map(cleLibelle))
@@ -269,6 +293,18 @@ export function lireCaracteristiques(
 
   if (notice) codes.add('NOTICE')
   if (montage !== null) codes.add('MONTAGE')
+  if (homologue === true && usage === null) codes.add('HOMOLOGUE')
+
+  // L'homologation et l'usage, en fin de tableau, comme sur leur fiche : avec nos mots, jamais leur texte.
+  if (homologue !== null && !existants.has(cleLibelle('Homologation route'))) {
+    specs.push({ label: 'Homologation route', value: homologue ? 'Oui' : 'Non' })
+  }
+  if (usage !== null) {
+    specs.push({
+      label: 'Usage autorisé',
+      value: usage === 'circuit' ? 'Circuit uniquement, pas sur la voie publique' : 'Intérieur du véhicule uniquement',
+    })
+  }
   // « 12 V et 24 V » dit déjà « 12 V ».
   if (codes.has('TENSION_12_24')) {
     codes.delete('TENSION_12')
@@ -312,6 +348,8 @@ export function lireCaracteristiques(
     notice,
     sansErreur: codes.has('SANS_ERREUR'),
     plugAndPlay: codes.has('PLUG_PLAY'),
+    homologue,
+    usage,
   }
 }
 

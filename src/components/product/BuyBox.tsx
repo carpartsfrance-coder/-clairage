@@ -857,12 +857,13 @@ export function BuyBox({
       {/*
         ---- .road-note : seulement quand l'article N'EST PAS homologué ----
 
-        Consigne de l'exploitant (7 novembre 2026) : l'homologation des
-        ampoules ne s'affiche pas sur les fiches. « Homologation à confirmer »,
-        qui sortait sur toutes les fiches faute de donnée, laissait en plus
-        croire l'inverse pour des ampoules qui le sont. Un article déclaré non
-        homologué en back-office, lui, reste signalé : le client doit le
-        savoir avant d'acheter.
+        Consigne de l'exploitant (7 novembre 2026) : pas de « homologation à
+        confirmer », qui sortait sur toutes les fiches faute de donnée et
+        laissait croire l'inverse pour des ampoules qui le sont. Un article
+        déclaré non homologué en back-office, lui, reste signalé : le client
+        doit le savoir avant d'acheter. Depuis le 21 novembre, l'homologation
+        relevée chez LedPerf s'affiche aussi (badge « Homologué route », ligne
+        du tableau) : voir lib/caracteristiques.ts.
       */}
       {selected.fitment.roadApproval === 'NOT_APPROVED' ? (
         <div className="mt-3 text-[13px]">
