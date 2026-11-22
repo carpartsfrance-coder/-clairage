@@ -93,6 +93,23 @@ export function tranchePrix(priceCents: number): string {
   return '100 € et plus'
 }
 
+/**
+ * Famille de campagne, envoyée en « étiquette personnalisée 1 » (`custom_label_1`).
+ *
+ * Décision de l'exploitant (22 novembre 2026). La campagne Shopping dépensait
+ * 77 % de son budget sur des produits génériques (kits H7, kits xénon, barres
+ * LED), face à Amazon, Temu et AliExpress, et n'apparaissait pas sur les
+ * recherches par véhicule (« led veilleuse peugeot 308 »), là où LEDVROOM est
+ * fort. L'étiquette sépare les deux, chacune dans sa campagne et son budget :
+ *
+ * - « Pack véhicule » : les fiches composées pour un véhicule (références
+ *   LUM-PK et LV) ;
+ * - « Générique » : les articles vendus par référence (LVA).
+ */
+export function familleCampagne(sku: string): string {
+  return /^LVA-/i.test(sku) ? 'Générique' : 'Pack véhicule'
+}
+
 /** Le mode le moins cher du pays, au prix de cet article. `null` si aucun. */
 export function fraisDePort(tarif: TarifPays, priceCents: number): number | null {
   const prixPossibles = tarif.modes.map((mode) =>
@@ -168,13 +185,14 @@ export function lignesDeLArticle(
       // « Véhicules et accessoires » : la catégorie où Google accepte les
       // visuels d'illustration (règles des images produit de Merchant Center).
       `<g:google_product_category>888</g:google_product_category>`,
-      // Tranche de prix : celle du prix de référence. Les groupes de produits
-      // de la campagne Shopping en dépendent (« Moins de 20 € » exclu) ; la
-      // calculer sur le prix soldé sortait 3 063 produits de la campagne au
-      // premier jour du Black Friday.
+      // Tranche de prix : celle du prix de référence. Les enchères de la
+      // campagne Shopping en dépendent ; la calculer sur le prix soldé faisait
+      // changer de tranche 3 063 produits au premier jour du Black Friday.
       `<g:custom_label_0>${echapperXml(
         tranchePrix(enPromotion ? (variante.compareAtCents as number) : variante.priceCents),
       )}</g:custom_label_0>`,
+      // Pack véhicule ou générique : une campagne chacun (voir familleCampagne).
+      `<g:custom_label_1>${echapperXml(familleCampagne(variante.sku))}</g:custom_label_1>`,
     ]
     // Atouts et caractéristiques relevés (lib/caracteristiques.ts) : dix
     // atouts au plus, de 150 caractères au plus, comme le demande Google.

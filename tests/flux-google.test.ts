@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { construireFlux, echapperXml, fraisDePort, texteBrut, tranchePrix } from '../src/lib/flux-google'
+import { construireFlux, echapperXml, familleCampagne, fraisDePort, texteBrut, tranchePrix } from '../src/lib/flux-google'
 
 const article = {
   slug: 'pack-led-plaque-dacia-duster-2',
@@ -109,5 +109,12 @@ describe('atouts et caractéristiques dans le flux', () => {
     expect(ligne).toContain(
       '<g:product_detail><g:section_name>Caractéristiques</g:section_name><g:attribute_name>Tension</g:attribute_name><g:attribute_value>12 V</g:attribute_value></g:product_detail>',
     )
+  })
+  it('range chaque article dans sa campagne : pack véhicule ou générique', () => {
+    expect(familleCampagne('LUM-PK-FOG-AUDI-A3-8V-EF8E')).toBe('Pack véhicule')
+    expect(familleCampagne('LV-OPTIQUE-ROND-ROYAL-ENFI-BULLET-CLASSIC-B775')).toBe('Pack véhicule')
+    expect(familleCampagne('LVA-A8ADB4B4')).toBe('Générique')
+    const { xml } = construireFlux({ siteUrl: 'https://ledvroom.com', titre: 'LEDVROOM', articles: [article], tarifs })
+    expect(xml).toContain('<g:custom_label_1>Pack véhicule</g:custom_label_1>')
   })
 })
